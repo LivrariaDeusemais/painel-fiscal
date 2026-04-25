@@ -54,6 +54,27 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+function getUploadFilePath(filename) {
+  if (!filename) return null;
+  // Segurança: garante que somente o nome do arquivo seja usado, sem caminhos externos.
+  return path.join(uploadsDir, path.basename(String(filename)));
+}
+
+// Rota segura para visualizar/baixar arquivos salvos no disco persistente do Render.
+router.get('/uploads/:filename', protegerRota, (req, res) => {
+  try {
+    const filePath = getUploadFilePath(req.params.filename);
+
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).send('<pre>Arquivo não encontrado no disco persistente.</pre>');
+    }
+
+    return res.sendFile(filePath);
+  } catch (error) {
+    return res.status(500).send(`<pre>Erro ao abrir arquivo:\n${error.message}</pre>`);
+  }
+});
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
@@ -3406,7 +3427,7 @@ router.post('/editar/:id', upload.fields([{ name: 'anexo_pdf', maxCount: 1 }, { 
   }
 });
 
-router.get('/download/pdf/:id', async (req, res) => {
+router.get('/download/pdf/:id', protegerRota, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -3432,7 +3453,7 @@ router.get('/download/pdf/:id', async (req, res) => {
     }
 
     const lancamento = result.rows[0];
-    const filePath = path.join(uploadsDir, '../../uploads', lancamento.anexo_pdf);
+    const filePath = getUploadFilePath(lancamento.anexo_pdf);
 
     if (!fs.existsSync(filePath)) {
       return res.send('<pre>Arquivo PDF não encontrado na pasta uploads.</pre>');
@@ -3445,7 +3466,7 @@ router.get('/download/pdf/:id', async (req, res) => {
   }
 });
 
-router.get('/download/xml/:id', async (req, res) => {
+router.get('/download/xml/:id', protegerRota, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -3471,7 +3492,7 @@ router.get('/download/xml/:id', async (req, res) => {
     }
 
     const lancamento = result.rows[0];
-    const filePath = path.join(uploadsDir, '../../uploads', lancamento.anexo_xml);
+    const filePath = getUploadFilePath(lancamento.anexo_xml);
 
     if (!fs.existsSync(filePath)) {
       return res.send('<pre>Arquivo XML não encontrado na pasta uploads.</pre>');
@@ -5619,7 +5640,7 @@ async function gerarZipEEnviar(res, arquivos, nomeZip) {
   }
 
   const nomeSeguro = sanitizeFilePart(nomeZip || 'arquivos-contador');
-  const zipTemp = path.join(uploadsDir, '../../uploads', `${Date.now()}-${nomeSeguro}.zip`);
+  const zipTemp = path.join(uploadsDir, `${Date.now()}-${nomeSeguro}.zip`);
 
   try {
     await new Promise((resolve, reject) => {
@@ -6219,6 +6240,7 @@ router.post('/espaco-contador/salvar-status', async (req, res) => {
     res.send(`<pre>Erro ao salvar status do mês:\n${error.message}</pre>`);
   }
 });
+
 // DOWNLOAD EM MASSA - ESPAÇO DO CONTADOR
 router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => {
   try {
@@ -6250,6 +6272,27 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
       return res.send(`<pre>Nenhum arquivo ${extensao.toUpperCase()} encontrado para este mês.</pre>`);
     }
 
+    const arquivosValidos = [];
+
+    for (const item of result.rows) {
+      const nomeArquivo = path.basename(item.arquivo);
+      const filePath = path.join(uploadsDir, nomeArquivo);
+
+      if (fs.existsSync(filePath)) {
+        const nomeFornecedor = sanitizeFilePart(item.fornecedor || 'Fornecedor');
+        const nomeNumero = sanitizeFilePart(item.numero_documento || item.id);
+
+        arquivosValidos.push({
+          filePath,
+          downloadName: `${nomeFornecedor}-${nomeNumero}.${extensao}`
+        });
+      }
+    }
+
+    if (!arquivosValidos.length) {
+      return res.send('<pre>Os registros existem no banco, mas os arquivos físicos não foram encontrados em /uploads.</pre>');
+    }
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader(
       'Content-Disposition',
@@ -6259,22 +6302,18 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
     const archive = archiver('zip', { zlib: { level: 9 } });
 
     archive.on('error', (err) => {
-      throw err;
+      if (!res.headersSent) {
+        res.status(500).send(`<pre>Erro ao gerar ZIP:\n${err.message}</pre>`);
+      }
     });
 
     archive.pipe(res);
 
-    for (const item of result.rows) {
-      const filePath = path.join(__dirname, '../../uploads', item.arquivo);
-
-      if (fs.existsSync(filePath)) {
-        const nomeFornecedor = sanitizeFilePart(item.fornecedor || 'Fornecedor');
-        const nomeNumero = sanitizeFilePart(item.numero_documento || item.id);
-        archive.file(filePath, {
-          name: `${nomeFornecedor}-${nomeNumero}.${extensao}`
-        });
-      }
-    }
+    arquivosValidos.forEach(item => {
+      archive.file(item.filePath, {
+        name: item.downloadName
+      });
+    });
 
     await archive.finalize();
   } catch (error) {
