@@ -21,7 +21,7 @@ app.use(session({
 }));
 
 // 🔧 GARANTIR QUE A PASTA UPLOADS EXISTA (ESSENCIAL NO RENDER)
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = '/uploads';
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });

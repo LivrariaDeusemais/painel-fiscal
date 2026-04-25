@@ -34,7 +34,7 @@ const archiver = require('archiver');
 
 // CONFIG UPLOAD
 
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = '/uploads';
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -3432,7 +3432,7 @@ router.get('/download/pdf/:id', async (req, res) => {
     }
 
     const lancamento = result.rows[0];
-    const filePath = path.join(__dirname, '../../uploads', lancamento.anexo_pdf);
+    const filePath = path.join(uploadsDir, '../../uploads', lancamento.anexo_pdf);
 
     if (!fs.existsSync(filePath)) {
       return res.send('<pre>Arquivo PDF não encontrado na pasta uploads.</pre>');
@@ -3471,7 +3471,7 @@ router.get('/download/xml/:id', async (req, res) => {
     }
 
     const lancamento = result.rows[0];
-    const filePath = path.join(__dirname, '../../uploads', lancamento.anexo_xml);
+    const filePath = path.join(uploadsDir, '../../uploads', lancamento.anexo_xml);
 
     if (!fs.existsSync(filePath)) {
       return res.send('<pre>Arquivo XML não encontrado na pasta uploads.</pre>');
@@ -5619,7 +5619,7 @@ async function gerarZipEEnviar(res, arquivos, nomeZip) {
   }
 
   const nomeSeguro = sanitizeFilePart(nomeZip || 'arquivos-contador');
-  const zipTemp = path.join(__dirname, '../../uploads', `${Date.now()}-${nomeSeguro}.zip`);
+  const zipTemp = path.join(uploadsDir, '../../uploads', `${Date.now()}-${nomeSeguro}.zip`);
 
   try {
     await new Promise((resolve, reject) => {
