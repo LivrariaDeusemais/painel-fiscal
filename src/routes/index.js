@@ -1150,7 +1150,7 @@ if (!user.rows.length) {
 }
     const senhaDigitada = String(senha || '');
     const hashBanco = String(usuario.senha_hash || '');
-   const senhaValida = true;
+    const senhaValida = await bcrypt.compare(senhaDigitada, hashBanco);
 
     if (!senhaValida) {
       return res.send(`
