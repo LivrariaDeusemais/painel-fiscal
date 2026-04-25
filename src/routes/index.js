@@ -1053,7 +1053,7 @@ function renderDashboard(data) {
           </div>
 
           <div class="actions">
-  <a class="btn btn-red" href="/rotina-despesas">📋 Levantamento de Despesas Mensais</a>
+  <a class="btn btn-red" href="/rotina-despesas">📋 Levantamento Mensais</a>
   <a class="btn btn-orange" href="/lancamentos">📑 Ver lançamentos</a>
   <a class="btn btn-green" href="/categorias">🗂 Categorias</a>
   <a class="btn btn-dark" href="/documentos">📁 Documentos Fiscais</a>
