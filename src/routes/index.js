@@ -6076,5 +6076,67 @@ router.post('/espaco-contador/salvar-status', async (req, res) => {
     res.send(`<pre>Erro ao salvar status do mês:\n${error.message}</pre>`);
   }
 });
+// DOWNLOAD EM MASSA - ESPAÇO DO CONTADOR
+router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => {
+  try {
+    const { tipo } = req.params;
+    const { mes } = req.query;
+
+    if (!['pdf', 'xml'].includes(tipo)) {
+      return res.send('<pre>Tipo de arquivo inválido.</pre>');
+    }
+
+    if (!mes) {
+      return res.send('<pre>Mês não informado.</pre>');
+    }
+
+    const campo = tipo === 'pdf' ? 'anexo_pdf' : 'anexo_xml';
+    const extensao = tipo === 'pdf' ? 'pdf' : 'xml';
+
+    const result = await pool.query(`
+      SELECT id, fornecedor, numero_documento, valor, ${campo} AS arquivo
+      FROM lancamentos
+      WHERE ${campo} IS NOT NULL
+        AND TRIM(${campo}) <> ''
+        AND data_despesa >= DATE_TRUNC('month', $1::date)
+        AND data_despesa < DATE_TRUNC('month', $1::date) + INTERVAL '1 month'
+      ORDER BY id DESC
+    `, [`${mes}-01`]);
+
+    if (!result.rows.length) {
+      return res.send(`<pre>Nenhum arquivo ${extensao.toUpperCase()} encontrado para este mês.</pre>`);
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="arquivos-${extensao}-${mes}.zip"`
+    );
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    archive.pipe(res);
+
+    for (const item of result.rows) {
+      const filePath = path.join(__dirname, '../../uploads', item.arquivo);
+
+      if (fs.existsSync(filePath)) {
+        const nomeFornecedor = sanitizeFilePart(item.fornecedor || 'Fornecedor');
+        const nomeNumero = sanitizeFilePart(item.numero_documento || item.id);
+        archive.file(filePath, {
+          name: `${nomeFornecedor}-${nomeNumero}.${extensao}`
+        });
+      }
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    res.send(`<pre>Erro ao baixar arquivos em massa:\n${error.message}</pre>`);
+  }
+});
 
 module.exports = router;
