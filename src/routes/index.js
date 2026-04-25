@@ -33,9 +33,19 @@ const xml2js = require('xml2js');
 const archiver = require('archiver');
 
 // CONFIG UPLOAD
+
+const uploadsDir = path.join(__dirname, '../../uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -44,7 +54,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);

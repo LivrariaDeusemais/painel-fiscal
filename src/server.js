@@ -1,9 +1,11 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const routes = require('./routes');
+
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -18,16 +20,26 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Pasta de uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// 🔧 GARANTIR QUE A PASTA UPLOADS EXISTA (ESSENCIAL NO RENDER)
+const uploadsDir = path.join(__dirname, '../uploads');
 
-// Rotas
-app.use('/', routes);
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// Rota inicial
+// Servir arquivos estáticos
+app.use('/uploads', express.static(uploadsDir));
+
+// Rota inicial inteligente
 app.get('/', (req, res) => {
-  res.redirect('/login');
+  if (!req.session || !req.session.usuario) {
+    return res.redirect('/login');
+  }
+  return res.redirect('/dashboard');
 });
+
+// Rotas do sistema
+app.use('/', routes);
 
 // Start servidor
 app.listen(PORT, () => {
