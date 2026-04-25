@@ -29,6 +29,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Servir arquivos estáticos
 app.use('/uploads', express.static(uploadsDir));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 // Rota inicial inteligente
 app.get('/', (req, res) => {

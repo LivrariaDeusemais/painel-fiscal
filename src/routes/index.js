@@ -1073,59 +1073,202 @@ function renderDashboard(data) {
   `;
 }
 
+
 router.get('/login', (req, res) => {
   res.send(`
-    <html>
-    <head>
-      <title>Login</title>
-      <style>
-        body {
-          font-family: Arial;
-          background: #f3f4f6;
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          height:100vh;
-        }
-        .box {
-          background:white;
-          padding:30px;
-          border-radius:12px;
-          width:300px;
-        }
-        input {
-          width:100%;
-          padding:10px;
-          margin-bottom:10px;
-          border-radius:8px;
-          border:1px solid #ccc;
-        }
-        button {
-          width:100%;
-          padding:10px;
-          border:none;
-          border-radius:8px;
-          background:#2563eb;
-          color:white;
-          font-weight:bold;
-        }
-      </style>
-    </head>
-    <body>
-      <form method="POST" action="/login" class="box">
-        <h2>Login</h2>
-        <input name="email" placeholder="Email" required />
-        <input name="senha" type="password" placeholder="Senha" required />
-        <button>Entrar</button>
-<p style="font-size:12px; color:#64748b; text-align:center; margin-top:14px;">
-  Esqueceu sua senha? Solicite ao administrador do sistema.
-</p>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Painel Contábil Deus é Mais</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f4f7fb, #e8eef7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #0f172a;
+    }
+
+    .login-page {
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+    }
+
+    .logo {
+      max-width: 320px;
+      width: 85%;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 0 0 8px;
+      color: #003f7d;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 28px;
+      font-size: 15px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 30px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      height: 48px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 0 14px;
+      font-size: 16px;
+      margin-bottom: 18px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #0057a8;
+      box-shadow: 0 0 0 3px rgba(0, 87, 168, 0.12);
+    }
+
+    .options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .options label {
+      margin: 0;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    button {
+      width: 100%;
+      height: 50px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #0057a8, #003f7d);
+      color: white;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-page">
+    <img src="/assets/logo-deus-e-mais.png" class="logo" alt="Livraria Cristã Deus é Mais" />
+
+    <h1>Seja bem-vindo ao Painel Contábil Deus é Mais</h1>
+    <p class="subtitle">Acesse sua área administrativa com segurança.</p>
+
+    <div class="card">
+      <form method="POST" action="/login">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" autocomplete="email" required />
+
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" autocomplete="current-password" required />
+
+        <div class="options">
+          <label>
+            <input type="checkbox" id="lembrarLogin" />
+            Salvar login
+          </label>
+
+          <label>
+            <input type="checkbox" id="mostrarSenha" />
+            Mostrar senha
+          </label>
+        </div>
+
+        <button type="submit">Entrar no Painel</button>
       </form>
-    </body>
-    </html>
+    </div>
+
+    <div class="footer">
+      Deus é Mais Comércio e Negócios
+    </div>
+  </div>
+
+  <script>
+    const emailInput = document.getElementById('email');
+    const lembrarLogin = document.getElementById('lembrarLogin');
+    const mostrarSenha = document.getElementById('mostrarSenha');
+    const senhaInput = document.getElementById('senha');
+
+    const emailSalvo = localStorage.getItem('painel_email');
+
+    if (emailSalvo) {
+      emailInput.value = emailSalvo;
+      lembrarLogin.checked = true;
+    }
+
+    lembrarLogin.addEventListener('change', () => {
+      if (!lembrarLogin.checked) {
+        localStorage.removeItem('painel_email');
+      }
+    });
+
+    document.querySelector('form').addEventListener('submit', () => {
+      if (lembrarLogin.checked) {
+        localStorage.setItem('painel_email', emailInput.value);
+      }
+    });
+
+    mostrarSenha.addEventListener('change', () => {
+      senhaInput.type = mostrarSenha.checked ? 'text' : 'password';
+    });
+  </script>
+</body>
+</html>
   `);
 });
-
 
 router.post('/login', async (req, res) => {
   try {
