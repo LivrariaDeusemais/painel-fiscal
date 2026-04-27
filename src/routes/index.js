@@ -13242,7 +13242,7 @@ body {
               </div>
 
               <div class="actions">
-                <button type="submit" class="btn btn-dark">Aplicar mês</button>
+                <button type="submit" class="btn btn-green">Aplicar mês</button>
                 <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
               </div>
             </form>
@@ -13308,7 +13308,7 @@ body {
                 <div class="metric">${totalPdf}</div>
 
                 <div class="actions">
-                  <a class="btn btn-dark" href="/espaco-contador/download/pdf?mes=${mes}">
+                  <a class="btn btn-green" href="/espaco-contador/download/pdf?mes=${mes}">
                     ⬇ Baixar PDF em massa
                   </a>
                 </div>
