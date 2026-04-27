@@ -955,7 +955,8 @@ function renderDashboard(data) {
           font-size: 13px;
         }
 
-        .filter-panel select {
+        .filter-panel select,
+        .filter-panel input[type="date"] {
           width: 310px;
           height: 44px;
           border-radius: 10px;
@@ -1120,20 +1121,23 @@ function renderDashboard(data) {
           font-weight: 600;
         }
 
-        @media (max-width: 1300px) {
-          .page-shell { width: min(100% - 36px, 1400px); }
-          .nav-panel { grid-template-columns: repeat(3, 1fr); }
+        /* Mantém o Dashboard estável em monitores Windows com escala 125%/150%.
+           Antes, abaixo de 1300px o painel quebrava para 1 coluna e ficava gigante. */
+        @media (max-width: 980px) {
+          .page-shell { width: min(100% - 28px, 1200px); }
+          .topbar { padding: 14px 18px; }
+          .nav-panel { grid-template-columns: repeat(3, 1fr); padding: 10px 18px; gap: 12px; }
           .stats-grid { grid-template-columns: repeat(2, 1fr); }
           .charts-grid { grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 720px) {
           .page-shell { width: min(100% - 22px, 680px); margin-top: 16px; }
           .topbar, .profile-area, .filter-panel { flex-direction: column; align-items: flex-start; }
           .profile-copy { text-align: left; }
           .nav-panel, .stats-grid { grid-template-columns: 1fr; padding: 12px; gap: 8px; }
           .brand-title h1 { font-size: 25px; }
-          .filter-panel select { width: 100%; }
+          .filter-panel select, .filter-panel input[type="date"] { width: 100%; }
           .stat-card { min-height: auto; }
         }
       
