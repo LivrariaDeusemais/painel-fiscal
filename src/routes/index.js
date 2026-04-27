@@ -3164,7 +3164,8 @@ tr:hover {
 }
 
 
-/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+/* ===== PADRÃO DEFINITIVO BOTÕES (CINZA + LARANJA ESTRATÉGICO) ===== */
+
 .actions .btn,
 .actions a,
 .actions button,
@@ -3186,32 +3187,39 @@ tr:hover {
   white-space: nowrap !important;
 }
 
-.actions .btn-secondary,
-.actions .btn-success,
-.actions .btn-warning,
-.actions a[href="/dashboard"],
-.actions a[href="/documentos"],
-.actions a[href="/rotina-despesas"],
-.actions a[href="/lancamentos"],
-.actions button.btn-secondary,
-.actions button.btn-warning,
+/* 🔘 BOTÃO PADRÃO (CINZA) */
+.actions .btn,
+.actions a,
+.actions button,
 .filter-buttons a,
-.top-bar .filters a.btn-secondary {
+.top-bar .filters a,
+button,
+.btn {
   background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
   color: #222b3b !important;
   border: 1px solid #e0e6ef !important;
   box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
 }
 
+/* 🟠 BOTÕES PRINCIPAIS (AÇÃO) */
 .actions .btn-primary,
+button.btn-primary,
 .filter-buttons button[type="submit"],
-.top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+.top-bar .filters button[type="submit"] {
+  background: linear-gradient(135deg, #ff6b00, #f05a00) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 122, 0, 0.88) !important;
   box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
 }
 
+/* REMOVE herança de laranja global */
+.btn:not(.btn-primary):not(.btn-danger):not(.btn-icon-danger) {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+}
+
+/* FORM inline (não quebrar layout) */
 .actions form {
   display: inline-flex !important;
   align-items: center !important;
@@ -3222,7 +3230,8 @@ tr:hover {
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
-/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
+/* ===== FIM PADRÃO ===== */
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
