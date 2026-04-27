@@ -255,6 +255,171 @@ function formatDateInput(dateValue) {
   return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
 }
 
+
+function escapeHtmlSafe(text = '') {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function stripAccentsUpper(text = '') {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
+function cleanPdfLine(text = '') {
+  return String(text || '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s:;\-–—]+|[\s:;\-–—]+$/g, '')
+    .trim();
+}
+
+function onlyDigits(text = '') {
+  return String(text || '').replace(/\D/g, '');
+}
+
+function isMeuCnpj(cnpj = '') {
+  return onlyDigits(cnpj) === '18862388000103';
+}
+
+function normalizeCnpjDisplay(cnpj = '') {
+  const digits = onlyDigits(cnpj);
+  if (digits.length !== 14) return cnpj || '';
+  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+function normalizeValorPdfToInput(valor = '') {
+  const match = String(valor || '').match(/(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/);
+  return match ? match[1] : '';
+}
+
+function normalizeDataPdfToInput(data = '') {
+  const text = String(data || '').trim();
+  const match = text.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!match) return '';
+  return match[3] + '-' + match[2] + '-' + match[1];
+}
+
+function pickFornecedorFromPdfText(text = '') {
+  const lines = String(text || '').split(/\r?\n/).map(cleanPdfLine).filter(Boolean);
+  const upperLines = lines.map(stripAccentsUpper);
+  const cnpjRegex = /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g;
+  const allCnpjs = [];
+  for (const m of String(text || '').matchAll(cnpjRegex)) {
+    if (!isMeuCnpj(m[0])) allCnpjs.push(m[0]);
+  }
+  const cnpj = allCnpjs[0] || '';
+
+  const keywords = ['PRESTADOR DE SERVICOS', 'PRESTADOR DO SERVICO', 'PRESTADOR DO SERVIÇO', 'EMITENTE DA NFS-E', 'EMITENTE DA NFSE'];
+  let start = upperLines.findIndex(line => keywords.some(k => line.includes(k)));
+  let end = upperLines.findIndex((line, idx) => idx > start && (line.includes('TOMADOR') || line.includes('DESTINATARIO') || line.includes('ADQUIRENTE')));
+  if (start < 0) start = 0;
+  if (end < 0) end = Math.min(lines.length, start + 35);
+  const bloco = lines.slice(start, end);
+  const blocoUpper = bloco.map(stripAccentsUpper);
+
+  let fornecedor = '';
+
+  for (let i = 0; i < blocoUpper.length; i++) {
+    if (blocoUpper[i].includes('NOME / NOME EMPRESARIAL') || blocoUpper[i].includes('NOME/RAZAO SOCIAL') || blocoUpper[i].includes('NOME/RAZAO')) {
+      for (let j = i + 1; j < Math.min(i + 6, bloco.length); j++) {
+        const cand = bloco[j];
+        const up = blocoUpper[j];
+        if (cand && !up.includes('ENDERECO') && !up.includes('CPF/CNPJ') && !up.includes('INSCRICAO') && !up.includes('E-MAIL') && !up.includes('MUNICIPIO') && !/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/.test(cand) && !/^\d/.test(cand)) {
+          fornecedor = cand;
+          break;
+        }
+      }
+    }
+    if (fornecedor) break;
+  }
+
+  if (!fornecedor) {
+    const empresaRegex = /\b(LTDA\.?|S\.A\.?|SA\.?|EIRELI|ME|EPP)\b/i;
+    for (const line of bloco) {
+      if (empresaRegex.test(line) && !stripAccentsUpper(line).includes('DEUS E MAIS')) {
+        fornecedor = line;
+        break;
+      }
+    }
+  }
+
+  return { fornecedor: cleanPdfLine(fornecedor), cnpj_cpf: normalizeCnpjDisplay(cnpj) };
+}
+
+function extractPdfInvoiceFields(text = '') {
+  const normalized = String(text || '').replace(/\r/g, '');
+  const flat = normalized.replace(/\s+/g, ' ');
+  const upper = stripAccentsUpper(flat);
+
+  if (!normalized || normalized.trim().length < 80) {
+    return { reconhecido: false, mensagem: 'PDF não reconhecido. Preencha manualmente.' };
+  }
+
+  const { fornecedor, cnpj_cpf } = pickFornecedorFromPdfText(normalized);
+
+  const numeroPatterns = [
+    /Número\s+da\s+Nota\s*\n\s*(\d{3,})/i,
+    /Número\s+da\s+NFS-?e\s*\n\s*(\d{3,})/i,
+    /Numero\s+da\s+Nota\s*\n\s*(\d{3,})/i,
+    /Número\s+da\s+Nota[\s\S]{0,160}?\n\s*(\d{6,})\s*\n/i,
+    /Número\s+da\s+DPS\s*\n\s*(\d{3,})/i,
+    /N[ºo\.]*\s*(?:da\s*)?(?:NF|NFS-?e|Nota)\D{0,20}(\d{3,})/i,
+    /\bNF\s*(\d{4,})\b/i
+  ];
+  let numero_documento = '';
+  for (const re of numeroPatterns) {
+    const m = normalized.match(re) || flat.match(re);
+    if (m && m[1]) { numero_documento = m[1].trim(); break; }
+  }
+
+  const valorPatterns = [
+    /VALOR\s+TOTAL\s+DO\s+SERVI[ÇC]O\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+    /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+    /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$[\s\S]{0,100}?([\d\.]+,\d{2})/i,
+    /VALOR\s+TOTAL\s+COBRADO\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+    /Valor\s+L[íi]quido\s+da\s+NFS-?e\s*R\$\s*([\d\.]+,\d{2})/i,
+    /Valor\s+do\s+Servi[çc]o\s*R\$\s*([\d\.]+,\d{2})/i
+  ];
+  let valor = '';
+  for (const re of valorPatterns) {
+    const m = normalized.match(re) || flat.match(re);
+    if (m && m[1]) { valor = normalizeValorPdfToInput(m[1]); break; }
+  }
+
+  const dataPatterns = [
+    /Data\s+e\s+Hora\s+de\s+Emiss[ãa]o\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /Data\s+e\s+Hora\s+da\s+emiss[ãa]o\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /Compet[êe]ncia\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /emitido\s+em\s+(\d{2}\/\d{2}\/\d{4})/i
+  ];
+  let data_despesa = '';
+  for (const re of dataPatterns) {
+    const m = normalized.match(re) || flat.match(re);
+    if (m && m[1]) { data_despesa = normalizeDataPdfToInput(m[1]); break; }
+  }
+
+  const isServico = upper.includes('NOTA FISCAL ELETRONICA DE SERVICOS') || upper.includes('NFS-E') || upper.includes('DANFSE');
+  const tipo_documento = isServico ? 'NFEs Serviço' : 'NFe Produto';
+  const reconhecido = Boolean((fornecedor || cnpj_cpf) && (numero_documento || valor));
+
+  return {
+    reconhecido,
+    mensagem: reconhecido ? 'PDF reconhecido. Confira os campos antes de salvar.' : 'PDF não reconhecido. Preencha manualmente.',
+    tipo_documento,
+    numero_documento,
+    data_despesa,
+    fornecedor,
+    cnpj_cpf,
+    valor
+  };
+}
+
 async function parseXmlDocumento(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf8');
 
@@ -5687,9 +5852,63 @@ router.post('/documentos/gerar-lancamento/:id', async (req, res) => {
 // LANÇAMENTOS
 // =============================
     
+
+router.post('/novo/preencher-pdf', upload.single('pdf_preenchimento'), async (req, res) => {
+  const rotinaId = req.body?.rotina_id || req.query?.rotina_id || '';
+
+  function voltarComMensagem(msg) {
+    const params = new URLSearchParams();
+    if (rotinaId) params.set('rotina_id', rotinaId);
+    params.set('pdf_msg', msg || 'PDF não reconhecido. Preencha manualmente.');
+    return res.redirect('/novo?' + params.toString());
+  }
+
+  try {
+    if (!req.file) return voltarComMensagem('Selecione um PDF para preencher automaticamente.');
+
+    const filePath = getUploadFilePath(req.file.filename);
+    let pdfParse;
+    try {
+      pdfParse = require('pdf-parse');
+    } catch (depError) {
+      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return voltarComMensagem('Biblioteca pdf-parse não instalada. Rode npm install pdf-parse e tente novamente.');
+    }
+
+    const buffer = fs.readFileSync(filePath);
+    const parsed = await pdfParse(buffer);
+    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    const extraido = extractPdfInvoiceFields(parsed.text || '');
+    const params = new URLSearchParams();
+    if (rotinaId) params.set('rotina_id', rotinaId);
+    params.set('pdf_msg', extraido.mensagem);
+
+    if (!extraido.reconhecido) {
+      return res.redirect('/novo?' + params.toString());
+    }
+
+    ['tipo_documento', 'numero_documento', 'data_despesa', 'fornecedor', 'cnpj_cpf', 'valor'].forEach(campo => {
+      if (extraido[campo]) params.set(campo, extraido[campo]);
+    });
+
+    return res.redirect('/novo?' + params.toString());
+  } catch (error) {
+    return voltarComMensagem('PDF não reconhecido. Preencha manualmente.');
+  }
+});
+
 router.get('/novo', async (req, res) => {
   try {
-    const { rotina_id = '' } = req.query;
+    const { rotina_id = '', pdf_msg = '' } = req.query;
+    const pdfPreenchimento = {
+      tipo_documento: req.query.tipo_documento || '',
+      numero_documento: req.query.numero_documento || '',
+      data_despesa: req.query.data_despesa || '',
+      fornecedor: req.query.fornecedor || '',
+      cnpj_cpf: req.query.cnpj_cpf || '',
+      valor: req.query.valor || ''
+    };
 
     const categoriasResult = await pool.query(`
       SELECT
@@ -5739,8 +5958,8 @@ router.get('/novo', async (req, res) => {
       optionsCategorias += `<option value="${cat.id}" ${selected}>${nomeExibicao}</option>`;
     });
 
-    const fornecedorPadrao = rotinaPadrao?.fornecedor || '';
-    const cnpjCpfPadrao = rotinaPadrao?.cnpj_cpf || '';
+    const fornecedorPadrao = pdfPreenchimento.fornecedor || rotinaPadrao?.fornecedor || '';
+    const cnpjCpfPadrao = pdfPreenchimento.cnpj_cpf || rotinaPadrao?.cnpj_cpf || '';
     const tipoPagamentoPadrao = rotinaPadrao?.tipo_pagamento_padrao || '';
 
     const origemInfo = rotinaPadrao
@@ -6240,6 +6459,20 @@ body {
 
             ${origemInfo}
 
+            ${pdf_msg ? `<div style="margin-bottom:16px; padding:12px 14px; border-radius:10px; background:${pdf_msg.includes('não reconhecido') || pdf_msg.includes('não instalada') ? '#fff7ed' : '#ecfdf5'}; border:1px solid ${pdf_msg.includes('não reconhecido') || pdf_msg.includes('não instalada') ? '#fdba74' : '#86efac'}; color:${pdf_msg.includes('não reconhecido') || pdf_msg.includes('não instalada') ? '#9a3412' : '#166534'}; font-size:13px; font-weight:700;">${escapeHtmlSafe(pdf_msg)}</div>` : ''}
+
+            <form method="POST" action="/novo/preencher-pdf" enctype="multipart/form-data" class="pdf-fill-form" style="margin-bottom:16px; padding:14px; border-radius:14px; border:1px solid #dce3ec; background:rgba(255,255,255,.72);">
+              <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || rotina_id || ''}">
+              <div style="display:flex; align-items:end; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:260px;">
+                  <label for="pdf_preenchimento">Preencher por PDF <span style="font-size:11px; color:#64748b; font-weight:600;">(somente PDF copiável)</span></label>
+                  <input id="pdf_preenchimento" type="file" name="pdf_preenchimento" accept=".pdf,application/pdf" required />
+                </div>
+                <button type="submit" class="btn btn-green" style="height:44px;">Ler PDF e preencher</button>
+              </div>
+              <div class="field-hint">Funciona melhor para NFe Produto e NFEs Serviço. Se o PDF for imagem/foto ou não reconhecido, preencha manualmente.</div>
+            </form>
+
             <form method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
 
@@ -6247,23 +6480,23 @@ body {
                 <div>
                   <label for="tipo_documento">Tipo do documento</label>
                   <select id="tipo_documento" name="tipo_documento" required>
-                    ${renderTipoDocumentoOptions()}
+                    ${renderTipoDocumentoOptions(pdfPreenchimento.tipo_documento)}
                   </select>
                 </div>
 
                 <div>
                   <label for="numero_documento">Número do documento</label>
-                  <input id="numero_documento" name="numero_documento" placeholder="Ex.: NF12341" />
+                  <input id="numero_documento" name="numero_documento" placeholder="Ex.: NF12341" value="${escapeHtmlSafe(pdfPreenchimento.numero_documento)}" />
                 </div>
 
                 <div>
                   <label for="data_despesa">Data</label>
-                  <input id="data_despesa" type="date" name="data_despesa" required />
+                  <input id="data_despesa" type="date" name="data_despesa" value="${escapeHtmlSafe(pdfPreenchimento.data_despesa)}" required />
                 </div>
 
                 <div>
                   <label for="valor">Valor</label>
-                  <input id="valor" name="valor" type="text" inputmode="decimal" placeholder="R$ 0,00" required />
+                  <input id="valor" name="valor" type="text" inputmode="decimal" placeholder="R$ 0,00" value="${escapeHtmlSafe(pdfPreenchimento.valor)}" required />
                 </div>
 
                 <div class="full">
@@ -6272,14 +6505,14 @@ body {
                     id="fornecedor"
                     name="fornecedor"
                     placeholder="Nome do fornecedor"
-                    value="${fornecedorPadrao}"
+                    value="${escapeHtmlSafe(fornecedorPadrao)}"
                     required
                   />
                 </div>
 
                 <div>
                   <label for="cnpj_cpf">CNPJ/CPF</label>
-                  <input id="cnpj_cpf" name="cnpj_cpf" placeholder="Informe o CNPJ ou CPF" value="${cnpjCpfPadrao}" />
+                  <input id="cnpj_cpf" name="cnpj_cpf" placeholder="Informe o CNPJ ou CPF" value="${escapeHtmlSafe(cnpjCpfPadrao)}" />
                 </div>
 
                 <div>
