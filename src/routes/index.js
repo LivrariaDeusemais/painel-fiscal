@@ -81,6 +81,21 @@ function formatMoneyBR(valor) {
   return `R$ ${numero.toFixed(2).replace('.', ',')}`;
 }
 
+function parseMoneyBR(valor) {
+  if (valor === undefined || valor === null) return null;
+  let texto = String(valor).trim();
+  if (!texto) return null;
+  texto = texto.replace(/R\$/gi, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+  const numero = Number(texto);
+  return Number.isFinite(numero) ? numero.toFixed(2) : null;
+}
+
+function formatValorInputBR(valor) {
+  if (valor === undefined || valor === null || valor === '') return '';
+  const numero = Number(valor || 0);
+  return numero.toFixed(2).replace('.', ',');
+}
+
 function formatMoneyFile(valor) {
   const numero = Number(valor || 0);
   return `RS${numero.toFixed(2).replace('.', ',')}`;
@@ -5515,7 +5530,7 @@ body {
 
                 <div>
                   <label for="valor">Valor</label>
-                  <input id="valor" name="valor" type="number" step="0.01" value="${doc.valor || ''}" required />
+                  <input id="valor" name="valor" type="text" inputmode="decimal" value="${formatValorInputBR(doc.valor)}" placeholder="R$ 0,00" required />
                 </div>
 
                 <div class="full">
@@ -5692,6 +5707,7 @@ router.get('/novo', async (req, res) => {
     });
 
     const fornecedorPadrao = rotinaPadrao?.fornecedor || '';
+    const cnpjCpfPadrao = rotinaPadrao?.cnpj_cpf || '';
     const tipoPagamentoPadrao = rotinaPadrao?.tipo_pagamento_padrao || '';
 
     const origemInfo = rotinaPadrao
@@ -6212,7 +6228,7 @@ body {
 
                 <div>
                   <label for="valor">Valor</label>
-                  <input id="valor" name="valor" type="number" step="0.01" placeholder="0.00" required />
+                  <input id="valor" name="valor" type="text" inputmode="decimal" placeholder="R$ 0,00" required />
                 </div>
 
                 <div class="full">
@@ -6228,7 +6244,7 @@ body {
 
                 <div>
                   <label for="cnpj_cpf">CNPJ/CPF</label>
-                  <input id="cnpj_cpf" name="cnpj_cpf" placeholder="Informe o CNPJ ou CPF" />
+                  <input id="cnpj_cpf" name="cnpj_cpf" placeholder="Informe o CNPJ ou CPF" value="${cnpjCpfPadrao}" />
                 </div>
 
                 <div>
@@ -6273,7 +6289,7 @@ body {
 
               <div class="actions">
                 <button type="submit">Salvar</button>
-                <a class="btn-secondary" href="/dashboard">Voltar ao dashboard</a>
+                <a class="btn-secondary" href="/rotina-despesas">Voltar para Levantamento de Despesas Mensais</a>
               </div>
             </form>
           </div>
@@ -6320,7 +6336,7 @@ router.post(
           cnpj_cpf || null,
           codigo_pagamento || null,
           categoria_id,
-          valor,
+          parseMoneyBR(valor),
           tipo_pagamento,
           anexoPdf,
           anexoXml
@@ -7335,7 +7351,7 @@ body {
 
                 <div>
                   <label for="valor">Valor</label>
-                  <input id="valor" name="valor" type="number" step="0.01" value="${lancamento.valor}" required />
+                  <input id="valor" name="valor" type="text" inputmode="decimal" value="${formatValorInputBR(lancamento.valor)}" placeholder="R$ 0,00" required />
                 </div>
 
                 <div class="full">
@@ -7443,7 +7459,7 @@ router.post('/editar/:id', upload.fields([{ name: 'anexo_pdf', maxCount: 1 }, { 
            anexo_pdf = $10,
            anexo_xml = $11
        WHERE id = $12`,
-      [tipo_documento, numero_documento || null, data_despesa, fornecedor, cnpj_cpf || null, codigo_pagamento || null, valor, tipo_pagamento, categoria_id, novoPdf, novoXml, id]
+      [tipo_documento, numero_documento || null, data_despesa, fornecedor, cnpj_cpf || null, codigo_pagamento || null, parseMoneyBR(valor), tipo_pagamento, categoria_id, novoPdf, novoXml, id]
     );
 
     res.redirect('/lancamentos');
@@ -10306,6 +10322,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       linhas += `
         <tr>
           <td>${r.fornecedor || ''}</td>
+          <td>${r.cnpj_cpf || ''}</td>
           <td>${r.fato_gerador || ''}</td>
           <td>${ondeEncontrarHtml}</td>
           <td>${r.tipo_pagamento_padrao || ''}</td>
@@ -11019,6 +11036,7 @@ body {
             <thead>
               <tr>
                 <th>Fornecedor</th>
+                <th>CNPJ/CPF</th>
                 <th>Fato Gerador</th>
                 <th>Onde encontrar</th>
                 <th>Pagamento</th>
@@ -11594,6 +11612,11 @@ body {
               </div>
 
               <div>
+                <label for="cnpj_cpf">CNPJ/CPF</label>
+                <input id="cnpj_cpf" name="cnpj_cpf" placeholder="Informe o CNPJ ou CPF" />
+              </div>
+
+              <div>
                 <label for="tipo_pagamento_padrao">Tipo de pagamento padrão</label>
                 <select id="tipo_pagamento_padrao" name="tipo_pagamento_padrao">
                   <option value="">Selecione</option>
@@ -11688,6 +11711,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
   try {
     const {
       fornecedor,
+      cnpj_cpf,
       onde_encontrar_comprovante,
       fato_gerador,
       tipo_pagamento_padrao,
@@ -11703,6 +11727,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
     await pool.query(`
       INSERT INTO rotina_despesas (
         fornecedor,
+        cnpj_cpf,
         onde_encontrar_comprovante,
         fato_gerador,
         tipo_pagamento_padrao,
@@ -11713,9 +11738,10 @@ router.post('/rotina-despesas/novo', async (req, res) => {
         ativo,
         ordem,
         observacoes
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     `, [
       fornecedor,
+      cnpj_cpf || null,
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
@@ -12252,6 +12278,11 @@ body {
               </div>
 
               <div>
+                <label for="cnpj_cpf">CNPJ/CPF</label>
+                <input id="cnpj_cpf" name="cnpj_cpf" value="${item.cnpj_cpf || ''}" placeholder="Informe o CNPJ ou CPF" />
+              </div>
+
+              <div>
                 <label for="tipo_pagamento_padrao">Tipo de pagamento padrão</label>
                 <select id="tipo_pagamento_padrao" name="tipo_pagamento_padrao">
                   <option value="">Selecione</option>
@@ -12347,6 +12378,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
     const { id } = req.params;
     const {
       fornecedor,
+      cnpj_cpf,
       onde_encontrar_comprovante,
       fato_gerador,
       tipo_pagamento_padrao,
@@ -12376,6 +12408,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       WHERE id = $12
     `, [
       fornecedor,
+      cnpj_cpf || null,
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
