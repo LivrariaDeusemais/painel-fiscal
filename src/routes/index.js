@@ -6290,8 +6290,8 @@ body {
               <p>Abra o PDF da nota, selecione tudo, copie e cole aqui. Depois clique em preencher. Se não reconhecer, preencha manualmente.</p>
               <textarea id="texto_nf_colado" placeholder="Cole aqui o texto copiado da NF..."></textarea>
               <div class="nf-paste-actions">
-                <button type="button" onclick="preencherPorTextoNF()">Preencher automaticamente</button>
-                <button type="button" class="btn-secondary" onclick="limparTextoNF()">Limpar texto</button>
+                <button type="button" id="btn_preencher_nf">Preencher automaticamente</button>
+                <button type="button" id="btn_limpar_nf" class="btn-secondary">Limpar texto</button>
                 <span id="nf_paste_msg" class="nf-paste-msg"></span>
               </div>
             </div>
@@ -6555,11 +6555,34 @@ body {
           }
 
           function limparTextoNF() {
-            document.getElementById('texto_nf_colado').value = '';
+            var area = document.getElementById('texto_nf_colado');
+            if (area) area.value = '';
             var msg = document.getElementById('nf_paste_msg');
-            msg.className = 'nf-paste-msg';
-            msg.textContent = '';
+            if (msg) {
+              msg.className = 'nf-paste-msg';
+              msg.textContent = '';
+            }
+            return false;
           }
+
+          document.addEventListener('DOMContentLoaded', function () {
+            var btnPreencher = document.getElementById('btn_preencher_nf');
+            var btnLimpar = document.getElementById('btn_limpar_nf');
+            if (btnPreencher) {
+              btnPreencher.addEventListener('click', function (e) {
+                e.preventDefault();
+                preencherPorTextoNF();
+                return false;
+              });
+            }
+            if (btnLimpar) {
+              btnLimpar.addEventListener('click', function (e) {
+                e.preventDefault();
+                limparTextoNF();
+                return false;
+              });
+            }
+          });
         </script>
 </body>
       </html>
