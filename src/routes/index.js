@@ -653,8 +653,8 @@ function renderDashboard(data) {
         }
 
         .page-shell {
-          width: min(1840px, calc(100% - 88px));
-          margin: 34px auto 22px;
+          width: min(1680px, calc(100% - 64px));
+          margin: 18px auto 12px;
         }
 
         .topbar,
@@ -664,37 +664,37 @@ function renderDashboard(data) {
         .chart-card {
           background: rgba(255, 255, 255, 0.82);
           border: 1px solid rgba(255, 255, 255, 0.72);
-          border-radius: 22px;
+          border-radius: 18px;
           box-shadow: var(--shadow);
           backdrop-filter: blur(14px);
         }
 
         .topbar {
-          min-height: 118px;
+          min-height: 78px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
-          padding: 26px 34px;
-          margin-bottom: 22px;
+          gap: 18px;
+          padding: 16px 26px;
+          margin-bottom: 14px;
         }
 
         .brand-left {
           display: flex;
           align-items: center;
-          gap: 22px;
+          gap: 14px;
           min-width: 0;
         }
 
         .app-mark {
-          width: 58px;
-          height: 58px;
+          width: 44px;
+          height: 44px;
           border-radius: 10px;
           background: linear-gradient(180deg, #eef4ff, #ffffff);
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 5px;
-          padding: 10px 12px 8px;
+          gap: 4px;
+          padding: 8px 9px 6px;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
         }
 
@@ -704,13 +704,13 @@ function renderDashboard(data) {
           border-radius: 2px 2px 0 0;
         }
 
-        .app-mark span:nth-child(1) { height: 34px; background: #1db954; }
-        .app-mark span:nth-child(2) { height: 45px; background: #ff7a00; }
-        .app-mark span:nth-child(3) { height: 26px; background: #2f80ed; }
+        .app-mark span:nth-child(1) { height: 24px; background: #1db954; }
+        .app-mark span:nth-child(2) { height: 32px; background: #ff7a00; }
+        .app-mark span:nth-child(3) { height: 19px; background: #2f80ed; }
 
         .brand-title h1 {
-          margin: 0 0 8px;
-          font-size: clamp(26px, 2vw, 36px);
+          margin: 0 0 5px;
+          font-size: clamp(22px, 1.7vw, 30px);
           line-height: 1;
           letter-spacing: -0.7px;
           color: #101828;
@@ -719,7 +719,7 @@ function renderDashboard(data) {
         .brand-title p {
           margin: 0;
           color: #52627a;
-          font-size: 15px;
+          font-size: 10px;
           font-weight: 600;
         }
 
@@ -727,7 +727,7 @@ function renderDashboard(data) {
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          gap: 22px;
+          gap: 14px;
           flex-shrink: 0;
         }
 
@@ -735,19 +735,19 @@ function renderDashboard(data) {
         .profile-copy strong {
           display: block;
           color: var(--orange);
-          font-size: 17px;
-          margin-bottom: 8px;
+          font-size: 14px;
+          margin-bottom: 4px;
         }
         .profile-copy span {
           color: #59677d;
-          font-size: 13px;
+          font-size: 10px;
           font-weight: 600;
         }
 
         .avatar-wrap {
           position: relative;
-          width: 76px;
-          height: 76px;
+          width: 56px;
+          height: 56px;
           border-radius: 999px;
           display: grid;
           place-items: center;
@@ -757,8 +757,8 @@ function renderDashboard(data) {
         }
 
         .avatar-icon {
-          width: 42px;
-          height: 42px;
+          width: 31px;
+          height: 31px;
           border-radius: 50%;
           background:
             radial-gradient(circle at 50% 28%, #c6ccd6 0 21%, transparent 22%),
@@ -768,10 +768,10 @@ function renderDashboard(data) {
 
         .online-dot {
           position: absolute;
-          right: 2px;
-          bottom: 12px;
-          width: 14px;
-          height: 14px;
+          right: 0;
+          bottom: 8px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
           background: #23c33a;
           border: 3px solid white;
@@ -782,8 +782,8 @@ function renderDashboard(data) {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          min-width: 112px;
-          height: 64px;
+          min-width: 96px;
+          height: 50px;
           border-radius: 12px;
           text-decoration: none;
           color: #222b3b;
@@ -794,25 +794,25 @@ function renderDashboard(data) {
         }
 
         .nav-panel {
-          min-height: 82px;
-          padding: 10px 42px;
+          min-height: 64px;
+          padding: 8px 36px;
           display: grid;
           grid-template-columns: 1.35fr repeat(5, 1fr);
-          gap: 28px;
+          gap: 22px;
           align-items: center;
-          margin-bottom: 26px;
+          margin-bottom: 18px;
         }
 
         .nav-btn {
-          height: 64px;
-          border-radius: 14px;
+          height: 52px;
+          border-radius: 12px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 14px;
+          gap: 10px;
           text-decoration: none;
           color: #20293a;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 900;
           background: rgba(239, 242, 247, 0.72);
           border: 1px solid rgba(226, 232, 240, 0.72);
@@ -837,8 +837,8 @@ function renderDashboard(data) {
         .chart-soft-icon,
         .filter-icon,
         .logout-icon {
-          width: 25px;
-          height: 25px;
+          width: 21px;
+          height: 21px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -854,21 +854,21 @@ function renderDashboard(data) {
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
-          margin-bottom: 22px;
+          gap: 18px;
+          margin-bottom: 16px;
         }
 
         .stat-card {
-          min-height: 158px;
+          min-height: 112px;
           display: flex;
           align-items: center;
-          gap: 24px;
-          padding: 28px 28px;
+          gap: 18px;
+          padding: 18px 22px;
         }
 
         .stat-icon-box {
-          width: 82px;
-          height: 82px;
+          width: 58px;
+          height: 58px;
           border-radius: 14px;
           display: grid;
           place-items: center;
@@ -881,55 +881,55 @@ function renderDashboard(data) {
         .stat-content small {
           display: block;
           color: #637083;
-          font-size: 14px;
+          font-size: 10px;
           font-weight: 700;
-          margin-bottom: 14px;
+          margin-bottom: 8px;
         }
         .stat-content strong {
           display: block;
           color: #111827;
-          font-size: 30px;
-          letter-spacing: -0.5px;
-          margin-bottom: 10px;
+          font-size: 25px;
+          letter-spacing: -0.4px;
+          margin-bottom: 6px;
         }
         .stat-content span {
           color: #657386;
-          font-size: 13px;
+          font-size: 10px;
           font-weight: 600;
         }
 
         .filter-panel {
-          min-height: 92px;
-          padding: 20px 30px;
+          min-height: 70px;
+          padding: 12px 24px;
           display: flex;
           align-items: center;
-          gap: 18px;
-          margin-bottom: 22px;
+          gap: 14px;
+          margin-bottom: 16px;
         }
 
         .filter-panel label {
           font-weight: 900;
           color: #1f2937;
           margin-right: 8px;
-          font-size: 15px;
+          font-size: 13px;
         }
 
         .filter-panel select {
-          width: 350px;
-          height: 52px;
+          width: 310px;
+          height: 44px;
           border-radius: 10px;
           border: 1px solid #dce3ec;
           padding: 0 18px;
           color: #334155;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 13px;
           background: #fff;
           outline: none;
         }
 
         .btn-filter-apply {
-          height: 54px;
-          padding: 0 25px;
+          height: 44px;
+          padding: 0 20px;
           border: none;
           border-radius: 11px;
           cursor: pointer;
@@ -943,8 +943,8 @@ function renderDashboard(data) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          height: 54px;
-          padding: 0 18px;
+          height: 44px;
+          padding: 0 16px;
           border-radius: 11px;
           text-decoration: none;
           color: #667085;
@@ -955,12 +955,12 @@ function renderDashboard(data) {
         .charts-grid {
           display: grid;
           grid-template-columns: 1.05fr .96fr 1.05fr;
-          gap: 24px;
+          gap: 18px;
         }
 
         .chart-card {
-          min-height: 420px;
-          padding: 28px 30px 24px;
+          min-height: 310px;
+          padding: 18px 22px 16px;
           position: relative;
           overflow: hidden;
         }
@@ -976,8 +976,8 @@ function renderDashboard(data) {
         .chart-heading {
           position: relative;
           z-index: 1;
-          padding-left: 18px;
-          margin-bottom: 28px;
+          padding-left: 14px;
+          margin-bottom: 14px;
         }
         .chart-heading::before {
           content: '';
@@ -985,20 +985,20 @@ function renderDashboard(data) {
           left: 0;
           top: 0;
           width: 3px;
-          height: 25px;
+          height: 20px;
           border-radius: 999px;
           background: #94a3b8;
         }
         .chart-heading h2 {
-          margin: 0 0 10px;
-          font-size: 22px;
+          margin: 0 0 6px;
+          font-size: 18px;
           color: #171f31;
           letter-spacing: -0.3px;
         }
         .chart-heading p {
           margin: 0;
           color: #59677d;
-          font-size: 14px;
+          font-size: 10px;
           font-weight: 600;
         }
 
@@ -1007,25 +1007,25 @@ function renderDashboard(data) {
           z-index: 1;
           display: block;
           width: 100%;
-          height: 275px;
+          height: 210px;
           overflow: visible;
         }
         .grid-line { stroke: #dfe5ee; stroke-width: 1; stroke-dasharray: 4 4; }
         .axis-line { stroke: #cfd7e3; stroke-width: 1.2; }
-        .trend-line { fill: none; stroke: #ff6b00; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+        .trend-line { fill: none; stroke: #ff6b00; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .line-dot { fill: #ff6b00; stroke: #ff6b00; stroke-width: 2; }
-        .axis-label, .month-label, .point-value { fill: #52627a; font-weight: 800; font-size: 12px; }
-        .point-value { fill: #111827; font-size: 12px; }
+        .axis-label, .month-label, .point-value { fill: #52627a; font-weight: 800; font-size: 10px; }
+        .point-value { fill: #111827; font-size: 10px; }
 
         .hbar-list {
           position: relative;
           z-index: 1;
           display: flex;
           flex-direction: column;
-          gap: 26px;
-          padding: 12px 10px 0 4px;
+          gap: 16px;
+          padding: 6px 8px 0 4px;
         }
-        .hbar-row { display: flex; flex-direction: column; gap: 12px; }
+        .hbar-row { display: flex; flex-direction: column; gap: 8px; }
         .hbar-header {
           display: flex;
           align-items: center;
@@ -1033,7 +1033,7 @@ function renderDashboard(data) {
           gap: 14px;
           color: #52627a;
           font-weight: 800;
-          font-size: 14px;
+          font-size: 12px;
         }
         .hbar-header strong { color: #111827; white-space: nowrap; }
         .hbar-track {
@@ -1053,16 +1053,16 @@ function renderDashboard(data) {
         .chart-soft-icon {
           position: absolute;
           left: 50%;
-          bottom: 28px;
+          bottom: 16px;
           transform: translateX(-50%);
-          width: 70px;
-          height: 70px;
+          width: 52px;
+          height: 52px;
           border-radius: 14px;
           color: #667085;
           background: linear-gradient(180deg, #e7ebf1, #d8dde6);
           opacity: .95;
         }
-        .chart-soft-icon svg { width: 34px; height: 34px; }
+        .chart-soft-icon svg { width: 34px; height: 24px; }
 
         .empty-state {
           color: #94a3b8;
@@ -1072,10 +1072,10 @@ function renderDashboard(data) {
         }
 
         .footer-note {
-          margin-top: 28px;
+          margin-top: 14px;
           text-align: center;
           color: #69778d;
-          font-size: 13px;
+          font-size: 10px;
           font-weight: 600;
         }
 
@@ -1090,7 +1090,7 @@ function renderDashboard(data) {
           .page-shell { width: min(100% - 22px, 680px); margin-top: 16px; }
           .topbar, .profile-area, .filter-panel { flex-direction: column; align-items: flex-start; }
           .profile-copy { text-align: left; }
-          .nav-panel, .stats-grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+          .nav-panel, .stats-grid { grid-template-columns: 1fr; padding: 12px; gap: 8px; }
           .brand-title h1 { font-size: 25px; }
           .filter-panel select { width: 100%; }
           .stat-card { min-height: auto; }
@@ -1231,13 +1231,13 @@ router.get('/login', (req, res) => {
 
     .subtitle {
       color: #64748b;
-      margin-bottom: 28px;
+      margin-bottom: 16px;
       font-size: 15px;
     }
 
     .card {
       background: #fff;
-      border-radius: 22px;
+      border-radius: 18px;
       padding: 30px;
       box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
       text-align: left;
@@ -1272,7 +1272,7 @@ router.get('/login', (req, res) => {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 8px;
       margin-bottom: 22px;
       font-size: 14px;
       color: #475569;
@@ -1553,7 +1553,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
 
           .actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
 
@@ -1596,14 +1596,14 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
           .card {
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 22px;
+            border-radius: 18px;
             padding: 22px;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
           }
 
           .card h2 {
             margin: 0 0 16px 0;
-            font-size: 22px;
+            font-size: 18px;
             color: #1e293b;
           }
 
@@ -1627,7 +1627,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
           }
 
           .hint {
-            font-size: 12px;
+            font-size: 10px;
             color: #64748b;
             margin-top: -8px;
             margin-bottom: 14px;
@@ -1660,7 +1660,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
             display: inline-block;
             padding: 6px 11px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
           }
 
@@ -1722,7 +1722,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
             border-radius: 999px;
             background: #f3f4f6;
             color: #6b7280;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
           }
 
@@ -1891,7 +1891,7 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
 
           .card {
             background: white;
-            border-radius: 22px;
+            border-radius: 18px;
             padding: 28px;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
             border: 1px solid #e5e7eb;
@@ -1920,7 +1920,7 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
 
           .actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
 
@@ -2045,7 +2045,7 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
 
           .card {
             background: white;
-            border-radius: 22px;
+            border-radius: 18px;
             padding: 28px;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
             border: 1px solid #e5e7eb;
@@ -2083,7 +2083,7 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
 
           .actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
 
@@ -2377,7 +2377,7 @@ router.get('/documentos', protegerRota, async (req, res) => {
           .full { grid-column: 1 / -1; }
           label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; }
           input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; }
-          .actions { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+          .actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
           button, a {
             text-decoration: none;
             padding: 12px 18px;
@@ -2409,7 +2409,7 @@ tr:hover td {
   margin-right: 4px;
   border-radius: 8px;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 10px;
   background: transparent;
   color: #334155;
   border: none;
@@ -2430,7 +2430,7 @@ body {
 th {
   background: #f1f5f9;
   color: #334155;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -2618,7 +2618,7 @@ router.get('/documentos/gerar-lancamento/:id', async (req, res) => {
           .full { grid-column: 1 / -1; }
           label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; }
           input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; }
-          .actions { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+          .actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
           button, a {
             text-decoration: none;
             padding: 12px 18px;
@@ -2645,13 +2645,13 @@ body {
 }
 
 h1 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #111827;
 }
 
 label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: #374151;
 }
@@ -2685,7 +2685,7 @@ table {
 th {
   background: #f1f5f9;
   color: #334155;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   text-align: left;
@@ -2999,7 +2999,7 @@ router.get('/novo', async (req, res) => {
           .actions {
             margin-top: 20px;
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
           button, a {
@@ -3021,7 +3021,7 @@ router.get('/novo', async (req, res) => {
           }
           .field-hint {
             margin-top: 6px;
-            font-size: 12px;
+            font-size: 10px;
             color: #6b7280;
           }
         </style>
@@ -3243,7 +3243,7 @@ h1 {
 
 label {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   margin-bottom: 4px;
   color: #475569;
@@ -3308,14 +3308,14 @@ body {
 }
 
 h1 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #111827;
   margin-bottom: 18px;
 }
 
 label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: #374151;
   margin-bottom: 6px;
@@ -3813,7 +3813,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           }
           h1 {
             margin-top: 0;
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 600;
             color: #111827;
           }
@@ -3843,7 +3843,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
 
           .painel-colunas {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
             background: #f9fafb;
             border: 1px solid #e5e7eb;
@@ -3855,7 +3855,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 12px;
+            font-size: 10px;
             margin: 0;
             color: #374151;
           }
@@ -3867,13 +3867,13 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           .filters {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
+            gap: 8px;
             margin-bottom: 20px;
             align-items: end;
           }
           label {
             display: block;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             margin-bottom: 6px;
           }
@@ -3947,7 +3947,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
             background: #f1f5f9;
             font-weight: 600;
             color: #334155;
-            font-size: 12px;
+            font-size: 10px;
             text-transform: uppercase;
             text-align: left;
           }
@@ -5008,7 +5008,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           width: 115px;
           padding: 6px 28px 6px 10px;
           border-radius: 999px;
-          font-size: 12px;
+          font-size: 10px;
           font-weight: bold;
           text-align: center;
           cursor: pointer;
@@ -5933,7 +5933,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .filter-box {
             display: flex;
             align-items: end;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
             background: #f8fafc;
             border: 1px solid #e5e7eb;
@@ -5975,7 +5975,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .card {
             background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
             border: 1px solid #e5e7eb;
-            border-radius: 22px;
+            border-radius: 18px;
             padding: 22px;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
           }
@@ -6001,7 +6001,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
           .actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
 
@@ -6049,14 +6049,14 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .upload-form {
             display: grid;
             grid-template-columns: 1.2fr 1fr auto;
-            gap: 12px;
+            gap: 8px;
             align-items: end;
           }
 
           .extra-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
             margin-top: 10px;
           }
 
