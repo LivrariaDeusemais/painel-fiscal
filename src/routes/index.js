@@ -13408,13 +13408,22 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
     const extensao = tipo === 'pdf' ? 'pdf' : 'xml';
 
     const result = await pool.query(`
-      SELECT id, fornecedor, numero_documento, valor, ${campo} AS arquivo
-      FROM lancamentos
-      WHERE ${campo} IS NOT NULL
-        AND TRIM(${campo}) <> ''
-        AND data_despesa >= DATE_TRUNC('month', $1::date)
-        AND data_despesa < DATE_TRUNC('month', $1::date) + INTERVAL '1 month'
-      ORDER BY id DESC
+      SELECT
+        l.id,
+        l.fornecedor,
+        l.numero_documento,
+        l.tipo_documento,
+        l.tipo_pagamento,
+        l.valor,
+        c.nome AS categoria,
+        l.${campo} AS arquivo
+      FROM lancamentos l
+      LEFT JOIN categorias c ON c.id = l.categoria_id
+      WHERE l.${campo} IS NOT NULL
+        AND TRIM(l.${campo}) <> ''
+        AND l.data_despesa >= DATE_TRUNC('month', $1::date)
+        AND l.data_despesa < DATE_TRUNC('month', $1::date) + INTERVAL '1 month'
+      ORDER BY l.id DESC
     `, [`${mes}-01`]);
 
     if (!result.rows.length) {
@@ -13422,18 +13431,24 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
     }
 
     const arquivosValidos = [];
+    const nomesUsados = new Set();
 
     for (const item of result.rows) {
-      const nomeArquivo = path.basename(item.arquivo);
-      const filePath = path.join(uploadsDir, nomeArquivo);
+      const filePath = getUploadFilePath(item.arquivo);
 
-      if (fs.existsSync(filePath)) {
-        const nomeFornecedor = sanitizeFilePart(item.fornecedor || 'Fornecedor');
-        const nomeNumero = sanitizeFilePart(item.numero_documento || item.id);
+      if (filePath && fs.existsSync(filePath)) {
+        const baseName = buildDownloadBaseName(item);
+        let downloadName = `${baseName}.${extensao}`;
+
+        // Evita conflito dentro do ZIP caso dois lançamentos gerem exatamente o mesmo nome.
+        if (nomesUsados.has(downloadName)) {
+          downloadName = `${baseName}-ID-${item.id}.${extensao}`;
+        }
+        nomesUsados.add(downloadName);
 
         arquivosValidos.push({
           filePath,
-          downloadName: `${nomeFornecedor}-${nomeNumero}.${extensao}`
+          downloadName
         });
       }
     }
