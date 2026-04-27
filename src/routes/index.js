@@ -608,8 +608,8 @@ function renderDashboard(data) {
       <svg class="line-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" aria-label="Despesas por mês">
         <defs>
           <linearGradient id="areaOrange" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.38" />
-            <stop offset="100%" stop-color="#ff6b00" stop-opacity="0.02" />
+            <stop offset="0%" stop-color="#00B050" stop-opacity="0.38" />
+            <stop offset="100%" stop-color="#00B050" stop-opacity="0.02" />
           </linearGradient>
         </defs>
         ${gridHtml}
@@ -672,8 +672,8 @@ function renderDashboard(data) {
         * { box-sizing: border-box; }
 
         :root {
-          --orange: #ff6b00;
-          --orange-dark: #f05a00;
+          --orange: #00B050;
+          --orange-dark: #009640;
           --green: #1fbd42;
           --text: #172033;
           --muted: #64748b;
@@ -688,7 +688,7 @@ function renderDashboard(data) {
           font-family: Arial, Helvetica, sans-serif;
           color: var(--text);
           background:
-            radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+            radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
             radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
             linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%);
         }
@@ -746,7 +746,7 @@ function renderDashboard(data) {
         }
 
         .app-mark span:nth-child(1) { height: 24px; background: #1db954; }
-        .app-mark span:nth-child(2) { height: 32px; background: #ff7a00; }
+        .app-mark span:nth-child(2) { height: 32px; background: #00B050; }
         .app-mark span:nth-child(3) { height: 19px; background: #2f80ed; }
 
         .brand-title h1 {
@@ -868,9 +868,9 @@ function renderDashboard(data) {
 
         .nav-btn.active {
           color: white;
-          background: linear-gradient(135deg, #ff7a00, #ff6500);
-          border-color: rgba(255, 122, 0, .9);
-          box-shadow: 0 14px 24px rgba(255, 106, 0, .26);
+          background: linear-gradient(135deg, #00B050, #009640);
+          border-color: rgba(0, 176, 80, .9);
+          box-shadow: 0 14px 24px rgba(0, 176, 80, .22);
         }
 
         .nav-icon,
@@ -915,7 +915,7 @@ function renderDashboard(data) {
           place-items: center;
           flex: 0 0 auto;
         }
-        .stat-icon-box.orange { color: #ff6b00; background: #fff0e6; }
+        .stat-icon-box.orange { color: #00B050; background: #E8F7EE; }
         .stat-icon-box.green { color: #1db94b; background: #eaf9ed; }
         .stat-icon-box.purple { color: #8657ff; background: #f0eaff; }
 
@@ -975,10 +975,10 @@ function renderDashboard(data) {
           border: none;
           border-radius: 11px;
           cursor: pointer;
-          background: linear-gradient(135deg, #ff7a00, #ff6500);
+          background: linear-gradient(135deg, #00B050, #009640);
           color: #fff;
           font-weight: 900;
-          box-shadow: 0 12px 22px rgba(255, 106, 0, .24);
+          box-shadow: 0 12px 22px rgba(0, 176, 80, .22);
         }
 
         .btn-filter-clear {
@@ -1054,8 +1054,8 @@ function renderDashboard(data) {
         }
         .grid-line { stroke: #dfe5ee; stroke-width: 1; stroke-dasharray: 4 4; }
         .axis-line { stroke: #cfd7e3; stroke-width: 1.2; }
-        .trend-line { fill: none; stroke: #ff6b00; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-        .line-dot { fill: #ff6b00; stroke: #ff6b00; stroke-width: 2; }
+        .trend-line { fill: none; stroke: #00B050; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .line-dot { fill: #00B050; stroke: #00B050; stroke-width: 2; }
         .axis-label, .month-label, .point-value { fill: #52627a; font-weight: 800; font-size: 10px; }
         .point-value { fill: #111827; font-size: 10px; }
 
@@ -1089,7 +1089,7 @@ function renderDashboard(data) {
           height: 100%;
           border-radius: 999px;
         }
-        .hbar-orange { background: linear-gradient(90deg, #ff6b00, #ff7a00); }
+        .hbar-orange { background: linear-gradient(90deg, #00B050, #00B050); }
         .hbar-green { background: linear-gradient(90deg, #23c33a, #16a634); }
 
         .chart-soft-icon {
@@ -1144,9 +1144,9 @@ function renderDashboard(data) {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -1157,7 +1157,7 @@ function renderDashboard(data) {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -1233,8 +1233,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -1273,7 +1273,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -1288,7 +1288,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -1344,10 +1344,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -1369,11 +1369,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -1593,9 +1746,9 @@ router.get('/login', (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -1606,7 +1759,7 @@ router.get('/login', (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -1682,8 +1835,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -1722,7 +1875,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -1737,7 +1890,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -1793,10 +1946,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -1818,11 +1971,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
 </head>
@@ -2250,9 +2556,9 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -2263,7 +2569,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -2339,8 +2645,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -2379,7 +2685,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -2394,7 +2700,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -2450,10 +2756,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -2475,11 +2781,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -2697,9 +3156,9 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -2710,7 +3169,7 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -2786,8 +3245,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -2826,7 +3285,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -2841,7 +3300,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -2897,10 +3356,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -2922,11 +3381,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -3095,9 +3707,9 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -3108,7 +3720,7 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -3184,8 +3796,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -3224,7 +3836,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -3239,7 +3851,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -3295,10 +3907,10 @@ button,
 button.btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"] {
-  background: linear-gradient(135deg, #ff6b00, #f05a00) !important;
+  background: linear-gradient(135deg, #00B050, #009640) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 /* REMOVE herança de laranja global */
@@ -3329,11 +3941,164 @@ button.btn-primary,
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -3695,9 +4460,9 @@ tr:hover td {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -3708,7 +4473,7 @@ tr:hover td {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -3784,8 +4549,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -3824,7 +4589,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -3839,7 +4604,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -3895,10 +4660,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -3920,11 +4685,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -4187,9 +5105,9 @@ tr:hover {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -4200,7 +5118,7 @@ tr:hover {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -4276,8 +5194,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -4316,7 +5234,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -4331,7 +5249,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -4387,10 +5305,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -4412,11 +5330,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -4727,9 +5798,9 @@ router.get('/novo', async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -4740,7 +5811,7 @@ router.get('/novo', async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -4816,8 +5887,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -4856,7 +5927,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -4871,7 +5942,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -4927,10 +5998,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -4952,11 +6023,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -5310,9 +6534,9 @@ button:hover {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -5323,7 +6547,7 @@ button:hover {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -5399,8 +6623,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -5439,7 +6663,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -5454,7 +6678,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -5510,10 +6734,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -5535,20 +6759,173 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
         
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -5559,7 +6936,7 @@ tr:hover {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -5635,8 +7012,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -5675,7 +7052,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -5690,7 +7067,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -5746,10 +7123,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -5771,11 +7148,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -6416,9 +7946,9 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -6429,7 +7959,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -6505,8 +8035,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -6545,7 +8075,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -6560,7 +8090,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -6616,10 +8146,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -6641,11 +8171,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
@@ -7080,9 +8763,9 @@ router.get('/categorias', protegerRota, async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -7093,7 +8776,7 @@ router.get('/categorias', protegerRota, async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -7169,8 +8852,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -7209,7 +8892,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -7224,7 +8907,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -7280,10 +8963,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -7305,11 +8988,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -7433,9 +9269,9 @@ router.get('/categorias/nova', async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -7446,7 +9282,7 @@ router.get('/categorias/nova', async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -7522,8 +9358,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -7562,7 +9398,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -7577,7 +9413,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -7633,10 +9469,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -7658,11 +9494,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -7818,9 +9807,9 @@ router.get('/categorias/editar/:id', async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -7831,7 +9820,7 @@ router.get('/categorias/editar/:id', async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -7907,8 +9896,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -7947,7 +9936,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -7962,7 +9951,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -8018,10 +10007,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -8043,11 +10032,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -8439,9 +10581,9 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -8452,7 +10594,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -8528,8 +10670,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -8568,7 +10710,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -8583,7 +10725,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -8639,10 +10781,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -8664,11 +10806,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -8900,9 +11195,9 @@ router.get('/rotina-despesas/novo', async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -8913,7 +11208,7 @@ router.get('/rotina-despesas/novo', async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -8989,8 +11284,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -9029,7 +11324,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -9044,7 +11339,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -9100,10 +11395,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -9125,11 +11420,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -9405,9 +11853,9 @@ router.get('/rotina-despesas/editar/:id', async (req, res) => {
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -9418,7 +11866,7 @@ router.get('/rotina-despesas/editar/:id', async (req, res) => {
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -9494,8 +11942,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -9534,7 +11982,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -9549,7 +11997,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -9605,10 +12053,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -9630,11 +12078,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
     </head>
@@ -10236,9 +12837,9 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
 :root {
-  --dm-orange: #ff6b00;
-  --dm-orange-dark: #f05a00;
-  --dm-orange-soft: #fff0e6;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
   --dm-text: #172033;
   --dm-muted: #64748b;
   --dm-border: rgba(226, 232, 240, 0.82);
@@ -10249,7 +12850,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 body {
   color: var(--dm-text) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
     radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
     linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
 }
@@ -10325,8 +12926,8 @@ input[type="submit"],
 .login-page button {
   background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .btn-dark,
@@ -10365,7 +12966,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
 }
 
 table {
@@ -10380,7 +12981,7 @@ th {
 }
 
 tr:hover {
-  background: rgba(255, 240, 230, 0.45) !important;
+  background: rgba(232, 247, 238, 0.55) !important;
 }
 
 .icon-btn,
@@ -10436,10 +13037,10 @@ tr:hover {
 .actions .btn-primary,
 .filter-buttons button[type="submit"],
 .top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 122, 0, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
 }
 
 .actions form {
@@ -10461,11 +13062,164 @@ tr:hover {
 /* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
 .actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
 .actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
 .actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
 .icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
 .logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
 /* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
 </style>
       </head>
