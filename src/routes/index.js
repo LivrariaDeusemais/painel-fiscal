@@ -1255,6 +1255,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -1631,6 +1693,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -2215,6 +2339,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -2589,6 +2775,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -2914,6 +3162,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -3432,6 +3742,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -3851,6 +4223,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -4318,6 +4752,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -4828,6 +5324,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -4991,6 +5549,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -5788,6 +6408,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -5801,17 +6483,7 @@ tr:hover {
               <a class="btn btn-primary" href="/novo">+ Novo lançamento</a>
               <a class="btn btn-secondary" href="/dashboard">Voltar ao Painel</a>
               <a class="btn btn-secondary" href="/documentos">Documentos Fiscais</a>
-<a href="/rotina-despesas" style="
-  display: inline-block;
-  padding: 12px 18px;
-  border-radius: 10px;
-  background: #dc2626;
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-">
-  📋 Levantamento de Despesas Mensais
-</a>
+<a class="btn btn-secondary" href="/rotina-despesas">📋 Levantamento de Despesas Mensais</a>
               <a class="btn btn-success" href="/exportar-excel?fornecedor=${encodeURIComponent(fornecedor)}&categoria_id=${encodeURIComponent(categoria_id)}&tipo_pagamento=${encodeURIComponent(tipo_pagamento)}&cnpj_cpf=${encodeURIComponent(cnpj_cpf)}&codigo_pagamento=${encodeURIComponent(codigo_pagamento)}&numero_documento=${encodeURIComponent(numero_documento)}&data_inicio=${encodeURIComponent(data_inicio)}&data_fim=${encodeURIComponent(data_fim)}">Exportar Excel</a>
               <button type="button" class="btn btn-secondary" onclick="togglePainelColunas()">Colunas</button>
             </div>
@@ -6388,6 +7060,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -6668,6 +7402,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -6980,6 +7776,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -7506,6 +8364,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -7881,6 +8801,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -8305,6 +9287,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
@@ -9055,6 +10099,68 @@ tr:hover {
 @media (max-width: 760px) {
   .container { margin-top: 16px !important; }
 }
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #ff6b00), var(--dm-orange-dark, #f05a00)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
       </style>
