@@ -78,7 +78,12 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
-  return `R$ ${numero.toFixed(2).replace('.', ',')}`;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numero);
 }
 
 function parseMoneyBR(valor) {
@@ -94,6 +99,32 @@ function formatValorInputBR(valor) {
   if (valor === undefined || valor === null || valor === '') return '';
   const numero = Number(valor || 0);
   return numero.toFixed(2).replace('.', ',');
+}
+
+const TIPOS_DOCUMENTO_PADRAO = [
+  'NFe Produto',
+  'NFEs Serviço',
+  'Nota Débito',
+  'Cupom Fiscal',
+  'Recibo',
+  'PIX',
+  'Outro DOC'
+];
+
+function renderTipoDocumentoOptions(selectedValue = '') {
+  const selectedText = String(selectedValue || '').trim();
+  let options = '<option value="">Selecione o tipo de documento</option>';
+
+  TIPOS_DOCUMENTO_PADRAO.forEach(tipo => {
+    const selected = selectedText === tipo ? 'selected' : '';
+    options += `<option value="${tipo}" ${selected}>${tipo}</option>`;
+  });
+
+  if (selectedText && !TIPOS_DOCUMENTO_PADRAO.includes(selectedText)) {
+    options += `<option value="${selectedText}" selected>${selectedText}</option>`;
+  }
+
+  return options;
 }
 
 function formatMoneyFile(valor) {
@@ -5515,7 +5546,9 @@ body {
               <div class="grid">
                 <div>
                   <label for="tipo_documento">Tipo do documento</label>
-                  <input id="tipo_documento" name="tipo_documento" value="${doc.tipo_documento || ''}" required />
+                  <select id="tipo_documento" name="tipo_documento" required>
+                    ${renderTipoDocumentoOptions(doc.tipo_documento)}
+                  </select>
                 </div>
 
                 <div>
@@ -6213,7 +6246,9 @@ body {
               <div class="grid">
                 <div>
                   <label for="tipo_documento">Tipo do documento</label>
-                  <input id="tipo_documento" name="tipo_documento" placeholder="Ex.: NF, recibo, cupom" required />
+                  <select id="tipo_documento" name="tipo_documento" required>
+                    ${renderTipoDocumentoOptions()}
+                  </select>
                 </div>
 
                 <div>
@@ -7336,7 +7371,9 @@ body {
               <div class="grid">
                 <div>
                   <label for="tipo_documento">Tipo do documento</label>
-                  <input id="tipo_documento" name="tipo_documento" value="${lancamento.tipo_documento || ''}" required />
+                  <select id="tipo_documento" name="tipo_documento" required>
+                    ${renderTipoDocumentoOptions(lancamento.tipo_documento)}
+                  </select>
                 </div>
 
                 <div>
@@ -10321,16 +10358,16 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
       linhas += `
         <tr>
-          <td>${r.fornecedor || ''}</td>
-          <td>${r.cnpj_cpf || ''}</td>
-          <td>${r.fato_gerador || ''}</td>
-          <td>${ondeEncontrarHtml}</td>
-          <td>${r.tipo_pagamento_padrao || ''}</td>
-          <td>${r.categoria_principal_nome || ''}</td>
-          <td>${r.subcategoria_nome || ''}</td>
-          <td class="col-vencimento">${formatDateBR(r.data_vencimento) || '-'}</td>
+          <td class="col-rot-fornecedor">${r.fornecedor || ''}</td>
+          <td class="col-rot-cnpj">${r.cnpj_cpf || ''}</td>
+          <td class="col-rot-fato">${r.fato_gerador || ''}</td>
+          <td class="col-rot-onde">${ondeEncontrarHtml}</td>
+          <td class="col-rot-pagamento">${r.tipo_pagamento_padrao || ''}</td>
+          <td class="col-rot-cat-principal">${r.categoria_principal_nome || ''}</td>
+          <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
+          <td class="col-vencimento col-rot-vencimento">${formatDateBR(r.data_vencimento) || '-'}</td>
 
-          <td class="col-status">
+          <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
               <input type="hidden" name="data_vencimento_filtro" value="${vencimentoFiltro}">
@@ -10347,9 +10384,9 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
             </form>
           </td>
 
-          <td class="col-ativo">${r.ativo ? 'Sim' : 'Não'}</td>
+          <td class="col-ativo col-rot-ativo">${r.ativo ? 'Sim' : 'Não'}</td>
 
-          <td class="col-acoes">
+          <td class="col-acoes col-rot-acoes">
             <div class="acoes-wrap">
               <a class="icon-btn" href="/novo?rotina_id=${r.id}" title="Novo lançamento">➕</a>
               <a class="icon-btn" href="/rotina-despesas/editar/${r.id}" title="Editar">✏️</a>
@@ -10413,6 +10450,28 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           gap: 10px;
           flex-wrap: wrap;
           align-items: end;
+        }
+
+        .painel-colunas {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin: 8px 0 16px;
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: rgba(248,250,252,0.9);
+          border: 1px solid #e0e6ef;
+        }
+
+        .painel-colunas label {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0;
+          font-size: 12px;
+          font-weight: 700;
+          color: #334155;
         }
 
         .filter-group label {
@@ -11004,6 +11063,19 @@ body {
                   🔄 Mudar todos para PENDENTE
                 </button>
               </form>
+              <button type="button" class="btn btn-dark" onclick="togglePainelColunasRotina()">Colunas</button>
+            </div>
+
+            <div id="painel-colunas-rotina" class="painel-colunas" style="display:none;">
+              <label><input type="checkbox" data-col="col-rot-cnpj"> CNPJ/CPF</label>
+              <label><input type="checkbox" data-col="col-rot-fato"> Fato Gerador</label>
+              <label><input type="checkbox" data-col="col-rot-onde"> Onde encontrar</label>
+              <label><input type="checkbox" data-col="col-rot-pagamento"> Pagamento</label>
+              <label><input type="checkbox" data-col="col-rot-cat-principal"> Categoria Principal</label>
+              <label><input type="checkbox" data-col="col-rot-subcategoria"> Subcategoria</label>
+              <label><input type="checkbox" data-col="col-rot-vencimento"> Vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-status"> Status</label>
+              <label><input type="checkbox" data-col="col-rot-ativo"> Ativo</label>
             </div>
 
             <form method="GET" action="/rotina-despesas" class="filters">
@@ -11035,27 +11107,79 @@ body {
           <table>
             <thead>
               <tr>
-                <th>Fornecedor</th>
-                <th>CNPJ/CPF</th>
-                <th>Fato Gerador</th>
-                <th>Onde encontrar</th>
-                <th>Pagamento</th>
-                <th>Categoria Principal</th>
-                <th>Subcategoria</th>
-                <th class="col-vencimento">Vencimento</th>
-                <th class="col-status">Status</th>
-                <th class="col-ativo">Ativo</th>
-                <th class="col-acoes">Ações</th>
+                <th class="col-rot-fornecedor">Fornecedor</th>
+                <th class="col-rot-cnpj">CNPJ/CPF</th>
+                <th class="col-rot-fato">Fato Gerador</th>
+                <th class="col-rot-onde">Onde encontrar</th>
+                <th class="col-rot-pagamento">Pagamento</th>
+                <th class="col-rot-cat-principal">Categoria Principal</th>
+                <th class="col-rot-subcategoria">Subcategoria</th>
+                <th class="col-vencimento col-rot-vencimento">Vencimento</th>
+                <th class="col-status col-rot-status">Status</th>
+                <th class="col-ativo col-rot-ativo">Ativo</th>
+                <th class="col-acoes col-rot-acoes">Ações</th>
               </tr>
             </thead>
             <tbody>
-              ${linhas || '<tr><td colspan="10">Nenhum item cadastrado</td></tr>'}
+              ${linhas || '<tr><td colspan="11">Nenhum item cadastrado</td></tr>'}
             </tbody>
           </table>
         </div>
       </div>
 
       <script>
+        function togglePainelColunasRotina() {
+          const painel = document.getElementById('painel-colunas-rotina');
+          painel.style.display = painel.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function aplicarColunaRotina(nomeColuna, mostrar) {
+          document.querySelectorAll('.' + nomeColuna).forEach(el => {
+            el.style.display = mostrar ? '' : 'none';
+          });
+        }
+
+        function salvarPreferenciasColunasRotina() {
+          const preferencias = {};
+          document.querySelectorAll('#painel-colunas-rotina input[type="checkbox"]').forEach(chk => {
+            preferencias[chk.dataset.col] = chk.checked;
+          });
+          localStorage.setItem('painelFiscalColunasRotina', JSON.stringify(preferencias));
+        }
+
+        function carregarPreferenciasColunasRotina() {
+          const padrao = {
+            'col-rot-cnpj': true,
+            'col-rot-fato': true,
+            'col-rot-onde': true,
+            'col-rot-pagamento': true,
+            'col-rot-cat-principal': true,
+            'col-rot-subcategoria': true,
+            'col-rot-vencimento': true,
+            'col-rot-status': true,
+            'col-rot-ativo': true
+          };
+
+          let preferencias = padrao;
+          const salvo = localStorage.getItem('painelFiscalColunasRotina');
+          if (salvo) {
+            try { preferencias = { ...padrao, ...JSON.parse(salvo) }; } catch (e) {}
+          }
+
+          document.querySelectorAll('#painel-colunas-rotina input[type="checkbox"]').forEach(chk => {
+            const mostrar = !!preferencias[chk.dataset.col];
+            chk.checked = mostrar;
+            aplicarColunaRotina(chk.dataset.col, mostrar);
+
+            chk.addEventListener('change', () => {
+              aplicarColunaRotina(chk.dataset.col, chk.checked);
+              salvarPreferenciasColunasRotina();
+            });
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarPreferenciasColunasRotina);
+
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
             this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A');
