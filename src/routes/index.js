@@ -6231,6 +6231,51 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+          .nf-paste-box {
+            margin: 16px 0 18px;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #dce3ec;
+            background: rgba(255,255,255,0.76);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+          }
+          .nf-paste-box h3 {
+            margin: 0 0 6px;
+            font-size: 15px;
+            color: #101828;
+          }
+          .nf-paste-box p {
+            margin: 0 0 12px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.35;
+          }
+          .nf-paste-box textarea {
+            width: 100%;
+            min-height: 112px;
+            resize: vertical;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+            background: rgba(255,255,255,0.94);
+          }
+          .nf-paste-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+          .nf-paste-msg {
+            font-size: 12px;
+            font-weight: 700;
+          }
+          .nf-paste-msg.ok { color: #047857; }
+          .nf-paste-msg.warn { color: #92400e; }
 </style>
       </head>
       <body>
@@ -6239,6 +6284,17 @@ body {
             <h1>➕ Novo lançamento</h1>
 
             ${origemInfo}
+
+            <div class="nf-paste-box">
+              <h3>📋 Colar conteúdo da NF</h3>
+              <p>Abra o PDF da nota, selecione tudo, copie e cole aqui. Depois clique em preencher. Se não reconhecer, preencha manualmente.</p>
+              <textarea id="texto_nf_colado" placeholder="Cole aqui o texto copiado da NF..."></textarea>
+              <div class="nf-paste-actions">
+                <button type="button" onclick="preencherPorTextoNF()">Preencher automaticamente</button>
+                <button type="button" class="btn-secondary" onclick="limparTextoNF()">Limpar texto</button>
+                <span id="nf_paste_msg" class="nf-paste-msg"></span>
+              </div>
+            </div>
 
             <form method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
@@ -6329,7 +6385,161 @@ body {
             </form>
           </div>
         </div>
-      </body>
+      
+        <script>
+          function somenteDigitosNF(valor) {
+            return String(valor || '').replace(/\D/g, '');
+          }
+
+          function formatarCnpjNF(valor) {
+            var d = somenteDigitosNF(valor);
+            if (d.length !== 14) return valor || '';
+            return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+          }
+
+          function normalizarTextoNF(texto) {
+            return String(texto || '')
+              .replace(/\r/g, '\n')
+              .replace(/[\t ]+/g, ' ')
+              .replace(/\n{2,}/g, '\n')
+              .trim();
+          }
+
+          function pegarPrimeiroMatch(texto, regexes) {
+            for (var i = 0; i < regexes.length; i++) {
+              var m = texto.match(regexes[i]);
+              if (m && m[1]) return String(m[1]).trim();
+            }
+            return '';
+          }
+
+          function extrairFornecedorNF(texto) {
+            var linhas = normalizarTextoNF(texto).split(/\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+            var meuCnpj = '18862388000103';
+            var empresaRegex = /(LTDA\.?|S\.A\.?|\bSA\b|EIRELI|\bME\b|EPP)/i;
+            var ignorar = /(DEUS\s+E\s+MAIS|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\/CNPJ|CNPJ\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA)/i;
+
+            for (var i = 0; i < linhas.length; i++) {
+              var linha = linhas[i];
+              if (/PRESTADOR|EMITENTE/i.test(linha)) {
+                for (var j = i + 1; j < Math.min(i + 16, linhas.length); j++) {
+                  var cand = linhas[j];
+                  var dig = somenteDigitosNF(cand);
+                  if (dig === meuCnpj) continue;
+                  if (empresaRegex.test(cand) && !ignorar.test(cand)) return cand;
+                }
+              }
+            }
+
+            for (var k = 0; k < linhas.length; k++) {
+              var l = linhas[k];
+              if (empresaRegex.test(l) && !ignorar.test(l)) return l;
+            }
+            return '';
+          }
+
+          function extrairDadosNFColada(textoOriginal) {
+            var texto = normalizarTextoNF(textoOriginal);
+            var plano = texto.replace(/\s+/g, ' ');
+            var dados = {};
+
+            var cnpjs = plano.match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g) || [];
+            for (var i = 0; i < cnpjs.length; i++) {
+              if (somenteDigitosNF(cnpjs[i]) !== '18862388000103') {
+                dados.cnpj_cpf = formatarCnpjNF(cnpjs[i]);
+                break;
+              }
+            }
+
+            dados.numero_documento = pegarPrimeiroMatch(texto, [
+              /N[úu]mero\s+da\s+Nota\s*\n\s*(\d{3,})/i,
+              /N[úu]mero\s+da\s+NFS-?e\s*\n\s*(\d{3,})/i,
+              /N[úu]mero\s+da\s+DPS\s*\n\s*(\d{3,})/i,
+              /N[ºo\.]*\s*(?:da\s*)?(?:NF|NFS-?e|Nota)\D{0,30}(\d{3,})/i,
+              /RPS\s*N[ºo\.]*\s*(\d{3,})/i
+            ]) || pegarPrimeiroMatch(plano, [
+              /N[úu]mero\s+da\s+Nota\D{0,80}(\d{3,})/i,
+              /N[úu]mero\s+da\s+NFS-?e\D{0,80}(\d{3,})/i,
+              /N[ºo\.]*\s*(?:da\s*)?(?:NF|NFS-?e|Nota)\D{0,30}(\d{3,})/i
+            ]);
+
+            var valor = pegarPrimeiroMatch(plano, [
+              /VALOR\s+TOTAL\s+DO\s+SERVI[ÇC]O\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+              /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+              /VALOR\s+TOTAL\s+COBRADO\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
+              /VALOR\s+TOTAL\s+DA\s+NFS-?E\s*R\$\s*([\d\.]+,\d{2})/i,
+              /Valor\s+L[íi]quido\s+da\s+NFS-?e\s*R\$\s*([\d\.]+,\d{2})/i,
+              /Valor\s+do\s+Servi[çc]o\s*R\$\s*([\d\.]+,\d{2})/i
+            ]);
+            if (!valor) {
+              var valores = plano.match(/R\$\s*[\d\.]+,\d{2}/g) || [];
+              if (valores.length) valor = valores[valores.length - 1].replace(/R\$\s*/i, '').trim();
+            }
+            dados.valor = valor;
+
+            var dataBR = pegarPrimeiroMatch(texto, [
+              /Data\s+e\s+Hora\s+de\s+Emiss[ãa]o\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+              /Data\s+e\s+Hora\s+da\s+emiss[ãa]o\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+              /Compet[êe]ncia\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+              /emitido\s+em\s+(\d{2}\/\d{2}\/\d{4})/i
+            ]) || pegarPrimeiroMatch(plano, [
+              /Data\s+e\s+Hora\s+de\s+Emiss[ãa]o\D{0,50}(\d{2}\/\d{2}\/\d{4})/i,
+              /Data\s+e\s+Hora\s+da\s+emiss[ãa]o\s+da\s+NFS-?e\D{0,50}(\d{2}\/\d{2}\/\d{4})/i,
+              /Compet[êe]ncia\s+da\s+NFS-?e\D{0,50}(\d{2}\/\d{2}\/\d{4})/i
+            ]);
+            if (dataBR) {
+              var partes = dataBR.split('/');
+              dados.data_despesa = partes[2] + '-' + partes[1] + '-' + partes[0];
+            }
+
+            dados.fornecedor = extrairFornecedorNF(texto);
+            dados.tipo_documento = /NFS-?e|NOTA FISCAL ELETR[ÔO]NICA DE SERVI[ÇC]OS|DANFSe/i.test(texto)
+              ? 'NFEs Serviço'
+              : 'NFe Produto';
+
+            return dados;
+          }
+
+          function setCampoNF(id, valor) {
+            var el = document.getElementById(id);
+            if (el && valor) el.value = valor;
+          }
+
+          function preencherPorTextoNF() {
+            var texto = document.getElementById('texto_nf_colado').value || '';
+            var msg = document.getElementById('nf_paste_msg');
+            if (!texto.trim()) {
+              msg.className = 'nf-paste-msg warn';
+              msg.textContent = 'Cole o texto da NF antes de preencher.';
+              return;
+            }
+
+            var dados = extrairDadosNFColada(texto);
+            var encontrou = 0;
+            ['tipo_documento','numero_documento','data_despesa','valor','fornecedor','cnpj_cpf'].forEach(function(campo) {
+              if (dados[campo]) {
+                setCampoNF(campo, dados[campo]);
+                encontrou++;
+              }
+            });
+
+            if (encontrou >= 2) {
+              msg.className = 'nf-paste-msg ok';
+              msg.textContent = 'Campos preenchidos. Confira antes de salvar.';
+            } else {
+              msg.className = 'nf-paste-msg warn';
+              msg.textContent = 'Texto não reconhecido. Preencha manualmente.';
+            }
+          }
+
+          function limparTextoNF() {
+            document.getElementById('texto_nf_colado').value = '';
+            var msg = document.getElementById('nf_paste_msg');
+            msg.className = 'nf-paste-msg';
+            msg.textContent = '';
+          }
+        </script>
+</body>
       </html>
     `);
   } catch (error) {
