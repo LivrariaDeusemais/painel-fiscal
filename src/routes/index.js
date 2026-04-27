@@ -6414,19 +6414,34 @@ body {
           }
 
           function extrairFornecedorNF(texto) {
-            var linhas = normalizarTextoNF(texto).split(/\\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+            var textoNormal = normalizarTextoNF(texto);
+            var linhas = textoNormal.split(/\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+            var plano = textoNormal.replace(/\s+/g, ' ');
             var meuCnpj = '18862388000103';
-            var empresaRegex = /(LTDA\\.?|S\\.A\\.?|\\bSA\\b|EIRELI|\\bME\\b|EPP)/i;
-            var ignorar = /(DEUS\\s+E\\s+MAIS|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\\/CNPJ|CNPJ\\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA)/i;
+            var empresaRegex = /(LTDA\.?|S\.A\.?|\bSA\b|EIRELI|\bME\b|EPP)/i;
+            var ignorar = /(DEUS\s+E\s+MAIS|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\/CNPJ|CNPJ\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA|DANFE|DOCUMENTO AUXILIAR|CONTROLE DO FISCO)/i;
+
+            var recebido = plano.match(/RECEBEMOS\s+DE\s+(.+?)\s+OS\s+PRODUTOS/i);
+            if (recebido && recebido[1]) return recebido[1].trim();
 
             for (var i = 0; i < linhas.length; i++) {
               var linha = linhas[i];
               if (/PRESTADOR|EMITENTE/i.test(linha)) {
-                for (var j = i + 1; j < Math.min(i + 16, linhas.length); j++) {
+                for (var j = i + 1; j < Math.min(i + 18, linhas.length); j++) {
                   var cand = linhas[j];
                   var dig = somenteDigitosNF(cand);
                   if (dig === meuCnpj) continue;
                   if (empresaRegex.test(cand) && !ignorar.test(cand)) return cand;
+                }
+              }
+            }
+
+            var idxDanfe = linhas.findIndex(function(l) { return /^DANFE$/i.test(l) || /DOCUMENTO AUXILIAR/i.test(l); });
+            if (idxDanfe > 0) {
+              for (var a = Math.max(0, idxDanfe - 6); a < idxDanfe; a++) {
+                var candDanfe = linhas[a];
+                if (candDanfe && candDanfe.length >= 4 && !/^(NF-?e|N[ºo]\s*\d+|S[ée]rie|DATA|IDENTIFICA|RECEBEMOS)/i.test(candDanfe) && !ignorar.test(candDanfe) && !/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/.test(candDanfe)) {
+                  return candDanfe;
                 }
               }
             }
@@ -6456,11 +6471,15 @@ body {
               /N[úu]mero\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{3,})/i,
               /N[úu]mero\\s+da\\s+DPS\\s*\\n\\s*(\\d{3,})/i,
               /N[ºo\\.]*\\s*(?:da\\s*)?(?:NF|NFS-?e|Nota)\\D{0,30}(\\d{3,})/i,
-              /RPS\\s*N[ºo\\.]*\\s*(\\d{3,})/i
+              /RPS\\s*N[ºo\\.]*\\s*(\\d{3,})/i,
+              /NF-?e\\s*N[ºo\\.]*\\s*(\\d{1,})/i,
+              /N[ºo\\.]\\s*(\\d{1,})\\s*S[ée]rie/i
             ]) || pegarPrimeiroMatch(plano, [
               /N[úu]mero\\s+da\\s+Nota\\D{0,80}(\\d{3,})/i,
               /N[úu]mero\\s+da\\s+NFS-?e\\D{0,80}(\\d{3,})/i,
-              /N[ºo\\.]*\\s*(?:da\\s*)?(?:NF|NFS-?e|Nota)\\D{0,30}(\\d{3,})/i
+              /N[ºo\\.]*\\s*(?:da\\s*)?(?:NF|NFS-?e|Nota)\\D{0,30}(\\d{3,})/i,
+              /NF-?e\\s*N[ºo\\.]*\\s*(\\d{1,})/i,
+              /N[ºo\\.]\\s*(\\d{1,})\\s*S[ée]rie/i
             ]);
 
             var valor = pegarPrimeiroMatch(plano, [
@@ -6469,7 +6488,10 @@ body {
               /VALOR\\s+TOTAL\\s+COBRADO\\s*=\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
               /VALOR\\s+TOTAL\\s+DA\\s+NFS-?E\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
               /Valor\\s+L[íi]quido\\s+da\\s+NFS-?e\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /Valor\\s+do\\s+Servi[çc]o\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i
+              /Valor\\s+do\\s+Servi[çc]o\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
+              /V\\.?\\s*TOTAL\\s+DA\\s+NOTA\\s*([\\d\\.]+,\\d{2})/i,
+              /VALOR\\s+TOTAL\\s+DA\\s+NOTA\\s*([\\d\\.]+,\\d{2})/i,
+              /V\\.?\\s*TOTAL\\s+DE\\s+PRODUTOS\\s*([\\d\\.]+,\\d{2})/i
             ]);
             if (!valor) {
               var valores = plano.match(/R\\$\\s*[\\d\\.]+,\\d{2}/g) || [];
@@ -6481,11 +6503,13 @@ body {
               /Data\\s+e\\s+Hora\\s+de\\s+Emiss[ãa]o\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
               /Data\\s+e\\s+Hora\\s+da\\s+emiss[ãa]o\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
               /Compet[êe]ncia\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /emitido\\s+em\\s+(\\d{2}\\/\\d{2}\\/\\d{4})/i
+              /emitido\\s+em\\s+(\\d{2}\\/\\d{2}\\/\\d{4})/i,
+              /DATA\\s+DE\\s+EMISS[ÃA]O\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i
             ]) || pegarPrimeiroMatch(plano, [
               /Data\\s+e\\s+Hora\\s+de\\s+Emiss[ãa]o\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i,
               /Data\\s+e\\s+Hora\\s+da\\s+emiss[ãa]o\\s+da\\s+NFS-?e\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /Compet[êe]ncia\\s+da\\s+NFS-?e\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i
+              /Compet[êe]ncia\\s+da\\s+NFS-?e\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i,
+              /DATA\\s+DE\\s+EMISS[ÃA]O\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i
             ]);
             if (dataBR) {
               var partes = dataBR.split('/');
