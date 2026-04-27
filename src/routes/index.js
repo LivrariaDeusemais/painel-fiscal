@@ -489,12 +489,8 @@ function renderDashboard(data) {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
+      .replace(/\"/g, '&quot;')
       .replace(/'/g, '&#039;');
-
-  const maxMes = Math.max(...meses.map(m => Number(m.total || 0)), 1);
-  const maxCategoria = Math.max(...categorias.map(c => Number(c.total || 0)), 1);
-  const maxFornecedor = Math.max(...fornecedores.map(f => Number(f.total || 0)), 1);
 
   const hoje = new Date();
   const opcoesMes = [];
@@ -521,28 +517,76 @@ function renderDashboard(data) {
     </option>
   `).join('');
 
-  const mesesHtml = meses.length
-    ? meses.map(item => {
-        const total = Number(item.total || 0);
-        const altura = Math.max((total / maxMes) * 180, total > 0 ? 10 : 4);
+  const subtituloFiltro = mesSelecionado
+    ? `Dados filtrados para o mês ${escapeHtml(
+        opcoesMes.find(m => m.valor === mesSelecionado)?.label || mesSelecionado
+      )}.`
+    : 'Visão executiva geral das despesas, lançamentos e distribuição financeira.';
 
-        return `
-          <div class="chart-col">
-            <div class="chart-col-value">${formatMoney(total)}</div>
-            <div class="chart-bar-wrap">
-              <div class="chart-bar chart-bar-blue" style="height:${altura}px;"></div>
-            </div>
-            <div class="chart-col-label">${escapeHtml(item.label)}</div>
-          </div>
-        `;
-      }).join('')
+  const maxMes = Math.max(...meses.map(m => Number(m.total || 0)), 1);
+  const yTicks = [maxMes, maxMes * 0.75, maxMes * 0.5, maxMes * 0.25, 0];
+  const chartW = 520;
+  const chartH = 245;
+  const plotLeft = 70;
+  const plotRight = 28;
+  const plotTop = 22;
+  const plotBottom = 42;
+  const plotW = chartW - plotLeft - plotRight;
+  const plotH = chartH - plotTop - plotBottom;
+
+  const points = meses.map((item, index) => {
+    const x = plotLeft + (meses.length <= 1 ? 0 : (index * plotW) / (meses.length - 1));
+    const y = plotTop + plotH - ((Number(item.total || 0) / maxMes) * plotH);
+    return { x, y, item, total: Number(item.total || 0) };
+  });
+
+  const svgPoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPoints = points.length
+    ? `${points[0].x.toFixed(1)},${plotTop + plotH} ${svgPoints} ${points[points.length - 1].x.toFixed(1)},${plotTop + plotH}`
+    : '';
+
+  const gridHtml = yTicks.map(value => {
+    const y = plotTop + plotH - ((Number(value || 0) / maxMes) * plotH);
+    return `
+      <line x1="${plotLeft}" y1="${y.toFixed(1)}" x2="${chartW - plotRight}" y2="${y.toFixed(1)}" class="grid-line" />
+      <text x="8" y="${(y + 4).toFixed(1)}" class="axis-label">${formatMoney(value).replace(',00', '')}</text>
+    `;
+  }).join('');
+
+  const pointsHtml = points.map(p => `
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" class="line-dot" />
+    <text x="${p.x.toFixed(1)}" y="${Math.max(14, p.y - 14).toFixed(1)}" text-anchor="middle" class="point-value">${formatMoney(p.total)}</text>
+  `).join('');
+
+  const xLabelsHtml = points.map(p => `
+    <text x="${p.x.toFixed(1)}" y="${chartH - 10}" text-anchor="middle" class="month-label">${escapeHtml(p.item.label)}</text>
+  `).join('');
+
+  const mesesHtml = meses.length
+    ? `
+      <svg class="line-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" aria-label="Despesas por mês">
+        <defs>
+          <linearGradient id="areaOrange" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.38" />
+            <stop offset="100%" stop-color="#ff6b00" stop-opacity="0.02" />
+          </linearGradient>
+        </defs>
+        ${gridHtml}
+        <line x1="${plotLeft}" y1="${plotTop}" x2="${plotLeft}" y2="${plotTop + plotH}" class="axis-line" />
+        <line x1="${plotLeft}" y1="${plotTop + plotH}" x2="${chartW - plotRight}" y2="${plotTop + plotH}" class="axis-line" />
+        <polygon points="${areaPoints}" fill="url(#areaOrange)" />
+        <polyline points="${svgPoints}" class="trend-line" />
+        ${pointsHtml}
+        ${xLabelsHtml}
+      </svg>
+    `
     : `<div class="empty-state">Sem dados de despesas por mês.</div>`;
 
   const categoriasHtml = categorias.length
     ? categorias.map(item => {
         const total = Number(item.total || 0);
-        const largura = Math.max((total / maxCategoria) * 100, total > 0 ? 8 : 0);
-
+        const maxCategoria = Math.max(...categorias.map(c => Number(c.total || 0)), 1);
+        const largura = Math.max((total / maxCategoria) * 100, total > 0 ? 5 : 0);
         return `
           <div class="hbar-row">
             <div class="hbar-header">
@@ -560,8 +604,8 @@ function renderDashboard(data) {
   const fornecedoresHtml = fornecedores.length
     ? fornecedores.map(item => {
         const total = Number(item.total || 0);
-        const largura = Math.max((total / maxFornecedor) * 100, total > 0 ? 8 : 0);
-
+        const maxFornecedor = Math.max(...fornecedores.map(f => Number(f.total || 0)), 1);
+        const largura = Math.max((total / maxFornecedor) * 100, total > 0 ? 5 : 0);
         return `
           <div class="hbar-row">
             <div class="hbar-header">
@@ -576,519 +620,566 @@ function renderDashboard(data) {
       }).join('')
     : `<div class="empty-state">Sem dados por fornecedor para o filtro selecionado.</div>`;
 
-  const subtituloFiltro = mesSelecionado
-    ? `Dados filtrados para o mês ${escapeHtml(
-        opcoesMes.find(m => m.valor === mesSelecionado)?.label || mesSelecionado
-      )}.`
-    : 'Visão executiva geral das despesas, lançamentos e distribuição financeira.';
-
   return `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Painel Fiscal - Dashboard</title>
+      <title>Painel Fiscal - Deus é Mais</title>
       <style>
         * { box-sizing: border-box; }
 
+        :root {
+          --orange: #ff6b00;
+          --orange-dark: #f05a00;
+          --green: #1fbd42;
+          --text: #172033;
+          --muted: #64748b;
+          --soft: rgba(255, 255, 255, 0.78);
+          --border: rgba(226, 232, 240, 0.82);
+          --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
         body {
           margin: 0;
-          font-family: Arial, sans-serif;
+          min-height: 100vh;
+          font-family: Arial, Helvetica, sans-serif;
+          color: var(--text);
           background:
-            radial-gradient(circle at top left, #eef4ff 0%, #f7f9fc 35%, #eef2f7 100%);
-          color: #111827;
+            radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+            radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+            linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%);
         }
 
-        .container {
-          max-width: 1400px;
-          margin: 28px auto;
-          padding: 0 20px 30px;
+        .page-shell {
+          width: min(1840px, calc(100% - 88px));
+          margin: 34px auto 22px;
         }
 
-        .hero {
-          background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-          border: 1px solid #e5e7eb;
-          border-radius: 24px;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-          padding: 28px;
-          margin-bottom: 24px;
+        .topbar,
+        .nav-panel,
+        .filter-panel,
+        .stat-card,
+        .chart-card {
+          background: rgba(255, 255, 255, 0.82);
+          border: 1px solid rgba(255, 255, 255, 0.72);
+          border-radius: 22px;
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(14px);
         }
 
-        .hero-top {
+        .topbar {
+          min-height: 118px;
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          gap: 20px;
-          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 24px;
+          padding: 26px 34px;
           margin-bottom: 22px;
         }
 
-        .brand-block h1 {
-          margin: 0 0 8px 0;
-          font-size: 30px;
-          line-height: 1.1;
-          color: #0f172a;
+        .brand-left {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+          min-width: 0;
         }
 
-        .brand-block p {
+        .app-mark {
+          width: 58px;
+          height: 58px;
+          border-radius: 10px;
+          background: linear-gradient(180deg, #eef4ff, #ffffff);
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 5px;
+          padding: 10px 12px 8px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+        }
+
+        .app-mark span {
+          display: block;
+          align-self: end;
+          border-radius: 2px 2px 0 0;
+        }
+
+        .app-mark span:nth-child(1) { height: 34px; background: #1db954; }
+        .app-mark span:nth-child(2) { height: 45px; background: #ff7a00; }
+        .app-mark span:nth-child(3) { height: 26px; background: #2f80ed; }
+
+        .brand-title h1 {
+          margin: 0 0 8px;
+          font-size: clamp(26px, 2vw, 36px);
+          line-height: 1;
+          letter-spacing: -0.7px;
+          color: #101828;
+        }
+
+        .brand-title p {
           margin: 0;
-          color: #64748b;
+          color: #52627a;
           font-size: 15px;
+          font-weight: 600;
         }
 
-        .brand-badge {
-          min-width: 190px;
-          text-align: right;
-          color: #64748b;
-          font-size: 14px;
-        }
-
-        .brand-badge strong {
-          display: block;
-          color: #1e3a8a;
-          font-size: 16px;
-          margin-bottom: 4px;
-        }
-
-        .filter-box {
+        .profile-area {
           display: flex;
-          align-items: end;
-          gap: 12px;
-          flex-wrap: wrap;
-          background: #f8fafc;
-          border: 1px solid #e5e7eb;
-          border-radius: 18px;
-          padding: 16px;
-          margin-bottom: 22px;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 22px;
+          flex-shrink: 0;
         }
 
-        .filter-group {
-          min-width: 240px;
-        }
-
-        .filter-group label {
+        .profile-copy { text-align: right; }
+        .profile-copy strong {
           display: block;
-          margin-bottom: 6px;
+          color: var(--orange);
+          font-size: 17px;
+          margin-bottom: 8px;
+        }
+        .profile-copy span {
+          color: #59677d;
           font-size: 13px;
-          font-weight: 700;
-          color: #334155;
+          font-weight: 600;
         }
 
-        .filter-group select {
-          width: 100%;
-          padding: 12px 14px;
-          border: 1px solid #cbd5e1;
-          border-radius: 12px;
-          font-size: 14px;
-          background: white;
-          color: #0f172a;
+        .avatar-wrap {
+          position: relative;
+          width: 76px;
+          height: 76px;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(180deg, #ffffff, #f5f7fb);
+          border: 2px solid #e6ebf3;
+          box-shadow: inset 0 2px 7px rgba(15, 23, 42, 0.04);
         }
 
-        .filter-actions {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
+        .avatar-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 50% 28%, #c6ccd6 0 21%, transparent 22%),
+            radial-gradient(ellipse at 50% 88%, #c6ccd6 0 45%, transparent 46%);
+          opacity: .92;
         }
 
-        .btn-filter {
+        .online-dot {
+          position: absolute;
+          right: 2px;
+          bottom: 12px;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #23c33a;
+          border: 3px solid white;
+        }
+
+        .logout-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 12px 16px;
+          gap: 10px;
+          min-width: 112px;
+          height: 64px;
           border-radius: 12px;
           text-decoration: none;
-          font-weight: 700;
-          font-size: 14px;
-          border: none;
-          cursor: pointer;
+          color: #222b3b;
+          font-weight: 800;
+          background: linear-gradient(180deg, #f8fafc, #eef2f7);
+          border: 1px solid #e0e6ef;
+          box-shadow: 0 10px 20px rgba(15, 23, 42, .06);
         }
 
-        .btn-filter-apply {
-          background: #2563eb;
+        .nav-panel {
+          min-height: 82px;
+          padding: 10px 42px;
+          display: grid;
+          grid-template-columns: 1.35fr repeat(5, 1fr);
+          gap: 28px;
+          align-items: center;
+          margin-bottom: 26px;
+        }
+
+        .nav-btn {
+          height: 64px;
+          border-radius: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          text-decoration: none;
+          color: #20293a;
+          font-size: 15px;
+          font-weight: 900;
+          background: rgba(239, 242, 247, 0.72);
+          border: 1px solid rgba(226, 232, 240, 0.72);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+          transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+        }
+
+        .nav-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 26px rgba(15, 23, 42, .08);
+        }
+
+        .nav-btn.active {
           color: white;
+          background: linear-gradient(135deg, #ff7a00, #ff6500);
+          border-color: rgba(255, 122, 0, .9);
+          box-shadow: 0 14px 24px rgba(255, 106, 0, .26);
         }
 
-        .btn-filter-clear {
-          background: #e2e8f0;
-          color: #0f172a;
+        .nav-icon,
+        .stat-icon,
+        .chart-soft-icon,
+        .filter-icon,
+        .logout-icon {
+          width: 25px;
+          height: 25px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: currentColor;
+          flex-shrink: 0;
         }
+
+        .nav-icon svg,
+        .stat-icon svg,
+        .filter-icon svg,
+        .logout-icon svg { width: 100%; height: 100%; }
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
           margin-bottom: 22px;
         }
 
         .stat-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          border: 1px solid #e5e7eb;
-          border-radius: 18px;
-          padding: 18px;
-          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+          min-height: 158px;
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          padding: 28px 28px;
         }
 
-        .stat-label {
-          color: #64748b;
-          font-size: 13px;
+        .stat-icon-box {
+          width: 82px;
+          height: 82px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+        }
+        .stat-icon-box.orange { color: #ff6b00; background: #fff0e6; }
+        .stat-icon-box.green { color: #1db94b; background: #eaf9ed; }
+        .stat-icon-box.purple { color: #8657ff; background: #f0eaff; }
+
+        .stat-content small {
+          display: block;
+          color: #637083;
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 14px;
+        }
+        .stat-content strong {
+          display: block;
+          color: #111827;
+          font-size: 30px;
+          letter-spacing: -0.5px;
           margin-bottom: 10px;
         }
-
-        .stat-value {
-          font-size: 30px;
-          font-weight: 700;
-          color: #0f172a;
-          line-height: 1;
-          margin-bottom: 8px;
+        .stat-content span {
+          color: #657386;
+          font-size: 13px;
+          font-weight: 600;
         }
 
-        .stat-sub {
-          color: #94a3b8;
-          font-size: 12px;
-        }
-
-        .actions {
+        .filter-panel {
+          min-height: 92px;
+          padding: 20px 30px;
           display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
+          align-items: center;
+          gap: 18px;
+          margin-bottom: 22px;
         }
 
-        .btn {
+        .filter-panel label {
+          font-weight: 900;
+          color: #1f2937;
+          margin-right: 8px;
+          font-size: 15px;
+        }
+
+        .filter-panel select {
+          width: 350px;
+          height: 52px;
+          border-radius: 10px;
+          border: 1px solid #dce3ec;
+          padding: 0 18px;
+          color: #334155;
+          font-weight: 700;
+          font-size: 15px;
+          background: #fff;
+          outline: none;
+        }
+
+        .btn-filter-apply {
+          height: 54px;
+          padding: 0 25px;
+          border: none;
+          border-radius: 11px;
+          cursor: pointer;
+          background: linear-gradient(135deg, #ff7a00, #ff6500);
+          color: #fff;
+          font-weight: 900;
+          box-shadow: 0 12px 22px rgba(255, 106, 0, .24);
+        }
+
+        .btn-filter-clear {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          height: 54px;
+          padding: 0 18px;
+          border-radius: 11px;
           text-decoration: none;
-          padding: 13px 18px;
-          border-radius: 14px;
-          font-weight: 700;
-          font-size: 14px;
-          border: 1px solid transparent;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-          transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-        }
-
-        .btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
-        }
-
-        .btn-primary {
-          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-          color: white;
-        }
-
-        .btn-dark {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          color: white;
-        }
-
-        .btn-orange {
-          background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-          color: white;
-        }
-
-        .btn-red {
-          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-          color: white;
+          color: #667085;
+          font-weight: 800;
+          background: #eef2f7;
         }
 
         .charts-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 18px;
+          grid-template-columns: 1.05fr .96fr 1.05fr;
+          gap: 24px;
         }
 
         .chart-card {
-          background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-          border: 1px solid #e5e7eb;
-          border-radius: 22px;
-          padding: 20px;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
-          min-height: 360px;
-        }
-
-        .chart-title {
-          font-size: 22px;
-          font-weight: 700;
-          margin: 0 0 6px 0;
-          color: #1e293b;
-        }
-
-        .chart-subtitle {
-          font-size: 13px;
-          color: #64748b;
-          margin-bottom: 18px;
-        }
-
-        .chart-columns {
-          height: 260px;
-          display: flex;
-          align-items: end;
-          justify-content: space-between;
-          gap: 12px;
-          padding-top: 8px;
-        }
-
-        .chart-col {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: end;
-          gap: 8px;
-        }
-
-        .chart-col-value {
-          font-size: 11px;
-          color: #64748b;
-          text-align: center;
-          min-height: 30px;
-        }
-
-        .chart-bar-wrap {
-          height: 190px;
-          width: 100%;
-          display: flex;
-          align-items: end;
-          justify-content: center;
-        }
-
-        .chart-bar {
-          width: 100%;
-          max-width: 44px;
-          border-radius: 14px 14px 6px 6px;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
-        }
-
-        .chart-bar-blue {
-          background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
-        }
-
-        .chart-col-label {
-          font-size: 12px;
-          color: #334155;
-          text-align: center;
-          line-height: 1.2;
-        }
-
-        .hbar-list {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          padding-top: 8px;
-        }
-
-        .hbar-row {
-          display: flex;
-          flex-direction: column;
-          gap: 7px;
-        }
-
-        .hbar-header {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          font-size: 13px;
-          color: #334155;
-        }
-
-        .hbar-header strong {
-          color: #0f172a;
-          white-space: nowrap;
-        }
-
-/* ===== STATUS SELECT (visual moderno) ===== */
-.status-select {
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: none;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  text-align: center;
-  min-width: 110px;
-  appearance: none;
-}
-
-/* FEITO - verde */
-.status-FEITO {
-  background: #dcfce7;
-  color: #166534;
-}
-
-/* PENDENTE - amarelo */
-.status-PENDENTE {
-  background: #fef9c3;
-  color: #92400e;
-}
-
-/* NÃO TEM - cinza */
-.status-N\/A {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-        .hbar-track {
-          width: 100%;
-          height: 16px;
-          background: #edf2f7;
-          border-radius: 999px;
+          min-height: 420px;
+          padding: 28px 30px 24px;
+          position: relative;
           overflow: hidden;
         }
 
+        .chart-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 86% 88%, rgba(226, 232, 240, .55), transparent 23%);
+          pointer-events: none;
+        }
+
+        .chart-heading {
+          position: relative;
+          z-index: 1;
+          padding-left: 18px;
+          margin-bottom: 28px;
+        }
+        .chart-heading::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 3px;
+          height: 25px;
+          border-radius: 999px;
+          background: #94a3b8;
+        }
+        .chart-heading h2 {
+          margin: 0 0 10px;
+          font-size: 22px;
+          color: #171f31;
+          letter-spacing: -0.3px;
+        }
+        .chart-heading p {
+          margin: 0;
+          color: #59677d;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .line-chart {
+          position: relative;
+          z-index: 1;
+          display: block;
+          width: 100%;
+          height: 275px;
+          overflow: visible;
+        }
+        .grid-line { stroke: #dfe5ee; stroke-width: 1; stroke-dasharray: 4 4; }
+        .axis-line { stroke: #cfd7e3; stroke-width: 1.2; }
+        .trend-line { fill: none; stroke: #ff6b00; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+        .line-dot { fill: #ff6b00; stroke: #ff6b00; stroke-width: 2; }
+        .axis-label, .month-label, .point-value { fill: #52627a; font-weight: 800; font-size: 12px; }
+        .point-value { fill: #111827; font-size: 12px; }
+
+        .hbar-list {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 26px;
+          padding: 12px 10px 0 4px;
+        }
+        .hbar-row { display: flex; flex-direction: column; gap: 12px; }
+        .hbar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          color: #52627a;
+          font-weight: 800;
+          font-size: 14px;
+        }
+        .hbar-header strong { color: #111827; white-space: nowrap; }
+        .hbar-track {
+          width: 100%;
+          height: 10px;
+          background: #e9edf4;
+          border-radius: 999px;
+          overflow: hidden;
+        }
         .hbar-fill {
           height: 100%;
           border-radius: 999px;
         }
+        .hbar-orange { background: linear-gradient(90deg, #ff6b00, #ff7a00); }
+        .hbar-green { background: linear-gradient(90deg, #23c33a, #16a634); }
 
-        .hbar-orange {
-          background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+        .chart-soft-icon {
+          position: absolute;
+          left: 50%;
+          bottom: 28px;
+          transform: translateX(-50%);
+          width: 70px;
+          height: 70px;
+          border-radius: 14px;
+          color: #667085;
+          background: linear-gradient(180deg, #e7ebf1, #d8dde6);
+          opacity: .95;
         }
-
-        .hbar-green {
-          background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-        }
+        .chart-soft-icon svg { width: 34px; height: 34px; }
 
         .empty-state {
           color: #94a3b8;
           font-size: 14px;
-          padding: 30px 0;
+          padding: 26px 0;
+          font-weight: 700;
         }
 
-        @media (max-width: 1100px) {
-          .charts-grid {
-            grid-template-columns: 1fr;
-          }
+        .footer-note {
+          margin-top: 28px;
+          text-align: center;
+          color: #69778d;
+          font-size: 13px;
+          font-weight: 600;
         }
 
-        @media (max-width: 700px) {
-          .hero-top {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .brand-badge {
-            text-align: left;
-          }
-
-          .chart-columns {
-            gap: 8px;
-          }
+        @media (max-width: 1300px) {
+          .page-shell { width: min(100% - 36px, 1400px); }
+          .nav-panel { grid-template-columns: repeat(3, 1fr); }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .charts-grid { grid-template-columns: 1fr; }
         }
-.btn-green {
-  background: linear-gradient(135deg, #2e7d32, #1b5e20);
-  color: white;
-  box-shadow: 0 4px 12px rgba(46,125,50,0.3);
-}
-.btn-purple {
-  background: linear-gradient(135deg, #6a11cb, #4a00e0);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 12px rgba(106,17,203,0.3);
-}
 
-.btn-purple:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
+        @media (max-width: 760px) {
+          .page-shell { width: min(100% - 22px, 680px); margin-top: 16px; }
+          .topbar, .profile-area, .filter-panel { flex-direction: column; align-items: flex-start; }
+          .profile-copy { text-align: left; }
+          .nav-panel, .stats-grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+          .brand-title h1 { font-size: 25px; }
+          .filter-panel select { width: 100%; }
+          .stat-card { min-height: auto; }
+        }
       </style>
     </head>
     <body>
-      <div class="container">
-        <section class="hero">
-          <div class="hero-top">
-            <div class="brand-block">
-              <h1>📊 Painel Fiscal - Deus é Mais</h1>
+      <main class="page-shell">
+        <header class="topbar">
+          <div class="brand-left">
+            <div class="app-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="brand-title">
+              <h1>Painel Fiscal - Deus é Mais</h1>
               <p>${subtituloFiltro}</p>
             </div>
+          </div>
 
-            <div class="brand-badge">
+          <div class="profile-area">
+            <div class="profile-copy">
               <strong>Deus é Mais</strong>
-              Dashboard gerencial interno
+              <span>Dashboard gerencial interno</span>
             </div>
+            <div class="avatar-wrap" aria-hidden="true"><div class="avatar-icon"></div><span class="online-dot"></span></div>
+            <a class="logout-btn" href="/logout" title="Sair">
+              <span class="logout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
+              Sair
+            </a>
           </div>
+        </header>
 
-          <form method="GET" action="/dashboard" class="filter-box">
-            <div class="filter-group">
-              <label for="mes">Filtrar mês</label>
-              <select id="mes" name="mes">
-                <option value="">Todos os meses</option>
-                ${opcoesMesHtml}
-              </select>
-            </div>
+        <nav class="nav-panel" aria-label="Menu principal">
+          <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Lançamentos Mensais</a>
+          <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Ver Lançamentos</a>
+          <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
+          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Documentos Fiscais</a>
+          <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
+          <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
+        </nav>
 
-            <div class="filter-actions">
-              <button type="submit" class="btn-filter btn-filter-apply">Aplicar</button>
-              <a href="/dashboard" class="btn-filter btn-filter-clear">Limpar filtro</a>
-            </div>
-          </form>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Lançamentos cadastrados</div>
-              <div class="stat-value">${totalLancamentos}</div>
-              <div class="stat-sub">Total de registros no filtro atual</div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-label">Valor total lançado</div>
-              <div class="stat-value">${formatMoney(valorTotal)}</div>
-              <div class="stat-sub">Soma geral das despesas no filtro atual</div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-label">Categorias utilizadas</div>
-              <div class="stat-value">${totalCategorias}</div>
-              <div class="stat-sub">Categorias com movimentação no filtro atual</div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-label">Fornecedores lançados</div>
-              <div class="stat-value">${totalFornecedores}</div>
-              <div class="stat-sub">Fornecedores com despesas no filtro atual</div>
-            </div>
+        <section class="stats-grid" aria-label="Indicadores principais">
+          <div class="stat-card">
+            <div class="stat-icon-box orange"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></span></div>
+            <div class="stat-content"><small>Lançamentos cadastrados</small><strong>${totalLancamentos}</strong><span>Total de registros no filtro atual</span></div>
           </div>
-
-          <div class="actions">
-  <a class="btn btn-red" href="/rotina-despesas">📋 Lançamentos Mensais</a>
-  <a class="btn btn-orange" href="/lancamentos">📑 Ver lançamentos</a>
-  <a class="btn btn-green" href="/categorias">🗂 Categorias</a>
-  <a class="btn btn-dark" href="/documentos">📁 Documentos Fiscais</a>
-<a class="btn btn-purple" href="/espaco-contador">👨‍💼 Espaço do Contador</a>
-<a class="btn btn-dark" href="/usuarios">👥 Usuários</a>
-<a class="btn btn-red" href="/logout">🚪 Sair</a>
-</div>
+          <div class="stat-card">
+            <div class="stat-icon-box green"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
+            <div class="stat-content"><small>Valor total lançado</small><strong>${formatMoney(valorTotal)}</strong><span>Soma geral das despesas no filtro atual</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box purple"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3H4a1 1 0 0 0-1 1v5.59A2 2 0 0 0 3.59 11l9.59 9.59a2 2 0 0 0 2.82 0l4.59-4.59a2 2 0 0 0 0-2.59z"/><circle cx="7.5" cy="7.5" r="1"/></svg></span></div>
+            <div class="stat-content"><small>Categorias utilizadas</small><strong>${totalCategorias}</strong><span>Categorias com movimentação</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box orange"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span></div>
+            <div class="stat-content"><small>Fornecedores lançados</small><strong>${totalFornecedores}</strong><span>Fornecedores com despesas</span></div>
+          </div>
         </section>
+
+        <form method="GET" action="/dashboard" class="filter-panel">
+          <label for="mes">Filtrar mês</label>
+          <select id="mes" name="mes">
+            <option value="">Todos os meses</option>
+            ${opcoesMesHtml}
+          </select>
+          <button type="submit" class="btn-filter-apply">Aplicar filtro&nbsp;⌁</button>
+          <a href="/dashboard" class="btn-filter-clear">Limpar</a>
+        </form>
 
         <section class="charts-grid">
-          <div class="chart-card">
-            <div class="chart-title">Despesas por mês</div>
-            <div class="chart-subtitle">Últimos 6 meses lançados</div>
-            <div class="chart-columns">
-              ${mesesHtml}
-            </div>
-          </div>
+          <article class="chart-card">
+            <div class="chart-heading"><h2>Despesas por mês</h2><p>Últimos 6 meses lançados</p></div>
+            ${mesesHtml}
+          </article>
 
-          <div class="chart-card">
-            <div class="chart-title">Despesas por categoria</div>
-            <div class="chart-subtitle">Top categorias por valor no filtro atual</div>
-            <div class="hbar-list">
-              ${categoriasHtml}
-            </div>
-          </div>
+          <article class="chart-card">
+            <div class="chart-heading"><h2>Despesas por categoria</h2><p>Top categorias por valor no filtro atual</p></div>
+            <div class="hbar-list">${categoriasHtml}</div>
+            <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></div>
+          </article>
 
-          <div class="chart-card">
-            <div class="chart-title">Despesas por fornecedor</div>
-            <div class="chart-subtitle">Top fornecedores por valor no filtro atual</div>
-            <div class="hbar-list">
-              ${fornecedoresHtml}
-            </div>
-          </div>
+          <article class="chart-card">
+            <div class="chart-heading"><h2>Despesas por fornecedor</h2><p>Top fornecedores por valor no filtro atual</p></div>
+            <div class="hbar-list">${fornecedoresHtml}</div>
+            <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          </article>
         </section>
-      </div>
+
+        <div class="footer-note">© 2024 Deus é Mais. Todos os direitos reservados.</div>
+      </main>
     </body>
     </html>
   `;
