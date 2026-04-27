@@ -305,83 +305,47 @@ function normalizeDataPdfToInput(data = '') {
   return match[3] + '-' + match[2] + '-' + match[1];
 }
 
-function normalizePdfText(text = '') {
-  return String(text || '')
-    .replace(/\u0000/g, ' ')
-    .replace(/\r/g, '\n')
-    .replace(/\t/g, ' ')
-    .replace(/ {2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function extractPdfLines(text = '') {
-  return normalizePdfText(text)
-    .split(/\n+/)
-    .map(cleanPdfLine)
-    .filter(Boolean);
-}
-
-function findNextLineValue(lines, labelMatcher, valueMatcher, maxLookAhead = 10) {
-  for (let i = 0; i < lines.length; i++) {
-    if (!labelMatcher(lines[i], i)) continue;
-    for (let j = i + 1; j < Math.min(lines.length, i + 1 + maxLookAhead); j++) {
-      const candidate = cleanPdfLine(lines[j]);
-      const match = candidate.match(valueMatcher);
-      if (match) return match[1] || match[0];
-    }
-  }
-  return '';
-}
-
 function pickFornecedorFromPdfText(text = '') {
-  const lines = extractPdfLines(text);
+  const lines = String(text || '').split(/\r?\n/).map(cleanPdfLine).filter(Boolean);
   const upperLines = lines.map(stripAccentsUpper);
-  const cnpjRegex = /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g;
+  const cnpjRegex = /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g;
   const allCnpjs = [];
   for (const m of String(text || '').matchAll(cnpjRegex)) {
     if (!isMeuCnpj(m[0])) allCnpjs.push(m[0]);
   }
   const cnpj = allCnpjs[0] || '';
 
+  const keywords = ['PRESTADOR DE SERVICOS', 'PRESTADOR DO SERVICO', 'PRESTADOR DO SERVIÇO', 'EMITENTE DA NFS-E', 'EMITENTE DA NFSE'];
+  let start = upperLines.findIndex(line => keywords.some(k => line.includes(k)));
+  let end = upperLines.findIndex((line, idx) => idx > start && (line.includes('TOMADOR') || line.includes('DESTINATARIO') || line.includes('ADQUIRENTE')));
+  if (start < 0) start = 0;
+  if (end < 0) end = Math.min(lines.length, start + 35);
+  const bloco = lines.slice(start, end);
+  const blocoUpper = bloco.map(stripAccentsUpper);
+
   let fornecedor = '';
 
-  const empresaRegex = /\b(LTDA\.?|S\.A\.?|SA\.?|EIRELI|ME|EPP)\b/i;
-  for (const line of lines) {
-    const up = stripAccentsUpper(line);
-    if (empresaRegex.test(line) && !up.includes('DEUS E MAIS') && !up.includes('TOMADOR')) {
-      fornecedor = line;
-      break;
+  for (let i = 0; i < blocoUpper.length; i++) {
+    if (blocoUpper[i].includes('NOME / NOME EMPRESARIAL') || blocoUpper[i].includes('NOME/RAZAO SOCIAL') || blocoUpper[i].includes('NOME/RAZAO')) {
+      for (let j = i + 1; j < Math.min(i + 6, bloco.length); j++) {
+        const cand = bloco[j];
+        const up = blocoUpper[j];
+        if (cand && !up.includes('ENDERECO') && !up.includes('CPF/CNPJ') && !up.includes('INSCRICAO') && !up.includes('E-MAIL') && !up.includes('MUNICIPIO') && !/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/.test(cand) && !/^\d/.test(cand)) {
+          fornecedor = cand;
+          break;
+        }
+      }
     }
+    if (fornecedor) break;
   }
 
   if (!fornecedor) {
-    const markers = [
-      'PRESTADOR DE SERVICOS',
-      'PRESTADOR DO SERVICO',
-      'PRESTADOR DO SERVIÇO',
-      'EMITENTE DA NFS-E',
-      'EMITENTE DA NFSE'
-    ];
-    let start = upperLines.findIndex(line => markers.some(k => line.includes(k)));
-    if (start < 0) start = 0;
-    const end = Math.min(lines.length, start + 45);
-    for (let i = start; i < end; i++) {
-      const line = lines[i];
-      const up = upperLines[i];
-      if (!line || up.includes('DEUS E MAIS')) continue;
-      if (empresaRegex.test(line)) { fornecedor = line; break; }
-      if ((up.includes('NOME / NOME EMPRESARIAL') || up.includes('NOME/RAZAO SOCIAL') || up.includes('NOME/RAZAO')) && i + 1 < lines.length) {
-        for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
-          const cand = lines[j];
-          const candUp = upperLines[j];
-          if (cand && !candUp.includes('CPF/CNPJ') && !candUp.includes('INSCRICAO') && !candUp.includes('ENDERECO') && !/^\d/.test(cand)) {
-            fornecedor = cand;
-            break;
-          }
-        }
+    const empresaRegex = /\b(LTDA\.?|S\.A\.?|SA\.?|EIRELI|ME|EPP)\b/i;
+    for (const line of bloco) {
+      if (empresaRegex.test(line) && !stripAccentsUpper(line).includes('DEUS E MAIS')) {
+        fornecedor = line;
+        break;
       }
-      if (fornecedor) break;
     }
   }
 
@@ -389,55 +353,38 @@ function pickFornecedorFromPdfText(text = '') {
 }
 
 function extractPdfInvoiceFields(text = '') {
-  const normalized = normalizePdfText(text);
-  const flat = normalized.replace(/\s+/g, ' ').trim();
+  const normalized = String(text || '').replace(/\r/g, '');
+  const flat = normalized.replace(/\s+/g, ' ');
   const upper = stripAccentsUpper(flat);
-  const lines = extractPdfLines(normalized);
 
-  if (!normalized || normalized.trim().length < 60) {
+  if (!normalized || normalized.trim().length < 80) {
     return { reconhecido: false, mensagem: 'PDF não reconhecido. Preencha manualmente.' };
   }
 
   const { fornecedor, cnpj_cpf } = pickFornecedorFromPdfText(normalized);
 
-  let numero_documento = findNextLineValue(
-    lines,
-    (line) => /n[uú]mero\s+da\s+(nota|nfs-?e|nfse|dps)/i.test(line),
-    /^(\d{3,12})$/,
-    10
-  );
-
-  if (!numero_documento) {
-    numero_documento = findNextLineValue(
-      lines,
-      (line) => /RPS\s*N[ºo\.]?/i.test(line),
-      /^(\d{3,12})$/,
-      6
-    );
-  }
-
   const numeroPatterns = [
-    /N[úu]mero\s+da\s+Nota[\s\S]{0,220}?(?:\n|\s)(\d{5,12})(?:\n|\s)/i,
-    /N[úu]mero\s+da\s+NFS-?e[\s\S]{0,120}?(?:\n|\s)(\d{5,12})(?:\n|\s)/i,
-    /N[úu]mero\s+da\s+DPS[\s\S]{0,120}?(?:\n|\s)(\d{5,12})(?:\n|\s)/i,
-    /RPS\s*N[ºo\.]?[\s\S]{0,120}?(?:\n|\s)(\d{5,12})(?:\n|\s)/i,
-    /\bNF\s*(\d{4,12})\b/i
+    /Número\s+da\s+Nota\s*\n\s*(\d{3,})/i,
+    /Número\s+da\s+NFS-?e\s*\n\s*(\d{3,})/i,
+    /Numero\s+da\s+Nota\s*\n\s*(\d{3,})/i,
+    /Número\s+da\s+Nota[\s\S]{0,160}?\n\s*(\d{6,})\s*\n/i,
+    /Número\s+da\s+DPS\s*\n\s*(\d{3,})/i,
+    /N[ºo\.]*\s*(?:da\s*)?(?:NF|NFS-?e|Nota)\D{0,20}(\d{3,})/i,
+    /\bNF\s*(\d{4,})\b/i
   ];
+  let numero_documento = '';
   for (const re of numeroPatterns) {
-    if (numero_documento) break;
     const m = normalized.match(re) || flat.match(re);
-    if (m && m[1]) numero_documento = m[1].trim();
+    if (m && m[1]) { numero_documento = m[1].trim(); break; }
   }
-  if (numero_documento && !/^\d{3,12}$/.test(numero_documento)) numero_documento = '';
 
   const valorPatterns = [
     /VALOR\s+TOTAL\s+DO\s+SERVI[ÇC]O\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
     /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
-    /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$[\s\S]{0,140}?([\d\.]+,\d{2})/i,
+    /VALOR\s+TOTAL\s+DA\s+NOTA\s*=\s*R\$[\s\S]{0,100}?([\d\.]+,\d{2})/i,
     /VALOR\s+TOTAL\s+COBRADO\s*=\s*R\$\s*([\d\.]+,\d{2})/i,
     /Valor\s+L[íi]quido\s+da\s+NFS-?e\s*R\$\s*([\d\.]+,\d{2})/i,
-    /Valor\s+do\s+Servi[çc]o\s*R\$\s*([\d\.]+,\d{2})/i,
-    /Valor\s*:\s*R\$\s*([\d\.]+,\d{2})/i
+    /Valor\s+do\s+Servi[çc]o\s*R\$\s*([\d\.]+,\d{2})/i
   ];
   let valor = '';
   for (const re of valorPatterns) {
@@ -445,37 +392,19 @@ function extractPdfInvoiceFields(text = '') {
     if (m && m[1]) { valor = normalizeValorPdfToInput(m[1]); break; }
   }
 
-  if (!valor) {
-    const matches = [...flat.matchAll(/R\$\s*([\d\.]+,\d{2})/gi)].map(m => m[1]);
-    if (matches.length) {
-      const sorted = matches
-        .map(v => ({ raw: v, num: Number(v.replace(/\./g, '').replace(',', '.')) }))
-        .filter(v => Number.isFinite(v.num))
-        .sort((a, b) => b.num - a.num);
-      if (sorted[0]) valor = normalizeValorPdfToInput(sorted[0].raw);
-    }
-  }
-
-  let data_despesa = findNextLineValue(
-    lines,
-    (line) => /data\s+e\s+hora\s+(de|da)\s+emiss/i.test(line) || /compet[êe]ncia\s+da\s+nfs/i.test(line),
-    /(\d{2}\/\d{2}\/\d{4})/,
-    8
-  );
   const dataPatterns = [
-    /Data\s+e\s+Hora\s+de\s+Emiss[ãa]o[\s\S]{0,90}?(\d{2}\/\d{2}\/\d{4})/i,
-    /Data\s+e\s+Hora\s+da\s+emiss[ãa]o\s+da\s+NFS-?e[\s\S]{0,90}?(\d{2}\/\d{2}\/\d{4})/i,
-    /Compet[êe]ncia\s+da\s+NFS-?e[\s\S]{0,80}?(\d{2}\/\d{2}\/\d{4})/i,
+    /Data\s+e\s+Hora\s+de\s+Emiss[ãa]o\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /Data\s+e\s+Hora\s+da\s+emiss[ãa]o\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
+    /Compet[êe]ncia\s+da\s+NFS-?e\s*\n\s*(\d{2}\/\d{2}\/\d{4})/i,
     /emitido\s+em\s+(\d{2}\/\d{2}\/\d{4})/i
   ];
+  let data_despesa = '';
   for (const re of dataPatterns) {
-    if (data_despesa) break;
     const m = normalized.match(re) || flat.match(re);
-    if (m && m[1]) data_despesa = m[1];
+    if (m && m[1]) { data_despesa = normalizeDataPdfToInput(m[1]); break; }
   }
-  data_despesa = normalizeDataPdfToInput(data_despesa);
 
-  const isServico = upper.includes('NOTA FISCAL ELETRONICA DE SERVICOS') || upper.includes('NFS-E') || upper.includes('NFSE') || upper.includes('DANFSE');
+  const isServico = upper.includes('NOTA FISCAL ELETRONICA DE SERVICOS') || upper.includes('NFS-E') || upper.includes('DANFSE');
   const tipo_documento = isServico ? 'NFEs Serviço' : 'NFe Produto';
   const reconhecido = Boolean((fornecedor || cnpj_cpf) && (numero_documento || valor));
 
@@ -489,6 +418,64 @@ function extractPdfInvoiceFields(text = '') {
     cnpj_cpf,
     valor
   };
+}
+
+
+function normalizeSupplierNameFromFilename(name = '') {
+  const raw = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (raw.includes('amazon')) return { fornecedor: 'AMAZON SERVICOS DE VAREJO DO BRASIL LTDA.', cnpj_cpf: '15.436.940/0001-03' };
+  if (raw.includes('shopee') || raw.includes('shps')) return { fornecedor: 'SHPS TECNOLOGIA E SERVICOS LTDA.', cnpj_cpf: '35.635.824/0001-12' };
+  if (raw.includes('ebazar') || raw.includes('mercado livre')) {
+    if (raw.includes('armazenagem')) return { fornecedor: 'EBAZAR.COM.BR. LTDA', cnpj_cpf: '03.007.331/0079-01' };
+    return { fornecedor: 'EBAZAR.COM.BR. LTDA', cnpj_cpf: '03.007.331/0015-47' };
+  }
+  return { fornecedor: '', cnpj_cpf: '' };
+}
+
+function extractPdfFieldsFromOriginalName(originalName = '') {
+  const nome = String(originalName || '');
+  const semExt = nome.replace(/\.pdf$/i, '');
+  const supplier = normalizeSupplierNameFromFilename(semExt);
+
+  const numeroMatch = semExt.match(/(?:^|[-_\s])NF\s*[-_\s]*(\d{3,12})/i) ||
+                      semExt.match(/NFS?[eE]?\s*[-_\s]*(\d{3,12})/i) ||
+                      semExt.match(/Nota\s*[-_\s]*(\d{3,12})/i);
+
+  const valorMatch = semExt.match(/R\$\s*([\d\.]+,\d{2})/i) ||
+                     semExt.match(/RS\s*([\d\.]+,\d{2})/i);
+
+  let fornecedorArquivo = '';
+  const partes = semExt.split('-').map(p => p.trim()).filter(Boolean);
+  if (partes.length >= 2 && !supplier.fornecedor) fornecedorArquivo = partes[1];
+
+  const reconhecido = Boolean((supplier.fornecedor || fornecedorArquivo) && (numeroMatch || valorMatch));
+
+  return {
+    reconhecido,
+    mensagem: reconhecido ? 'PDF reconhecido. Confira os campos antes de salvar.' : 'PDF não reconhecido. Preencha manualmente.',
+    tipo_documento: 'NFEs Serviço',
+    numero_documento: numeroMatch ? numeroMatch[1] : '',
+    data_despesa: '',
+    fornecedor: supplier.fornecedor || fornecedorArquivo,
+    cnpj_cpf: supplier.cnpj_cpf || '',
+    valor: valorMatch ? normalizeValorPdfToInput(valorMatch[1]) : ''
+  };
+}
+
+function mergePdfExtraction(primary = {}, fallback = {}) {
+  const merged = { ...fallback, ...primary };
+  ['tipo_documento', 'numero_documento', 'data_despesa', 'fornecedor', 'cnpj_cpf', 'valor'].forEach(key => {
+    if (!merged[key] && fallback[key]) merged[key] = fallback[key];
+  });
+  merged.reconhecido = Boolean((merged.fornecedor || merged.cnpj_cpf) && (merged.numero_documento || merged.valor));
+  if (!merged.reconhecido) {
+    merged.mensagem = 'PDF não reconhecido. Preencha manualmente.';
+  } else if (!primary.reconhecido && fallback.reconhecido) {
+    merged.mensagem = 'PDF reconhecido pelo nome do arquivo. Confira os campos antes de salvar.';
+  } else {
+    merged.mensagem = primary.mensagem || fallback.mensagem || 'PDF reconhecido. Confira os campos antes de salvar.';
+  }
+  return merged;
 }
 
 async function parseXmlDocumento(filePath) {
@@ -5938,35 +5925,33 @@ router.post('/novo/preencher-pdf', upload.single('pdf_preenchimento'), async (re
     if (!req.file) return voltarComMensagem('Selecione um PDF para preencher automaticamente.');
 
     const filePath = getUploadFilePath(req.file.filename);
-    let pdfParse;
+    const fallbackArquivo = extractPdfFieldsFromOriginalName(req.file.originalname || '');
+    let extraido = fallbackArquivo;
+
     try {
-      pdfParse = require('pdf-parse');
-    } catch (depError) {
-      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      return voltarComMensagem('Biblioteca pdf-parse não instalada. Rode npm install pdf-parse e tente novamente.');
+      const pdfParse = require('pdf-parse');
+      const buffer = fs.readFileSync(filePath);
+      const parsed = await pdfParse(buffer);
+      let pdfText = parsed && parsed.text ? String(parsed.text) : '';
+      pdfText = pdfText
+        .replace(/\u0000/g, ' ')
+        .replace(/\r/g, '\n')
+        .replace(/\t/g, ' ')
+        .replace(/ {2,}/g, ' ')
+        .trim();
+      const extraidoTexto = extractPdfInvoiceFields(pdfText);
+      extraido = mergePdfExtraction(extraidoTexto, fallbackArquivo);
+    } catch (pdfError) {
+      extraido = fallbackArquivo;
     }
-
-    const buffer = fs.readFileSync(filePath);
-    const parsed = await pdfParse(buffer);
-
-    let pdfText = parsed && parsed.text ? String(parsed.text) : '';
-    // Normalização prévia: alguns PDFs de NF vêm com quebras/spacing muito irregulares.
-    pdfText = pdfText
-      .replace(/\u0000/g, ' ')
-      .replace(/\r/g, '\n')
-      .replace(/ {2,}/g, ' ')
-      .trim();
 
     if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-    const extraido = extractPdfInvoiceFields(pdfText);
     const params = new URLSearchParams();
     if (rotinaId) params.set('rotina_id', rotinaId);
-    params.set('pdf_msg', extraido.mensagem);
+    params.set('pdf_msg', extraido.mensagem || 'PDF não reconhecido. Preencha manualmente.');
 
-    if (!extraido.reconhecido) {
-      return res.redirect('/novo?' + params.toString());
-    }
+    if (!extraido.reconhecido) return res.redirect('/novo?' + params.toString());
 
     ['tipo_documento', 'numero_documento', 'data_despesa', 'fornecedor', 'cnpj_cpf', 'valor'].forEach(campo => {
       if (extraido[campo]) params.set(campo, extraido[campo]);
