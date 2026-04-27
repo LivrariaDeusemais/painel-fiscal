@@ -168,6 +168,18 @@ function normalizeDate(dateValue) {
   return text;
 }
 
+function formatDateBR(dateValue) {
+  if (!dateValue) return '';
+  const text = String(dateValue).trim();
+  if (!text) return '';
+  const iso = text.includes('T') ? text.split('T')[0] : text;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    const [ano, mes, dia] = iso.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+  return text;
+}
+
 async function parseXmlDocumento(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf8');
 
@@ -1319,7 +1331,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <main class="page-shell">
@@ -1757,7 +1780,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
 </head>
 
 <body>
@@ -2403,7 +2437,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
 
       <body>
@@ -2417,7 +2462,7 @@ tr:hover {
 
               <div class="actions">
                 <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
-                <a class="btn btn-blue" href="/logout">🚪 Sair</a>
+                <a class="btn btn-dark" href="/logout">🚪 Sair</a>
               </div>
             </div>
 
@@ -2839,7 +2884,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -3235,7 +3291,18 @@ button.btn-primary,
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -3252,7 +3319,7 @@ button.btn-primary,
               <input name="nova_senha" type="password" placeholder="Digite a nova senha" required />
 
               <div class="actions">
-                <button class="btn btn-blue" type="submit">Salvar nova senha</button>
+                <button class="btn btn-dark" type="submit">Salvar nova senha</button>
                 <a class="btn btn-dark" href="/usuarios">Voltar</a>
               </div>
             </form>
@@ -3815,7 +3882,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -4296,7 +4374,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -4825,7 +4914,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -5397,7 +5497,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
         
 
 /* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
@@ -5622,7 +5733,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -6015,7 +6137,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           <td class="actions-cell">
             <a class="icon-btn" title="Editar" href="/editar/${l.id}">✏️</a>
             <form method="POST" action="/excluir/${l.id}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este lançamento?');">
-              <button type="submit" class="icon-btn" title="Excluir">🗑️</button>
+              <button type="submit" class="icon-btn btn-icon-danger" title="Excluir">🗑️</button>
             </form>
           </td>
         </tr>
@@ -6481,7 +6603,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -6490,11 +6623,11 @@ tr:hover {
 
             <div class="actions">
               <a class="btn btn-primary" href="/novo">+ Novo lançamento</a>
-              <a class="btn btn-secondary" href="/dashboard">Voltar ao Painel</a>
-              <a class="btn btn-secondary" href="/documentos">Documentos Fiscais</a>
-<a class="btn btn-secondary" href="/rotina-despesas">📋 Levantamento de Despesas Mensais</a>
-              <a class="btn btn-success" href="/exportar-excel?fornecedor=${encodeURIComponent(fornecedor)}&categoria_id=${encodeURIComponent(categoria_id)}&tipo_pagamento=${encodeURIComponent(tipo_pagamento)}&cnpj_cpf=${encodeURIComponent(cnpj_cpf)}&codigo_pagamento=${encodeURIComponent(codigo_pagamento)}&numero_documento=${encodeURIComponent(numero_documento)}&data_inicio=${encodeURIComponent(data_inicio)}&data_fim=${encodeURIComponent(data_fim)}">Exportar Excel</a>
-              <button type="button" class="btn btn-secondary" onclick="togglePainelColunas()">Colunas</button>
+              <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
+              <a class="btn btn-dark" href="/documentos">Documentos Fiscais</a>
+<a class="btn btn-dark" href="/rotina-despesas">📋 Levantamento de Despesas Mensais</a>
+              <a class="btn btn-dark" href="/exportar-excel?fornecedor=${encodeURIComponent(fornecedor)}&categoria_id=${encodeURIComponent(categoria_id)}&tipo_pagamento=${encodeURIComponent(tipo_pagamento)}&cnpj_cpf=${encodeURIComponent(cnpj_cpf)}&codigo_pagamento=${encodeURIComponent(codigo_pagamento)}&numero_documento=${encodeURIComponent(numero_documento)}&data_inicio=${encodeURIComponent(data_inicio)}&data_fim=${encodeURIComponent(data_fim)}">Exportar Excel</a>
+              <button type="button" class="btn btn-dark" onclick="togglePainelColunas()">Colunas</button>
             </div>
 
             <div id="painel-colunas" class="painel-colunas" style="display:none;">
@@ -7133,7 +7266,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -7475,7 +7619,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -7849,7 +8004,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -7924,7 +8090,7 @@ router.get('/', (req, res) => {
 router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
     const statusFiltro = (req.query.status || '').trim();
-    const vencimentoFiltro = (req.query.vencimento || '').trim();
+    const vencimentoFiltro = (req.query.data_vencimento || '').trim();
 
     const whereParts = [];
     const values = [];
@@ -7940,13 +8106,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
-
-    const formatDateBR = (value) => {
-      if (!value) return '';
-      const data = new Date(value);
-      if (Number.isNaN(data.getTime())) return '';
-      return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-    };
 
     const result = await pool.query(`
       SELECT
@@ -7976,12 +8135,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td>${r.tipo_pagamento_padrao || ''}</td>
           <td>${r.categoria_principal_nome || ''}</td>
           <td>${r.subcategoria_nome || ''}</td>
-          <td class="col-vencimento">${formatDateBR(r.data_vencimento) || '-'}</td>
+          <td>${formatDateBR(r.data_vencimento) || '-'}</td>
 
           <td class="col-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
-              <input type="hidden" name="vencimento_filtro" value="${vencimentoFiltro}">
+              <input type="hidden" name="data_vencimento_filtro" value="${vencimentoFiltro}">
 
               <select
                 name="status"
@@ -8070,12 +8229,17 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           font-size: 13px;
         }
 
-        .filter-group select {
-          padding: 10px 12px;
+        .filter-group select,
+        .filter-group input[type="date"] {
+          height: 44px;
+          padding: 0 18px;
           border: 1px solid #d1d5db;
-          border-radius: 8px;
-          font-size: 14px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 700;
           min-width: 180px;
+          background: #fff;
+          color: #334155;
         }
 
         .btn {
@@ -8132,7 +8296,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         }
 
         .col-status,
-        .col-vencimento,
         .col-ativo,
         .col-acoes {
           text-align: center;
@@ -8141,10 +8304,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
         .col-status {
           width: 150px;
-        }
-
-        .col-vencimento {
-          width: 120px;
         }
 
         .col-ativo {
@@ -8459,7 +8618,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -8469,13 +8639,13 @@ tr:hover {
           <div class="top-bar">
             <div class="actions">
               <a class="btn btn-primary" href="/rotina-despesas/novo">+ Novo item</a>
-              <a class="btn btn-secondary" href="/lancamentos">📊 Lista de lançamentos</a>
-              <a class="btn btn-secondary" href="/dashboard">Voltar ao Painel</a>
+              <a class="btn btn-dark" href="/lancamentos">📊 Lista de lançamentos</a>
+              <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
 
               <form method="POST" action="/rotina-despesas/reset-status" style="display:inline;">
                 <button
                   type="submit"
-                  class="btn btn-warning"
+                  class="btn btn-dark"
                   onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');"
                 >
                   🔄 Mudar todos para PENDENTE
@@ -8495,12 +8665,17 @@ tr:hover {
               </div>
 
               <div class="filter-group">
-                <label for="vencimento">Filtrar por vencimento</label>
-                <input id="vencimento" name="vencimento" type="date" value="${vencimentoFiltro}" />
+                <label for="data_vencimento">Filtrar por vencimento</label>
+                <input
+                  id="data_vencimento"
+                  name="data_vencimento"
+                  type="date"
+                  value="${vencimentoFiltro}"
+                />
               </div>
 
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
-              <a href="/rotina-despesas" class="btn btn-secondary">Limpar</a>
+              <a href="/rotina-despesas" class="btn btn-dark">Limpar</a>
             </form>
           </div>
 
@@ -8513,7 +8688,7 @@ tr:hover {
                 <th>Pagamento</th>
                 <th>Categoria Principal</th>
                 <th>Subcategoria</th>
-                <th class="col-vencimento">Vencimento</th>
+                <th>Vencimento</th>
                 <th class="col-status">Status</th>
                 <th class="col-ativo">Ativo</th>
                 <th class="col-acoes">Ações</th>
@@ -8544,7 +8719,7 @@ tr:hover {
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, status_filtro, vencimento_filtro } = req.body;
+    const { status, status_filtro, data_vencimento_filtro } = req.body;
 
     await pool.query(`
       UPDATE rotina_despesas
@@ -8552,9 +8727,11 @@ router.post('/rotina-despesas/status/:id', async (req, res) => {
       WHERE id = $2
     `, [status || 'PENDENTE', id]);
 
-    const destino = status_filtro
-      ? `/rotina-despesas?status=${encodeURIComponent(status_filtro)}`
-      : '/rotina-despesas';
+    const redirectParams = new URLSearchParams();
+    if (status_filtro) redirectParams.set('status', status_filtro);
+    if (data_vencimento_filtro) redirectParams.set('data_vencimento', data_vencimento_filtro);
+    const redirectQuery = redirectParams.toString();
+    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
 
     res.redirect(destino);
   } catch (error) {
@@ -8902,7 +9079,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -8993,7 +9181,7 @@ tr:hover {
 
             <div class="actions">
               <button class="btn btn-primary" type="submit">Salvar</button>
-              <a class="btn btn-secondary" href="/rotina-despesas">Cancelar</a>
+              <a class="btn btn-dark" href="/rotina-despesas">Cancelar</a>
             </div>
           </form>
         </div>
@@ -9396,7 +9584,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
     </head>
     <body>
       <div class="container">
@@ -9428,7 +9627,7 @@ tr:hover {
 
               <div>
                 <label for="data_vencimento">Data de vencimento</label>
-                <input id="data_vencimento" name="data_vencimento" type="date" value="${item.data_vencimento ? new Date(item.data_vencimento).toISOString().split('T')[0] : ''}" />
+                <input id="data_vencimento" name="data_vencimento" type="date" value="${item.data_vencimento ? String(item.data_vencimento).split('T')[0] : ''}" />
               </div>
 
               <div class="full">
@@ -9487,7 +9686,7 @@ tr:hover {
 
             <div class="actions">
               <button class="btn btn-primary" type="submit">Atualizar</button>
-              <a class="btn btn-secondary" href="/rotina-despesas">Cancelar</a>
+              <a class="btn btn-dark" href="/rotina-despesas">Cancelar</a>
             </div>
           </form>
         </div>
@@ -10216,7 +10415,18 @@ tr:hover {
 
 /* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
 
-      </style>
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #ff6b00, #f05a00) !important; color: #ffffff !important; border: 1px solid rgba(255, 122, 0, 0.88) !important; box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+</style>
       </head>
       <body>
         <div class="container">
@@ -10237,7 +10447,7 @@ tr:hover {
               </div>
 
               <div class="actions">
-                <button type="submit" class="btn btn-blue">Aplicar mês</button>
+                <button type="submit" class="btn btn-dark">Aplicar mês</button>
                 <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
               </div>
             </form>
@@ -10303,7 +10513,7 @@ tr:hover {
                 <div class="metric">${totalPdf}</div>
 
                 <div class="actions">
-                  <a class="btn btn-blue" href="/espaco-contador/download/pdf?mes=${mes}">
+                  <a class="btn btn-dark" href="/espaco-contador/download/pdf?mes=${mes}">
                     ⬇ Baixar PDF em massa
                   </a>
                 </div>
