@@ -1095,6 +1095,168 @@ function renderDashboard(data) {
           .filter-panel select { width: 100%; }
           .stat-card { min-height: auto; }
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -1309,7 +1471,169 @@ router.get('/login', (req, res) => {
       font-size: 13px;
       color: #64748b;
     }
-  </style>
+  
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
 </head>
 
 <body>
@@ -1731,7 +2055,169 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
               grid-template-columns: 1fr;
             }
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
 
       <body>
@@ -1943,7 +2429,169 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
             background: #111827;
             color: white;
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -2106,7 +2754,169 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
             background: #111827;
             color: white;
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -2462,7 +3272,169 @@ tr:hover td {
   color: #1d4ed8;
   transform: scale(1.08);
 }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -2719,7 +3691,169 @@ tr:hover {
   color: #1d4ed8;
   transform: scale(1.08);
 }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -3024,7 +4158,169 @@ router.get('/novo', async (req, res) => {
             font-size: 10px;
             color: #6b7280;
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -3372,8 +4668,332 @@ button:hover {
 .btn-secondary:hover {
   background: #d1d5db;
 }
-</style>
-        </style>
+
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -4008,7 +5628,169 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           .icon-btn[title="Editar"] {
             color: #2563eb;
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
@@ -4446,6 +6228,168 @@ router.get('/categorias', protegerRota, async (req, res) => {
           text-decoration: none;
           margin-right: 8px;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -4564,6 +6508,168 @@ router.get('/categorias/nova', async (req, res) => {
           background: #e5e7eb;
           color: #111827;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -4714,6 +6820,168 @@ router.get('/categorias/editar/:id', async (req, res) => {
           background: #e5e7eb;
           color: #111827;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -5078,6 +7346,168 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         .icon-btn[title="Editar"] {
           color: #2563eb;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -5291,6 +7721,168 @@ router.get('/rotina-despesas/novo', async (req, res) => {
           background: #e5e7eb;
           color: #111827;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -5553,6 +8145,168 @@ router.get('/rotina-despesas/editar/:id', async (req, res) => {
           background: #e5e7eb;
           color: #111827;
         }
+      
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
       </style>
     </head>
     <body>
@@ -6141,7 +8895,169 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
               grid-template-columns: 1fr;
             }
           }
-        </style>
+        
+
+/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #ff6b00;
+  --dm-orange-dark: #f05a00;
+  --dm-orange-soft: #fff0e6;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 153, 35, 0.78) 0%, rgba(255, 205, 137, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 122, 0, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(255, 106, 0, .20) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(255, 240, 230, 0.45) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+
+      </style>
       </head>
       <body>
         <div class="container">
