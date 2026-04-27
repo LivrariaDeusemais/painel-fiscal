@@ -170,14 +170,43 @@ function normalizeDate(dateValue) {
 
 function formatDateBR(dateValue) {
   if (!dateValue) return '';
+
+  // PostgreSQL pode devolver DATE como objeto Date.
+  // Usamos UTC para evitar virar o dia por causa de fuso horário.
+  if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
+    const dia = String(dateValue.getUTCDate()).padStart(2, '0');
+    const mes = String(dateValue.getUTCMonth() + 1).padStart(2, '0');
+    const ano = dateValue.getUTCFullYear();
+    return `${dia}/${mes}/${ano}`;
+  }
+
   const text = String(dateValue).trim();
   if (!text) return '';
+
   const iso = text.includes('T') ? text.split('T')[0] : text;
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
     const [ano, mes, dia] = iso.split('-');
     return `${dia}/${mes}/${ano}`;
   }
+
   return text;
+}
+
+function formatDateInput(dateValue) {
+  if (!dateValue) return '';
+
+  if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
+    const dia = String(dateValue.getUTCDate()).padStart(2, '0');
+    const mes = String(dateValue.getUTCMonth() + 1).padStart(2, '0');
+    const ano = dateValue.getUTCFullYear();
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  const text = String(dateValue).trim();
+  if (!text) return '';
+
+  const iso = text.includes('T') ? text.split('T')[0] : text;
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
 }
 
 async function parseXmlDocumento(filePath) {
@@ -6993,6 +7022,7 @@ router.get('/categorias', protegerRota, async (req, res) => {
           background: #f6f8fb;
           margin: 0;
           color: #111827;
+          font-size: 14px;
         }
         .container {
           max-width: 980px;
@@ -8135,7 +8165,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td>${r.tipo_pagamento_padrao || ''}</td>
           <td>${r.categoria_principal_nome || ''}</td>
           <td>${r.subcategoria_nome || ''}</td>
-          <td>${formatDateBR(r.data_vencimento) || '-'}</td>
+          <td class="col-vencimento">${formatDateBR(r.data_vencimento) || '-'}</td>
 
           <td class="col-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
@@ -8275,11 +8305,13 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         }
 
         th, td {
-          padding: 12px 10px;
+          padding: 10px 10px;
           border-bottom: 1px solid #eee;
           text-align: left;
           vertical-align: middle;
           word-wrap: break-word;
+          font-size: 13px;
+          line-height: 1.25;
         }
 
         th {
@@ -8299,6 +8331,11 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         .col-ativo,
         .col-acoes {
           text-align: center;
+          white-space: nowrap;
+        }
+
+        .col-vencimento {
+          width: 105px;
           white-space: nowrap;
         }
 
@@ -8688,7 +8725,7 @@ tr:hover {
                 <th>Pagamento</th>
                 <th>Categoria Principal</th>
                 <th>Subcategoria</th>
-                <th>Vencimento</th>
+                <th class="col-vencimento">Vencimento</th>
                 <th class="col-status">Status</th>
                 <th class="col-ativo">Ativo</th>
                 <th class="col-acoes">Ações</th>
@@ -9627,7 +9664,7 @@ tr:hover {
 
               <div>
                 <label for="data_vencimento">Data de vencimento</label>
-                <input id="data_vencimento" name="data_vencimento" type="date" value="${item.data_vencimento ? String(item.data_vencimento).split('T')[0] : ''}" />
+                <input id="data_vencimento" name="data_vencimento" type="date" value="${formatDateInput(item.data_vencimento)}" />
               </div>
 
               <div class="full">
