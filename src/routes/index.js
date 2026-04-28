@@ -7847,16 +7847,18 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           .month-compact-row { display: flex; align-items: center; gap: 8px; }
         .month-current-display { min-width: 78px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 12px; background: #ffffff; border: 1px solid #dce3ec; color: #172033; font-weight: 900; white-space: nowrap; }
         .btn-month-open { min-width: 118px !important; height: 42px !important; padding: 0 14px !important; }
-        .month-picker-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.16); align-items: center; justify-content: center; padding: 18px; }
+        .month-picker-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.16); align-items: flex-start; justify-content: center; padding: 88px 18px 18px; }
         .month-picker-overlay.open { display: flex; }
-        .month-picker-popover { width: 360px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.96); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 16px; }
+        .month-picker-popover { width: 338px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.98); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 14px; }
         .month-picker-head { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; margin-bottom: 14px; }
         .month-nav-btn { height: 38px !important; min-height: 38px !important; border-radius: 12px !important; padding: 0 !important; font-size: 20px !important; line-height: 1 !important; }
         .month-year-select { height: 38px !important; text-align: center; font-weight: 900; }
         .month-grid-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .month-cell { height: 44px !important; min-height: 44px !important; padding: 0 !important; border-radius: 12px !important; font-size: 14px !important; font-weight: 900 !important; background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .05) !important; }
-        .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; }
-        .month-picker-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+        .month-cell { height: 38px !important; min-height: 38px !important; padding: 0 !important; border-radius: 11px !important; font-size: 13px !important; font-weight: 900 !important; background: #E8F7EE !important; color: #14532d !important; border: 1px solid #c8ecd4 !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important; transition: all .16s ease !important; }
+        .month-cell:hover, .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; transform: translateY(-1px); }
+        .month-picker-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+        .month-selected-preview { color: #14532d; font-size: 12px; font-weight: 900; white-space: nowrap; }
+        .month-picker-footer-actions { display: flex; justify-content: flex-end; gap: 8px; }
         th.col-vencimento, td.col-vencimento, th.col-status-pagto, td.col-status-pagto { text-align: center !important; vertical-align: middle !important; }
 
         .painel-colunas {
@@ -10759,16 +10761,18 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         .month-compact-row { display: flex; align-items: center; gap: 8px; }
         .month-current-display { min-width: 78px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 12px; background: #ffffff; border: 1px solid #dce3ec; color: #172033; font-weight: 900; white-space: nowrap; }
         .btn-month-open { min-width: 118px !important; height: 42px !important; padding: 0 14px !important; }
-        .month-picker-overlay { display: none !important; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.20); align-items: center; justify-content: center; padding: 18px; }
+        .month-picker-overlay { display: none !important; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.20); align-items: flex-start; justify-content: center; padding: 88px 18px 18px; }
         .month-picker-overlay.open { display: flex !important; }
-        .month-picker-popover { width: 360px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.98); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 16px; }
+        .month-picker-popover { width: 338px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.98); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 14px; }
         .month-picker-head { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; margin-bottom: 14px; }
         .month-nav-btn { height: 38px !important; min-height: 38px !important; border-radius: 12px !important; padding: 0 !important; font-size: 20px !important; line-height: 1 !important; }
         .month-year-select { height: 38px !important; text-align: center; font-weight: 900; }
         .month-grid-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .month-cell { height: 44px !important; min-height: 44px !important; padding: 0 !important; border-radius: 12px !important; font-size: 14px !important; font-weight: 900 !important; background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .05) !important; }
-        .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; }
-        .month-picker-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+        .month-cell { height: 38px !important; min-height: 38px !important; padding: 0 !important; border-radius: 11px !important; font-size: 13px !important; font-weight: 900 !important; background: #E8F7EE !important; color: #14532d !important; border: 1px solid #c8ecd4 !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important; transition: all .16s ease !important; }
+        .month-cell:hover, .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; transform: translateY(-1px); }
+        .month-picker-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+        .month-selected-preview { color: #14532d; font-size: 12px; font-weight: 900; white-space: nowrap; }
+        .month-picker-footer-actions { display: flex; justify-content: flex-end; gap: 8px; }
         th.col-vencimento, td.col-vencimento, th.col-status-pagto, td.col-status-pagto { text-align: center !important; vertical-align: middle !important; }
 
         .acoes-wrap {
@@ -11300,8 +11304,11 @@ body {
                 </div>
 
                 <div class="month-picker-footer">
-                  <button type="button" class="btn btn-dark" onclick="fecharSeletorMes()">Cancelar</button>
-                  <button type="button" class="btn btn-primary" onclick="aplicarMesCompetencia()">Filtrar</button>
+                  <span class="month-selected-preview" id="monthSelectedPreview">Selecionado: ${mesAnoEdicaoLabel}</span>
+                  <div class="month-picker-footer-actions">
+                    <button type="button" class="btn btn-dark" onclick="fecharSeletorMes()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="aplicarMesCompetencia()">Filtrar mês</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -11387,9 +11394,22 @@ body {
         document.addEventListener('DOMContentLoaded', carregarPreferenciasColunasRotina);
 
         let mesSelecionadoPicker = '${mesNumeroEdicao}';
+        const nomesMesPicker = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+        function obterLabelMesPicker() {
+          const ano = document.getElementById('monthPickerYear')?.value || '${anoMesEdicao}';
+          const indiceMes = Math.max(0, Math.min(11, parseInt(mesSelecionadoPicker || '1', 10) - 1));
+          return nomesMesPicker[indiceMes] + '-' + String(ano).slice(-2);
+        }
+
+        function atualizarPreviewMesPicker() {
+          const preview = document.getElementById('monthSelectedPreview');
+          if (preview) preview.textContent = 'Selecionado: ' + obterLabelMesPicker();
+        }
 
         function abrirSeletorMes() {
           const overlay = document.getElementById('monthPickerOverlay');
+          atualizarPreviewMesPicker();
           if (overlay) overlay.classList.add('open');
         }
 
@@ -11404,9 +11424,13 @@ body {
           document.querySelectorAll('#monthGridPicker .month-cell').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.month === mesSelecionadoPicker);
           });
+          atualizarPreviewMesPicker();
         }
 
-        function atualizarMesesPicker() { selecionarMesPicker(mesSelecionadoPicker); }
+        function atualizarMesesPicker() {
+          selecionarMesPicker(mesSelecionadoPicker);
+          atualizarPreviewMesPicker();
+        }
 
         function mudarAnoPicker(delta) {
           const select = document.getElementById('monthPickerYear');
@@ -11415,6 +11439,7 @@ body {
           let novo = atual + delta;
           novo = Math.max(2025, Math.min(2030, novo));
           select.value = String(novo);
+          atualizarPreviewMesPicker();
         }
 
         function aplicarMesCompetencia() {
@@ -11426,6 +11451,8 @@ body {
           if (campoAcao) campoAcao.value = 'mes';
           document.getElementById('monthReferenceForm')?.submit();
         }
+
+        document.addEventListener('DOMContentLoaded', atualizarPreviewMesPicker);
 
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
