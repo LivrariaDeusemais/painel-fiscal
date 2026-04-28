@@ -286,6 +286,33 @@ function gerarOpcoesMesAno(selectedValue = '') {
   return opcoes.join('');
 }
 
+function normalizarDiaVencimento(value) {
+  if (value === undefined || value === null) return '';
+  const text = String(value).trim();
+  if (!text) return '';
+  const match = text.match(/\d{1,2}/);
+  if (!match) return '';
+  const dia = Number.parseInt(match[0], 10);
+  if (!Number.isFinite(dia) || dia < 1 || dia > 31) return '';
+  return String(dia);
+}
+
+function formatDiaVencimento(value) {
+  const dia = normalizarDiaVencimento(value);
+  return dia ? dia.padStart(2, '0') : '';
+}
+
+function gerarOpcoesDiaVencimento(selectedValue = '', placeholder = 'Selecione o dia') {
+  const selected = normalizarDiaVencimento(selectedValue);
+  let options = `<option value="" ${selected === '' ? 'selected' : ''}>${placeholder}</option>`;
+  for (let i = 1; i <= 31; i++) {
+    const valor = String(i);
+    const label = valor.padStart(2, '0');
+    options += `<option value="${valor}" ${selected === valor ? 'selected' : ''}>${label}</option>`;
+  }
+  return options;
+}
+
 async function parseXmlDocumento(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf8');
 
@@ -2232,6 +2259,11 @@ body {
           </label>
 
           <label>
+            <input type="checkbox" id="salvarSenha" />
+            Salvar senha
+          </label>
+
+          <label>
             <input type="checkbox" id="mostrarSenha" />
             Mostrar senha
           </label>
@@ -2250,13 +2282,20 @@ body {
     const emailInput = document.getElementById('email');
     const lembrarLogin = document.getElementById('lembrarLogin');
     const mostrarSenha = document.getElementById('mostrarSenha');
+    const salvarSenha = document.getElementById('salvarSenha');
     const senhaInput = document.getElementById('senha');
 
     const emailSalvo = localStorage.getItem('painel_email');
+    const senhaSalva = localStorage.getItem('painel_senha');
 
     if (emailSalvo) {
       emailInput.value = emailSalvo;
       lembrarLogin.checked = true;
+    }
+
+    if (senhaSalva) {
+      senhaInput.value = senhaSalva;
+      salvarSenha.checked = true;
     }
 
     lembrarLogin.addEventListener('change', () => {
@@ -2265,9 +2304,18 @@ body {
       }
     });
 
+    salvarSenha.addEventListener('change', () => {
+      if (!salvarSenha.checked) {
+        localStorage.removeItem('painel_senha');
+      }
+    });
+
     document.querySelector('form').addEventListener('submit', () => {
       if (lembrarLogin.checked) {
         localStorage.setItem('painel_email', emailInput.value);
+      }
+      if (salvarSenha.checked) {
+        localStorage.setItem('painel_senha', senhaInput.value);
       }
     });
 
@@ -10174,7 +10222,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
     const mesAnoEdicao = (req.query.mes_ano || '').trim();
     const statusFiltro = (req.query.status || '').trim();
-    const diaVencimentoFiltro = (req.query.dia_vencimento || '').trim();
+    const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
 
     const whereParts = [];
@@ -10187,7 +10235,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
     if (diaVencimentoFiltro) {
       values.push(diaVencimentoFiltro);
-      whereParts.push(`COALESCE(r.dia_vencimento, '') = $${values.length}`);
+      whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length}`);
     }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
@@ -10222,7 +10270,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td class="col-rot-pagamento">${r.tipo_pagamento_padrao || ''}</td>
           <td class="col-rot-cat-principal">${r.categoria_principal_nome || ''}</td>
           <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
-          <td class="col-vencimento col-rot-vencimento">${r.dia_vencimento || formatDateBR(r.data_vencimento) || '-'}</td>
+          <td class="col-vencimento col-rot-vencimento">${formatDiaVencimento(r.dia_vencimento) || formatDateBR(r.data_vencimento) || '-'}</td>
 
           <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
@@ -10956,13 +11004,9 @@ body {
 
               <div class="filter-group">
                 <label for="dia_vencimento">Filtrar por dia vencimento</label>
-                <input
-                  id="dia_vencimento"
-                  name="dia_vencimento"
-                  type="text"
-                  placeholder="Ex.: 5, 10, dia 15"
-                  value="${diaVencimentoFiltro}"
-                />
+                <select id="dia_vencimento" name="dia_vencimento">
+                  ${gerarOpcoesDiaVencimento(diaVencimentoFiltro, 'Todos os dias')}
+                </select>
               </div>
 
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
@@ -11627,7 +11671,9 @@ body {
 
               <div>
                 <label for="dia_vencimento">Dia de vencimento</label>
-                <input id="dia_vencimento" name="dia_vencimento" type="text" placeholder="Ex.: 5, 10, dia 15" />
+                <select id="dia_vencimento" name="dia_vencimento">
+                  ${gerarOpcoesDiaVencimento('', 'Selecione o dia')}
+                </select>
               </div>
 
               <div class="full">
@@ -11739,7 +11785,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
-      dia_vencimento || null,
+      normalizarDiaVencimento(dia_vencimento) || null,
       toNullableInt(categoria_principal_id),
       toNullableInt(subcategoria_id),
       status || 'PENDENTE',
@@ -12295,7 +12341,9 @@ body {
 
               <div>
                 <label for="dia_vencimento">Dia de vencimento</label>
-                <input id="dia_vencimento" name="dia_vencimento" type="text" value="${item.dia_vencimento || ''}" placeholder="Ex.: 5, 10, dia 15" />
+                <select id="dia_vencimento" name="dia_vencimento">
+                  ${gerarOpcoesDiaVencimento(item.dia_vencimento, 'Selecione o dia')}
+                </select>
               </div>
 
               <div class="full">
@@ -12410,7 +12458,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
-      dia_vencimento || null,
+      normalizarDiaVencimento(dia_vencimento) || null,
       toNullableInt(categoria_principal_id),
       toNullableInt(subcategoria_id),
       status || 'PENDENTE',
