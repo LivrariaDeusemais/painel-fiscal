@@ -10358,12 +10358,39 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const anoMesEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[0] || String(new Date().getFullYear());
     const mesNumeroEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[1] || String(new Date().getMonth() + 1).padStart(2, '0');
     const statusMesEdicao = await getStatusMesCompetencia(mesAnoEdicao);
+    const fornecedorFiltro = String(req.query.fornecedor || '').trim();
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
 
+    const fornecedoresResult = await pool.query(`
+      SELECT DISTINCT fornecedor
+      FROM rotina_despesas
+      WHERE fornecedor IS NOT NULL AND TRIM(fornecedor) <> ''
+      ORDER BY fornecedor ASC
+    `);
+
+    const fornecedoresOptionsHtml = fornecedoresResult.rows.map(row => {
+      const fornecedor = String(row.fornecedor || '').trim();
+      const selected = fornecedorFiltro === fornecedor ? 'selected' : '';
+      const label = fornecedor
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const value = fornecedor
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+      return `<option value="${value}" ${selected}>${label}</option>`;
+    }).join('');
+
     const whereParts = [];
     const values = [];
+
+    if (fornecedorFiltro) {
+      values.push(`%${fornecedorFiltro}%`);
+      whereParts.push(`r.fornecedor ILIKE $${values.length + 1}`);
+    }
 
     if (statusFiltro) {
       values.push(statusFiltro);
@@ -10417,6 +10444,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
           <td class="col-status-pagto col-rot-status-pagto">
             <form method="POST" action="/rotina-despesas/status-pagto/${r.id}" class="status-form">
+              <input type="hidden" name="fornecedor_filtro" value="${fornecedorFiltro}">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
               <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
               <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
@@ -10433,6 +10461,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
           <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
+              <input type="hidden" name="fornecedor_filtro" value="${fornecedorFiltro}">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
               <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
               <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
@@ -10451,6 +10480,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
           <td class="col-ativo col-rot-ativo">
             <form method="POST" action="/rotina-despesas/ativo/${r.id}" class="status-form">
+              <input type="hidden" name="fornecedor_filtro" value="${fornecedorFiltro}">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
               <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
               <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
@@ -11244,6 +11274,14 @@ body {
 
             <form method="GET" action="/rotina-despesas" class="filters">
               <div class="filter-group">
+                <label for="fornecedor">Fornecedor</label>
+                <select id="fornecedor" name="fornecedor">
+                  <option value="" ${fornecedorFiltro === '' ? 'selected' : ''}>Todos</option>
+                  ${fornecedoresOptionsHtml}
+                </select>
+              </div>
+
+              <div class="filter-group">
                 <label for="status">Filtrar por status</label>
                 <select id="status" name="status">
                   <option value="" ${statusFiltro === '' ? 'selected' : ''}>Todos</option>
@@ -11496,13 +11534,14 @@ ${error.message}</pre>`);
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { status, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
 
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
     await upsertStatusMensal(id, mesCompetencia, normalizarStatusLinha(status), null);
 
     const redirectParams = new URLSearchParams();
     if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
+    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
@@ -11519,12 +11558,13 @@ router.post('/rotina-despesas/status-pagto/:id', async (req, res) => {
   try {
     await ensureRotinaDespesasColumns();
     const { id } = req.params;
-    const { status_pagto, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { status_pagto, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
 
     await upsertStatusMensal(id, mesCompetencia, null, normalizarStatusPagto(status_pagto));
 
     const redirectParams = new URLSearchParams();
+    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
@@ -11541,12 +11581,13 @@ router.post('/rotina-despesas/ativo/:id', protegerRota, permitirPerfis('ADMIN', 
   try {
     await ensureRotinaDespesasColumns();
     const { id } = req.params;
-    const { ativo, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { ativo, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
 
     await upsertStatusMensal(id, mesCompetencia, null, null, normalizarAtivoMensal(ativo));
 
     const redirectParams = new URLSearchParams();
+    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
