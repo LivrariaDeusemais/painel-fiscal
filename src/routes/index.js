@@ -268,6 +268,28 @@ async function ensureRotinaDespesasColumns() {
       valor TEXT
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rotina_despesas_status_mensal (
+      id SERIAL PRIMARY KEY,
+      rotina_id INTEGER NOT NULL REFERENCES rotina_despesas(id) ON DELETE CASCADE,
+      mes_ano VARCHAR(7) NOT NULL,
+      status_linha VARCHAR(20) DEFAULT 'PENDENTE',
+      status_pagto VARCHAR(20) DEFAULT 'A_PAGAR',
+      atualizado_em TIMESTAMP DEFAULT NOW(),
+      UNIQUE (rotina_id, mes_ano)
+    )
+  `);
+
+  await pool.query(`
+    ALTER TABLE rotina_despesas_status_mensal
+    ADD COLUMN IF NOT EXISTS status_linha VARCHAR(20) DEFAULT 'PENDENTE'
+  `);
+
+  await pool.query(`
+    ALTER TABLE rotina_despesas_status_mensal
+    ADD COLUMN IF NOT EXISTS status_pagto VARCHAR(20) DEFAULT 'A_PAGAR'
+  `);
 }
 
 async function getPainelConfig(chave, valorPadrao = '') {
@@ -282,6 +304,55 @@ async function setPainelConfig(chave, valor) {
     ON CONFLICT (chave)
     DO UPDATE SET valor = EXCLUDED.valor
   `, [chave, valor || '']);
+}
+
+function getMesAnoAtual() {
+  const hoje = new Date();
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function normalizarStatusLinha(value) {
+  const texto = String(value || '').trim().toUpperCase();
+  return ['PENDENTE', 'FEITO', 'N/A'].includes(texto) ? texto : 'PENDENTE';
+}
+
+function normalizarStatusPagto(value) {
+  const texto = String(value || '').trim().toUpperCase();
+  if (texto === 'PAGO') return 'PAGO';
+  if (texto === 'VENCIDO') return 'VENCIDO';
+  return 'A_PAGAR';
+}
+
+function renderStatusPagtoOptions(selectedValue = '') {
+  const selected = normalizarStatusPagto(selectedValue);
+  return `
+    <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
+    <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
+    <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
+  `;
+}
+
+async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto) {
+  const mes = String(mesAno || '').trim() || getMesAnoAtual();
+  await pool.query(`
+    INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, atualizado_em)
+    VALUES ($1, $2, $3, $4, NOW())
+    ON CONFLICT (rotina_id, mes_ano)
+    DO UPDATE SET
+      status_linha = COALESCE(EXCLUDED.status_linha, rotina_despesas_status_mensal.status_linha),
+      status_pagto = COALESCE(EXCLUDED.status_pagto, rotina_despesas_status_mensal.status_pagto),
+      atualizado_em = NOW()
+  `, [rotinaId, mes, statusLinha || null, statusPagto || null]);
+}
+
+async function getStatusMesCompetencia(mesAno) {
+  const mes = String(mesAno || '').trim() || getMesAnoAtual();
+  return getPainelConfig(`rotina_status_mes_${mes}`, 'PENDENTE');
+}
+
+async function setStatusMesCompetencia(mesAno, statusMes) {
+  const mes = String(mesAno || '').trim() || getMesAnoAtual();
+  await setPainelConfig(`rotina_status_mes_${mes}`, String(statusMes || 'PENDENTE').trim() === 'FEITO' ? 'FEITO' : 'PENDENTE');
 }
 
 function toNullableInt(value) {
@@ -10241,8 +10312,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
   try {
     await ensureRotinaDespesasColumns();
 
-    const mesAnoEdicao = await getPainelConfig('rotina_mes_ano_edicao', '');
-    const statusMesEdicao = await getPainelConfig('rotina_status_mes', 'PENDENTE');
+    const mesAnoEdicao = (await getPainelConfig('rotina_mes_ano_edicao', '')) || getMesAnoAtual();
+    const statusMesEdicao = await getStatusMesCompetencia(mesAnoEdicao);
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
@@ -10252,12 +10323,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
     if (statusFiltro) {
       values.push(statusFiltro);
-      whereParts.push(`r.status = $${values.length}`);
+      whereParts.push(`COALESCE(sm.status_linha, r.status, 'PENDENTE') = $${values.length + 1}`);
     }
 
     if (diaVencimentoFiltro) {
       values.push(diaVencimentoFiltro);
-      whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length}`);
+      whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length + 1}`);
     }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
@@ -10267,13 +10338,18 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       SELECT
         r.*,
         cp.nome AS categoria_principal_nome,
-        cs.nome AS subcategoria_nome
+        cs.nome AS subcategoria_nome,
+        COALESCE(sm.status_linha, r.status, 'PENDENTE') AS status_linha_mes,
+        COALESCE(sm.status_pagto, 'A_PAGAR') AS status_pagto_mes
       FROM rotina_despesas r
       LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
       LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
+      LEFT JOIN rotina_despesas_status_mensal sm
+        ON sm.rotina_id = r.id
+       AND sm.mes_ano = $1
       ${whereSql}
       ORDER BY r.ordem, r.fornecedor
-    `, values);
+    `, [mesAnoEdicao, ...values]);
 
     let linhas = '';
 
@@ -10294,6 +10370,22 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
           <td class="col-vencimento col-rot-vencimento">${formatDiaVencimento(r.dia_vencimento) || formatDateBR(r.data_vencimento) || '-'}</td>
 
+          <td class="col-status-pagto col-rot-status-pagto">
+            <form method="POST" action="/rotina-despesas/status-pagto/${r.id}" class="status-form">
+              <input type="hidden" name="status_filtro" value="${statusFiltro}">
+              <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
+              <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
+
+              <select
+                name="status_pagto"
+                class="status-select status-pagto-${normalizarStatusPagto(r.status_pagto_mes)}"
+                onchange="this.form.submit()"
+              >
+                ${renderStatusPagtoOptions(r.status_pagto_mes)}
+              </select>
+            </form>
+          </td>
+
           <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
@@ -10302,12 +10394,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
               <select
                 name="status"
-                class="status-select status-${r.status}"
+                class="status-select status-${normalizarStatusLinha(r.status_linha_mes)}"
                 onchange="this.form.submit()"
               >
-                <option value="PENDENTE" ${r.status === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
-                <option value="FEITO" ${r.status === 'FEITO' ? 'selected' : ''}>FEITO</option>
-                <option value="N/A" ${r.status === 'N/A' ? 'selected' : ''}>Não tem</option>
+                <option value="PENDENTE" ${normalizarStatusLinha(r.status_linha_mes) === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
+                <option value="FEITO" ${normalizarStatusLinha(r.status_linha_mes) === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                <option value="N/A" ${normalizarStatusLinha(r.status_linha_mes) === 'N/A' ? 'selected' : ''}>Não tem</option>
               </select>
             </form>
           </td>
@@ -10520,7 +10612,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           white-space: nowrap;
         }
 
-        .col-status {
+        .col-status,
+        .col-status-pagto {
           width: 150px;
         }
 
@@ -10569,6 +10662,24 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           background-color: #e5e7eb !important;
           color: #374151 !important;
           border: 1px solid #cbd5e1 !important;
+        }
+
+        .status-pagto-A_PAGAR {
+          background-color: #dbeafe !important;
+          color: #1d4ed8 !important;
+          border: 1px solid #93c5fd !important;
+        }
+
+        .status-pagto-PAGO {
+          background-color: #dcfce7 !important;
+          color: #166534 !important;
+          border: 1px solid #86efac !important;
+        }
+
+        .status-pagto-VENCIDO {
+          background-color: #fee2e2 !important;
+          color: #991b1b !important;
+          border: 1px solid #fca5a5 !important;
         }
 
         .acoes-wrap {
@@ -11032,7 +11143,8 @@ body {
               <label><input type="checkbox" data-col="col-rot-pagamento"> Pagamento</label>
               <label><input type="checkbox" data-col="col-rot-cat-principal"> Categoria Principal</label>
               <label><input type="checkbox" data-col="col-rot-subcategoria"> Subcategoria</label>
-              <label><input type="checkbox" data-col="col-rot-vencimento"> Dia vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-vencimento"> Vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-status-pagto"> Status Pagto</label>
               <label><input type="checkbox" data-col="col-rot-status"> Status</label>
               <label><input type="checkbox" data-col="col-rot-ativo"> Ativo</label>
             </div>
@@ -11060,16 +11172,17 @@ body {
             </form>
 
             <form method="POST" action="/rotina-despesas/mes-referencia" class="month-reference-form">
+              <input type="hidden" name="acao" value="status">
               <div class="filter-group">
-                <label for="mes_ano_edicao">Mês/Ano em edição</label>
-                <select id="mes_ano_edicao" name="mes_ano" onchange="this.form.submit()">
+                <label for="mes_ano_edicao">Mês de competência</label>
+                <select id="mes_ano_edicao" name="mes_ano" onchange="this.form.acao.value='mes'; this.form.submit()">
                   ${opcoesMesAnoHtml}
                 </select>
               </div>
 
               <div class="filter-group">
                 <label for="status_mes">Status do mês</label>
-                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="this.form.submit()">
+                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="this.form.acao.value='status'; this.form.submit()">
                   <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
                   <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>FEITO</option>
                 </select>
@@ -11087,14 +11200,15 @@ body {
                 <th class="col-rot-pagamento">Pagamento</th>
                 <th class="col-rot-cat-principal">Categoria Principal</th>
                 <th class="col-rot-subcategoria">Subcategoria</th>
-                <th class="col-vencimento col-rot-vencimento">Dia vencimento</th>
+                <th class="col-vencimento col-rot-vencimento">Vencimento</th>
+                <th class="col-status-pagto col-rot-status-pagto">Status Pagto</th>
                 <th class="col-status col-rot-status">Status</th>
                 <th class="col-ativo col-rot-ativo">Ativo</th>
                 <th class="col-acoes col-rot-acoes">Ações</th>
               </tr>
             </thead>
             <tbody>
-              ${linhas || '<tr><td colspan="11">Nenhum item cadastrado</td></tr>'}
+              ${linhas || '<tr><td colspan="12">Nenhum item cadastrado</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -11129,6 +11243,7 @@ body {
             'col-rot-cat-principal': true,
             'col-rot-subcategoria': true,
             'col-rot-vencimento': true,
+            'col-rot-status-pagto': true,
             'col-rot-status': true,
             'col-rot-ativo': true
           };
@@ -11155,8 +11270,12 @@ body {
 
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
-            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A');
-            this.classList.add('status-' + this.value);
+            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-VENCIDO');
+            if (this.name === 'status_pagto') {
+              this.classList.add('status-pagto-' + this.value);
+            } else {
+              this.classList.add('status-' + this.value);
+            }
           });
         });
       </script>
@@ -11173,9 +11292,13 @@ router.post('/rotina-despesas/mes-referencia', protegerRota, permitirPerfis('ADM
 
     const mesAno = String(req.body.mes_ano || '').trim();
     const statusMes = String(req.body.status_mes || 'PENDENTE').trim() === 'FEITO' ? 'FEITO' : 'PENDENTE';
+    const acao = String(req.body.acao || 'status').trim();
 
-    await setPainelConfig('rotina_mes_ano_edicao', mesAno);
-    await setPainelConfig('rotina_status_mes', statusMes);
+    const mesFinal = mesAno || getMesAnoAtual();
+    await setPainelConfig('rotina_mes_ano_edicao', mesFinal);
+    if (acao !== 'mes') {
+      await setStatusMesCompetencia(mesFinal, statusMes);
+    }
 
     res.redirect('/rotina-despesas');
   } catch (error) {
@@ -11189,11 +11312,8 @@ router.post('/rotina-despesas/status/:id', async (req, res) => {
     const { id } = req.params;
     const { status, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
 
-    await pool.query(`
-      UPDATE rotina_despesas
-      SET status = $1
-      WHERE id = $2
-    `, [status || 'PENDENTE', id]);
+    const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+    await upsertStatusMensal(id, mesCompetencia, normalizarStatusLinha(status), null);
 
     const redirectParams = new URLSearchParams();
     if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
@@ -11209,13 +11329,40 @@ ${error.message}</pre>`);
   }
 });
 
+router.post('/rotina-despesas/status-pagto/:id', async (req, res) => {
+  try {
+    await ensureRotinaDespesasColumns();
+    const { id } = req.params;
+    const { status_pagto, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+
+    await upsertStatusMensal(id, mesCompetencia, null, normalizarStatusPagto(status_pagto));
+
+    const redirectParams = new URLSearchParams();
+    if (status_filtro) redirectParams.set('status', status_filtro);
+    if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
+    const redirectQuery = redirectParams.toString();
+    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
+
+    res.redirect(destino);
+  } catch (error) {
+    res.send(`<pre>Erro ao atualizar status de pagamento:
+${error.message}</pre>`);
+  }
+});
+
 router.post('/rotina-despesas/reset-status', async (req, res) => {
   try {
+    await ensureRotinaDespesasColumns();
+    const mesCompetencia = await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
     await pool.query(`
-      UPDATE rotina_despesas
-      SET status = 'PENDENTE'
+      INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, atualizado_em)
+      SELECT id, $1, 'PENDENTE', 'A_PAGAR', NOW()
+      FROM rotina_despesas
       WHERE ativo = true
-    `);
+      ON CONFLICT (rotina_id, mes_ano)
+      DO UPDATE SET status_linha = 'PENDENTE', atualizado_em = NOW()
+    `, [mesCompetencia]);
 
     res.redirect('/rotina-despesas');
   } catch (error) {
