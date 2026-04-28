@@ -5753,8 +5753,8 @@ router.get('/novo', async (req, res) => {
           cp.nome AS categoria_principal_nome,
           cs.nome AS subcategoria_nome
         FROM rotina_despesas r
-        LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
-        LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
+        LEFT JOIN categorias cp ON cp.id::text = NULLIF(r.categoria_principal_id::text, '')
+        LEFT JOIN categorias cs ON cs.id::text = NULLIF(r.subcategoria_id::text, '')
         WHERE r.id = $1
         LIMIT 1
       `, [rotina_id]);
@@ -10199,8 +10199,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         cp.nome AS categoria_principal_nome,
         cs.nome AS subcategoria_nome
       FROM rotina_despesas r
-      LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
-      LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
+      LEFT JOIN categorias cp ON cp.id::text = NULLIF(r.categoria_principal_id::text, '')
+      LEFT JOIN categorias cs ON cs.id::text = NULLIF(r.subcategoria_id::text, '')
       ${whereSql}
       ORDER BY r.ordem, r.fornecedor
     `, values);
