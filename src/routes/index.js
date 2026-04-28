@@ -61,6 +61,37 @@ function getUploadFilePath(filename) {
   return path.join(uploadsDir, path.basename(String(filename)));
 }
 
+
+function toNullableInteger(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  return /^\d+$/.test(text) ? Number(text) : null;
+}
+
+async function ensureRotinaColumns() {
+  await pool.query(`
+    ALTER TABLE rotina_despesas
+    ADD COLUMN IF NOT EXISTS dia_vencimento VARCHAR(50)
+  `);
+}
+
+function renderMesAnoOptions(selectedValue = '') {
+  const selected = String(selectedValue || '').trim();
+  const hoje = new Date();
+  const options = [];
+
+  for (let i = -2; i <= 12; i++) {
+    const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const valor = `${ano}-${mes}`;
+    const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    options.push(`<option value="${valor}" ${selected === valor ? 'selected' : ''}>${label.charAt(0).toUpperCase() + label.slice(1)}</option>`);
+  }
+
+  return options.join('');
+}
+
 // Rota segura para visualizar/baixar arquivos salvos no disco persistente do Render.
 router.get('/uploads/:filename', protegerRota, (req, res) => {
   try {
@@ -254,43 +285,6 @@ function formatDateInput(dateValue) {
   const iso = text.includes('T') ? text.split('T')[0] : text;
   return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
 }
-
-
-let rotinaDiaVencimentoColumnReady = false;
-async function ensureRotinaDiaVencimentoColumn() {
-  if (rotinaDiaVencimentoColumnReady) return;
-  await pool.query(`
-    ALTER TABLE rotina_despesas
-    ADD COLUMN IF NOT EXISTS dia_vencimento VARCHAR(50)
-  `);
-  rotinaDiaVencimentoColumnReady = true;
-}
-
-function getMesAnoAtual() {
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  return `${ano}-${mes}`;
-}
-
-function buildMesAnoOptions(selectedValue = '') {
-  const selected = selectedValue || getMesAnoAtual();
-  const hoje = new Date();
-  let options = '';
-
-  for (let i = -2; i <= 12; i++) {
-    const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const value = `${ano}-${mes}`;
-    const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    const labelFormatado = label.charAt(0).toUpperCase() + label.slice(1);
-    options += `<option value="${value}" ${selected === value ? 'selected' : ''}>${labelFormatado}</option>`;
-  }
-
-  return options;
-}
-
 
 async function parseXmlDocumento(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf8');
@@ -2238,6 +2232,11 @@ body {
           </label>
 
           <label>
+            <input type="checkbox" id="salvarSenha" />
+            Salvar senha
+          </label>
+
+          <label>
             <input type="checkbox" id="mostrarSenha" />
             Mostrar senha
           </label>
@@ -2255,14 +2254,21 @@ body {
   <script>
     const emailInput = document.getElementById('email');
     const lembrarLogin = document.getElementById('lembrarLogin');
+    const salvarSenha = document.getElementById('salvarSenha');
     const mostrarSenha = document.getElementById('mostrarSenha');
     const senhaInput = document.getElementById('senha');
 
     const emailSalvo = localStorage.getItem('painel_email');
+    const senhaSalva = localStorage.getItem('painel_senha');
 
     if (emailSalvo) {
       emailInput.value = emailSalvo;
       lembrarLogin.checked = true;
+    }
+
+    if (senhaSalva) {
+      senhaInput.value = senhaSalva;
+      salvarSenha.checked = true;
     }
 
     lembrarLogin.addEventListener('change', () => {
@@ -2271,9 +2277,18 @@ body {
       }
     });
 
+    salvarSenha.addEventListener('change', () => {
+      if (!salvarSenha.checked) {
+        localStorage.removeItem('painel_senha');
+      }
+    });
+
     document.querySelector('form').addEventListener('submit', () => {
       if (lembrarLogin.checked) {
         localStorage.setItem('painel_email', emailInput.value);
+      }
+      if (salvarSenha.checked) {
+        localStorage.setItem('painel_senha', senhaInput.value);
       }
     });
 
@@ -5753,11 +5768,11 @@ router.get('/novo', async (req, res) => {
           cp.nome AS categoria_principal_nome,
           cs.nome AS subcategoria_nome
         FROM rotina_despesas r
-        LEFT JOIN categorias cp ON cp.id::text = NULLIF(r.categoria_principal_id::text, '')
-        LEFT JOIN categorias cs ON cs.id::text = NULLIF(r.subcategoria_id::text, '')
+        LEFT JOIN categorias cp ON cp.id = (CASE WHEN r.categoria_principal_id::text ~ '^\d+$' THEN r.categoria_principal_id::text::integer ELSE NULL END)
+        LEFT JOIN categorias cs ON cs.id = (CASE WHEN r.subcategoria_id::text ~ '^\d+$' THEN r.subcategoria_id::text::integer ELSE NULL END)
         WHERE r.id = $1
         LIMIT 1
-      `, [rotina_id]);
+      `, [toNullableInteger(rotina_id)]);
 
       if (rotinaResult.rows.length) {
         rotinaPadrao = rotinaResult.rows[0];
@@ -10176,10 +10191,12 @@ router.get('/', (req, res) => {
 // LISTAGEM
 router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
-    await ensureRotinaDiaVencimentoColumn();
+    await ensureRotinaColumns();
+
     const statusFiltro = (req.query.status || '').trim();
-    const mesAnoEdicao = (req.query.mes_ano || '').trim() || getMesAnoAtual();
-    const vencimentoFiltro = ''; // campo antigo desativado: agora usamos Dia de vencimento livre no cadastro.
+    const vencimentoFiltro = (req.query.dia_vencimento || req.query.data_vencimento || '').trim();
+    const mesAnoEdicao = (req.query.mes_ano || '').trim();
+    const mesAnoOptions = renderMesAnoOptions(mesAnoEdicao);
 
     const whereParts = [];
     const values = [];
@@ -10189,18 +10206,21 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       whereParts.push(`r.status = $${values.length}`);
     }
 
+    if (vencimentoFiltro) {
+      values.push(`%${vencimentoFiltro}%`);
+      whereParts.push(`COALESCE(r.dia_vencimento, '') ILIKE $${values.length}`);
+    }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
     const result = await pool.query(`
       SELECT
         r.*,
-        COALESCE(NULLIF(r.dia_vencimento, ''), to_char(r.data_vencimento, 'DD/MM/YYYY')) AS dia_vencimento_exibicao,
         cp.nome AS categoria_principal_nome,
         cs.nome AS subcategoria_nome
       FROM rotina_despesas r
-      LEFT JOIN categorias cp ON cp.id::text = NULLIF(r.categoria_principal_id::text, '')
-      LEFT JOIN categorias cs ON cs.id::text = NULLIF(r.subcategoria_id::text, '')
+      LEFT JOIN categorias cp ON cp.id = (CASE WHEN r.categoria_principal_id::text ~ '^\d+$' THEN r.categoria_principal_id::text::integer ELSE NULL END)
+      LEFT JOIN categorias cs ON cs.id = (CASE WHEN r.subcategoria_id::text ~ '^\d+$' THEN r.subcategoria_id::text::integer ELSE NULL END)
       ${whereSql}
       ORDER BY r.ordem, r.fornecedor
     `, values);
@@ -10222,12 +10242,13 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td class="col-rot-pagamento">${r.tipo_pagamento_padrao || ''}</td>
           <td class="col-rot-cat-principal">${r.categoria_principal_nome || ''}</td>
           <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
-          <td class="col-vencimento col-rot-vencimento">${r.dia_vencimento_exibicao || '-'}</td>
+          <td class="col-vencimento col-rot-vencimento">${r.dia_vencimento || formatDateBR(r.data_vencimento) || '-'}</td>
 
           <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
-              <input type="hidden" name="mes_ano" value="${mesAnoEdicao}">
+              <input type="hidden" name="dia_vencimento_filtro" value="${vencimentoFiltro}">
+              <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
 
               <select
                 name="status"
@@ -10930,12 +10951,20 @@ body {
               <label><input type="checkbox" data-col="col-rot-pagamento"> Pagamento</label>
               <label><input type="checkbox" data-col="col-rot-cat-principal"> Categoria Principal</label>
               <label><input type="checkbox" data-col="col-rot-subcategoria"> Subcategoria</label>
-              <label><input type="checkbox" data-col="col-rot-vencimento"> Dia vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-vencimento"> Vencimento</label>
               <label><input type="checkbox" data-col="col-rot-status"> Status</label>
               <label><input type="checkbox" data-col="col-rot-ativo"> Ativo</label>
             </div>
 
             <form method="GET" action="/rotina-despesas" class="filters">
+              <div class="filter-group">
+                <label for="mes_ano">Mês/Ano em edição</label>
+                <select id="mes_ano" name="mes_ano">
+                  <option value="">Selecione o mês/ano</option>
+                  ${mesAnoOptions}
+                </select>
+              </div>
+
               <div class="filter-group">
                 <label for="status">Filtrar por status</label>
                 <select id="status" name="status">
@@ -10947,10 +10976,14 @@ body {
               </div>
 
               <div class="filter-group">
-                <label for="mes_ano">Mês/Ano em edição</label>
-                <select id="mes_ano" name="mes_ano">
-                  ${buildMesAnoOptions(mesAnoEdicao)}
-                </select>
+                <label for="dia_vencimento">Filtrar por dia vencimento</label>
+                <input
+                  id="dia_vencimento"
+                  name="dia_vencimento"
+                  type="text"
+                  placeholder="Ex.: 5, 10, dia 15"
+                  value="${vencimentoFiltro}"
+                />
               </div>
 
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
@@ -11051,7 +11084,7 @@ body {
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, status_filtro, mes_ano } = req.body;
+    const { status, status_filtro, dia_vencimento_filtro, data_vencimento_filtro, mes_ano_filtro } = req.body;
 
     await pool.query(`
       UPDATE rotina_despesas
@@ -11061,7 +11094,8 @@ router.post('/rotina-despesas/status/:id', async (req, res) => {
 
     const redirectParams = new URLSearchParams();
     if (status_filtro) redirectParams.set('status', status_filtro);
-    if (mes_ano) redirectParams.set('mes_ano', mes_ano);
+    if (dia_vencimento_filtro || data_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro || data_vencimento_filtro);
+    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
     const redirectQuery = redirectParams.toString();
     const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
 
@@ -11088,7 +11122,7 @@ router.post('/rotina-despesas/reset-status', async (req, res) => {
 // FORM NOVO
 router.get('/rotina-despesas/novo', async (req, res) => {
   try {
-    await ensureRotinaDiaVencimentoColumn();
+    await ensureRotinaColumns();
     const principaisResult = await pool.query(`
       SELECT id, nome
       FROM categorias
@@ -11613,7 +11647,7 @@ body {
 
               <div>
                 <label for="dia_vencimento">Dia de vencimento</label>
-                <input id="dia_vencimento" name="dia_vencimento" type="text" placeholder="Ex.: 05, dia 10, todo dia 20" />
+                <input id="dia_vencimento" name="dia_vencimento" type="text" placeholder="Ex.: 5, 10, todo dia 15" />
               </div>
 
               <div class="full">
@@ -11688,7 +11722,6 @@ body {
 // SALVAR NOVO
 router.post('/rotina-despesas/novo', async (req, res) => {
   try {
-    await ensureRotinaDiaVencimentoColumn();
     const {
       fornecedor,
       cnpj_cpf,
@@ -11696,6 +11729,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       fato_gerador,
       tipo_pagamento_padrao,
       dia_vencimento,
+      data_vencimento,
       categoria_principal_id,
       subcategoria_id,
       status,
@@ -11712,13 +11746,14 @@ router.post('/rotina-despesas/novo', async (req, res) => {
         fato_gerador,
         tipo_pagamento_padrao,
         dia_vencimento,
+        data_vencimento,
         categoria_principal_id,
         subcategoria_id,
         status,
         ativo,
         ordem,
         observacoes
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     `, [
       fornecedor,
       cnpj_cpf || null,
@@ -11726,8 +11761,9 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       fato_gerador || null,
       tipo_pagamento_padrao || null,
       dia_vencimento || null,
-      categoria_principal_id || null,
-      subcategoria_id || null,
+      data_vencimento || null,
+      toNullableInteger(categoria_principal_id),
+      toNullableInteger(subcategoria_id),
       status || 'PENDENTE',
       ativo === 'true',
       Number(ordem || 0),
@@ -11743,7 +11779,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
 // FORM EDITAR
 router.get('/rotina-despesas/editar/:id', async (req, res) => {
   try {
-    await ensureRotinaDiaVencimentoColumn();
+    await ensureRotinaColumns();
     const { id } = req.params;
 
     const itemResult = await pool.query(
@@ -12281,7 +12317,7 @@ body {
 
               <div>
                 <label for="dia_vencimento">Dia de vencimento</label>
-                <input id="dia_vencimento" name="dia_vencimento" type="text" value="${item.dia_vencimento || formatDateBR(item.data_vencimento) || ''}" placeholder="Ex.: 05, dia 10, todo dia 20" />
+                <input id="dia_vencimento" name="dia_vencimento" type="text" placeholder="Ex.: 5, 10, todo dia 15" value="${item.dia_vencimento || ''}" />
               </div>
 
               <div class="full">
@@ -12356,7 +12392,6 @@ body {
 // SALVAR EDIÇÃO
 router.post('/rotina-despesas/editar/:id', async (req, res) => {
   try {
-    await ensureRotinaDiaVencimentoColumn();
     const { id } = req.params;
     const {
       fornecedor,
@@ -12365,6 +12400,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       fato_gerador,
       tipo_pagamento_padrao,
       dia_vencimento,
+      data_vencimento,
       categoria_principal_id,
       subcategoria_id,
       status,
@@ -12382,13 +12418,14 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
         fato_gerador = $4,
         tipo_pagamento_padrao = $5,
         dia_vencimento = $6,
-        categoria_principal_id = $7,
-        subcategoria_id = $8,
-        status = $9,
-        ativo = $10,
-        ordem = $11,
-        observacoes = $12
-      WHERE id = $13
+        data_vencimento = $7,
+        categoria_principal_id = $8,
+        subcategoria_id = $9,
+        status = $10,
+        ativo = $11,
+        ordem = $12,
+        observacoes = $13
+      WHERE id = $14
     `, [
       fornecedor,
       cnpj_cpf || null,
@@ -12396,8 +12433,9 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       fato_gerador || null,
       tipo_pagamento_padrao || null,
       dia_vencimento || null,
-      categoria_principal_id || null,
-      subcategoria_id || null,
+      data_vencimento || null,
+      toNullableInteger(categoria_principal_id),
+      toNullableInteger(subcategoria_id),
       status || 'PENDENTE',
       ativo === 'true',
       Number(ordem || 0),
