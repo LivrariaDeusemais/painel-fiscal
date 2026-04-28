@@ -290,6 +290,11 @@ async function ensureRotinaDespesasColumns() {
     ALTER TABLE rotina_despesas_status_mensal
     ADD COLUMN IF NOT EXISTS status_pagto VARCHAR(20) DEFAULT 'A_PAGAR'
   `);
+
+  await pool.query(`
+    ALTER TABLE rotina_despesas_status_mensal
+    ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true
+  `);
 }
 
 async function getPainelConfig(chave, valorPadrao = '') {
@@ -323,6 +328,11 @@ function normalizarStatusPagto(value) {
   return 'A_PAGAR';
 }
 
+function normalizarAtivoMensal(value) {
+  const texto = String(value ?? '').trim().toLowerCase();
+  return ['false', '0', 'nao', 'não', 'n'].includes(texto) ? false : true;
+}
+
 function renderStatusPagtoOptions(selectedValue = '') {
   const selected = normalizarStatusPagto(selectedValue);
   return `
@@ -332,17 +342,18 @@ function renderStatusPagtoOptions(selectedValue = '') {
   `;
 }
 
-async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto) {
+async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto, ativo = null) {
   const mes = String(mesAno || '').trim() || getMesAnoAtual();
   await pool.query(`
-    INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, atualizado_em)
-    VALUES ($1, $2, $3, $4, NOW())
+    INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, ativo, atualizado_em)
+    VALUES ($1, $2, $3, $4, $5, NOW())
     ON CONFLICT (rotina_id, mes_ano)
     DO UPDATE SET
       status_linha = COALESCE(EXCLUDED.status_linha, rotina_despesas_status_mensal.status_linha),
       status_pagto = COALESCE(EXCLUDED.status_pagto, rotina_despesas_status_mensal.status_pagto),
+      ativo = COALESCE(EXCLUDED.ativo, rotina_despesas_status_mensal.ativo),
       atualizado_em = NOW()
-  `, [rotinaId, mes, statusLinha || null, statusPagto || null]);
+  `, [rotinaId, mes, statusLinha || null, statusPagto || null, ativo]);
 }
 
 async function getStatusMesCompetencia(mesAno) {
@@ -10371,7 +10382,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         cp.nome AS categoria_principal_nome,
         cs.nome AS subcategoria_nome,
         COALESCE(sm.status_linha, r.status, 'PENDENTE') AS status_linha_mes,
-        COALESCE(sm.status_pagto, 'A_PAGAR') AS status_pagto_mes
+        COALESCE(sm.status_pagto, 'A_PAGAR') AS status_pagto_mes,
+        COALESCE(sm.ativo, r.ativo, true) AS ativo_mes
       FROM rotina_despesas r
       LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
       LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
@@ -10435,7 +10447,17 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
             </form>
           </td>
 
-          <td class="col-ativo col-rot-ativo">${r.ativo ? 'Sim' : 'Não'}</td>
+          <td class="col-ativo col-rot-ativo">
+            <form method="POST" action="/rotina-despesas/ativo/${r.id}" class="status-form">
+              <input type="hidden" name="status_filtro" value="${statusFiltro}">
+              <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
+              <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
+              <select name="ativo" class="status-select status-ativo-${r.ativo_mes ? 'SIM' : 'NAO'}" onchange="this.form.submit()">
+                <option value="true" ${r.ativo_mes ? 'selected' : ''}>Sim</option>
+                <option value="false" ${!r.ativo_mes ? 'selected' : ''}>Não</option>
+              </select>
+            </form>
+          </td>
 
           <td class="col-acoes col-rot-acoes">
             <div class="acoes-wrap">
@@ -10712,6 +10734,42 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           color: #991b1b !important;
           border: 1px solid #fca5a5 !important;
         }
+
+        .status-ativo-SIM {
+          background-color: #dcfce7 !important;
+          color: #166534 !important;
+          border: 1px solid #86efac !important;
+        }
+
+        .status-ativo-NAO {
+          background-color: #e5e7eb !important;
+          color: #374151 !important;
+          border: 1px solid #cbd5e1 !important;
+        }
+
+        .month-reference-form {
+          margin-left: auto !important;
+          padding: 10px 12px !important;
+          border-radius: 16px !important;
+          background: rgba(248, 250, 252, 0.72) !important;
+          border: 1px solid #e0e6ef !important;
+          box-shadow: 0 18px 45px rgba(15,23,42,0.08) !important;
+        }
+
+        .month-compact-row { display: flex; align-items: center; gap: 8px; }
+        .month-current-display { min-width: 78px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 12px; background: #ffffff; border: 1px solid #dce3ec; color: #172033; font-weight: 900; white-space: nowrap; }
+        .btn-month-open { min-width: 118px !important; height: 42px !important; padding: 0 14px !important; }
+        .month-picker-overlay { display: none !important; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.20); align-items: center; justify-content: center; padding: 18px; }
+        .month-picker-overlay.open { display: flex !important; }
+        .month-picker-popover { width: 360px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.98); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 16px; }
+        .month-picker-head { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; margin-bottom: 14px; }
+        .month-nav-btn { height: 38px !important; min-height: 38px !important; border-radius: 12px !important; padding: 0 !important; font-size: 20px !important; line-height: 1 !important; }
+        .month-year-select { height: 38px !important; text-align: center; font-weight: 900; }
+        .month-grid-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .month-cell { height: 44px !important; min-height: 44px !important; padding: 0 !important; border-radius: 12px !important; font-size: 14px !important; font-weight: 900 !important; background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .05) !important; }
+        .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; }
+        .month-picker-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+        th.col-vencimento, td.col-vencimento, th.col-status-pagto, td.col-status-pagto { text-align: center !important; vertical-align: middle !important; }
 
         .acoes-wrap {
           display: flex;
@@ -11249,15 +11307,6 @@ body {
             </div>
           </div>
 
-              <div class="filter-group">
-                <label for="status_mes">Status do mês</label>
-                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="this.form.acao.value='status'; this.form.submit()">
-                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
-                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>FEITO</option>
-                </select>
-              </div>
-            </form>
-          </div>
 
           <table>
             <thead>
@@ -11461,13 +11510,35 @@ ${error.message}</pre>`);
   }
 });
 
+router.post('/rotina-despesas/ativo/:id', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  try {
+    await ensureRotinaDespesasColumns();
+    const { id } = req.params;
+    const { ativo, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+
+    await upsertStatusMensal(id, mesCompetencia, null, null, normalizarAtivoMensal(ativo));
+
+    const redirectParams = new URLSearchParams();
+    if (status_filtro) redirectParams.set('status', status_filtro);
+    if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
+    const redirectQuery = redirectParams.toString();
+    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
+
+    res.redirect(destino);
+  } catch (error) {
+    res.send(`<pre>Erro ao atualizar ativo do mês:
+${error.message}</pre>`);
+  }
+});
+
 router.post('/rotina-despesas/reset-status', async (req, res) => {
   try {
     await ensureRotinaDespesasColumns();
     const mesCompetencia = await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
     await pool.query(`
-      INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, atualizado_em)
-      SELECT id, $1, 'PENDENTE', 'A_PAGAR', NOW()
+      INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, ativo, atualizado_em)
+      SELECT id, $1, 'PENDENTE', 'A_PAGAR', true, NOW()
       FROM rotina_despesas
       WHERE ativo = true
       ON CONFLICT (rotina_id, mes_ano)
