@@ -5589,11 +5589,11 @@ body {
                     <option value="Boleto">Boleto</option>
                     <option value="Guia">Guia</option>
                     <option value="Dinheiro">Dinheiro</option>
-                    <option value="Descontado na Operação">Descontado na Operação</option>
-                    <option value="Cartão">Cartão</option>
-                    <option value="Cartão Caixa VISA">Cartão Caixa VISA</option>
-                    <option value="Cartão Caixa Elo">Cartão Caixa Elo</option>
-                    <option value="Cartão Outro">Cartão Outro</option>
+                    <option value="DOP">DOP</option>
+                    <option value="CAR Inter">CAR Inter</option>
+                    <option value="CAR VISA CX">CAR VISA CX</option>
+                    <option value="CAR ELO CX">CAR ELO CX</option>
+                    <option value="CAR Outro">CAR Outro</option>
                   </select>
                 </div>
 
@@ -6351,11 +6351,11 @@ body {
                     <option value="Boleto" ${tipoPagamentoPadrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipoPagamentoPadrao === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipoPagamentoPadrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="Descontado na Operação" ${tipoPagamentoPadrao === 'Descontado na Operação' ? 'selected' : ''}>Descontado na Operação</option>
-                    <option value="Cartão" ${tipoPagamentoPadrao === 'Cartão' ? 'selected' : ''}>Cartão</option>
-                    <option value="Cartão Caixa VISA" ${tipoPagamentoPadrao === 'Cartão Caixa VISA' ? 'selected' : ''}>Cartão Caixa VISA</option>
-                    <option value="Cartão Caixa Elo" ${tipoPagamentoPadrao === 'Cartão Caixa Elo' ? 'selected' : ''}>Cartão Caixa Elo</option>
-                    <option value="Cartão Outro" ${tipoPagamentoPadrao === 'Cartão Outro' ? 'selected' : ''}>Cartão Outro</option>
+                    <option value="DOP" ${tipoPagamentoPadrao === 'DOP' ? 'selected' : ''}>DOP</option>
+                    <option value="CAR Inter" ${tipoPagamentoPadrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
+                    <option value="CAR VISA CX" ${tipoPagamentoPadrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
+                    <option value="CAR ELO CX" ${tipoPagamentoPadrao === 'CAR ELO CX' ? 'selected' : ''}>CAR ELO CX</option>
+                    <option value="CAR Outro" ${tipoPagamentoPadrao === 'CAR Outro' ? 'selected' : ''}>CAR Outro</option>
                   </select>
                 </div>
 
@@ -7235,11 +7235,11 @@ body {
                     <option value="Boleto" ${lancamento.tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${lancamento.tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${lancamento.tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="Descontado na Operação" ${lancamento.tipo_pagamento === 'Descontado na Operação' ? 'selected' : ''}>Descontado na Operação</option>
-                    <option value="Cartão" ${lancamento.tipo_pagamento === 'Cartão' ? 'selected' : ''}>Cartão</option>
-                    <option value="Cartão Caixa VISA" ${lancamento.tipo_pagamento === 'Cartão Caixa VISA' ? 'selected' : ''}>Cartão Caixa VISA</option>
-                    <option value="Cartão Caixa Elo" ${lancamento.tipo_pagamento === 'Cartão Caixa Elo' ? 'selected' : ''}>Cartão Caixa Elo</option>
-                    <option value="Cartão Outro" ${lancamento.tipo_pagamento === 'Cartão Outro' ? 'selected' : ''}>Cartão Outro</option>
+                    <option value="DOP" ${lancamento.tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
+                    <option value="CAR Inter" ${lancamento.tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
+                    <option value="CAR VISA CX" ${lancamento.tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
+                    <option value="CAR ELO CX" ${lancamento.tipo_pagamento === 'CAR ELO CX' ? 'selected' : ''}>CAR ELO CX</option>
+                    <option value="CAR Outro" ${lancamento.tipo_pagamento === 'CAR Outro' ? 'selected' : ''}>CAR Outro</option>
                   </select>
                 </div>
 
@@ -8266,11 +8266,11 @@ body {
                     <option value="Boleto" ${tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="Descontado na Operação" ${tipo_pagamento === 'Descontado na Operação' ? 'selected' : ''}>Descontado na Operação</option>
-                    <option value="Cartão" ${tipo_pagamento === 'Cartão' ? 'selected' : ''}>Cartão</option>
-                    <option value="Cartão Caixa VISA" ${tipo_pagamento === 'Cartão Caixa VISA' ? 'selected' : ''}>Cartão Caixa VISA</option>
-                    <option value="Cartão Caixa Elo" ${tipo_pagamento === 'Cartão Caixa Elo' ? 'selected' : ''}>Cartão Caixa Elo</option>
-                    <option value="Cartão Outro" ${tipo_pagamento === 'Cartão Outro' ? 'selected' : ''}>Cartão Outro</option>
+                    <option value="DOP" ${tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
+                    <option value="CAR Inter" ${tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
+                    <option value="CAR VISA CX" ${tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
+                    <option value="CAR ELO CX" ${tipo_pagamento === 'CAR ELO CX' ? 'selected' : ''}>CAR ELO CX</option>
+                    <option value="CAR Outro" ${tipo_pagamento === 'CAR Outro' ? 'selected' : ''}>CAR Outro</option>
                   </select>
                 </div>
 
@@ -11569,11 +11569,11 @@ body {
                   <option value="Boleto">Boleto</option>
                   <option value="Guia">Guia</option>
                   <option value="Dinheiro">Dinheiro</option>
-                  <option value="Descontado na Operação">Descontado na Operação</option>
-                  <option value="Cartão">Cartão</option>
-                  <option value="Cartão Caixa VISA">Cartão Caixa VISA</option>
-                  <option value="Cartão Caixa Elo">Cartão Caixa Elo</option>
-                  <option value="Cartão Outro">Cartão Outro</option>
+                  <option value="DOP">DOP</option>
+                  <option value="CAR Inter">CAR Inter</option>
+                  <option value="CAR VISA CX">CAR VISA CX</option>
+                  <option value="CAR ELO CX">CAR ELO CX</option>
+                  <option value="CAR Outro">CAR Outro</option>
                 </select>
               </div>
 
@@ -12235,11 +12235,11 @@ body {
                   <option value="Boleto" ${item.tipo_pagamento_padrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                   <option value="Guia" ${item.tipo_pagamento_padrao === 'Guia' ? 'selected' : ''}>Guia</option>
                   <option value="Dinheiro" ${item.tipo_pagamento_padrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                  <option value="Descontado na Operação" ${item.tipo_pagamento_padrao === 'Descontado na Operação' ? 'selected' : ''}>Descontado na Operação</option>
-                  <option value="Cartão" ${item.tipo_pagamento_padrao === 'Cartão' ? 'selected' : ''}>Cartão</option>
-                  <option value="Cartão Caixa VISA" ${item.tipo_pagamento_padrao === 'Cartão Caixa VISA' ? 'selected' : ''}>Cartão Caixa VISA</option>
-                  <option value="Cartão Caixa Elo" ${item.tipo_pagamento_padrao === 'Cartão Caixa Elo' ? 'selected' : ''}>Cartão Caixa Elo</option>
-                  <option value="Cartão Outro" ${item.tipo_pagamento_padrao === 'Cartão Outro' ? 'selected' : ''}>Cartão Outro</option>
+                  <option value="DOP" ${item.tipo_pagamento_padrao === 'DOP' ? 'selected' : ''}>DOP</option>
+                  <option value="CAR Inter" ${item.tipo_pagamento_padrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
+                  <option value="CAR VISA CX" ${item.tipo_pagamento_padrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
+                  <option value="CAR ELO CX" ${item.tipo_pagamento_padrao === 'CAR ELO CX' ? 'selected' : ''}>CAR ELO CX</option>
+                  <option value="CAR Outro" ${item.tipo_pagamento_padrao === 'CAR Outro' ? 'selected' : ''}>CAR Outro</option>
                 </select>
               </div>
 
