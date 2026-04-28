@@ -363,45 +363,32 @@ function toNullableInt(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function parseMesAno(value) {
-  const text = String(value || '').trim();
-  const match = text.match(/^(\d{4})-(\d{2})$/);
-  if (match) {
-    return { ano: Number(match[1]), mes: Number(match[2]) };
-  }
+function gerarOpcoesMesAno(selectedValue = '') {
   const hoje = new Date();
-  return { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
+  const opcoes = ['<option value="">Selecione o mês/ano</option>'];
+  for (let i = -2; i <= 12; i++) {
+    const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const valor = `${ano}-${mes}`;
+    const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const labelFinal = label.charAt(0).toUpperCase() + label.slice(1);
+    opcoes.push(`<option value="${valor}" ${String(selectedValue) === valor ? 'selected' : ''}>${labelFinal}</option>`);
+  }
+  return opcoes.join('');
 }
 
-function gerarPickerMesCompetencia(selectedValue = '') {
-  const { ano, mes } = parseMesAno(selectedValue || getMesAnoAtual());
-  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const buttons = meses.map((label, index) => {
-    const numeroMes = index + 1;
-    const valor = `${ano}-${String(numeroMes).padStart(2, '0')}`;
-    const ativo = numeroMes === mes ? ' month-active' : '';
-    return `<button type="submit" name="mes_ano" value="${valor}" class="month-btn${ativo}" onclick="this.form.acao.value='mes'">${label}</button>`;
-  }).join('');
 
-  return `
-    <div class="month-picker" data-year="${ano}">
-      <div class="month-picker-header">
-        <button type="button" class="year-nav" onclick="mudarAnoCompetencia(-1)">«</button>
-        <strong id="anoCompetenciaAtual">${ano}</strong>
-        <button type="button" class="year-nav" onclick="mudarAnoCompetencia(1)">»</button>
-      </div>
-      <div class="month-grid" id="monthGridCompetencia">
-        ${buttons}
-      </div>
-    </div>
-  `;
-}
+const MESES_CURTOS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-function labelMesAno(value = '') {
-  const { ano, mes } = parseMesAno(value || getMesAnoAtual());
-  const data = new Date(ano, mes - 1, 1);
-  const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  return label.charAt(0).toUpperCase() + label.slice(1);
+function formatMesAnoCurto(mesAno = '') {
+  const text = String(mesAno || '').trim();
+  const match = text.match(/^(\d{4})-(\d{2})$/);
+  if (!match) return 'Selecione';
+  const ano = match[1];
+  const mesIndex = Number(match[2]) - 1;
+  const mes = MESES_CURTOS_PT[mesIndex] || match[2];
+  return `${mes}-${ano.slice(-2)}`;
 }
 
 function normalizarDiaVencimento(value) {
@@ -7846,7 +7833,22 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           .btn-success { background: #16a34a; color: white; }
           .btn-success:hover { background: #15803d; }
 
-          .painel-colunas {
+          .month-compact-row { display: flex; align-items: center; gap: 8px; }
+        .month-current-display { min-width: 78px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 12px; background: #ffffff; border: 1px solid #dce3ec; color: #172033; font-weight: 900; white-space: nowrap; }
+        .btn-month-open { min-width: 118px !important; height: 42px !important; padding: 0 14px !important; }
+        .month-picker-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.16); align-items: center; justify-content: center; padding: 18px; }
+        .month-picker-overlay.open { display: flex; }
+        .month-picker-popover { width: 360px; max-width: calc(100vw - 28px); border-radius: 18px; background: rgba(255,255,255,0.96); border: 1px solid #dce3ec; box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22); padding: 16px; }
+        .month-picker-head { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; margin-bottom: 14px; }
+        .month-nav-btn { height: 38px !important; min-height: 38px !important; border-radius: 12px !important; padding: 0 !important; font-size: 20px !important; line-height: 1 !important; }
+        .month-year-select { height: 38px !important; text-align: center; font-weight: 900; }
+        .month-grid-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .month-cell { height: 44px !important; min-height: 44px !important; padding: 0 !important; border-radius: 12px !important; font-size: 14px !important; font-weight: 900 !important; background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 8px 16px rgba(15, 23, 42, .05) !important; }
+        .month-cell.active { background: linear-gradient(135deg, #00B050, #009640) !important; color: #fff !important; border-color: rgba(0, 176, 80, .9) !important; box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important; }
+        .month-picker-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+        th.col-vencimento, td.col-vencimento, th.col-status-pagto, td.col-status-pagto { text-align: center !important; vertical-align: middle !important; }
+
+        .painel-colunas {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
@@ -10339,6 +10341,9 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     await ensureRotinaDespesasColumns();
 
     const mesAnoEdicao = (await getPainelConfig('rotina_mes_ano_edicao', '')) || getMesAnoAtual();
+    const mesAnoEdicaoLabel = formatMesAnoCurto(mesAnoEdicao);
+    const anoMesEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[0] || String(new Date().getFullYear());
+    const mesNumeroEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[1] || String(new Date().getMonth() + 1).padStart(2, '0');
     const statusMesEdicao = await getStatusMesCompetencia(mesAnoEdicao);
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
@@ -10349,16 +10354,16 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
     if (statusFiltro) {
       values.push(statusFiltro);
-      whereParts.push(`COALESCE(sm.status_linha, r.status, 'PENDENTE') = $${values.length + 2}`);
+      whereParts.push(`COALESCE(sm.status_linha, r.status, 'PENDENTE') = $${values.length + 1}`);
     }
 
     if (diaVencimentoFiltro) {
       values.push(diaVencimentoFiltro);
-      whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length + 2}`);
+      whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length + 1}`);
     }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
-    const pickerMesCompetenciaHtml = gerarPickerMesCompetencia(mesAnoEdicao);
+    const opcoesMesAnoHtml = gerarOpcoesMesAno(mesAnoEdicao);
 
     const result = await pool.query(`
       SELECT
@@ -10529,84 +10534,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           border-color: #fcd34d !important;
         }
 
-        .month-reference-form {
-          align-items: flex-start;
-        }
-
-        .month-picker {
-          width: 330px;
-          padding: 14px 16px 16px;
-          border-radius: 18px;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dce3ec;
-          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-        }
-
-        .month-picker-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          color: #475569;
-        }
-
-        .month-picker-header strong {
-          font-size: 22px;
-          color: #475569;
-          letter-spacing: -0.3px;
-        }
-
-        .year-nav {
-          background: transparent !important;
-          box-shadow: none !important;
-          border: none !important;
-          color: #475569 !important;
-          font-size: 24px !important;
-          min-height: auto !important;
-          padding: 0 8px !important;
-          cursor: pointer;
-        }
-
-        .month-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-        }
-
-        .month-btn {
-          height: 56px !important;
-          min-height: 56px !important;
-          border-radius: 10px !important;
-          background: transparent !important;
-          border: 1px solid transparent !important;
-          box-shadow: none !important;
-          color: #475569 !important;
-          font-size: 18px !important;
-          font-weight: 700 !important;
-          cursor: pointer;
-        }
-
-        .month-btn:hover {
-          background: #E8F7EE !important;
-          border-color: #86efac !important;
-          transform: none !important;
-        }
-
-        .month-btn.month-active {
-          background: #00B050 !important;
-          color: #fff !important;
-          border-color: #00B050 !important;
-          box-shadow: 0 10px 20px rgba(0, 176, 80, .22) !important;
-        }
-
-        .competencia-label {
-          margin-top: 7px;
-          font-size: 12px;
-          font-weight: 800;
-          color: #64748b;
-          text-align: center;
-        }
-
         .painel-colunas {
           display: flex;
           gap: 12px;
@@ -10705,8 +10632,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         }
 
         .col-status,
-        .col-status-pagto,
-        .col-vencimento,
         .col-ativo,
         .col-acoes {
           text-align: center;
@@ -11277,15 +11202,52 @@ body {
               <a href="/rotina-despesas" class="btn btn-dark">Limpar</a>
             </form>
 
-            <form method="POST" action="/rotina-despesas/mes-referencia" class="month-reference-form" id="formMesCompetencia">
-              <input type="hidden" name="acao" value="status">
-              <input type="hidden" name="mes_ano" id="mesAnoCompetenciaHidden" value="${mesAnoEdicao}">
+            <form method="POST" action="/rotina-despesas/mes-referencia" class="month-reference-form" id="monthReferenceForm">
+              <input type="hidden" name="acao" id="mes_acao" value="status">
+              <input type="hidden" name="mes_ano" id="mes_ano_edicao" value="${mesAnoEdicao}">
+
+              <div class="filter-group month-compact-group">
+                <label>Mês de competência</label>
+                <div class="month-compact-row">
+                  <span class="month-current-display" id="mesAtualLabel">${mesAnoEdicaoLabel}</span>
+                  <button type="button" class="btn btn-dark btn-month-open" onclick="abrirSeletorMes()">Escolher mês</button>
+                </div>
+              </div>
 
               <div class="filter-group">
-                <label>Mês de competência</label>
-                ${pickerMesCompetenciaHtml}
-                <div class="competencia-label">Selecionado: ${labelMesAno(mesAnoEdicao)}</div>
+                <label for="status_mes">Status do mês</label>
+                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="document.getElementById('mes_acao').value='status'; this.form.submit()">
+                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
+                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                </select>
               </div>
+            </form>
+
+            <div id="monthPickerOverlay" class="month-picker-overlay" onclick="fecharSeletorMes(event)">
+              <div class="month-picker-popover" onclick="event.stopPropagation()">
+                <div class="month-picker-head">
+                  <button type="button" class="month-nav-btn" onclick="mudarAnoPicker(-1)">«</button>
+                  <select id="monthPickerYear" class="month-year-select" onchange="atualizarMesesPicker()">
+                    ${[2025,2026,2027,2028,2029,2030].map(ano => `<option value="${ano}" ${String(anoMesEdicao) === String(ano) ? 'selected' : ''}>${ano}</option>`).join('')}
+                  </select>
+                  <button type="button" class="month-nav-btn" onclick="mudarAnoPicker(1)">»</button>
+                </div>
+
+                <div class="month-grid-picker" id="monthGridPicker">
+                  ${MESES_CURTOS_PT.map((nome, idx) => {
+                    const mesValor = String(idx + 1).padStart(2, '0');
+                    const ativo = mesValor === mesNumeroEdicao ? 'active' : '';
+                    return `<button type="button" class="month-cell ${ativo}" data-month="${mesValor}" onclick="selecionarMesPicker('${mesValor}')">${nome}</button>`;
+                  }).join('')}
+                </div>
+
+                <div class="month-picker-footer">
+                  <button type="button" class="btn btn-dark" onclick="fecharSeletorMes()">Cancelar</button>
+                  <button type="button" class="btn btn-primary" onclick="aplicarMesCompetencia()">Filtrar</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
               <div class="filter-group">
                 <label for="status_mes">Status do mês</label>
@@ -11322,27 +11284,6 @@ body {
       </div>
 
       <script>
-        function mudarAnoCompetencia(delta) {
-          const picker = document.querySelector('.month-picker');
-          const anoLabel = document.getElementById('anoCompetenciaAtual');
-          const grid = document.getElementById('monthGridCompetencia');
-          if (!picker || !anoLabel || !grid) return;
-
-          let ano = Number(picker.dataset.year || anoLabel.textContent || new Date().getFullYear());
-          ano += delta;
-          picker.dataset.year = String(ano);
-          anoLabel.textContent = String(ano);
-
-          const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-          const mesSelecionado = String(document.getElementById('mesAnoCompetenciaHidden')?.value || '').split('-')[1] || '';
-          grid.innerHTML = meses.map((label, index) => {
-            const mes = String(index + 1).padStart(2, '0');
-            const ativo = mes === mesSelecionado && String(ano) === String((document.getElementById('mesAnoCompetenciaHidden')?.value || '').split('-')[0]) ? ' month-active' : '';
-            const valor = ano + '-' + mes;
-            return '<button type="submit" name="mes_ano" value="' + valor + '" class="month-btn' + ativo + '" onclick="this.form.acao.value=\'mes\'">' + label + '</button>';
-          }).join('');
-        }
-
         function togglePainelColunasRotina() {
           const painel = document.getElementById('painel-colunas-rotina');
           painel.style.display = painel.style.display === 'none' ? 'flex' : 'none';
@@ -11396,6 +11337,47 @@ body {
 
         document.addEventListener('DOMContentLoaded', carregarPreferenciasColunasRotina);
 
+        let mesSelecionadoPicker = '${mesNumeroEdicao}';
+
+        function abrirSeletorMes() {
+          const overlay = document.getElementById('monthPickerOverlay');
+          if (overlay) overlay.classList.add('open');
+        }
+
+        function fecharSeletorMes(event) {
+          if (event && event.target && event.target.id !== 'monthPickerOverlay') return;
+          const overlay = document.getElementById('monthPickerOverlay');
+          if (overlay) overlay.classList.remove('open');
+        }
+
+        function selecionarMesPicker(mes) {
+          mesSelecionadoPicker = String(mes).padStart(2, '0');
+          document.querySelectorAll('#monthGridPicker .month-cell').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.month === mesSelecionadoPicker);
+          });
+        }
+
+        function atualizarMesesPicker() { selecionarMesPicker(mesSelecionadoPicker); }
+
+        function mudarAnoPicker(delta) {
+          const select = document.getElementById('monthPickerYear');
+          if (!select) return;
+          const atual = parseInt(select.value || '2026', 10);
+          let novo = atual + delta;
+          novo = Math.max(2025, Math.min(2030, novo));
+          select.value = String(novo);
+        }
+
+        function aplicarMesCompetencia() {
+          const ano = document.getElementById('monthPickerYear')?.value || '2026';
+          const mes = mesSelecionadoPicker || '01';
+          const campoMes = document.getElementById('mes_ano_edicao');
+          const campoAcao = document.getElementById('mes_acao');
+          if (campoMes) campoMes.value = ano + '-' + mes;
+          if (campoAcao) campoAcao.value = 'mes';
+          document.getElementById('monthReferenceForm')?.submit();
+        }
+
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
             this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-VENCIDO');
@@ -11418,12 +11400,11 @@ router.post('/rotina-despesas/mes-referencia', protegerRota, permitirPerfis('ADM
   try {
     await ensureRotinaDespesasColumns();
 
-    const mesAnoRaw = Array.isArray(req.body.mes_ano) ? req.body.mes_ano[req.body.mes_ano.length - 1] : req.body.mes_ano;
-    const mesAno = String(mesAnoRaw || '').trim();
+    const mesAno = String(req.body.mes_ano || '').trim();
     const statusMes = String(req.body.status_mes || 'PENDENTE').trim() === 'FEITO' ? 'FEITO' : 'PENDENTE';
     const acao = String(req.body.acao || 'status').trim();
 
-    const mesFinal = /^\d{4}-\d{2}$/.test(mesAno) ? mesAno : getMesAnoAtual();
+    const mesFinal = mesAno || getMesAnoAtual();
     await setPainelConfig('rotina_mes_ano_edicao', mesFinal);
     if (acao !== 'mes') {
       await setStatusMesCompetencia(mesFinal, statusMes);
