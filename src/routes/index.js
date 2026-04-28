@@ -255,6 +255,43 @@ function formatDateInput(dateValue) {
   return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
 }
 
+
+let rotinaDiaVencimentoColumnReady = false;
+async function ensureRotinaDiaVencimentoColumn() {
+  if (rotinaDiaVencimentoColumnReady) return;
+  await pool.query(`
+    ALTER TABLE rotina_despesas
+    ADD COLUMN IF NOT EXISTS dia_vencimento VARCHAR(50)
+  `);
+  rotinaDiaVencimentoColumnReady = true;
+}
+
+function getMesAnoAtual() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  return `${ano}-${mes}`;
+}
+
+function buildMesAnoOptions(selectedValue = '') {
+  const selected = selectedValue || getMesAnoAtual();
+  const hoje = new Date();
+  let options = '';
+
+  for (let i = -2; i <= 12; i++) {
+    const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const value = `${ano}-${mes}`;
+    const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const labelFormatado = label.charAt(0).toUpperCase() + label.slice(1);
+    options += `<option value="${value}" ${selected === value ? 'selected' : ''}>${labelFormatado}</option>`;
+  }
+
+  return options;
+}
+
+
 async function parseXmlDocumento(filePath) {
   const xmlContent = fs.readFileSync(filePath, 'utf8');
 
@@ -10139,8 +10176,10 @@ router.get('/', (req, res) => {
 // LISTAGEM
 router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
+    await ensureRotinaDiaVencimentoColumn();
     const statusFiltro = (req.query.status || '').trim();
-    const vencimentoFiltro = (req.query.data_vencimento || '').trim();
+    const mesAnoEdicao = (req.query.mes_ano || '').trim() || getMesAnoAtual();
+    const vencimentoFiltro = ''; // campo antigo desativado: agora usamos Dia de vencimento livre no cadastro.
 
     const whereParts = [];
     const values = [];
@@ -10150,16 +10189,13 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       whereParts.push(`r.status = $${values.length}`);
     }
 
-    if (vencimentoFiltro) {
-      values.push(vencimentoFiltro);
-      whereParts.push(`r.data_vencimento = $${values.length}`);
-    }
 
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
     const result = await pool.query(`
       SELECT
         r.*,
+        COALESCE(NULLIF(r.dia_vencimento, ''), to_char(r.data_vencimento, 'DD/MM/YYYY')) AS dia_vencimento_exibicao,
         cp.nome AS categoria_principal_nome,
         cs.nome AS subcategoria_nome
       FROM rotina_despesas r
@@ -10186,12 +10222,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td class="col-rot-pagamento">${r.tipo_pagamento_padrao || ''}</td>
           <td class="col-rot-cat-principal">${r.categoria_principal_nome || ''}</td>
           <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
-          <td class="col-vencimento col-rot-vencimento">${formatDateBR(r.data_vencimento) || '-'}</td>
+          <td class="col-vencimento col-rot-vencimento">${r.dia_vencimento_exibicao || '-'}</td>
 
           <td class="col-status col-rot-status">
             <form method="POST" action="/rotina-despesas/status/${r.id}" class="status-form">
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
-              <input type="hidden" name="data_vencimento_filtro" value="${vencimentoFiltro}">
+              <input type="hidden" name="mes_ano" value="${mesAnoEdicao}">
 
               <select
                 name="status"
@@ -10894,7 +10930,7 @@ body {
               <label><input type="checkbox" data-col="col-rot-pagamento"> Pagamento</label>
               <label><input type="checkbox" data-col="col-rot-cat-principal"> Categoria Principal</label>
               <label><input type="checkbox" data-col="col-rot-subcategoria"> Subcategoria</label>
-              <label><input type="checkbox" data-col="col-rot-vencimento"> Vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-vencimento"> Dia vencimento</label>
               <label><input type="checkbox" data-col="col-rot-status"> Status</label>
               <label><input type="checkbox" data-col="col-rot-ativo"> Ativo</label>
             </div>
@@ -10911,13 +10947,10 @@ body {
               </div>
 
               <div class="filter-group">
-                <label for="data_vencimento">Filtrar por vencimento</label>
-                <input
-                  id="data_vencimento"
-                  name="data_vencimento"
-                  type="date"
-                  value="${vencimentoFiltro}"
-                />
+                <label for="mes_ano">Mês/Ano em edição</label>
+                <select id="mes_ano" name="mes_ano">
+                  ${buildMesAnoOptions(mesAnoEdicao)}
+                </select>
               </div>
 
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
@@ -10935,7 +10968,7 @@ body {
                 <th class="col-rot-pagamento">Pagamento</th>
                 <th class="col-rot-cat-principal">Categoria Principal</th>
                 <th class="col-rot-subcategoria">Subcategoria</th>
-                <th class="col-vencimento col-rot-vencimento">Vencimento</th>
+                <th class="col-vencimento col-rot-vencimento">Dia vencimento</th>
                 <th class="col-status col-rot-status">Status</th>
                 <th class="col-ativo col-rot-ativo">Ativo</th>
                 <th class="col-acoes col-rot-acoes">Ações</th>
@@ -11018,7 +11051,7 @@ body {
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, status_filtro, data_vencimento_filtro } = req.body;
+    const { status, status_filtro, mes_ano } = req.body;
 
     await pool.query(`
       UPDATE rotina_despesas
@@ -11028,7 +11061,7 @@ router.post('/rotina-despesas/status/:id', async (req, res) => {
 
     const redirectParams = new URLSearchParams();
     if (status_filtro) redirectParams.set('status', status_filtro);
-    if (data_vencimento_filtro) redirectParams.set('data_vencimento', data_vencimento_filtro);
+    if (mes_ano) redirectParams.set('mes_ano', mes_ano);
     const redirectQuery = redirectParams.toString();
     const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
 
@@ -11055,6 +11088,7 @@ router.post('/rotina-despesas/reset-status', async (req, res) => {
 // FORM NOVO
 router.get('/rotina-despesas/novo', async (req, res) => {
   try {
+    await ensureRotinaDiaVencimentoColumn();
     const principaisResult = await pool.query(`
       SELECT id, nome
       FROM categorias
@@ -11578,8 +11612,8 @@ body {
               </div>
 
               <div>
-                <label for="data_vencimento">Data de vencimento</label>
-                <input id="data_vencimento" name="data_vencimento" type="date" />
+                <label for="dia_vencimento">Dia de vencimento</label>
+                <input id="dia_vencimento" name="dia_vencimento" type="text" placeholder="Ex.: 05, dia 10, todo dia 20" />
               </div>
 
               <div class="full">
@@ -11654,13 +11688,14 @@ body {
 // SALVAR NOVO
 router.post('/rotina-despesas/novo', async (req, res) => {
   try {
+    await ensureRotinaDiaVencimentoColumn();
     const {
       fornecedor,
       cnpj_cpf,
       onde_encontrar_comprovante,
       fato_gerador,
       tipo_pagamento_padrao,
-      data_vencimento,
+      dia_vencimento,
       categoria_principal_id,
       subcategoria_id,
       status,
@@ -11676,7 +11711,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
         onde_encontrar_comprovante,
         fato_gerador,
         tipo_pagamento_padrao,
-        data_vencimento,
+        dia_vencimento,
         categoria_principal_id,
         subcategoria_id,
         status,
@@ -11690,7 +11725,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
-      data_vencimento || null,
+      dia_vencimento || null,
       categoria_principal_id || null,
       subcategoria_id || null,
       status || 'PENDENTE',
@@ -11708,6 +11743,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
 // FORM EDITAR
 router.get('/rotina-despesas/editar/:id', async (req, res) => {
   try {
+    await ensureRotinaDiaVencimentoColumn();
     const { id } = req.params;
 
     const itemResult = await pool.query(
@@ -12244,8 +12280,8 @@ body {
               </div>
 
               <div>
-                <label for="data_vencimento">Data de vencimento</label>
-                <input id="data_vencimento" name="data_vencimento" type="date" value="${formatDateInput(item.data_vencimento)}" />
+                <label for="dia_vencimento">Dia de vencimento</label>
+                <input id="dia_vencimento" name="dia_vencimento" type="text" value="${item.dia_vencimento || formatDateBR(item.data_vencimento) || ''}" placeholder="Ex.: 05, dia 10, todo dia 20" />
               </div>
 
               <div class="full">
@@ -12320,6 +12356,7 @@ body {
 // SALVAR EDIÇÃO
 router.post('/rotina-despesas/editar/:id', async (req, res) => {
   try {
+    await ensureRotinaDiaVencimentoColumn();
     const { id } = req.params;
     const {
       fornecedor,
@@ -12327,7 +12364,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       onde_encontrar_comprovante,
       fato_gerador,
       tipo_pagamento_padrao,
-      data_vencimento,
+      dia_vencimento,
       categoria_principal_id,
       subcategoria_id,
       status,
@@ -12340,24 +12377,25 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       UPDATE rotina_despesas
       SET
         fornecedor = $1,
-        onde_encontrar_comprovante = $2,
-        fato_gerador = $3,
-        tipo_pagamento_padrao = $4,
-        data_vencimento = $5,
-        categoria_principal_id = $6,
-        subcategoria_id = $7,
-        status = $8,
-        ativo = $9,
-        ordem = $10,
-        observacoes = $11
-      WHERE id = $12
+        cnpj_cpf = $2,
+        onde_encontrar_comprovante = $3,
+        fato_gerador = $4,
+        tipo_pagamento_padrao = $5,
+        dia_vencimento = $6,
+        categoria_principal_id = $7,
+        subcategoria_id = $8,
+        status = $9,
+        ativo = $10,
+        ordem = $11,
+        observacoes = $12
+      WHERE id = $13
     `, [
       fornecedor,
       cnpj_cpf || null,
       onde_encontrar_comprovante || null,
       fato_gerador || null,
       tipo_pagamento_padrao || null,
-      data_vencimento || null,
+      dia_vencimento || null,
       categoria_principal_id || null,
       subcategoria_id || null,
       status || 'PENDENTE',
