@@ -261,6 +261,27 @@ async function ensureRotinaDespesasColumns() {
     ALTER TABLE rotina_despesas
     ADD COLUMN IF NOT EXISTS dia_vencimento VARCHAR(50)
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS painel_configuracoes (
+      chave VARCHAR(80) PRIMARY KEY,
+      valor TEXT
+    )
+  `);
+}
+
+async function getPainelConfig(chave, valorPadrao = '') {
+  const result = await pool.query('SELECT valor FROM painel_configuracoes WHERE chave = $1 LIMIT 1', [chave]);
+  return result.rows[0]?.valor || valorPadrao;
+}
+
+async function setPainelConfig(chave, valor) {
+  await pool.query(`
+    INSERT INTO painel_configuracoes (chave, valor)
+    VALUES ($1, $2)
+    ON CONFLICT (chave)
+    DO UPDATE SET valor = EXCLUDED.valor
+  `, [chave, valor || '']);
 }
 
 function toNullableInt(value) {
@@ -10220,7 +10241,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
   try {
     await ensureRotinaDespesasColumns();
 
-    const mesAnoEdicao = (req.query.mes_ano || '').trim();
+    const mesAnoEdicao = await getPainelConfig('rotina_mes_ano_edicao', '');
+    const statusMesEdicao = await getPainelConfig('rotina_status_mes', 'PENDENTE');
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
@@ -10351,11 +10373,42 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           flex-wrap: wrap;
         }
 
-        .filters {
+        .filters,
+        .month-reference-form {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
           align-items: end;
+        }
+
+        .month-reference-form {
+          margin-left: auto;
+          padding: 10px 12px;
+          border-radius: 16px;
+          background: rgba(248, 250, 252, 0.72);
+          border: 1px solid #e0e6ef;
+        }
+
+        .month-reference-form .filter-group select {
+          min-width: 170px;
+        }
+
+        .month-reference-form .status-mes-select {
+          min-width: 140px;
+          text-align: center;
+          font-weight: 900;
+        }
+
+        .month-reference-form .status-mes-select.status-FEITO {
+          background-color: #dcfce7 !important;
+          color: #166534 !important;
+          border-color: #86efac !important;
+        }
+
+        .month-reference-form .status-mes-select.status-PENDENTE {
+          background-color: #fef3c7 !important;
+          color: #92400e !important;
+          border-color: #fcd34d !important;
         }
 
         .painel-colunas {
@@ -10986,13 +11039,6 @@ body {
 
             <form method="GET" action="/rotina-despesas" class="filters">
               <div class="filter-group">
-                <label for="mes_ano">Mês/Ano em edição</label>
-                <select id="mes_ano" name="mes_ano">
-                  ${opcoesMesAnoHtml}
-                </select>
-              </div>
-
-              <div class="filter-group">
                 <label for="status">Filtrar por status</label>
                 <select id="status" name="status">
                   <option value="" ${statusFiltro === '' ? 'selected' : ''}>Todos</option>
@@ -11011,6 +11057,23 @@ body {
 
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
               <a href="/rotina-despesas" class="btn btn-dark">Limpar</a>
+            </form>
+
+            <form method="POST" action="/rotina-despesas/mes-referencia" class="month-reference-form">
+              <div class="filter-group">
+                <label for="mes_ano_edicao">Mês/Ano em edição</label>
+                <select id="mes_ano_edicao" name="mes_ano" onchange="this.form.submit()">
+                  ${opcoesMesAnoHtml}
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="status_mes">Status do mês</label>
+                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="this.form.submit()">
+                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
+                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                </select>
+              </div>
             </form>
           </div>
 
@@ -11104,6 +11167,23 @@ body {
     res.send(`<pre>Erro:\n${error.message}</pre>`);
   }
 });
+router.post('/rotina-despesas/mes-referencia', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  try {
+    await ensureRotinaDespesasColumns();
+
+    const mesAno = String(req.body.mes_ano || '').trim();
+    const statusMes = String(req.body.status_mes || 'PENDENTE').trim() === 'FEITO' ? 'FEITO' : 'PENDENTE';
+
+    await setPainelConfig('rotina_mes_ano_edicao', mesAno);
+    await setPainelConfig('rotina_status_mes', statusMes);
+
+    res.redirect('/rotina-despesas');
+  } catch (error) {
+    res.send(`<pre>Erro ao salvar mês/status de referência:
+${error.message}</pre>`);
+  }
+});
+
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
