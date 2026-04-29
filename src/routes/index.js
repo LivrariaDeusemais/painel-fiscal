@@ -11234,6 +11234,155 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+/* ===== AJUSTE DEFINITIVO ROTINA: FILTROS COMPACTOS + CABEÇALHO FIXO ===== */
+/* Esta regra fica no final do CSS para sobrepor os blocos anteriores com !important. */
+.container {
+  max-width: 1420px !important;
+  margin: 38px auto 24px !important;
+  padding: 0 18px !important;
+}
+
+.card {
+  padding: 22px 24px 20px !important;
+  overflow: visible !important;
+}
+
+.top-bar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "acoes acoes"
+    "colunas colunas"
+    "filtros mes" !important;
+  column-gap: 14px !important;
+  row-gap: 12px !important;
+  align-items: end !important;
+  margin-bottom: 18px !important;
+}
+
+.top-bar > .actions { grid-area: acoes !important; }
+#painel-colunas-rotina { grid-area: colunas !important; }
+.top-bar > form.filters { grid-area: filtros !important; }
+.top-bar > form.month-reference-form { grid-area: mes !important; }
+
+.filters {
+  display: grid !important;
+  grid-template-columns: minmax(180px, 250px) minmax(140px, 170px) minmax(150px, 185px) auto auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  max-width: 850px !important;
+}
+
+.filters .filter-group label,
+.month-reference-form .filter-group label {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  margin-bottom: 4px !important;
+  font-weight: 800 !important;
+}
+
+.filters .filter-group select,
+.filters .filter-group input,
+.month-reference-form .filter-group select {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+.filters .filter-group select {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.filters .btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+.month-reference-form {
+  display: grid !important;
+  grid-template-columns: auto auto !important;
+  gap: 10px !important;
+  align-items: end !important;
+  margin-left: 0 !important;
+  padding: 10px 12px !important;
+  justify-self: end !important;
+}
+
+.month-current-display,
+.btn-month-open,
+.month-reference-form .status-mes-select {
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+.month-current-display { min-width: 76px !important; padding: 0 12px !important; }
+.btn-month-open { min-width: 110px !important; padding: 0 12px !important; }
+.month-reference-form .status-mes-select { min-width: 132px !important; padding: 0 12px !important; }
+
+/* Cabeçalho fixo da tabela ao rolar a tela */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+}
+
+thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 60 !important;
+  background: rgba(248, 250, 252, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: inset 0 -1px 0 #e5e7eb, 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+th, td {
+  font-size: 12.5px !important;
+  padding: 9px 10px !important;
+}
+
+th {
+  font-size: 12px !important;
+}
+
+@media (max-width: 1180px) {
+  .top-bar {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "acoes"
+      "colunas"
+      "filtros"
+      "mes" !important;
+  }
+  .filters {
+    grid-template-columns: repeat(3, minmax(130px, 1fr)) auto auto !important;
+    max-width: 100% !important;
+  }
+  .month-reference-form { justify-self: start !important; }
+}
+
+@media (max-width: 760px) {
+  .filters, .month-reference-form {
+    grid-template-columns: 1fr !important;
+  }
+  .filters .btn, .month-reference-form .btn { width: 100% !important; }
+}
+/* ===== FIM AJUSTE DEFINITIVO ROTINA ===== */
 </style>
     </head>
     <body>
