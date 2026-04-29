@@ -7753,8 +7753,8 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
   : '<span style="color:#9ca3af;">-</span>';
 
       linhas += `
-        <tr>
-          <td>${l.id}</td>
+        <tr class="data-row">
+          <td class="col-id sticky-id">${l.id}</td>
           <td>${l.tipo_documento || ''}</td>
           <td>${l.numero_documento || ''}</td>
           <td>${l.data_despesa ? new Date(l.data_despesa).toLocaleDateString('pt-BR') : ''}</td>
@@ -7766,7 +7766,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           <td class="col-categoria">${l.categoria || ''}</td>
           <td class="col-pdf">${pdfHtml}</td>
           <td class="col-xml">${xmlHtml}</td>
-          <td class="actions-cell">
+          <td class="actions-cell sticky-actions">
             <a class="icon-btn" title="Editar" href="/editar/${l.id}">✏️</a>
             <form method="POST" action="/excluir/${l.id}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este lançamento?');">
               <button type="submit" class="icon-btn btn-icon-danger" title="Excluir">🗑️</button>
@@ -8415,10 +8415,34 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+/* ===== TABELA NÍVEL MERCADO LIVRE - LISTA DE LANÇAMENTOS ===== */
+.ml-table-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 8px; color:#64748b; font-size:12px; font-weight:800; }
+.ml-table-shell { position:relative; width:100%; max-height:calc(100vh - 360px); min-height:320px; overflow:auto; border:1px solid rgba(226,232,240,.92); border-radius:16px; background:rgba(255,255,255,.88); box-shadow:inset 0 1px 0 rgba(255,255,255,.75); }
+.ml-table { width:100%; min-width:1280px; border-collapse:separate !important; border-spacing:0 !important; table-layout:auto; background:transparent !important; border-radius:0 !important; }
+.ml-table thead th { position:sticky; top:0; z-index:20; height:44px; padding:10px 12px; background:rgba(248,250,252,.98) !important; backdrop-filter:blur(10px); border-bottom:2px solid #e2e8f0; box-shadow:0 3px 8px rgba(15,23,42,.05); font-size:11px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap; }
+.ml-table tbody td { height:42px; padding:9px 12px; border-bottom:1px solid rgba(226,232,240,.72); background:rgba(255,255,255,.92); white-space:nowrap; vertical-align:middle; }
+.ml-table tbody tr:hover td { background:rgba(232,247,238,.72) !important; }
+.ml-table .sticky-id { position:sticky; left:0; z-index:12; min-width:58px; width:58px; background:rgba(255,255,255,.98) !important; box-shadow:8px 0 14px rgba(15,23,42,.04); }
+.ml-table thead .sticky-id { z-index:30; background:rgba(248,250,252,.98) !important; }
+.ml-table .sticky-actions { position:sticky; right:0; z-index:12; min-width:94px; width:94px; text-align:center; background:rgba(255,255,255,.98) !important; box-shadow:-8px 0 14px rgba(15,23,42,.05); }
+.ml-table thead .sticky-actions { z-index:30; background:rgba(248,250,252,.98) !important; }
+.ml-load-more { display:none; align-items:center; justify-content:center; gap:10px; padding:14px; color:#64748b; font-weight:900; font-size:12px; }
+.ml-load-more.active { display:flex; }
+.ml-spinner { width:18px; height:18px; border-radius:50%; border:3px solid #dbeafe; border-top-color:#00B050; animation:mlSpin .75s linear infinite; }
+@keyframes mlSpin { to { transform:rotate(360deg); } }
+.ml-skeleton-overlay { display:none; position:fixed; inset:0; z-index:9999; background:rgba(248,250,252,.64); backdrop-filter:blur(3px); align-items:center; justify-content:center; }
+.ml-skeleton-card { width:min(720px, calc(100vw - 36px)); border-radius:18px; background:rgba(255,255,255,.96); border:1px solid #e2e8f0; box-shadow:0 24px 70px rgba(15,23,42,.18); padding:22px; }
+.ml-skeleton-title, .ml-skeleton-line { border-radius:999px; background:linear-gradient(90deg,#e5e7eb 0%,#f8fafc 45%,#e5e7eb 100%); background-size:220% 100%; animation:mlShimmer 1.15s infinite linear; }
+.ml-skeleton-title { height:18px; width:220px; margin-bottom:16px; }
+.ml-skeleton-line { height:38px; border-radius:10px; margin-top:10px; }
+@keyframes mlShimmer { to { background-position:-220% 0; } }
+@media (max-width:1100px) { .ml-table-shell { max-height:calc(100vh - 300px); } }
+/* ===== FIM TABELA NÍVEL MERCADO LIVRE ===== */
 
 </style>
       </head>
       <body>
+        <div class="ml-skeleton-overlay" id="mlSkeletonOverlay" aria-hidden="true"><div class="ml-skeleton-card"><div class="ml-skeleton-title"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div></div></div>
         <div class="container">
           <div class="card">
             <h1>📋 Lista de lançamentos</h1>
@@ -8514,24 +8538,36 @@ body {
               </div>
             </div>
 
-            <table>
-              <tr>
-                <th>ID</th>
-                <th>Documento</th>
-                <th>Número</th>
-                <th>Data</th>
-                <th>Fornecedor</th>
-                <th class="col-cnpj">CNPJ/CPF</th>
-                <th class="col-codpag">Cód. pagamento</th>
-                <th class="col-valor">Valor</th>
-                <th class="col-pagamento">Pagamento</th>
-                <th class="col-categoria">Categoria</th>
-                <th class="col-pdf">PDF</th>
-                <th class="col-xml">XML</th>
-                <th>Ações</th>
-              </tr>
-              ${linhas || '<tr><td colspan="13">Nenhum lançamento encontrado.</td></tr>'}
-            </table>
+            <div class="ml-table-toolbar">
+              <span id="mlTableCounter">Exibindo lançamentos carregados</span>
+              <span>Rolagem inteligente com cabeçalho, ID e ações fixos</span>
+            </div>
+
+            <div class="ml-table-shell" id="mlTableShell">
+              <table class="ml-table">
+                <thead>
+                  <tr>
+                    <th class="col-id sticky-id">ID</th>
+                    <th>Documento</th>
+                    <th>Número</th>
+                    <th>Data</th>
+                    <th>Fornecedor</th>
+                    <th class="col-cnpj">CNPJ/CPF</th>
+                    <th class="col-codpag">Cód. pagamento</th>
+                    <th class="col-valor">Valor</th>
+                    <th class="col-pagamento">Pagamento</th>
+                    <th class="col-categoria">Categoria</th>
+                    <th class="col-pdf">PDF</th>
+                    <th class="col-xml">XML</th>
+                    <th class="sticky-actions">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="mlLancamentosBody">
+                  ${linhas || '<tr class="data-row"><td colspan="13">Nenhum lançamento encontrado.</td></tr>'}
+                </tbody>
+              </table>
+              <div class="ml-load-more" id="mlLoadMore"><span class="ml-spinner"></span> Carregando mais lançamentos...</div>
+            </div>
           </div>
         </div>
 
@@ -8586,8 +8622,57 @@ body {
             });
           }
 
-          document.addEventListener('DOMContentLoaded', carregarPreferenciasColunas);
+          function inicializarTabelaMercadoLivre() {
+            const shell = document.getElementById('mlTableShell');
+            const rows = Array.from(document.querySelectorAll('#mlLancamentosBody tr.data-row'));
+            const counter = document.getElementById('mlTableCounter');
+            const loader = document.getElementById('mlLoadMore');
+            const pageSize = 35;
+            let visible = 0;
+            let loading = false;
+            function atualizarContador() {
+              if (!counter) return;
+              const total = rows.length;
+              const exibidos = Math.min(visible, total);
+              counter.textContent = total ? 'Exibindo ' + exibidos + ' de ' + total + ' lançamentos' : 'Nenhum lançamento encontrado';
+            }
+            function carregarMais() {
+              if (loading) return;
+              if (visible >= rows.length) { if (loader) loader.classList.remove('active'); atualizarContador(); return; }
+              loading = true;
+              if (loader && visible > 0) loader.classList.add('active');
+              setTimeout(function () {
+                const proximo = Math.min(visible + pageSize, rows.length);
+                for (let i = visible; i < proximo; i++) rows[i].style.display = '';
+                visible = proximo;
+                loading = false;
+                if (loader) loader.classList.toggle('active', visible < rows.length);
+                atualizarContador();
+              }, visible === 0 ? 0 : 220);
+            }
+            rows.forEach(function (row) { row.style.display = 'none'; });
+            carregarMais();
+            if (shell) {
+              shell.addEventListener('scroll', function () {
+                if (shell.scrollTop + shell.clientHeight >= shell.scrollHeight - 140) carregarMais();
+              });
+            }
+          }
+          function inicializarLoadingSkeleton() {
+            const overlay = document.getElementById('mlSkeletonOverlay');
+            const mostrar = function () { if (overlay) overlay.style.display = 'flex'; };
+            document.querySelectorAll('form').forEach(function (form) { form.addEventListener('submit', mostrar); });
+            document.querySelectorAll('a[href^="/lancamentos"], a[href^="/exportar-excel"], a[href^="/editar/"], a[href="/novo"]').forEach(function (link) {
+              link.addEventListener('click', function () { if (!link.target || link.target === '_self') mostrar(); });
+            });
+          }
+          document.addEventListener('DOMContentLoaded', function () {
+            carregarPreferenciasColunas();
+            inicializarTabelaMercadoLivre();
+            inicializarLoadingSkeleton();
+          });
         </script>
+
       </body>
       </html>
     `);
