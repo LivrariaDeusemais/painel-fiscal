@@ -8436,7 +8436,40 @@ body {
 .ml-skeleton-title { height:18px; width:220px; margin-bottom:16px; }
 .ml-skeleton-line { height:38px; border-radius:10px; margin-top:10px; }
 @keyframes mlShimmer { to { background-position:-220% 0; } }
-@media (max-width:1100px) { .ml-table-shell { max-height:calc(100vh - 300px); } }
+@media (max-width:1100px) { .ml-table-shell { max-height:none; } }
+
+/* ===== CORREÇÃO STICKY IGUAL ROTINA DE DESPESAS =====
+   A rolagem volta a ser da página inteira. Assim cabeçalho/filtros sobem normalmente
+   e somente os títulos da tabela ficam fixos no topo da tela. */
+.ml-table-shell {
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.ml-table {
+  min-width: 100% !important;
+}
+.ml-table thead,
+.ml-table thead tr,
+.ml-table thead th {
+  overflow: visible !important;
+}
+.ml-table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 999 !important;
+  background: rgba(248, 250, 252, 0.985) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: inset 0 -2px 0 #e5e7eb, 0 5px 16px rgba(15, 23, 42, 0.10) !important;
+}
+.ml-table thead .sticky-id { z-index: 1001 !important; }
+.ml-table thead .sticky-actions { z-index: 1001 !important; }
+/* ===== FIM CORREÇÃO STICKY IGUAL ROTINA ===== */
 /* ===== FIM TABELA NÍVEL MERCADO LIVRE ===== */
 
 </style>
@@ -8652,11 +8685,16 @@ body {
             }
             rows.forEach(function (row) { row.style.display = 'none'; });
             carregarMais();
-            if (shell) {
-              shell.addEventListener('scroll', function () {
-                if (shell.scrollTop + shell.clientHeight >= shell.scrollHeight - 140) carregarMais();
-              });
+            function chegouPertoDoFimDaPagina() {
+              const doc = document.documentElement;
+              return (window.innerHeight + window.scrollY) >= (doc.scrollHeight - 260);
             }
+            window.addEventListener('scroll', function () {
+              if (chegouPertoDoFimDaPagina()) carregarMais();
+            }, { passive: true });
+            window.addEventListener('resize', function () {
+              if (chegouPertoDoFimDaPagina()) carregarMais();
+            });
           }
           function inicializarLoadingSkeleton() {
             const overlay = document.getElementById('mlSkeletonOverlay');
