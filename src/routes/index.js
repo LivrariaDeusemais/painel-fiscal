@@ -11236,8 +11236,8 @@ body {
 
 
 
-/* ===== AJUSTE DEFINITIVO ROTINA: FILTROS COMPACTOS + CABEÇALHO FIXO ===== */
-/* Esta regra fica no final do CSS para sobrepor os blocos anteriores com !important. */
+/* ===== AJUSTE SENIOR ROTINA: ALINHAMENTO FINO + CABEÇALHO FIXO REAL ===== */
+/* Bloco final da página de Levantamento. Fica no fim do <style> para vencer regras antigas. */
 .container {
   max-width: 1420px !important;
   margin: 38px auto 24px !important;
@@ -11249,118 +11249,230 @@ body {
   overflow: visible !important;
 }
 
+/* Topo da rotina em 3 linhas: ações, colunas, filtros + competência/status */
 .top-bar {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(760px, 1fr) minmax(390px, auto) !important;
   grid-template-areas:
     "acoes acoes"
     "colunas colunas"
     "filtros mes" !important;
-  column-gap: 14px !important;
-  row-gap: 12px !important;
   align-items: end !important;
-  margin-bottom: 18px !important;
+  column-gap: 22px !important;
+  row-gap: 12px !important;
+  margin-bottom: 14px !important;
 }
 
-.top-bar > .actions { grid-area: acoes !important; }
-#painel-colunas-rotina { grid-area: colunas !important; }
-.top-bar > form.filters { grid-area: filtros !important; }
-.top-bar > form.month-reference-form { grid-area: mes !important; }
+.top-bar > .actions {
+  grid-area: acoes !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
 
+#painel-colunas-rotina {
+  grid-area: colunas !important;
+  margin: 0 !important;
+}
+
+.top-bar > form.filters {
+  grid-area: filtros !important;
+}
+
+.top-bar > form.month-reference-form {
+  grid-area: mes !important;
+}
+
+/* Filtros compactos e perfeitamente alinhados em cima/baixo */
 .filters {
   display: grid !important;
-  grid-template-columns: minmax(180px, 250px) minmax(140px, 170px) minmax(150px, 185px) auto auto !important;
+  grid-template-columns: 260px 180px 196px 128px 92px !important;
   align-items: end !important;
-  gap: 8px !important;
+  gap: 10px !important;
   flex-wrap: nowrap !important;
-  max-width: 850px !important;
+  width: 100% !important;
+  max-width: 900px !important;
+  min-height: 64px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.filter-group {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  margin: 0 !important;
+  min-width: 0 !important;
 }
 
 .filters .filter-group label,
 .month-reference-form .filter-group label {
+  display: block !important;
+  height: 16px !important;
+  margin: 0 0 4px !important;
   font-size: 11px !important;
-  line-height: 1.1 !important;
-  margin-bottom: 4px !important;
-  font-weight: 800 !important;
+  line-height: 16px !important;
+  font-weight: 900 !important;
+  color: #253247 !important;
+  white-space: nowrap !important;
 }
 
 .filters .filter-group select,
 .filters .filter-group input,
 .month-reference-form .filter-group select {
-  height: 38px !important;
-  min-height: 38px !important;
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
   padding: 0 12px !important;
   font-size: 12px !important;
-  border-radius: 10px !important;
-}
-
-.filters .filter-group select {
-  width: 100% !important;
-  min-width: 0 !important;
+  font-weight: 800 !important;
+  border-radius: 11px !important;
+  line-height: 40px !important;
 }
 
 .filters .btn {
-  height: 38px !important;
-  min-height: 38px !important;
+  height: 40px !important;
+  min-height: 40px !important;
   padding: 0 16px !important;
   font-size: 12px !important;
-  border-radius: 10px !important;
+  border-radius: 11px !important;
+  align-self: end !important;
+  margin: 0 !important;
 }
 
+/* Competência e status alinhados com a mesma linha dos filtros */
 .month-reference-form {
   display: grid !important;
-  grid-template-columns: auto auto !important;
+  grid-template-columns: 210px 148px !important;
   gap: 10px !important;
   align-items: end !important;
-  margin-left: 0 !important;
-  padding: 10px 12px !important;
   justify-self: end !important;
+  align-self: end !important;
+  min-height: 64px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.month-compact-group {
+  min-width: 0 !important;
+}
+
+.month-compact-row {
+  display: grid !important;
+  grid-template-columns: 88px 112px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  height: 40px !important;
 }
 
 .month-current-display,
 .btn-month-open,
 .month-reference-form .status-mes-select {
-  height: 38px !important;
-  min-height: 38px !important;
+  height: 40px !important;
+  min-height: 40px !important;
   font-size: 12px !important;
-  border-radius: 10px !important;
+  border-radius: 11px !important;
+  line-height: 40px !important;
+  margin: 0 !important;
 }
 
-.month-current-display { min-width: 76px !important; padding: 0 12px !important; }
-.btn-month-open { min-width: 110px !important; padding: 0 12px !important; }
-.month-reference-form .status-mes-select { min-width: 132px !important; padding: 0 12px !important; }
+.month-current-display {
+  min-width: 88px !important;
+  width: 88px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 900 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid #dce3ec !important;
+  color: #172033 !important;
+}
 
-/* Cabeçalho fixo da tabela ao rolar a tela */
+.btn-month-open {
+  min-width: 112px !important;
+  width: 112px !important;
+  padding: 0 10px !important;
+}
+
+.month-reference-form .status-mes-select {
+  min-width: 148px !important;
+  width: 148px !important;
+  padding: 0 12px !important;
+  text-align: center !important;
+}
+
+/* Tabela: sem overflow escondido, necessária para sticky funcionar */
 table {
+  width: 100% !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
+  overflow: visible !important;
 }
 
-thead {
+/* Cabeçalho fixo na rolagem da página: fica no topo quando filtros/cabeçalho somem */
+table thead,
+table thead tr,
+table thead th {
+  overflow: visible !important;
+}
+
+table thead th {
   position: sticky !important;
   top: 0 !important;
-  z-index: 50 !important;
+  z-index: 999 !important;
+  background: rgba(248, 250, 252, 0.985) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: inset 0 -2px 0 #e5e7eb, 0 5px 16px rgba(15, 23, 42, 0.10) !important;
 }
 
 thead th {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 60 !important;
-  background: rgba(248, 250, 252, 0.98) !important;
-  backdrop-filter: blur(12px) !important;
-  box-shadow: inset 0 -1px 0 #e5e7eb, 0 4px 12px rgba(15, 23, 42, 0.06) !important;
-}
-
-th, td {
-  font-size: 12.5px !important;
-  padding: 9px 10px !important;
-}
-
-th {
   font-size: 12px !important;
+  line-height: 1.15 !important;
+  padding: 10px 10px !important;
+  color: #253247 !important;
+  font-weight: 900 !important;
+  vertical-align: middle !important;
 }
 
-@media (max-width: 1180px) {
+tbody td {
+  font-size: 12.5px !important;
+  line-height: 1.2 !important;
+  padding: 9px 10px !important;
+  vertical-align: middle !important;
+}
+
+/* Centralizações solicitadas em versões anteriores */
+.col-vencimento,
+.col-rot-vencimento,
+.col-status-pagto,
+.col-rot-status-pagto,
+.col-status,
+.col-rot-status,
+.col-ativo,
+.col-rot-ativo,
+.col-acoes,
+.col-rot-acoes {
+  text-align: center !important;
+}
+
+.col-rot-acoes .acoes-wrap {
+  justify-content: center !important;
+}
+
+/* Modal do mês permanece acima e sem contaminar o fluxo da página */
+.month-picker-overlay {
+  align-items: flex-start !important;
+  padding-top: 115px !important;
+}
+
+@media (max-width: 1280px) {
   .top-bar {
     grid-template-columns: 1fr !important;
     grid-template-areas:
@@ -11370,19 +11482,30 @@ th {
       "mes" !important;
   }
   .filters {
-    grid-template-columns: repeat(3, minmax(130px, 1fr)) auto auto !important;
+    grid-template-columns: minmax(200px, 1fr) minmax(150px, 180px) minmax(170px, 200px) 126px 92px !important;
     max-width: 100% !important;
   }
-  .month-reference-form { justify-self: start !important; }
+  .month-reference-form {
+    justify-self: start !important;
+  }
 }
 
-@media (max-width: 760px) {
-  .filters, .month-reference-form {
+@media (max-width: 820px) {
+  .filters,
+  .month-reference-form {
     grid-template-columns: 1fr !important;
   }
-  .filters .btn, .month-reference-form .btn { width: 100% !important; }
+  .month-compact-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .month-current-display,
+  .btn-month-open,
+  .month-reference-form .status-mes-select,
+  .filters .btn {
+    width: 100% !important;
+  }
 }
-/* ===== FIM AJUSTE DEFINITIVO ROTINA ===== */
+/* ===== FIM AJUSTE SENIOR ROTINA ===== */
 </style>
     </head>
     <body>
