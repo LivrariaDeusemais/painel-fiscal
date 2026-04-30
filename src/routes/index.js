@@ -13806,29 +13806,32 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .btn-green { background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; border-color:rgba(0,176,80,.9); box-shadow:0 12px 22px rgba(0,176,80,.18); }
           .btn-dark { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border-color:#e0e6ef; }
           .btn-mini { height:34px; min-width:88px; padding:0 10px; border-radius:10px; font-size:11px; }
-          .btn-download { min-width:150px; }
+          .btn-download { min-width:138px; font-size:10.5px; }
           .btn-soft-green { color:#047857; background:#ecfdf5; border-color:#bbf7d0; }
           .contador-board { background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.82); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
           .table-wrap { width:100%; overflow-x:hidden; }
           .contador-table { width:100%; border-collapse:collapse; table-layout:fixed; background:#fff; }
-          .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:10px 7px; font-size:13px; line-height:1.1; text-align:center; white-space:normal; }
+          .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:9px 6px; font-size:12px; line-height:1.12; text-align:center; white-space:normal; }
+          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { text-align:center; }
+          .contador-table th:nth-child(3), .contador-table td:nth-child(3), .contador-table th:nth-child(4), .contador-table td:nth-child(4) { text-align:center; }
           .contador-table .responsibility-head th { padding:8px 7px; font-size:17px; font-weight:900; color:#0f172a !important; background:#dcf4d2 !important; border-top:1px solid #111827; }
           .contador-table .responsibility-head th.empresa { background:#dbeafe !important; }
-          .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:21%; }
-          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:9%; }
-          .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:19%; }
-          .contador-table th:nth-child(4), .contador-table td:nth-child(4) { width:18%; }
-          .contador-table th:nth-child(5), .contador-table td:nth-child(5) { width:16%; }
-          .contador-table th:nth-child(6), .contador-table td:nth-child(6) { width:8%; }
-          .contador-table th:nth-child(7), .contador-table td:nth-child(7) { width:9%; }
+          /* Larguras reais por coluna: usa colgroup no HTML e reforço aqui para evitar distorção por colspan */
+          .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:28%; }
+          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:6%; }
+          .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:16%; }
+          .contador-table th:nth-child(4), .contador-table td:nth-child(4) { width:13%; }
+          .contador-table th:nth-child(5), .contador-table td:nth-child(5) { width:15%; }
+          .contador-table th:nth-child(6), .contador-table td:nth-child(6) { width:10%; }
+          .contador-table th:nth-child(7), .contador-table td:nth-child(7) { width:12%; }
           .contador-table td { border-bottom:1px solid #cfd8e3; border-right:1px solid #e5e7eb; padding:9px 7px; vertical-align:middle; font-size:11.5px; color:#111827; }
           .tipo-cell { background:#dcf4d2; color:#17324d; }
-          .tipo-cell strong { font-size:16px; line-height:1.08; font-weight:900; }
+          .tipo-cell strong { font-size:14.5px; line-height:1.08; font-weight:900; }
           .center-cell { text-align:center; }
           .muted-cell { color:#334155; font-weight:800; font-size:10.5px; line-height:1.2; }
           .qtd-pill { display:inline-flex; align-items:center; justify-content:center; min-width:42px; height:30px; border-radius:999px; background:#eef2f7; color:#111827; font-size:16px; font-weight:900; }
           .status-form-inline { margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; display:inline-flex; }
-          .status-select { width:100%; max-width:180px; height:32px; padding:0 10px; border-radius:999px; font-size:10.5px; font-weight:900; cursor:pointer; appearance:auto; text-align:center; }
+          .status-select { width:100%; max-width:150px; height:32px; padding:0 10px; border-radius:999px; font-size:10.5px; font-weight:900; cursor:pointer; appearance:auto; text-align:center; }
           .status-aguardar { background-color:#e5e7eb !important; color:#374151 !important; border:1px solid #cbd5e1 !important; }
           .status-andamento { background-color:#fef3c7 !important; color:#92400e !important; border:1px solid #fcd34d !important; }
           .status-liberado { background-color:#dcfce7 !important; color:#166534 !important; border:1px solid #86efac !important; }
@@ -13837,7 +13840,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .download-baixado { background:#dcfce7; color:#166534; border:1px solid #86efac; }
           .upload-stack { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%; }
           .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:6px; margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; }
-          .upload-chip { margin:0; width:130px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:10.5px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 8px; }
+          .upload-chip { margin:0; width:126px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:10.5px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 8px; }
           .upload-chip input { display:none; }
           .upload-name { max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
           .attached-list { width:100%; max-width:210px; display:flex; flex-direction:column; gap:4px; }
@@ -13883,6 +13886,15 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           <section class="contador-board">
             <div class="table-wrap">
               <table class="contador-table">
+                <colgroup>
+                  <col style="width:28%;">
+                  <col style="width:6%;">
+                  <col style="width:16%;">
+                  <col style="width:13%;">
+                  <col style="width:15%;">
+                  <col style="width:10%;">
+                  <col style="width:12%;">
+                </colgroup>
                 <thead>
                   <tr class="responsibility-head">
                     <th></th>
