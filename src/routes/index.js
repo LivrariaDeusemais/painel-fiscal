@@ -14280,8 +14280,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
     const downloadPill = (status) => {
       const finalStatus = normalizarStatusDownload(status);
-      const cls = finalStatus === 'Baixado' ? 'download-baixado' : 'download-baixar';
-      return `<span class="download-status ${cls}">${finalStatus}</span>`;
+      const cls = finalStatus === 'Baixado' ? 'download-text-baixado' : 'download-text-nao-baixado';
+      return `<span class="download-status-text ${cls}">${finalStatus}</span>`;
     };
 
     const configs = getContadorArquivoConfig();
@@ -14359,9 +14359,9 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .status-aguardar { background-color:#e5e7eb !important; color:#374151 !important; border:1px solid #cbd5e1 !important; }
           .status-andamento { background-color:#fef3c7 !important; color:#92400e !important; border:1px solid #fcd34d !important; }
           .status-liberado { background-color:#dcfce7 !important; color:#166534 !important; border:1px solid #86efac !important; }
-          .download-status { display:inline-flex; align-items:center; justify-content:center; min-width:72px; height:28px; border-radius:999px; font-size:10.5px; font-weight:900; }
-          .download-baixar { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
-          .download-baixado { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+          .download-status-text { display:inline; font-size:11px; font-weight:900; white-space:nowrap; }
+          .download-text-nao-baixado { color:#1d4ed8; }
+          .download-text-baixado { color:#166534; }
           .upload-stack { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%; }
           .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:6px; margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; }
           .upload-chip { margin:0; width:126px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:10.5px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 8px; }
@@ -14683,10 +14683,13 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
       const filePath = getUploadFilePath(item.nome_arquivo);
       if (!filePath || !fs.existsSync(filePath)) continue;
 
-      const ext = path.extname(item.nome_original || item.nome_arquivo) || '.zip';
-      const base = sanitizeFilePart(`${config.label}-${mes}-${item.id}`, true);
-      let downloadName = `${base}${ext}`;
-      if (nomesUsados.has(downloadName)) downloadName = `${base}-${Date.now()}${ext}`;
+      const originalName = path.basename(item.nome_original || item.nome_arquivo || path.basename(filePath));
+      const ext = path.extname(originalName) || path.extname(item.nome_arquivo || '') || '.zip';
+      const baseOriginal = path.basename(originalName, ext) || `arquivo-${item.id}`;
+      let downloadName = `${sanitizeFilePart(baseOriginal, true)}${ext}`;
+      if (nomesUsados.has(downloadName)) {
+        downloadName = `${sanitizeFilePart(baseOriginal, true)}-${item.id}${ext}`;
+      }
       nomesUsados.add(downloadName);
       arquivos.push({ filePath, downloadName });
     }
@@ -14695,7 +14698,9 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
       return res.send(`<pre>Nenhum arquivo encontrado para ${config.label} neste mês.</pre>`);
     }
 
-    await marcarDownloadContador(mes, grupo);
+    if (req.session?.usuario?.perfil === 'CONTADOR') {
+      await marcarDownloadContador(mes, grupo);
+    }
     return gerarZipEEnviar(res, arquivos, `${config.label}-${mes}`);
   } catch (error) {
     res.send(`<pre>Erro ao baixar arquivos extras em massa:\n${error.message}</pre>`);
@@ -14766,7 +14771,9 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
       return res.send('<pre>Os registros existem no banco, mas os arquivos físicos não foram encontrados em /uploads.</pre>');
     }
 
-    await marcarDownloadContador(mes, tipo);
+    if (req.session?.usuario?.perfil === 'CONTADOR') {
+      await marcarDownloadContador(mes, tipo);
+    }
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="arquivos-${extensao}-${mes}.zip"`);
