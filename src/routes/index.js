@@ -727,6 +727,78 @@ async function getCategoriasOptions(selectedValue = '') {
   return options;
 }
 
+function escapeHtmlGlobal(text = '') {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderGlobalHeader(req, config = {}) {
+  const usuario = req?.session?.usuario || {};
+  const usuarioNome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
+  const usuarioPerfil = escapeHtmlGlobal(usuario.perfil || '');
+  const paginaAtual = String(config.paginaAtual || '');
+  const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - Deus é Mais');
+  const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da Deus é Mais.');
+  const isAdmin = usuario.perfil === 'ADMIN';
+  const menuBase = [
+    { key: 'novo', href: '/novo', label: '+ Novo lançamento', primary: true },
+    { key: 'dashboard', href: '/dashboard', label: 'Voltar ao Painel' },
+    { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Lançamentos Mensais' },
+    { key: 'lancamentos', href: '/lancamentos', label: 'Lista de Lançamentos' },
+    { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
+    { key: 'categorias', href: '/categorias', label: 'Categorias' },
+    { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
+    ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
+  ];
+  const menuHtml = menuBase
+    .filter(item => item.key !== paginaAtual)
+    .map(item => `<a class="dm-menu-btn ${item.primary ? 'dm-menu-primary' : ''}" href="${item.href}">${escapeHtmlGlobal(item.label)}</a>`)
+    .join('');
+  return `
+    <style>
+      .dm-global-header-shell{width:min(1560px,calc(100% - 48px));margin:18px auto 14px;font-family:Arial,Helvetica,sans-serif;color:#172033;}
+      .dm-global-top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.72);border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:16px 24px;}
+      .dm-global-brand{display:flex;align-items:center;gap:14px;min-width:0;}
+      .dm-global-logo{width:54px;height:54px;border-radius:999px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:4px;box-shadow:0 8px 22px rgba(15,23,42,.08);}
+      .dm-global-title h1{margin:0 0 5px;font-size:clamp(22px,1.8vw,32px);line-height:1;letter-spacing:-.7px;color:#101828;}
+      .dm-global-title p{margin:0;color:#52627a;font-size:13px;font-weight:700;}
+      .dm-global-user{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+      .dm-global-user-copy{text-align:right;line-height:1.15;}
+      .dm-global-user-copy strong{display:block;font-size:14px;color:#00B050;margin-bottom:4px;}
+      .dm-global-user-copy span{display:block;font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase;}
+      .dm-global-avatar{position:relative;width:50px;height:50px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;display:grid;place-items:center;box-shadow:0 8px 22px rgba(15,23,42,.08);overflow:hidden;}
+      .dm-global-avatar img{width:42px;height:42px;object-fit:contain;border-radius:50%;}
+      .dm-global-online{position:absolute;right:3px;bottom:5px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:3px solid #fff;}
+      .dm-global-logout{height:44px;padding:0 16px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;font-weight:900;box-shadow:0 10px 20px rgba(15,23,42,.06);white-space:nowrap;}
+      .dm-global-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:10px 14px;margin-top:12px;}
+      .dm-menu-btn{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;box-shadow:0 8px 18px rgba(15,23,42,.05);white-space:nowrap;}
+      .dm-menu-primary{background:linear-gradient(135deg,#00B050,#009640) !important;color:#fff !important;border-color:rgba(0,176,80,.88) !important;box-shadow:0 12px 22px rgba(0,176,80,.18) !important;}
+      .dm-menu-btn:hover,.dm-global-logout:hover{transform:translateY(-1px);filter:brightness(1.03);}
+      body.dm-global-page .container{margin-top:14px !important;}
+      body.dm-global-page .container > .card > h1:first-child{display:none !important;}
+      body.dm-global-page .container > .hero > .hero-top:first-child{display:none !important;}
+      @media(max-width:900px){.dm-global-header-shell{width:min(100% - 24px,900px);}.dm-global-top{align-items:flex-start;flex-direction:column;}.dm-global-user{width:100%;justify-content:space-between;}.dm-global-user-copy{text-align:left;}.dm-global-nav{overflow-x:auto;flex-wrap:nowrap;}.dm-menu-btn{flex:0 0 auto;}}
+    </style>
+    <header class="dm-global-header-shell">
+      <div class="dm-global-top">
+        <div class="dm-global-brand">
+          <img class="dm-global-logo" src="/assets/logo-deus-e-mais-perfil.png" onerror="this.style.display='none'" alt="Deus é Mais" />
+          <div class="dm-global-title"><h1>${titulo}</h1><p>${subtitulo}</p></div>
+        </div>
+        <div class="dm-global-user">
+          <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
+          <div class="dm-global-avatar"><img src="/assets/logo-deus-e-mais-perfil.png" onerror="this.src='/assets/logo-deus-e-mais.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
+          <a class="dm-global-logout" href="/logout">Sair</a>
+        </div>
+      </div>
+      <nav class="dm-global-nav">${menuHtml}</nav>
+    </header>`;
+}
+
 function renderDashboard(data) {
   const {
     totalLancamentos = 0,
@@ -736,7 +808,8 @@ function renderDashboard(data) {
     meses = [],
     categorias = [],
     fornecedores = [],
-    mesSelecionado = ''
+    mesSelecionado = '',
+    usuario = {}
   } = data || {};
 
   const formatMoney = (valor) =>
@@ -1026,6 +1099,7 @@ function renderDashboard(data) {
             radial-gradient(ellipse at 50% 88%, #c6ccd6 0 45%, transparent 46%);
           opacity: .92;
         }
+        .avatar-img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
 
         .online-dot {
           position: absolute;
@@ -1763,10 +1837,10 @@ body {
 
           <div class="profile-area">
             <div class="profile-copy">
-              <strong>Deus é Mais</strong>
-              <span>Dashboard gerencial interno</span>
+              <strong>${escapeHtml(usuario.nome || usuario.email || 'Usuário')}</strong>
+              <span>${escapeHtml(usuario.perfil || 'Dashboard gerencial interno')}</span>
             </div>
-            <div class="avatar-wrap" aria-hidden="true"><div class="avatar-icon"></div><span class="online-dot"></span></div>
+            <div class="avatar-wrap"><img src="/assets/logo-deus-e-mais-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-deus-e-mais.png'" /><span class="online-dot"></span></div>
             <a class="logout-btn" href="/logout" title="Sair">
               <span class="logout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
               Sair
@@ -3184,7 +3258,8 @@ body {
 </style>
       </head>
 
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Usuários', subtitulo: 'Gerencie perfis de acesso, permissões e usuários do sistema.', paginaAtual: 'usuarios' })}
         <div class="container">
           <section class="hero">
             <div class="hero-top">
@@ -3877,7 +3952,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Editar Usuário', subtitulo: 'Atualize nome, e-mail e perfil do usuário selecionado.', paginaAtual: 'usuarios' })}
         <div class="container">
           <div class="card">
             <h1>✏️ Editar Usuário</h1>
@@ -4507,7 +4583,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Resetar Senha', subtitulo: 'Defina uma nova senha para o usuário selecionado.', paginaAtual: 'usuarios' })}
         <div class="container">
           <div class="card">
             <h1>🔑 Resetar Senha</h1>
@@ -4761,7 +4838,8 @@ router.get('/dashboard', protegerRota, async (req, res) => {
         nome: item.nome,
         total: Number(item.total || 0)
       })),
-      mesSelecionado: mes
+      mesSelecionado: mes,
+      usuario: req.session?.usuario || {}
     }));
   } catch (error) {
     res.send(`<pre>Erro ao carregar dashboard:\n${error.message}</pre>`);
@@ -5321,7 +5399,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Documentos Fiscais', subtitulo: 'Importe, consulte e gere lançamentos a partir dos documentos fiscais.', paginaAtual: 'documentos' })}
         <div class="container">
           <div class="card">
             <h1>📁 Documentos Fiscais</h1>
@@ -6036,7 +6115,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Gerar lançamento', subtitulo: 'Converta o documento fiscal selecionado em lançamento financeiro.', paginaAtual: 'documentos' })}
         <div class="container">
           <div class="card">
             <h1>🧾 Gerar lançamento a partir do documento #${doc.id}</h1>
@@ -6848,7 +6928,8 @@ body {
           .nf-paste-msg.warn { color: #92400e; }
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Novo Lançamento', subtitulo: 'Cadastre uma nova despesa com anexos, categoria, fornecedor e pagamento.', paginaAtual: 'novo' })}
         <div class="container">
           <div class="card">
             <h1>➕ Novo lançamento</h1>
@@ -7752,7 +7833,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Editar Lançamento', subtitulo: 'Revise e atualize os dados do lançamento selecionado.', paginaAtual: 'lancamentos' })}
         <div class="container">
           <div class="card">
             <h1>✏️ Editar lançamento</h1>
@@ -8970,7 +9052,8 @@ body {
 
 </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Lista de Lançamentos', subtitulo: 'Consulte, filtre, edite e acompanhe todos os lançamentos cadastrados.', paginaAtual: 'lancamentos' })}
         <div class="ml-skeleton-overlay" id="mlSkeletonOverlay" aria-hidden="true"><div class="ml-skeleton-card"><div class="ml-skeleton-title"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div></div></div>
         <div class="container">
           <div class="card">
@@ -9985,7 +10068,8 @@ body {
 
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Categorias', subtitulo: 'Organize categorias e subcategorias usadas nos lançamentos.', paginaAtual: 'categorias' })}
       <div class="container">
         <div class="card">
           <h1>📁 Categorias</h1>
@@ -10491,7 +10575,8 @@ body {
 
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Nova Categoria', subtitulo: 'Cadastre uma nova categoria ou subcategoria operacional.', paginaAtual: 'categorias' })}
       <div class="container">
         <div class="card">
           <h1>📁 Nova categoria</h1>
@@ -11029,7 +11114,8 @@ body {
 
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Editar Categoria', subtitulo: 'Atualize o nome e a hierarquia da categoria selecionada.', paginaAtual: 'categorias' })}
       <div class="container">
         <div class="card">
           <h1>✏️ Editar categoria</h1>
@@ -13134,7 +13220,8 @@ body {
 
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Novo Item da Rotina', subtitulo: 'Cadastre uma nova despesa recorrente para o controle mensal.', paginaAtual: 'rotina-despesas' })}
       <div class="container">
         <div class="card">
           <h1>➕ Novo item da rotina</h1>
@@ -13805,7 +13892,8 @@ body {
 
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Editar Item da Rotina', subtitulo: 'Atualize dados, categoria, vencimento e regras do item recorrente.', paginaAtual: 'rotina-despesas' })}
       <div class="container">
         <div class="card">
           <h1>✏️ Editar item da rotina</h1>
@@ -14529,7 +14617,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
       </head>
-      <body>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Espaço do Contador', subtitulo: 'Baixe arquivos fiscais, acompanhe status e gerencie pacotes por competência.', paginaAtual: 'espaco-contador' })}
         <div class="container">
           <section class="hero">
             <div class="hero-top">
