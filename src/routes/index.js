@@ -5784,7 +5784,6 @@ body {
                     <option value="Boleto">Boleto</option>
                     <option value="Guia">Guia</option>
                     <option value="Dinheiro">Dinheiro</option>
-                    <option value="DEB">DEB</option>
                     <option value="DOP">DOP</option>
                     <option value="CAR Inter">CAR Inter</option>
                     <option value="CAR VISA CX">CAR VISA CX</option>
@@ -6547,7 +6546,6 @@ body {
                     <option value="Boleto" ${tipoPagamentoPadrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipoPagamentoPadrao === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipoPagamentoPadrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="DEB" ${tipoPagamentoPadrao === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipoPagamentoPadrao === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipoPagamentoPadrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipoPagamentoPadrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -7432,7 +7430,6 @@ body {
                     <option value="Boleto" ${lancamento.tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${lancamento.tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${lancamento.tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="DEB" ${lancamento.tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${lancamento.tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${lancamento.tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${lancamento.tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -8473,55 +8470,6 @@ body {
 .ml-table thead .sticky-id { z-index: 1001 !important; }
 .ml-table thead .sticky-actions { z-index: 1001 !important; }
 /* ===== FIM CORREÇÃO STICKY IGUAL ROTINA ===== */
-
-/* ===== HEADER FIXO REAL - LISTA DE LANÇAMENTOS =====
-   Solução sênior: usamos uma cópia fixa do cabeçalho quando a página rola.
-   Assim os filtros e o topo sobem normalmente, mas os títulos ficam presos no topo. */
-.ml-table thead th {
-  position: static !important;
-  top: auto !important;
-}
-.ml-table-fixed-head {
-  display: none;
-  position: fixed;
-  top: 0;
-  z-index: 99999;
-  pointer-events: none;
-  border-collapse: collapse !important;
-  table-layout: fixed !important;
-  background: rgba(248, 250, 252, 0.992) !important;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
-}
-.ml-table-fixed-head.is-visible { display: table; }
-.ml-table-fixed-head th {
-  background: rgba(248, 250, 252, 0.992) !important;
-  color: #334155 !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  padding: 8px 10px !important;
-  border-bottom: 2px solid #e5e7eb !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  text-align: left !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-}
-.ml-table-fixed-head th.col-valor { text-align: right !important; }
-.ml-table-fixed-head th.col-pdf,
-.ml-table-fixed-head th.col-xml,
-.ml-table-fixed-head th.sticky-actions { text-align: center !important; }
-.ml-table-fixed-head .sticky-id,
-.ml-table-fixed-head .sticky-actions {
-  position: static !important;
-  left: auto !important;
-  right: auto !important;
-  box-shadow: none !important;
-  z-index: auto !important;
-}
-/* ===== FIM HEADER FIXO REAL ===== */
-
 /* ===== FIM TABELA NÍVEL MERCADO LIVRE ===== */
 
 </style>
@@ -8587,7 +8535,6 @@ body {
                     <option value="Boleto" ${tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="DEB" ${tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -8667,7 +8614,6 @@ body {
             document.querySelectorAll('.' + nomeColuna).forEach(el => {
               el.style.display = mostrar ? '' : 'none';
             });
-            if (window.mlLancamentosSyncHeader) window.mlLancamentosSyncHeader();
           }
 
           function salvarPreferenciasColunas() {
@@ -8710,29 +8656,22 @@ body {
           }
 
           function inicializarTabelaMercadoLivre() {
-            const table = document.querySelector('.ml-table');
+            const shell = document.getElementById('mlTableShell');
             const rows = Array.from(document.querySelectorAll('#mlLancamentosBody tr.data-row'));
             const counter = document.getElementById('mlTableCounter');
             const loader = document.getElementById('mlLoadMore');
             const pageSize = 35;
             let visible = 0;
             let loading = false;
-            let fixedHeaderTable = null;
-
             function atualizarContador() {
               if (!counter) return;
               const total = rows.length;
               const exibidos = Math.min(visible, total);
               counter.textContent = total ? 'Exibindo ' + exibidos + ' de ' + total + ' lançamentos' : 'Nenhum lançamento encontrado';
             }
-
             function carregarMais() {
               if (loading) return;
-              if (visible >= rows.length) {
-                if (loader) loader.classList.remove('active');
-                atualizarContador();
-                return;
-              }
+              if (visible >= rows.length) { if (loader) loader.classList.remove('active'); atualizarContador(); return; }
               loading = true;
               if (loader && visible > 0) loader.classList.add('active');
               setTimeout(function () {
@@ -8742,73 +8681,21 @@ body {
                 loading = false;
                 if (loader) loader.classList.toggle('active', visible < rows.length);
                 atualizarContador();
-                sincronizarHeaderFixo();
               }, visible === 0 ? 0 : 220);
             }
-
-            function criarHeaderFixo() {
-              if (!table || !table.tHead) return;
-              if (fixedHeaderTable) fixedHeaderTable.remove();
-              fixedHeaderTable = document.createElement('table');
-              fixedHeaderTable.className = 'ml-table-fixed-head';
-              fixedHeaderTable.setAttribute('aria-hidden', 'true');
-              fixedHeaderTable.appendChild(table.tHead.cloneNode(true));
-              document.body.appendChild(fixedHeaderTable);
-              window.mlLancamentosSyncHeader = sincronizarHeaderFixo;
-            }
-
-            function sincronizarHeaderFixo() {
-              if (!table || !table.tHead || !fixedHeaderTable) return;
-              const tableRect = table.getBoundingClientRect();
-              const originalThs = Array.from(table.tHead.querySelectorAll('th'));
-              const clonedThs = Array.from(fixedHeaderTable.querySelectorAll('th'));
-              const headerHeight = table.tHead.getBoundingClientRect().height || 40;
-              const deveFixar = tableRect.top < 0 && tableRect.bottom > headerHeight;
-
-              if (!deveFixar) {
-                fixedHeaderTable.classList.remove('is-visible');
-                return;
-              }
-
-              fixedHeaderTable.style.left = tableRect.left + 'px';
-              fixedHeaderTable.style.width = tableRect.width + 'px';
-
-              originalThs.forEach(function (th, index) {
-                const clone = clonedThs[index];
-                if (!clone) return;
-                const style = window.getComputedStyle(th);
-                const visivel = style.display !== 'none' && th.offsetWidth > 0;
-                clone.style.display = visivel ? '' : 'none';
-                if (visivel) {
-                  const width = th.getBoundingClientRect().width;
-                  clone.style.width = width + 'px';
-                  clone.style.minWidth = width + 'px';
-                  clone.style.maxWidth = width + 'px';
-                }
-              });
-
-              fixedHeaderTable.classList.add('is-visible');
-            }
-
             rows.forEach(function (row) { row.style.display = 'none'; });
             carregarMais();
-            criarHeaderFixo();
-            sincronizarHeaderFixo();
-
             function chegouPertoDoFimDaPagina() {
               const doc = document.documentElement;
               return (window.innerHeight + window.scrollY) >= (doc.scrollHeight - 260);
             }
             window.addEventListener('scroll', function () {
               if (chegouPertoDoFimDaPagina()) carregarMais();
-              sincronizarHeaderFixo();
             }, { passive: true });
             window.addEventListener('resize', function () {
               if (chegouPertoDoFimDaPagina()) carregarMais();
-              sincronizarHeaderFixo();
             });
           }
-
           function inicializarLoadingSkeleton() {
             const overlay = document.getElementById('mlSkeletonOverlay');
             const mostrar = function () { if (overlay) overlay.style.display = 'flex'; };
@@ -12645,7 +12532,6 @@ body {
                   <option value="Boleto">Boleto</option>
                   <option value="Guia">Guia</option>
                   <option value="Dinheiro">Dinheiro</option>
-                  <option value="DEB">DEB</option>
                   <option value="DOP">DOP</option>
                   <option value="CAR Inter">CAR Inter</option>
                   <option value="CAR VISA CX">CAR VISA CX</option>
@@ -13316,7 +13202,6 @@ body {
                   <option value="Boleto" ${item.tipo_pagamento_padrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                   <option value="Guia" ${item.tipo_pagamento_padrao === 'Guia' ? 'selected' : ''}>Guia</option>
                   <option value="Dinheiro" ${item.tipo_pagamento_padrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                  <option value="DEB" ${item.tipo_pagamento_padrao === 'DEB' ? 'selected' : ''}>DEB</option>
                   <option value="DOP" ${item.tipo_pagamento_padrao === 'DOP' ? 'selected' : ''}>DOP</option>
                   <option value="CAR Inter" ${item.tipo_pagamento_padrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                   <option value="CAR VISA CX" ${item.tipo_pagamento_padrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
