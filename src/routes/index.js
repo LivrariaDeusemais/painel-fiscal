@@ -13536,8 +13536,100 @@ async function gerarZipEEnviar(res, arquivos, nomeZip) {
 // ESPAÇO DO CONTADOR
 // =============================
 
+function getContadorArquivoConfig() {
+  return [
+    { key: 'xml', label: 'XML - Notas Despesas', auto: true, countKey: 'xml', statusColumn: 'status_xml', downloadStatusColumn: 'download_xml_status', downloadAtColumn: 'download_xml_at', downloadHref: (mes) => `/espaco-contador/download/xml?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar XML em massa' },
+    { key: 'pdf', label: 'PDF - Notas Despesas', auto: true, countKey: 'pdf', statusColumn: 'status_pdf', downloadStatusColumn: 'download_pdf_status', downloadAtColumn: 'download_pdf_at', downloadHref: (mes) => `/espaco-contador/download/pdf?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar PDF em massa' },
+    { key: 'ctes', label: 'CTEs Fretes Marketplaces', titulo: 'CTEs Fretes Marketplaces', statusColumn: 'status_ctes', downloadStatusColumn: 'download_ctes_status', downloadAtColumn: 'download_ctes_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/ctes?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar CTEs em massa' },
+    { key: 'cmv', label: 'CMV - Custo Mercadoria Vendida', titulo: 'CMV - Custo Mercadoria Vendida', statusColumn: 'status_cmv', downloadStatusColumn: 'download_cmv_status', downloadAtColumn: 'download_cmv_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/cmv?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar CMV em massa' },
+    { key: 'extratos', label: 'Extratos Bancários', titulo: 'Extratos Bancários', statusColumn: 'status_extratos', downloadStatusColumn: 'download_extratos_status', downloadAtColumn: 'download_extratos_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/extratos?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar Extratos em massa' },
+    { key: 'lista', label: 'Lista das despesas do Mês', titulo: 'Lista das despesas do Mês', statusColumn: 'status_lista', downloadStatusColumn: 'download_lista_status', downloadAtColumn: 'download_lista_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/lista?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar Lista em massa' }
+  ];
+}
+
+async function ensureContadorTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contador_status_mensal (
+      mes_ref VARCHAR(7) PRIMARY KEY,
+      status_xml VARCHAR(50) DEFAULT 'Aguardar',
+      status_pdf VARCHAR(50) DEFAULT 'Aguardar',
+      status_extras VARCHAR(50) DEFAULT 'Aguardar',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contador_arquivos_extras (
+      id SERIAL PRIMARY KEY,
+      mes_ref VARCHAR(7) NOT NULL,
+      titulo TEXT NOT NULL,
+      nome_arquivo TEXT NOT NULL,
+      nome_original TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  const alters = [
+    `ADD COLUMN IF NOT EXISTS status_ctes VARCHAR(50) DEFAULT 'Aguardar'`,
+    `ADD COLUMN IF NOT EXISTS status_cmv VARCHAR(50) DEFAULT 'Aguardar'`,
+    `ADD COLUMN IF NOT EXISTS status_extratos VARCHAR(50) DEFAULT 'Aguardar'`,
+    `ADD COLUMN IF NOT EXISTS status_lista VARCHAR(50) DEFAULT 'Aguardar'`,
+    `ADD COLUMN IF NOT EXISTS download_xml_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_pdf_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_ctes_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_cmv_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_extratos_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_lista_status VARCHAR(20) DEFAULT 'Baixar'`,
+    `ADD COLUMN IF NOT EXISTS download_xml_at TIMESTAMP`,
+    `ADD COLUMN IF NOT EXISTS download_pdf_at TIMESTAMP`,
+    `ADD COLUMN IF NOT EXISTS download_ctes_at TIMESTAMP`,
+    `ADD COLUMN IF NOT EXISTS download_cmv_at TIMESTAMP`,
+    `ADD COLUMN IF NOT EXISTS download_extratos_at TIMESTAMP`,
+    `ADD COLUMN IF NOT EXISTS download_lista_at TIMESTAMP`
+  ];
+
+  for (const alter of alters) {
+    await pool.query(`ALTER TABLE contador_status_mensal ${alter}`);
+  }
+}
+
+function normalizarStatusDownload(value) {
+  return String(value || '').trim().toLowerCase() === 'baixado' ? 'Baixado' : 'Baixar';
+}
+
+function formatDateTimeBR(value) {
+  if (!value) return '-';
+  const data = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(data.getTime())) return '-';
+  return data.toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+async function marcarDownloadContador(mesRef, key) {
+  const config = getContadorArquivoConfig().find(item => item.key === key);
+  if (!config) return;
+  await ensureContadorTables();
+  await pool.query(`
+    INSERT INTO contador_status_mensal (mes_ref)
+    VALUES ($1)
+    ON CONFLICT (mes_ref) DO NOTHING
+  `, [mesRef]);
+  await pool.query(`
+    UPDATE contador_status_mensal
+    SET ${config.downloadStatusColumn} = 'Baixado',
+        ${config.downloadAtColumn} = NOW(),
+        updated_at = NOW()
+    WHERE mes_ref = $1
+  `, [mesRef]);
+}
+
 router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
   try {
+    await ensureContadorTables();
     const mes = req.query.mes || getMesAtualRef();
 
     await pool.query(`
@@ -13577,13 +13669,13 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
     const totalXml = xmlCountResult.rows[0]?.total || 0;
     const totalPdf = pdfCountResult.rows[0]?.total || 0;
-    const arquivosExtras = extrasResult.rows;
-    const statusMes = statusResult.rows[0] || { status_xml: 'Aguardar', status_pdf: 'Aguardar', status_extras: 'Aguardar' };
+    const arquivosExtras = extrasResult.rows || [];
+    const statusMes = statusResult.rows[0] || {};
 
     const hoje = new Date();
     const opcoesMes = [];
-    for (let i = 0; i < 12; i++) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    for (let i = -2; i <= 12; i++) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
       const ano = data.getFullYear();
       const mesNum = String(data.getMonth() + 1).padStart(2, '0');
       const valor = `${ano}-${mesNum}`;
@@ -13615,10 +13707,10 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
     const statusForm = (tipoStatus, atual) => `
       <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
-        <input type="hidden" name="mes_ref" value="${mes}">
-        <input type="hidden" name="tipo_status" value="${tipoStatus}">
+        <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+        <input type="hidden" name="tipo_status" value="${escapeHtml(tipoStatus)}">
         <select name="status" class="status-select ${statusClass(atual)}" onchange="this.form.submit()">
-          ${renderStatusOptions(atual)}
+          ${renderStatusOptions(atual || 'Aguardar')}
         </select>
       </form>`;
 
@@ -13633,37 +13725,46 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           </div>`).join('')
       : `<div class="empty-state">Nenhum arquivo extra enviado para este mês.</div>`;
 
-    const countExtras = (key) => arquivosExtras.filter(item => String(item.titulo || '').toLowerCase().includes(key.toLowerCase())).length;
+    const normalizarTitulo = (text = '') => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const countExtrasByTitle = (titulo) => arquivosExtras.filter(item => normalizarTitulo(item.titulo) === normalizarTitulo(titulo)).length;
 
     const uploadForm = (titulo) => `
       <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="inline-upload-form">
-        <input type="hidden" name="mes_ref" value="${mes}" />
+        <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}" />
         <input type="hidden" name="titulo" value="${escapeHtml(titulo)}" />
         <label class="upload-chip">
-          <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Escolher arquivo'" />
-          <span class="upload-name">Escolher arquivo ⬆️</span>
+          <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Inserir ZIP'" />
+          <span class="upload-name">Inserir ZIP</span>
         </label>
         <button type="submit" class="btn btn-mini btn-green">Enviar</button>
       </form>`;
 
-    const rows = [
-      ['XML - Notas Despesas', totalXml, 'Automático', statusForm('xml', statusMes.status_xml), `<a class="btn btn-mini btn-green" href="/espaco-contador/download/xml?mes=${mes}">⬇ Baixar XML em massa</a>`, 'Registro última data e hora baixado'],
-      ['PDF - Notas Despesas', totalPdf, 'Automático', statusForm('pdf', statusMes.status_pdf), `<a class="btn btn-mini btn-green" href="/espaco-contador/download/pdf?mes=${mes}">⬇ Baixar PDF em massa</a>`, 'Registro última data e hora baixado'],
-      ['CTEs Fretes Marketplaces', countExtras('cte'), uploadForm('CTEs Fretes Marketplaces'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
-      ['CMV - Custo Mercadoria Vendida', countExtras('cmv'), uploadForm('CMV - Custo Mercadoria Vendida'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
-      ['Extratos Bancários', countExtras('extrato'), uploadForm('Extratos Bancários'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
-      ['Lista das despesas do Mês', countExtras('lista'), uploadForm('Lista das despesas do Mês'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado']
-    ];
+    const downloadPill = (status) => {
+      const finalStatus = normalizarStatusDownload(status);
+      const cls = finalStatus === 'Baixado' ? 'download-baixado' : 'download-baixar';
+      return `<span class="download-status ${cls}">${finalStatus}</span>`;
+    };
 
-    const linhasTabelaHtml = rows.map((r, idx) => `
-      <tr>
-        <td class="tipo-cell"><strong>${escapeHtml(r[0])}</strong></td>
-        <td class="center-cell"><span class="qtd-pill">${r[1]}</span></td>
-        <td class="center-cell">${r[2]}</td>
-        <td class="center-cell">${r[3]}</td>
-        <td class="center-cell">${r[4]}</td>
-        <td class="center-cell muted-cell">${r[5]}</td>
-      </tr>`).join('');
+    const configs = getContadorArquivoConfig();
+    const linhasTabelaHtml = configs.map((config) => {
+      const quantidade = config.countKey === 'xml' ? totalXml : config.countKey === 'pdf' ? totalPdf : countExtrasByTitle(config.titulo);
+      const envio = config.auto ? 'Automático' : uploadForm(config.titulo);
+      const statusAtual = statusMes[config.statusColumn] || (config.key === 'xml' ? statusMes.status_xml : config.key === 'pdf' ? statusMes.status_pdf : 'Aguardar') || 'Aguardar';
+      const statusPronto = statusForm(config.key, statusAtual);
+      const downloadBtn = `<a class="btn btn-mini btn-green btn-download" href="${config.downloadHref(mes)}">${config.downloadLabel}</a>`;
+      const statusDownload = downloadPill(statusMes[config.downloadStatusColumn]);
+      const dataDownload = formatDateTimeBR(statusMes[config.downloadAtColumn]);
+      return `
+        <tr>
+          <td class="tipo-cell"><strong>${escapeHtml(config.label)}</strong></td>
+          <td class="center-cell"><span class="qtd-pill">${quantidade}</span></td>
+          <td class="center-cell">${envio}</td>
+          <td class="center-cell">${statusPronto}</td>
+          <td class="center-cell">${downloadBtn}</td>
+          <td class="center-cell">${statusDownload}</td>
+          <td class="center-cell muted-cell">${dataDownload}</td>
+        </tr>`;
+    }).join('');
 
     res.send(`
       <!DOCTYPE html>
@@ -13675,61 +13776,65 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         <style>
           * { box-sizing: border-box; }
           :root { --green:#00B050; --green-dark:#009640; --soft:#E8F7EE; --text:#172033; --muted:#64748b; --shadow:0 18px 45px rgba(15,23,42,.08); }
-          body { margin:0; min-height:100vh; font-family:Arial, Helvetica, sans-serif; color:var(--text); background:radial-gradient(circle at 0% 0%, rgba(0,176,80,.50) 0%, rgba(178,232,199,.38) 18%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.75) 31%, transparent 56%), linear-gradient(135deg,#E8F7EE 0%,#f7f9fc 42%,#eef3f8 100%); }
-          .container { width:min(1760px, calc(100% - 56px)); margin:24px auto 34px; }
-          .hero { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:26px; box-shadow:var(--shadow); backdrop-filter:blur(14px); padding:28px 34px 30px; margin-bottom:10px; }
-          .hero-top { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:26px; }
-          .hero h1 { margin:0 0 8px; font-size:clamp(30px,2.1vw,40px); line-height:1; letter-spacing:-.9px; color:#101828; }
-          .hero p { margin:0; color:#52627a; font-size:15px; font-weight:700; }
-          .hero-badge { min-width:230px; height:64px; border-radius:999px; background:linear-gradient(180deg,#fff,#f8fafc); box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 18px 35px rgba(15,23,42,.04); }
-          .filter-box { display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); border-radius:20px; padding:20px 22px; box-shadow:0 18px 45px rgba(15,23,42,.05); }
-          .filter-group { min-width:330px; }
-          label { display:block; margin-bottom:8px; font-size:13px; font-weight:900; color:#334155; }
-          select, input[type="text"] { width:100%; height:48px; border-radius:12px; border:1px solid #dce3ec; background:rgba(255,255,255,.95); color:#172033; font-size:14px; font-weight:700; padding:0 16px; outline:none; }
-          select:focus, input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(0,176,80,.14); }
-          .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 22px; border-radius:13px; border:1px solid transparent; text-decoration:none; font-weight:900; font-size:14px; cursor:pointer; white-space:nowrap; }
-          .btn-green { background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; border-color:rgba(0,176,80,.88); box-shadow:0 14px 25px rgba(0,176,80,.18); }
-          .btn-dark { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border:1px solid #e0e6ef; box-shadow:0 10px 20px rgba(15,23,42,.06); }
-          .btn:hover { transform:translateY(-1px); filter:brightness(1.02); }
-          .btn-mini { min-height:36px; padding:0 14px; border-radius:10px; font-size:12px; }
-          .btn-soft-green { background:#ecfdf5; color:#087a3b; border:1px solid #bbf7d0; box-shadow:none; }
-          .contador-board { background:rgba(255,255,255,.92); border:1px solid rgba(255,255,255,.72); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
-          .responsibility-row { display:grid; grid-template-columns:1.15fr 2.45fr 2.45fr; border-top:2px solid #111827; border-bottom:1px solid #111827; }
-          .responsibility-row div { padding:8px 12px; text-align:center; font-size:20px; font-weight:800; color:#111827; background:#dff3d5; }
+          body { margin:0; min-height:100vh; overflow-x:hidden; font-family:Arial, Helvetica, sans-serif; color:var(--text); background:radial-gradient(circle at 0% 0%, rgba(0,176,80,.50) 0%, rgba(178,232,199,.38) 18%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.75) 31%, transparent 56%), linear-gradient(135deg,#E8F7EE 0%,#f7f9fc 42%,#eef3f8 100%); }
+          .container { width:min(1560px, calc(100% - 48px)); margin:18px auto 24px; }
+          .hero { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:22px; box-shadow:var(--shadow); backdrop-filter:blur(14px); padding:20px 26px 22px; margin-bottom:12px; }
+          .hero-top { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:18px; }
+          .hero h1 { margin:0 0 6px; font-size:clamp(24px,1.8vw,32px); line-height:1; letter-spacing:-.7px; color:#101828; }
+          .hero p { margin:0; color:#52627a; font-size:13px; font-weight:700; }
+          .hero-badge { min-width:190px; height:50px; border-radius:999px; background:linear-gradient(180deg,#fff,#f8fafc); box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 18px 35px rgba(15,23,42,.04); }
+          .filter-box { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.75); border-radius:18px; padding:16px 18px; box-shadow:0 12px 30px rgba(15,23,42,.05); }
+          .filter-group { display:flex; flex-direction:column; gap:7px; min-width:320px; }
+          label { font-size:12px; font-weight:900; color:#334155; }
+          select, input { height:42px; border-radius:12px; border:1px solid #dce3ec; background:#fff; color:#172033; font-size:13px; font-weight:800; padding:0 14px; outline:none; }
+          .btn { height:42px; border-radius:12px; border:1px solid #dce3ec; display:inline-flex; align-items:center; justify-content:center; padding:0 18px; text-decoration:none; font-size:13px; font-weight:900; cursor:pointer; white-space:nowrap; }
+          .btn-green { background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; border-color:rgba(0,176,80,.9); box-shadow:0 12px 22px rgba(0,176,80,.18); }
+          .btn-dark { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border-color:#e0e6ef; }
+          .btn-mini { height:34px; min-width:88px; padding:0 10px; border-radius:10px; font-size:11px; }
+          .btn-download { min-width:150px; }
+          .btn-soft-green { color:#047857; background:#ecfdf5; border-color:#bbf7d0; }
+          .contador-board { background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.82); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+          .responsibility-row { display:grid; grid-template-columns: 21% 35% 44%; border-bottom:1px solid #111827; font-size:18px; font-weight:900; text-align:center; }
+          .responsibility-row div { padding:7px 8px; background:#dcf4d2; }
           .responsibility-row .empresa { background:#dbeafe; }
-          .table-wrap { width:100%; overflow-x:auto; }
-          .contador-table { width:100%; min-width:1280px; border-collapse:collapse; table-layout:fixed; background:#fff; }
-          .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:14px 10px; font-size:18px; line-height:1.1; text-align:center; white-space:nowrap; }
-          .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:310px; }
-          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:200px; }
-          .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:260px; }
-          .contador-table th:nth-child(4), .contador-table td:nth-child(4) { width:300px; }
-          .contador-table th:nth-child(5), .contador-table td:nth-child(5) { width:285px; }
-          .contador-table th:nth-child(6), .contador-table td:nth-child(6) { width:270px; }
-          .contador-table td { border-bottom:1px solid #cfd8e3; border-right:1px solid #e5e7eb; padding:12px 10px; vertical-align:middle; font-size:13px; color:#111827; }
+          .table-wrap { width:100%; overflow-x:hidden; }
+          .contador-table { width:100%; border-collapse:collapse; table-layout:fixed; background:#fff; }
+          .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:10px 7px; font-size:13px; line-height:1.1; text-align:center; white-space:normal; }
+          .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:21%; }
+          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:9%; }
+          .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:19%; }
+          .contador-table th:nth-child(4), .contador-table td:nth-child(4) { width:18%; }
+          .contador-table th:nth-child(5), .contador-table td:nth-child(5) { width:16%; }
+          .contador-table th:nth-child(6), .contador-table td:nth-child(6) { width:8%; }
+          .contador-table th:nth-child(7), .contador-table td:nth-child(7) { width:9%; }
+          .contador-table td { border-bottom:1px solid #cfd8e3; border-right:1px solid #e5e7eb; padding:9px 7px; vertical-align:middle; font-size:11.5px; color:#111827; }
           .tipo-cell { background:#dcf4d2; color:#17324d; }
-          .tipo-cell strong { font-size:22px; line-height:1.12; font-weight:900; }
+          .tipo-cell strong { font-size:16px; line-height:1.08; font-weight:900; }
           .center-cell { text-align:center; }
-          .muted-cell { color:#111827; font-weight:700; }
-          .qtd-pill { display:inline-flex; align-items:center; justify-content:center; min-width:56px; height:36px; border-radius:999px; background:#eef2f7; color:#111827; font-size:20px; font-weight:900; }
-          .status-form-inline { margin:0; padding:0; background:transparent; border:none; box-shadow:none; display:inline-flex; }
-          .status-select { width:245px; height:36px; padding:0 12px; border-radius:999px; font-size:12px; font-weight:900; cursor:pointer; appearance:none; text-align:center; }
+          .muted-cell { color:#334155; font-weight:800; font-size:10.5px; line-height:1.2; }
+          .qtd-pill { display:inline-flex; align-items:center; justify-content:center; min-width:42px; height:30px; border-radius:999px; background:#eef2f7; color:#111827; font-size:16px; font-weight:900; }
+          .status-form-inline { margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; display:inline-flex; }
+          .status-select { width:100%; max-width:180px; height:32px; padding:0 10px; border-radius:999px; font-size:10.5px; font-weight:900; cursor:pointer; appearance:auto; text-align:center; }
           .status-aguardar { background-color:#e5e7eb !important; color:#374151 !important; border:1px solid #cbd5e1 !important; }
           .status-andamento { background-color:#fef3c7 !important; color:#92400e !important; border:1px solid #fcd34d !important; }
           .status-liberado { background-color:#dcfce7 !important; color:#166534 !important; border:1px solid #86efac !important; }
-          .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:8px; margin:0; padding:0; background:transparent; border:none; box-shadow:none; }
-          .upload-chip { margin:0; width:165px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:12px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 10px; }
+          .download-status { display:inline-flex; align-items:center; justify-content:center; min-width:72px; height:28px; border-radius:999px; font-size:10.5px; font-weight:900; }
+          .download-baixar { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
+          .download-baixado { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+          .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:6px; margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; }
+          .upload-chip { margin:0; width:130px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:10.5px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 8px; }
           .upload-chip input { display:none; }
-          .upload-name { max-width:145px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-          .extra-section { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:22px; box-shadow:var(--shadow); padding:22px 24px; margin-top:18px; }
-          .extra-section h2 { margin:0 0 6px; font-size:24px; color:#101828; }
-          .card-sub { color:#52627a; font-size:14px; font-weight:700; margin-bottom:16px; }
-          .extra-list { display:flex; flex-direction:column; gap:10px; }
-          .extra-item { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 14px; border-radius:14px; background:#f8fafc; border:1px solid #e5e7eb; }
-          .extra-title { font-weight:900; color:#0f172a; margin-bottom:3px; }
-          .extra-sub { color:#64748b; font-size:12px; font-weight:700; }
-          .empty-state { color:#94a3b8; font-size:14px; padding:18px 0; font-weight:800; }
-          @media (max-width:1100px) { .container{width:min(100% - 28px,1100px);} .responsibility-row{grid-template-columns:1fr;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
+          .upload-name { max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .extra-section { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:20px; box-shadow:var(--shadow); padding:18px 20px; margin-top:14px; }
+          .extra-section h2 { margin:0 0 4px; font-size:22px; color:#101828; }
+          .card-sub { color:#52627a; font-size:12px; font-weight:700; margin-bottom:12px; }
+          .extra-list { display:flex; flex-direction:column; gap:8px; }
+          .extra-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 12px; border-radius:12px; background:#f8fafc; border:1px solid #e5e7eb; }
+          .extra-title { font-weight:900; color:#0f172a; margin-bottom:2px; font-size:12px; }
+          .extra-sub { color:#64748b; font-size:11px; font-weight:700; }
+          .empty-state { color:#94a3b8; font-size:13px; padding:14px 0; font-weight:800; }
+          @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
+          @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .responsibility-row{grid-template-columns:1fr;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
       </head>
       <body>
@@ -13763,10 +13868,11 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
                 <thead>
                   <tr>
                     <th>Tipo de arquivo</th>
-                    <th>Qtde Arquivos</th>
+                    <th>Qtde</th>
                     <th>Enviar Arquivo</th>
                     <th>Arquivos prontos</th>
-                    <th>Baixar Arquivos em massa</th>
+                    <th>Baixar em massa</th>
+                    <th>Status Download</th>
                     <th>Data Download Contador</th>
                   </tr>
                 </thead>
@@ -13789,9 +13895,40 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
   }
 });
 
-
-router.post('/espaco-contador/salvar-status', async (req, res) => {
+router.post('/espaco-contador/upload-extra', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), upload.single('arquivo_zip'), async (req, res) => {
   try {
+    await ensureContadorTables();
+    const mesRef = req.body.mes_ref || getMesAtualRef();
+    const titulo = String(req.body.titulo || '').trim();
+
+    if (!req.file) {
+      return res.send('<pre>Selecione um arquivo ZIP para enviar.</pre>');
+    }
+
+    if (!titulo) {
+      return res.send('<pre>Informe o tipo/nome do pacote.</pre>');
+    }
+
+    const ext = path.extname(req.file.originalname || '').toLowerCase();
+    if (ext !== '.zip') {
+      try { fs.unlinkSync(getUploadFilePath(req.file.filename)); } catch (e) {}
+      return res.send('<pre>Envie apenas arquivo compactado em .zip.</pre>');
+    }
+
+    await pool.query(`
+      INSERT INTO contador_arquivos_extras (mes_ref, titulo, nome_arquivo, nome_original, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+    `, [mesRef, titulo, req.file.filename, req.file.originalname || req.file.filename]);
+
+    res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
+  } catch (error) {
+    res.send(`<pre>Erro ao enviar arquivo extra:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
+  try {
+    await ensureContadorTables();
     const { mes_ref, tipo_status, status } = req.body;
 
     if (!mes_ref || !tipo_status || !status) {
@@ -13804,11 +13941,8 @@ router.post('/espaco-contador/salvar-status', async (req, res) => {
       ON CONFLICT (mes_ref) DO NOTHING
     `, [mes_ref]);
 
-    let campo = '';
-
-    if (tipo_status === 'xml') campo = 'status_xml';
-    if (tipo_status === 'pdf') campo = 'status_pdf';
-    if (tipo_status === 'extras') campo = 'status_extras';
+    const config = getContadorArquivoConfig().find(item => item.key === tipo_status);
+    const campo = config?.statusColumn;
 
     if (!campo) {
       return res.send('<pre>Tipo de status inválido.</pre>');
@@ -13827,9 +13961,73 @@ router.post('/espaco-contador/salvar-status', async (req, res) => {
   }
 });
 
-// DOWNLOAD EM MASSA - ESPAÇO DO CONTADOR
-router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => {
+router.get('/espaco-contador/download-extra/:id', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
   try {
+    await ensureContadorTables();
+    const id = Number.parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.send('<pre>Arquivo inválido.</pre>');
+
+    const result = await pool.query('SELECT * FROM contador_arquivos_extras WHERE id = $1 LIMIT 1', [id]);
+    const item = result.rows[0];
+    if (!item) return res.send('<pre>Arquivo não encontrado.</pre>');
+
+    const filePath = getUploadFilePath(item.nome_arquivo);
+    if (!filePath || !fs.existsSync(filePath)) return res.send('<pre>Arquivo físico não encontrado em /uploads.</pre>');
+
+    return res.download(filePath, item.nome_original || path.basename(filePath));
+  } catch (error) {
+    res.send(`<pre>Erro ao baixar arquivo extra:\n${error.message}</pre>`);
+  }
+});
+
+router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
+  try {
+    await ensureContadorTables();
+    const { grupo } = req.params;
+    const { mes } = req.query;
+
+    if (!mes) return res.send('<pre>Mês não informado.</pre>');
+
+    const config = getContadorArquivoConfig().find(item => item.key === grupo && !item.auto);
+    if (!config) return res.send('<pre>Grupo de arquivo inválido.</pre>');
+
+    const result = await pool.query(`
+      SELECT *
+      FROM contador_arquivos_extras
+      WHERE mes_ref = $1 AND titulo = $2
+      ORDER BY created_at DESC, id DESC
+    `, [mes, config.titulo]);
+
+    const arquivos = [];
+    const nomesUsados = new Set();
+
+    for (const item of result.rows) {
+      const filePath = getUploadFilePath(item.nome_arquivo);
+      if (!filePath || !fs.existsSync(filePath)) continue;
+
+      const ext = path.extname(item.nome_original || item.nome_arquivo) || '.zip';
+      const base = sanitizeFilePart(`${config.label}-${mes}-${item.id}`, true);
+      let downloadName = `${base}${ext}`;
+      if (nomesUsados.has(downloadName)) downloadName = `${base}-${Date.now()}${ext}`;
+      nomesUsados.add(downloadName);
+      arquivos.push({ filePath, downloadName });
+    }
+
+    if (!arquivos.length) {
+      return res.send(`<pre>Nenhum arquivo encontrado para ${config.label} neste mês.</pre>`);
+    }
+
+    await marcarDownloadContador(mes, grupo);
+    return gerarZipEEnviar(res, arquivos, `${config.label}-${mes}`);
+  } catch (error) {
+    res.send(`<pre>Erro ao baixar arquivos extras em massa:\n${error.message}</pre>`);
+  }
+});
+
+// DOWNLOAD EM MASSA - ESPAÇO DO CONTADOR
+router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
+  try {
+    await ensureContadorTables();
     const { tipo } = req.params;
     const { mes } = req.query;
 
@@ -13877,16 +14075,12 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
         const baseName = buildDownloadBaseName(item);
         let downloadName = `${baseName}.${extensao}`;
 
-        // Evita conflito dentro do ZIP caso dois lançamentos gerem exatamente o mesmo nome.
         if (nomesUsados.has(downloadName)) {
           downloadName = `${baseName}-ID-${item.id}.${extensao}`;
         }
         nomesUsados.add(downloadName);
 
-        arquivosValidos.push({
-          filePath,
-          downloadName
-        });
+        arquivosValidos.push({ filePath, downloadName });
       }
     }
 
@@ -13894,11 +14088,10 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
       return res.send('<pre>Os registros existem no banco, mas os arquivos físicos não foram encontrados em /uploads.</pre>');
     }
 
+    await marcarDownloadContador(mes, tipo);
+
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="arquivos-${extensao}-${mes}.zip"`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="arquivos-${extensao}-${mes}.zip"`);
 
     const archive = archiver('zip', { zlib: { level: 9 } });
 
@@ -13911,9 +14104,7 @@ router.get('/espaco-contador/download/:tipo', protegerRota, async (req, res) => 
     archive.pipe(res);
 
     arquivosValidos.forEach(item => {
-      archive.file(item.filePath, {
-        name: item.downloadName
-      });
+      archive.file(item.filePath, { name: item.downloadName });
     });
 
     await archive.finalize();
