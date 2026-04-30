@@ -3245,6 +3245,30 @@ body {
               </div>
             </div>
           </section>
+
+          ${isAdmin ? `
+          <div class="upload-modal-overlay" id="modal-add-file-row" aria-hidden="true">
+            <div class="upload-modal-card">
+              <div class="upload-modal-header">
+                <div>
+                  <strong>Adicionar nova linha de arquivo</strong>
+                  <span>Crie um novo tipo de arquivo para este painel. A linha terá upload, status e download em massa.</span>
+                </div>
+                <button type="button" class="modal-close" onclick="fecharModalUpload('modal-add-file-row')">×</button>
+              </div>
+              <form method="POST" action="/espaco-contador/adicionar-tipo" class="add-row-modal-form">
+                <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+                <label>
+                  <strong>Nome da nova linha</strong>
+                  <input type="text" name="label" placeholder="Ex.: Comprovantes diversos" required maxlength="90">
+                </label>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-dark" onclick="fecharModalUpload('modal-add-file-row')">Cancelar</button>
+                  <button type="submit" class="btn btn-green">Salvar linha</button>
+                </div>
+              </form>
+            </div>
+          </div>` : ''}
         </div>
         <script>
           function abrirModalUpload(id) {
@@ -14037,6 +14061,32 @@ function getContadorArquivoConfig() {
   ];
 }
 
+
+async function getContadorArquivoConfigCompleta() {
+  await ensureContadorTables();
+  const fixos = getContadorArquivoConfig();
+  const result = await pool.query(`
+    SELECT id, label, titulo
+    FROM contador_arquivo_tipos
+    WHERE ativo = true
+    ORDER BY id ASC
+  `);
+
+  const personalizados = result.rows.map(row => ({
+    key: `custom_${row.id}`,
+    label: row.label,
+    titulo: row.titulo || row.label,
+    custom: true,
+    statusColumn: null,
+    downloadStatusColumn: null,
+    downloadAtColumn: null,
+    downloadHref: (mes) => `/espaco-contador/download-extra-grupo/custom_${row.id}?mes=${encodeURIComponent(mes)}`,
+    downloadLabel: `⬇ Baixar ${row.label} em massa`
+  }));
+
+  return [...fixos, ...personalizados];
+}
+
 async function ensureContadorTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS contador_status_mensal (
@@ -14057,6 +14107,30 @@ async function ensureContadorTables() {
       nome_arquivo TEXT NOT NULL,
       nome_original TEXT,
       created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contador_arquivo_tipos (
+      id SERIAL PRIMARY KEY,
+      label TEXT NOT NULL,
+      titulo TEXT NOT NULL,
+      ativo BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contador_status_custom_mensal (
+      id SERIAL PRIMARY KEY,
+      mes_ref VARCHAR(7) NOT NULL,
+      tipo_key VARCHAR(80) NOT NULL,
+      status_pronto VARCHAR(50) DEFAULT 'Aguardar',
+      download_status VARCHAR(20) DEFAULT 'Baixar',
+      download_at TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE (mes_ref, tipo_key)
     )
   `);
 
@@ -14100,9 +14174,20 @@ function formatDateTimeBR(value) {
 }
 
 async function marcarDownloadContador(mesRef, key) {
-  const config = getContadorArquivoConfig().find(item => item.key === key);
+  const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === key);
   if (!config) return;
   await ensureContadorTables();
+
+  if (config.custom) {
+    await pool.query(`
+      INSERT INTO contador_status_custom_mensal (mes_ref, tipo_key, download_status, download_at, updated_at)
+      VALUES ($1, $2, 'Baixado', NOW(), NOW())
+      ON CONFLICT (mes_ref, tipo_key)
+      DO UPDATE SET download_status = 'Baixado', download_at = NOW(), updated_at = NOW()
+    `, [mesRef, key]);
+    return;
+  }
+
   await pool.query(`
     INSERT INTO contador_status_mensal (mes_ref)
     VALUES ($1)
@@ -14161,6 +14246,13 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const totalPdf = pdfCountResult.rows[0]?.total || 0;
     const arquivosExtras = extrasResult.rows || [];
     const statusMes = statusResult.rows[0] || {};
+    const isAdmin = req.session?.usuario?.perfil === 'ADMIN';
+    const customStatusResult = await pool.query(`
+      SELECT *
+      FROM contador_status_custom_mensal
+      WHERE mes_ref = $1
+    `, [mes]);
+    const customStatusMap = Object.fromEntries((customStatusResult.rows || []).map(row => [row.tipo_key, row]));
 
     const hoje = new Date();
     const opcoesMes = [];
@@ -14284,15 +14376,31 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
       return `<span class="download-status-text ${cls}">${finalStatus}</span>`;
     };
 
-    const configs = getContadorArquivoConfig();
+    const renderDataDownload = (config, value) => {
+      const dataFormatada = formatDateTimeBR(value);
+      if (!isAdmin || dataFormatada === '-') return dataFormatada;
+      return `
+        <span class="download-date-wrap">
+          <span>${dataFormatada}</span>
+          <form method="POST" action="/espaco-contador/limpar-download/${escapeHtml(config.key)}" class="inline-trash-form" onsubmit="return confirm('Apagar este histórico de download?')">
+            <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+            <button type="submit" class="trash-history" title="Apagar histórico">🗑</button>
+          </form>
+        </span>`;
+    };
+
+    const configs = await getContadorArquivoConfigCompleta();
     const linhasTabelaHtml = configs.map((config) => {
       const quantidade = config.countKey === 'xml' ? totalXml : config.countKey === 'pdf' ? totalPdf : countExtrasByTitle(config.titulo);
       const envio = config.auto ? 'Automático' : uploadForm(config);
-      const statusAtual = statusMes[config.statusColumn] || (config.key === 'xml' ? statusMes.status_xml : config.key === 'pdf' ? statusMes.status_pdf : 'Aguardar') || 'Aguardar';
+      const customStatus = config.custom ? customStatusMap[config.key] || {} : null;
+      const statusAtual = config.custom
+        ? (customStatus.status_pronto || 'Aguardar')
+        : (statusMes[config.statusColumn] || (config.key === 'xml' ? statusMes.status_xml : config.key === 'pdf' ? statusMes.status_pdf : 'Aguardar') || 'Aguardar');
       const statusPronto = statusForm(config.key, statusAtual);
       const downloadBtn = `<a class="btn btn-mini btn-green btn-download" href="${config.downloadHref(mes)}">${config.downloadLabel}</a>`;
-      const statusDownload = downloadPill(statusMes[config.downloadStatusColumn]);
-      const dataDownload = formatDateTimeBR(statusMes[config.downloadAtColumn]);
+      const statusDownload = config.custom ? downloadPill(customStatus.download_status) : downloadPill(statusMes[config.downloadStatusColumn]);
+      const dataDownload = config.custom ? renderDataDownload(config, customStatus.download_at) : renderDataDownload(config, statusMes[config.downloadAtColumn]);
       return `
         <tr>
           <td class="tipo-cell"><strong>${escapeHtml(config.label)}</strong></td>
@@ -14409,6 +14517,14 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid #e5e7eb; }
           .modal-actions-upload { margin-bottom:14px; }
           .modal-attached-title { border-top:1px solid #e5e7eb; padding-top:14px; }
+          .add-row-cell { text-align:left !important; background:#dcf4d2 !important; padding:6px 12px !important; }
+          .btn-add-file-row { display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:0 14px; border-radius:10px; border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8; font-size:17px; font-weight:900; text-decoration:none; cursor:pointer; box-shadow:none; }
+          .btn-add-file-row:hover { background:#dbeafe; transform:translateY(-1px); }
+          .download-date-wrap { display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; }
+          .inline-trash-form { display:inline-flex !important; margin:0 !important; padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+          .trash-history { border:0 !important; background:transparent !important; padding:0 !important; margin:0 !important; color:#be123c !important; cursor:pointer; box-shadow:none !important; font-size:14px; line-height:1; }
+          .add-row-modal-form { display:flex; flex-direction:column; gap:12px; margin:0 !important; padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+          .add-row-modal-form input { width:100%; min-height:46px; border-radius:12px; border:1px solid #dbe3ee; padding:0 14px; font-size:14px; font-weight:700; }
           @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
@@ -14446,6 +14562,12 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
                   <col style="width:12%;">
                 </colgroup>
                 <thead>
+                  ${isAdmin ? `
+                  <tr>
+                    <th colspan="7" class="add-row-cell">
+                      <button type="button" class="btn-add-file-row" onclick="abrirModalUpload('modal-add-file-row')">Adicionar nova linha de arquivo ✚</button>
+                    </th>
+                  </tr>` : ''}
                   <tr class="responsibility-head">
                     <th></th>
                     <th colspan="3" class="empresa">Responsabilidade da empresa</th>
@@ -14465,6 +14587,30 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
               </table>
             </div>
           </section>
+
+          ${isAdmin ? `
+          <div class="upload-modal-overlay" id="modal-add-file-row" aria-hidden="true">
+            <div class="upload-modal-card">
+              <div class="upload-modal-header">
+                <div>
+                  <strong>Adicionar nova linha de arquivo</strong>
+                  <span>Crie um novo tipo de arquivo para este painel. A linha terá upload, status e download em massa.</span>
+                </div>
+                <button type="button" class="modal-close" onclick="fecharModalUpload('modal-add-file-row')">×</button>
+              </div>
+              <form method="POST" action="/espaco-contador/adicionar-tipo" class="add-row-modal-form">
+                <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+                <label>
+                  <strong>Nome da nova linha</strong>
+                  <input type="text" name="label" placeholder="Ex.: Comprovantes diversos" required maxlength="90">
+                </label>
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-dark" onclick="fecharModalUpload('modal-add-file-row')">Cancelar</button>
+                  <button type="submit" class="btn btn-green">Salvar linha</button>
+                </div>
+              </form>
+            </div>
+          </div>` : ''}
         </div>
         <script>
           function abrirModalUpload(id) {
@@ -14544,6 +14690,69 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
   }
 });
 
+
+router.post('/espaco-contador/adicionar-tipo', protegerRota, permitirPerfis('ADMIN'), async (req, res) => {
+  try {
+    await ensureContadorTables();
+    const mesRef = req.body.mes_ref || getMesAtualRef();
+    const label = String(req.body.label || '').trim();
+
+    if (!label) {
+      return res.send('<pre>Informe o nome da nova linha de arquivo.</pre>');
+    }
+
+    await pool.query(`
+      INSERT INTO contador_arquivo_tipos (label, titulo, ativo, created_at)
+      VALUES ($1, $1, true, NOW())
+    `, [label]);
+
+    res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
+  } catch (error) {
+    res.send(`<pre>Erro ao adicionar nova linha de arquivo:
+${error.message}</pre>`);
+  }
+});
+
+router.post('/espaco-contador/limpar-download/:tipo', protegerRota, permitirPerfis('ADMIN'), async (req, res) => {
+  try {
+    await ensureContadorTables();
+    const mesRef = req.body.mes_ref || getMesAtualRef();
+    const tipo = String(req.params.tipo || '').trim();
+    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === tipo);
+
+    if (!config) {
+      return res.send('<pre>Tipo de download inválido para limpeza.</pre>');
+    }
+
+    if (config.custom) {
+      await pool.query(`
+        INSERT INTO contador_status_custom_mensal (mes_ref, tipo_key, download_status, download_at, updated_at)
+        VALUES ($1, $2, 'Baixar', NULL, NOW())
+        ON CONFLICT (mes_ref, tipo_key)
+        DO UPDATE SET download_status = 'Baixar', download_at = NULL, updated_at = NOW()
+      `, [mesRef, tipo]);
+    } else {
+      await pool.query(`
+        INSERT INTO contador_status_mensal (mes_ref)
+        VALUES ($1)
+        ON CONFLICT (mes_ref) DO NOTHING
+      `, [mesRef]);
+      await pool.query(`
+        UPDATE contador_status_mensal
+        SET ${config.downloadStatusColumn} = 'Baixar',
+            ${config.downloadAtColumn} = NULL,
+            updated_at = NOW()
+        WHERE mes_ref = $1
+      `, [mesRef]);
+    }
+
+    res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
+  } catch (error) {
+    res.send(`<pre>Erro ao limpar histórico de download:
+${error.message}</pre>`);
+  }
+});
+
 router.post('/espaco-contador/upload-extra', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), upload.array('arquivos', 30), async (req, res) => {
   try {
     await ensureContadorTables();
@@ -14619,19 +14828,28 @@ router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMI
       ON CONFLICT (mes_ref) DO NOTHING
     `, [mes_ref]);
 
-    const config = getContadorArquivoConfig().find(item => item.key === tipo_status);
-    const campo = config?.statusColumn;
+    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === tipo_status);
 
-    if (!campo) {
+    if (!config) {
       return res.send('<pre>Tipo de status inválido.</pre>');
     }
 
-    await pool.query(`
-      UPDATE contador_status_mensal
-      SET ${campo} = $1,
-          updated_at = NOW()
-      WHERE mes_ref = $2
-    `, [status, mes_ref]);
+    if (config.custom) {
+      await pool.query(`
+        INSERT INTO contador_status_custom_mensal (mes_ref, tipo_key, status_pronto, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (mes_ref, tipo_key)
+        DO UPDATE SET status_pronto = EXCLUDED.status_pronto, updated_at = NOW()
+      `, [mes_ref, tipo_status, status]);
+    } else {
+      const campo = config.statusColumn;
+      await pool.query(`
+        UPDATE contador_status_mensal
+        SET ${campo} = $1,
+            updated_at = NOW()
+        WHERE mes_ref = $2
+      `, [status, mes_ref]);
+    }
 
     res.redirect('/espaco-contador?mes=' + encodeURIComponent(mes_ref));
   } catch (error) {
@@ -14666,7 +14884,7 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
 
     if (!mes) return res.send('<pre>Mês não informado.</pre>');
 
-    const config = getContadorArquivoConfig().find(item => item.key === grupo && !item.auto);
+    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === grupo && !item.auto);
     if (!config) return res.send('<pre>Grupo de arquivo inválido.</pre>');
 
     const result = await pool.query(`
