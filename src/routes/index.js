@@ -14264,16 +14264,16 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
                 <div class="modal-empty">Nenhum arquivo selecionado.</div>
               </div>
 
-              <div class="modal-preview-title">Arquivos já anexados</div>
-              <div class="modal-attached-list">
-                ${renderArquivosModal(config.titulo)}
-              </div>
-
-              <div class="modal-actions">
+              <div class="modal-actions modal-actions-upload">
                 <button type="button" class="btn btn-dark" onclick="fecharModalUpload('${modalId}')">Cancelar</button>
                 <button type="submit" class="btn btn-green">Salvar arquivos</button>
               </div>
             </form>
+
+            <div class="modal-preview-title modal-attached-title">Arquivos já anexados</div>
+            <div class="modal-attached-list">
+              ${renderArquivosModal(config.titulo)}
+            </div>
           </div>
         </div>`;
     };
@@ -14383,7 +14383,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .extra-title { font-weight:900; color:#0f172a; margin-bottom:2px; font-size:12px; }
           .extra-sub { color:#64748b; font-size:11px; font-weight:700; }
           .empty-state { color:#94a3b8; font-size:13px; padding:14px 0; font-weight:800; }
-          .upload-cell-compact { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; }
+          .upload-cell-compact { display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; text-align:left; }
+          .contador-table td:nth-child(3) { text-align:left !important; }
           .btn-upload-open { min-width:118px; background:#f8fafc !important; color:#334155 !important; border:1px dashed #94a3b8 !important; box-shadow:none !important; }
           .empty-inline { color:#94a3b8; font-size:10px; font-weight:900; }
           .clip-indicator { display:inline-flex; align-items:center; justify-content:center; min-width:52px; height:28px; padding:0 8px; border-radius:999px; background:#ecfdf5; color:#047857; border:1px solid #86efac; font-size:11px; font-weight:900; }
@@ -14406,6 +14407,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .modal-delete { width:30px; height:30px; border-radius:9px !important; border:1px solid #fecdd3 !important; background:#fff1f2 !important; color:#be123c !important; cursor:pointer; box-shadow:none !important; padding:0 !important; }
           .modal-empty { color:#94a3b8; font-size:12px; font-weight:800; padding:8px 0; }
           .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid #e5e7eb; }
+          .modal-actions-upload { margin-bottom:14px; }
+          .modal-attached-title { border-top:1px solid #e5e7eb; padding-top:14px; }
           @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
