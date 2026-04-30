@@ -5784,6 +5784,7 @@ body {
                     <option value="Boleto">Boleto</option>
                     <option value="Guia">Guia</option>
                     <option value="Dinheiro">Dinheiro</option>
+                    <option value="DEB">DEB</option>
                     <option value="DOP">DOP</option>
                     <option value="CAR Inter">CAR Inter</option>
                     <option value="CAR VISA CX">CAR VISA CX</option>
@@ -6546,6 +6547,7 @@ body {
                     <option value="Boleto" ${tipoPagamentoPadrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipoPagamentoPadrao === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipoPagamentoPadrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${tipoPagamentoPadrao === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipoPagamentoPadrao === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipoPagamentoPadrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipoPagamentoPadrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -7430,6 +7432,7 @@ body {
                     <option value="Boleto" ${lancamento.tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${lancamento.tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${lancamento.tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${lancamento.tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${lancamento.tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${lancamento.tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${lancamento.tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -8470,6 +8473,55 @@ body {
 .ml-table thead .sticky-id { z-index: 1001 !important; }
 .ml-table thead .sticky-actions { z-index: 1001 !important; }
 /* ===== FIM CORREÇÃO STICKY IGUAL ROTINA ===== */
+
+/* ===== HEADER FIXO REAL - LISTA DE LANÇAMENTOS =====
+   Solução sênior: usamos uma cópia fixa do cabeçalho quando a página rola.
+   Assim os filtros e o topo sobem normalmente, mas os títulos ficam presos no topo. */
+.ml-table thead th {
+  position: static !important;
+  top: auto !important;
+}
+.ml-table-fixed-head {
+  display: none;
+  position: fixed;
+  top: 0;
+  z-index: 99999;
+  pointer-events: none;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  background: rgba(248, 250, 252, 0.992) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+}
+.ml-table-fixed-head.is-visible { display: table; }
+.ml-table-fixed-head th {
+  background: rgba(248, 250, 252, 0.992) !important;
+  color: #334155 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  padding: 8px 10px !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: left !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+.ml-table-fixed-head th.col-valor { text-align: right !important; }
+.ml-table-fixed-head th.col-pdf,
+.ml-table-fixed-head th.col-xml,
+.ml-table-fixed-head th.sticky-actions { text-align: center !important; }
+.ml-table-fixed-head .sticky-id,
+.ml-table-fixed-head .sticky-actions {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  box-shadow: none !important;
+  z-index: auto !important;
+}
+/* ===== FIM HEADER FIXO REAL ===== */
+
 /* ===== FIM TABELA NÍVEL MERCADO LIVRE ===== */
 
 </style>
@@ -8535,6 +8587,7 @@ body {
                     <option value="Boleto" ${tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -8614,6 +8667,7 @@ body {
             document.querySelectorAll('.' + nomeColuna).forEach(el => {
               el.style.display = mostrar ? '' : 'none';
             });
+            if (window.mlLancamentosSyncHeader) window.mlLancamentosSyncHeader();
           }
 
           function salvarPreferenciasColunas() {
@@ -8656,22 +8710,29 @@ body {
           }
 
           function inicializarTabelaMercadoLivre() {
-            const shell = document.getElementById('mlTableShell');
+            const table = document.querySelector('.ml-table');
             const rows = Array.from(document.querySelectorAll('#mlLancamentosBody tr.data-row'));
             const counter = document.getElementById('mlTableCounter');
             const loader = document.getElementById('mlLoadMore');
             const pageSize = 35;
             let visible = 0;
             let loading = false;
+            let fixedHeaderTable = null;
+
             function atualizarContador() {
               if (!counter) return;
               const total = rows.length;
               const exibidos = Math.min(visible, total);
               counter.textContent = total ? 'Exibindo ' + exibidos + ' de ' + total + ' lançamentos' : 'Nenhum lançamento encontrado';
             }
+
             function carregarMais() {
               if (loading) return;
-              if (visible >= rows.length) { if (loader) loader.classList.remove('active'); atualizarContador(); return; }
+              if (visible >= rows.length) {
+                if (loader) loader.classList.remove('active');
+                atualizarContador();
+                return;
+              }
               loading = true;
               if (loader && visible > 0) loader.classList.add('active');
               setTimeout(function () {
@@ -8681,21 +8742,73 @@ body {
                 loading = false;
                 if (loader) loader.classList.toggle('active', visible < rows.length);
                 atualizarContador();
+                sincronizarHeaderFixo();
               }, visible === 0 ? 0 : 220);
             }
+
+            function criarHeaderFixo() {
+              if (!table || !table.tHead) return;
+              if (fixedHeaderTable) fixedHeaderTable.remove();
+              fixedHeaderTable = document.createElement('table');
+              fixedHeaderTable.className = 'ml-table-fixed-head';
+              fixedHeaderTable.setAttribute('aria-hidden', 'true');
+              fixedHeaderTable.appendChild(table.tHead.cloneNode(true));
+              document.body.appendChild(fixedHeaderTable);
+              window.mlLancamentosSyncHeader = sincronizarHeaderFixo;
+            }
+
+            function sincronizarHeaderFixo() {
+              if (!table || !table.tHead || !fixedHeaderTable) return;
+              const tableRect = table.getBoundingClientRect();
+              const originalThs = Array.from(table.tHead.querySelectorAll('th'));
+              const clonedThs = Array.from(fixedHeaderTable.querySelectorAll('th'));
+              const headerHeight = table.tHead.getBoundingClientRect().height || 40;
+              const deveFixar = tableRect.top < 0 && tableRect.bottom > headerHeight;
+
+              if (!deveFixar) {
+                fixedHeaderTable.classList.remove('is-visible');
+                return;
+              }
+
+              fixedHeaderTable.style.left = tableRect.left + 'px';
+              fixedHeaderTable.style.width = tableRect.width + 'px';
+
+              originalThs.forEach(function (th, index) {
+                const clone = clonedThs[index];
+                if (!clone) return;
+                const style = window.getComputedStyle(th);
+                const visivel = style.display !== 'none' && th.offsetWidth > 0;
+                clone.style.display = visivel ? '' : 'none';
+                if (visivel) {
+                  const width = th.getBoundingClientRect().width;
+                  clone.style.width = width + 'px';
+                  clone.style.minWidth = width + 'px';
+                  clone.style.maxWidth = width + 'px';
+                }
+              });
+
+              fixedHeaderTable.classList.add('is-visible');
+            }
+
             rows.forEach(function (row) { row.style.display = 'none'; });
             carregarMais();
+            criarHeaderFixo();
+            sincronizarHeaderFixo();
+
             function chegouPertoDoFimDaPagina() {
               const doc = document.documentElement;
               return (window.innerHeight + window.scrollY) >= (doc.scrollHeight - 260);
             }
             window.addEventListener('scroll', function () {
               if (chegouPertoDoFimDaPagina()) carregarMais();
+              sincronizarHeaderFixo();
             }, { passive: true });
             window.addEventListener('resize', function () {
               if (chegouPertoDoFimDaPagina()) carregarMais();
+              sincronizarHeaderFixo();
             });
           }
+
           function inicializarLoadingSkeleton() {
             const overlay = document.getElementById('mlSkeletonOverlay');
             const mostrar = function () { if (overlay) overlay.style.display = 'flex'; };
@@ -12532,6 +12645,7 @@ body {
                   <option value="Boleto">Boleto</option>
                   <option value="Guia">Guia</option>
                   <option value="Dinheiro">Dinheiro</option>
+                  <option value="DEB">DEB</option>
                   <option value="DOP">DOP</option>
                   <option value="CAR Inter">CAR Inter</option>
                   <option value="CAR VISA CX">CAR VISA CX</option>
@@ -13202,6 +13316,7 @@ body {
                   <option value="Boleto" ${item.tipo_pagamento_padrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                   <option value="Guia" ${item.tipo_pagamento_padrao === 'Guia' ? 'selected' : ''}>Guia</option>
                   <option value="Dinheiro" ${item.tipo_pagamento_padrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                  <option value="DEB" ${item.tipo_pagamento_padrao === 'DEB' ? 'selected' : ''}>DEB</option>
                   <option value="DOP" ${item.tipo_pagamento_padrao === 'DOP' ? 'selected' : ''}>DOP</option>
                   <option value="CAR Inter" ${item.tipo_pagamento_padrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                   <option value="CAR VISA CX" ${item.tipo_pagamento_padrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -13528,795 +13643,89 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         <title>Espaço do Contador</title>
         <style>
           * { box-sizing: border-box; }
-
-          body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: radial-gradient(circle at top left, #eef4ff 0%, #f7f9fc 35%, #eef2f7 100%);
-            color: #111827;
-          }
-
-          .container {
-            max-width: 1450px;
-            margin: 28px auto;
-            padding: 0 20px 30px;
-          }
-
-          .hero {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-            border: 1px solid #e5e7eb;
-            border-radius: 24px;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            padding: 28px;
-            margin-bottom: 24px;
-          }
-
-          .hero-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-          }
-
-          .hero-top h1 {
-            margin: 0 0 8px 0;
-            font-size: 30px;
-            color: #0f172a;
-          }
-
-          .hero-top p {
-            margin: 0;
-            color: #64748b;
-            font-size: 15px;
-          }
-
-          .filter-box {
-            display: flex;
-            align-items: end;
-            gap: 8px;
-            flex-wrap: wrap;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 22px;
-          }
-
-          .filter-group {
-            min-width: 260px;
-          }
-
-          .filter-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #334155;
-          }
-
-          .filter-group select,
-          .filter-group input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            font-size: 14px;
-            background: white;
-            color: #0f172a;
-          }
-
-          .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-            margin-bottom: 24px;
-          }
-
-          .card {
-            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-            border: 1px solid #e5e7eb;
-            border-radius: 18px;
-            padding: 22px;
-            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
-          }
-
-          .card h2 {
-            margin: 0 0 8px 0;
-            font-size: 24px;
-            color: #1e293b;
-          }
-
-          .card-sub {
-            color: #64748b;
-            font-size: 14px;
-            margin-bottom: 18px;
-          }
-
-          .metric {
-            font-size: 38px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 18px;
-          }
-
-          .actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-          }
-
-          .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            padding: 13px 18px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-          }
-
-          .btn-blue {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-          }
-
-          .btn-red {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-          }
-
-          .btn-dark {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: white;
-          }
-
-          .btn-green {
-            background: linear-gradient(135deg, #2e7d32, #1b5e20);
-            color: white;
-            box-shadow: 0 4px 12px rgba(46,125,50,0.3);
-          }
-
-          .btn-download {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            color: white;
-          }
-
-          .upload-form {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr auto;
-            gap: 8px;
-            align-items: end;
-          }
-
-          .extra-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-          }
-
-          .extra-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 14px 16px;
-          }
-
-          .extra-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 4px;
-          }
-
-          .extra-sub {
-            font-size: 13px;
-            color: #64748b;
-          }
-
-          .status-row {
-            margin-bottom: 16px;
-          }
-
-          .status-form-inline {
-            margin: 0;
-            display: flex;
-            justify-content: flex-start;
-          }
-
-          .status-select {
-            width: 220px;
-            padding: 9px 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-image: none !important;
-            box-shadow: none;
-          }
-
-          .status-aguardar {
-            background-color: #e5e7eb !important;
-            color: #374151 !important;
-            border: 1px solid #cbd5e1 !important;
-          }
-
-          .status-andamento {
-            background-color: #fef3c7 !important;
-            color: #92400e !important;
-            border: 1px solid #fcd34d !important;
-          }
-
-          .status-liberado {
-            background-color: #dcfce7 !important;
-            color: #166534 !important;
-            border: 1px solid #86efac !important;
-          }
-
-          .empty-state {
-            color: #94a3b8;
-            font-size: 14px;
-            padding: 20px 0;
-          }
-
-          @media (max-width: 1000px) {
-            .cards-grid {
-              grid-template-columns: 1fr;
-            }
-
-            .upload-form {
-              grid-template-columns: 1fr;
-            }
-          }
-        
-
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
-:root {
-  --dm-orange: #00B050;
-  --dm-orange-dark: #009640;
-  --dm-orange-soft: #E8F7EE;
-  --dm-text: #172033;
-  --dm-muted: #64748b;
-  --dm-border: rgba(226, 232, 240, 0.82);
-  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-  --dm-card: rgba(255, 255, 255, 0.84);
-}
-
-body {
-  color: var(--dm-text) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
-    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
-    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
-}
-
-.container,
-.login-page,
-.page-shell {
-  position: relative;
-}
-
-.hero,
-.card,
-.panel,
-.table-card,
-.form-card,
-.filter-box,
-.filter-panel,
-.nav-panel,
-.topbar,
-.stat-card,
-.chart-card,
-.login-page .card,
-form:not(.inline-form):not(.delete-form) {
-  border-radius: 18px !important;
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
-  background: var(--dm-card) !important;
-  box-shadow: var(--dm-shadow) !important;
-  backdrop-filter: blur(14px);
-}
-
-h1, h2, h3,
-.page-title,
-.title {
-  color: #101828 !important;
-  letter-spacing: -0.35px;
-}
-
-.subtitle,
-.hint,
-p,
-small,
-td,
-th,
-label {
-  color: inherit;
-}
-
-.btn,
-button,
-input[type="submit"],
-.btn-blue,
-.btn-green,
-.btn-primary,
-.btn-purple,
-.btn-orange,
-.btn-red,
-.btn-filter-apply,
-.login-page button {
-  border-radius: 12px !important;
-  font-weight: 800 !important;
-}
-
-.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
-button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
-input[type="submit"],
-.btn-blue,
-.btn-green,
-.btn-primary,
-.btn-purple,
-.btn-orange,
-.btn-red,
-.btn-filter-apply,
-.login-page button {
-  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
-}
-
-.btn-dark,
-.btn-filter-clear,
-a[href="/dashboard"].btn,
-a[href="/logout"].btn,
-.logout-btn {
-  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
-  color: #222b3b !important;
-  border: 1px solid #e0e6ef !important;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
-}
-
-.btn:hover,
-button:hover,
-.logout-btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-}
-
-a {
-  color: var(--dm-orange-dark);
-}
-
-input,
-select,
-textarea {
-  border-radius: 12px !important;
-  border: 1px solid #dce3ec !important;
-  background: rgba(255,255,255,0.92) !important;
-  color: #172033 !important;
-  outline: none !important;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
-}
-
-table {
-  background: rgba(255,255,255,0.78) !important;
-  border-radius: 16px !important;
-  overflow: hidden;
-}
-
-th {
-  background: rgba(248, 250, 252, 0.92) !important;
-  color: #334155 !important;
-}
-
-tr:hover {
-  background: rgba(232, 247, 238, 0.55) !important;
-}
-
-.icon-btn,
-.btn-icon-edit,
-.btn-icon-key {
-  color: var(--dm-orange-dark) !important;
-}
-
-@media (max-width: 760px) {
-  .container { margin-top: 16px !important; }
-}
-
-
-/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
-.actions .btn,
-.actions a,
-.actions button,
-.filter-buttons button,
-.filter-buttons a,
-.top-bar .filters button,
-.top-bar .filters a {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  vertical-align: middle !important;
-  line-height: 1.15 !important;
-  min-height: 44px !important;
-  padding: 0 18px !important;
-  border-radius: 12px !important;
-  text-decoration: none !important;
-  font-weight: 800 !important;
-  white-space: nowrap !important;
-}
-
-.actions .btn-secondary,
-.actions .btn-success,
-.actions .btn-warning,
-.actions a[href="/dashboard"],
-.actions a[href="/documentos"],
-.actions a[href="/rotina-despesas"],
-.actions a[href="/lancamentos"],
-.actions button.btn-secondary,
-.actions button.btn-warning,
-.filter-buttons a,
-.top-bar .filters a.btn-secondary {
-  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
-  color: #222b3b !important;
-  border: 1px solid #e0e6ef !important;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
-}
-
-.actions .btn-primary,
-.filter-buttons button[type="submit"],
-.top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
-}
-
-.actions form {
-  display: inline-flex !important;
-  align-items: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
-
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
-
-      
-
-/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
-.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
-.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
-.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
-.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
-.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
-/* ===== FIM AJUSTE FINAL UX ===== */
-
-
-
-/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-:root {
-  --dm-green: #00B050;
-  --dm-green-dark: #009640;
-  --dm-green-soft: #E8F7EE;
-  --dm-orange: #00B050;
-  --dm-orange-dark: #009640;
-  --orange: #00B050;
-  --orange-dark: #009640;
-}
-
-body {
-  overflow-x: hidden !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
-    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
-    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
-}
-
-.nav-panel {
-  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-  padding: 8px 24px !important;
-}
-
-.nav-btn,
-.logout-btn,
-.btn,
-.actions .btn,
-.actions a.btn,
-.actions button.btn,
-.filter-panel button,
-.filter-panel a,
-.filter-buttons button,
-.filter-buttons a {
-  white-space: nowrap !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  text-align: center !important;
-}
-
-.nav-btn {
-  min-width: 0 !important;
-  height: 50px !important;
-  padding: 0 10px !important;
-  font-size: clamp(11px, 0.82vw, 14px) !important;
-  line-height: 1.05 !important;
-}
-
-.nav-btn .nav-icon {
-  width: 19px !important;
-  height: 19px !important;
-}
-
-.stats-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 14px !important;
-}
-
-.stat-card {
-  min-width: 0 !important;
-  min-height: 104px !important;
-  padding: 14px 18px !important;
-  gap: 14px !important;
-}
-
-.stat-icon-box {
-  width: 52px !important;
-  height: 52px !important;
-}
-
-.stat-content strong {
-  font-size: clamp(20px, 1.45vw, 25px) !important;
-}
-
-.filter-panel {
-  min-height: 62px !important;
-  padding: 10px 20px !important;
-}
-
-.filter-panel select,
-.filter-panel input[type="date"] {
-  width: min(310px, 31vw) !important;
-  height: 42px !important;
-}
-
-.btn-filter-apply,
-.filter-panel button[type="submit"],
-.actions .btn-primary,
-.actions a.btn-primary,
-.actions button.btn-primary,
-.filters .btn-primary,
-.filter-buttons button[type="submit"].btn-primary,
-.top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, #00B050, #009640) !important;
-  border-color: rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
-  color: #ffffff !important;
-}
-
-.nav-btn.active,
-.hbar-orange,
-.trend-line,
-.line-dot {
-  color: #00B050 !important;
-  stroke: #00B050 !important;
-}
-
-.nav-btn.active {
-  background: linear-gradient(135deg, #00B050, #009640) !important;
-  border-color: rgba(0, 176, 80, .9) !important;
-  color: #ffffff !important;
-  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
-}
-
-.hbar-orange,
-.hbar-green {
-  background: linear-gradient(90deg, #00B050, #009640) !important;
-}
-
-.line-dot { fill: #00B050 !important; }
-.trend-line { stroke: #00B050 !important; }
-.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
-.app-mark span:nth-child(2) { background: #00B050 !important; }
-.profile-copy strong, a { color: #00B050 !important; }
-
-@media (min-width: 1101px) {
-  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
-  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
-  .line-chart { height: 195px !important; }
-}
-
-@media (max-width: 1300px) and (min-width: 1101px) {
-  .page-shell { width: min(100% - 24px, 1680px) !important; }
-  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
-  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
-  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-  .stat-card { padding: 12px 14px !important; }
-  .stat-content small, .stat-content span { font-size: 9px !important; }
-  .stat-content strong { font-size: 20px !important; }
-  .chart-heading h2 { font-size: 16px !important; }
-  .hbar-header { font-size: 11px !important; }
-}
-
-@media (max-width: 1100px) {
-  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .charts-grid { grid-template-columns: 1fr !important; }
-}
-/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-
-</style>
+          :root { --dm-green:#00B050; --dm-green-dark:#009640; --dm-green-soft:#E8F7EE; --dm-text:#172033; --dm-muted:#64748b; --dm-card:rgba(255,255,255,.88); --dm-shadow:0 22px 55px rgba(15,23,42,.09); --dm-shadow-soft:0 12px 28px rgba(15,23,42,.06); }
+          body { margin:0; min-height:100vh; font-family:Arial,Helvetica,sans-serif; color:var(--dm-text); background: radial-gradient(circle at 0% 0%, rgba(0,176,80,.55) 0%, rgba(178,232,199,.42) 18%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.75) 31%, transparent 56%), linear-gradient(135deg,#E8F7EE 0%,#f7f9fc 42%,#eef3f8 100%); }
+          .contador-shell { width:min(1560px,calc(100% - 64px)); margin:28px auto 34px; }
+          .contador-hero,.control-panel,.operation-card,.upload-center,.extras-panel,.status-summary { background:var(--dm-card); border:1px solid rgba(255,255,255,.78); border-radius:24px; box-shadow:var(--dm-shadow); backdrop-filter:blur(14px); }
+          .contador-hero { padding:30px; margin-bottom:22px; }
+          .hero-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:24px; }
+          .hero-title h1 { margin:0 0 10px; font-size:clamp(26px,2vw,36px); line-height:1.05; letter-spacing:-.7px; color:#101828; }
+          .hero-title p { margin:0; max-width:760px; color:#52627a; font-size:15px; font-weight:600; }
+          .hero-badge { min-width:160px; border-radius:999px; padding:10px 16px; text-align:center; background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:900; font-size:12px; box-shadow:var(--dm-shadow-soft); }
+          .control-panel { padding:18px; display:grid; grid-template-columns:minmax(260px,360px) auto auto 1fr; align-items:end; gap:12px; box-shadow:var(--dm-shadow-soft); }
+          .field-group label { display:block; margin-bottom:7px; color:#344054; font-size:13px; font-weight:900; }
+          .field-group select,.field-group input[type='text'],.field-group input[type='file'] { width:100%; min-height:48px; border:1px solid #dce3ec; border-radius:14px; padding:0 16px; background:rgba(255,255,255,.94); color:#172033; outline:none; font-size:14px; font-weight:700; }
+          .btn { min-height:48px; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:0 20px; border-radius:14px; text-decoration:none; border:1px solid transparent; font-size:14px; font-weight:900; cursor:pointer; white-space:nowrap; transition:transform .14s ease, filter .14s ease, box-shadow .14s ease; }
+          .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
+          .btn-primary,.btn-green { background:linear-gradient(135deg,var(--dm-green),var(--dm-green-dark)); color:#fff; border-color:rgba(0,176,80,.88); box-shadow:0 14px 26px rgba(0,176,80,.20); }
+          .btn-neutral { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border-color:#e0e6ef; box-shadow:0 10px 20px rgba(15,23,42,.06); }
+          .btn-download { width:100%; min-height:54px; font-size:15px; }
+          .dashboard-grid { display:grid; grid-template-columns:1fr 1fr 360px; gap:18px; margin-bottom:20px; }
+          .operation-card { position:relative; overflow:hidden; min-height:300px; padding:24px; }
+          .operation-card::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 90% 10%,rgba(0,176,80,.10),transparent 34%); pointer-events:none; }
+          .card-top,.metric-row,.card-actions { position:relative; z-index:1; }
+          .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+          .card-icon { width:56px; height:56px; border-radius:18px; display:grid; place-items:center; font-size:26px; background:#E8F7EE; color:var(--dm-green-dark); box-shadow:inset 0 1px 0 rgba(255,255,255,.7); margin-bottom:14px; }
+          .card-title h2 { margin:0 0 7px; font-size:24px; letter-spacing:-.45px; color:#101828; }
+          .card-title p { margin:0; color:#64748b; font-size:13px; font-weight:700; }
+          .status-form-inline { margin:0; padding:0; background:transparent; border:none; box-shadow:none; }
+          .status-select { width:230px; min-height:40px; padding:0 16px; border-radius:999px; font-size:13px; font-weight:900; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none; background-image:none; outline:none; }
+          .status-aguardar { background:#eef2f7!important; color:#374151!important; border:1px solid #cbd5e1!important; }
+          .status-andamento { background:#fef3c7!important; color:#92400e!important; border:1px solid #fcd34d!important; }
+          .status-liberado { background:#dcfce7!important; color:#166534!important; border:1px solid #86efac!important; }
+          .metric-row { display:grid; grid-template-columns:110px 1fr; gap:18px; align-items:center; margin:22px 0 24px; }
+          .metric-number { font-size:56px; line-height:.9; font-weight:900; letter-spacing:-1px; color:#101828; }
+          .progress-wrap small { display:block; color:#64748b; font-size:12px; font-weight:800; margin-bottom:8px; }
+          .progress-track { height:12px; border-radius:999px; background:#e9edf4; overflow:hidden; }
+          .progress-fill { height:100%; min-width:8%; border-radius:999px; background:linear-gradient(90deg,var(--dm-green),var(--dm-green-dark)); }
+          .status-summary { padding:22px; min-height:300px; }
+          .status-summary h2 { margin:0 0 16px; color:#101828; font-size:20px; letter-spacing:-.35px; }
+          .summary-list { display:grid; gap:12px; }
+          .summary-item { display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:12px; padding:12px; border-radius:16px; background:rgba(248,250,252,.84); border:1px solid #edf1f6; }
+          .summary-ico { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; background:#E8F7EE; font-size:21px; }
+          .summary-item strong { display:block; color:#101828; font-size:14px; margin-bottom:3px; }
+          .summary-item span { display:block; color:#64748b; font-size:11px; font-weight:700; }
+          .summary-value { color:#101828; font-size:23px; font-weight:900; }
+          .upload-center { padding:24px; margin-bottom:20px; }
+          .upload-head { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
+          .upload-head h2,.extras-panel h2 { margin:0 0 6px; color:#101828; font-size:24px; letter-spacing:-.45px; }
+          .upload-head p,.extras-panel p { margin:0; color:#64748b; font-size:13px; font-weight:700; }
+          .upload-form-premium { display:grid; grid-template-columns:1.15fr 1fr auto; gap:14px; align-items:end; }
+          .file-zone { min-height:48px; display:flex; align-items:center; gap:10px; padding:0 14px; border:1px dashed #b7c4d6; border-radius:14px; background:rgba(248,250,252,.86); }
+          .file-zone input[type='file'] { border:none!important; background:transparent!important; padding:0!important; min-height:auto; }
+          .extras-panel { padding:24px; }
+          .extras-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+          .extra-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+          .extra-item { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px; border-radius:16px; background:rgba(248,250,252,.82); border:1px solid #edf1f6; }
+          .extra-title { color:#101828; font-size:15px; font-weight:900; margin-bottom:4px; }
+          .extra-sub { color:#64748b; font-size:12px; font-weight:700; }
+          .empty-state { color:#94a3b8; font-size:14px; padding:18px; font-weight:800; border-radius:16px; background:rgba(248,250,252,.7); border:1px dashed #d5dce8; }
+          @media (max-width:1180px) { .dashboard-grid{grid-template-columns:1fr;} .control-panel{grid-template-columns:1fr;} .upload-form-premium{grid-template-columns:1fr;} .extra-list{grid-template-columns:1fr;} }
+          @media (max-width:720px) { .contador-shell{width:min(100% - 24px,680px); margin-top:16px;} .contador-hero,.operation-card,.upload-center,.extras-panel{padding:18px;} .hero-header,.upload-head,.extras-head,.card-top{flex-direction:column; align-items:flex-start;} .metric-row{grid-template-columns:1fr;} .status-select{width:100%;} .btn{width:100%;} }
+        </style>
       </head>
       <body>
-        <div class="container">
-          <section class="hero">
-            <div class="hero-top">
-              <div>
-                <h1>👨‍💼 Espaço do Contador</h1>
-                <p>Baixe em massa os arquivos do mês e disponibilize pacotes extras para o fechamento contábil.</p>
-              </div>
+        <main class="contador-shell">
+          <section class="contador-hero">
+            <div class="hero-header">
+              <div class="hero-title"><h1>👨‍💼 Espaço do Contador</h1><p>Baixe em massa os arquivos do mês e disponibilize pacotes extras para o fechamento contábil.</p></div>
+              <div class="hero-badge">Central de fechamento</div>
             </div>
-
-            <form method="GET" action="/espaco-contador" class="filter-box">
-              <div class="filter-group">
-                <label for="mes">Escolha o mês dos arquivos</label>
-                <select id="mes" name="mes">
-                  ${optionsMes}
-                </select>
-              </div>
-
-              <div class="actions">
-                <button type="submit" class="btn btn-green">Aplicar mês</button>
-                <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
-              </div>
+            <form method="GET" action="/espaco-contador" class="control-panel">
+              <div class="field-group"><label for="mes">Escolha o mês dos arquivos</label><select id="mes" name="mes">${optionsMes}</select></div>
+              <button type="submit" class="btn btn-primary">Aplicar mês</button>
+              <a href="/dashboard" class="btn btn-neutral">Voltar ao Painel</a>
+              <div></div>
             </form>
-
-            <div class="cards-grid">
-              <div class="card">
-                <h2>XML das Notas</h2>
-                <div class="card-sub">Arquivos XML disponíveis para o mês selecionado.</div>
-
-                <div class="status-row">
-                  <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
-                    <input type="hidden" name="mes_ref" value="${mes}">
-                    <input type="hidden" name="tipo_status" value="xml">
-                    <select
-                      name="status"
-                      class="status-select ${
-                        statusMes.status_xml === 'Liberado para baixar'
-                          ? 'status-liberado'
-                          : statusMes.status_xml === 'Em andamento'
-                            ? 'status-andamento'
-                            : 'status-aguardar'
-                      }"
-                      onchange="this.form.submit()"
-                    >
-                      ${renderStatusOptions(statusMes.status_xml)}
-                    </select>
-                  </form>
-                </div>
-
-                <div class="metric">${totalXml}</div>
-
-                <div class="actions">
-                  <a class="btn btn-red" href="/espaco-contador/download/xml?mes=${mes}">
-                    ⬇ Baixar XML em massa
-                  </a>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>PDF das Notas</h2>
-                <div class="card-sub">Arquivos PDF disponíveis para o mês selecionado.</div>
-
-                <div class="status-row">
-                  <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
-                    <input type="hidden" name="mes_ref" value="${mes}">
-                    <input type="hidden" name="tipo_status" value="pdf">
-                    <select
-                      name="status"
-                      class="status-select ${
-                        statusMes.status_pdf === 'Liberado para baixar'
-                          ? 'status-liberado'
-                          : statusMes.status_pdf === 'Em andamento'
-                            ? 'status-andamento'
-                            : 'status-aguardar'
-                      }"
-                      onchange="this.form.submit()"
-                    >
-                      ${renderStatusOptions(statusMes.status_pdf)}
-                    </select>
-                  </form>
-                </div>
-
-                <div class="metric">${totalPdf}</div>
-
-                <div class="actions">
-                  <a class="btn btn-green" href="/espaco-contador/download/pdf?mes=${mes}">
-                    ⬇ Baixar PDF em massa
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div class="card" style="margin-bottom:24px;">
-              <h2>Enviar Arquivos Extras</h2>
-              <div class="card-sub">Use este espaço para subir pacotes zipados com extratos, relatórios, CTEs, planilhas e outros materiais do fechamento.</div>
-
-              <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="upload-form">
-                <div class="filter-group">
-                  <label for="titulo">Nome do pacote</label>
-                  <input id="titulo" name="titulo" placeholder="Ex.: Extratos Bancários" required />
-                </div>
-
-                <div class="filter-group">
-                  <label for="arquivo_zip">Arquivo zipado</label>
-                  <input id="arquivo_zip" type="file" name="arquivo_zip" accept=".zip" required />
-                </div>
-
-                <div class="actions">
-                  <input type="hidden" name="mes_ref" value="${mes}" />
-                  <button type="submit" class="btn btn-green">📦 Enviar pacote</button>
-                </div>
-              </form>
-            </div>
-
-            <div class="card">
-              <h2>Arquivos Extras do Mês</h2>
-              <div class="card-sub">Pacotes adicionais disponíveis para o contador baixar.</div>
-
-              <div class="status-row">
-                <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
-                  <input type="hidden" name="mes_ref" value="${mes}">
-                  <input type="hidden" name="tipo_status" value="extras">
-                  <select
-                    name="status"
-                    class="status-select ${
-                      statusMes.status_extras === 'Liberado para baixar'
-                        ? 'status-liberado'
-                        : statusMes.status_extras === 'Em andamento'
-                          ? 'status-andamento'
-                          : 'status-aguardar'
-                    }"
-                    onchange="this.form.submit()"
-                  >
-                    ${renderStatusOptions(statusMes.status_extras)}
-                  </select>
-                </form>
-              </div>
-
-              <div class="extra-list">
-                ${extrasHtml}
-              </div>
-            </div>
           </section>
-        </div>
+          <section class="dashboard-grid">
+            <div class="operation-card"><div class="card-top"><div class="card-title"><div class="card-icon">🧾</div><h2>XML das Notas</h2><p>Arquivos XML disponíveis para o mês selecionado.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="xml"><select name="status" class="status-select ${statusMes.status_xml === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_xml === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_xml)}</select></form></div><div class="metric-row"><div class="metric-number">${totalXml}</div><div class="progress-wrap"><small>${totalXml} arquivo(s) XML no mês selecionado</small><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(8, Number(totalXml || 0) * 12))}%;"></div></div></div></div><div class="card-actions"><a class="btn btn-primary btn-download" href="/espaco-contador/download/xml?mes=${mes}">⬇ Baixar XML em massa</a></div></div>
+            <div class="operation-card"><div class="card-top"><div class="card-title"><div class="card-icon">📄</div><h2>PDF das Notas</h2><p>Arquivos PDF disponíveis para o mês selecionado.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="pdf"><select name="status" class="status-select ${statusMes.status_pdf === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_pdf === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_pdf)}</select></form></div><div class="metric-row"><div class="metric-number">${totalPdf}</div><div class="progress-wrap"><small>${totalPdf} arquivo(s) PDF no mês selecionado</small><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(8, Number(totalPdf || 0) * 12))}%;"></div></div></div></div><div class="card-actions"><a class="btn btn-primary btn-download" href="/espaco-contador/download/pdf?mes=${mes}">⬇ Baixar PDF em massa</a></div></div>
+            <aside class="status-summary"><h2>Resumo do mês</h2><div class="summary-list"><div class="summary-item"><div class="summary-ico">🧾</div><div><strong>XMLs</strong><span>${statusMes.status_xml}</span></div><div class="summary-value">${totalXml}</div></div><div class="summary-item"><div class="summary-ico">📄</div><div><strong>PDFs</strong><span>${statusMes.status_pdf}</span></div><div class="summary-value">${totalPdf}</div></div><div class="summary-item"><div class="summary-ico">📦</div><div><strong>Extras</strong><span>${statusMes.status_extras}</span></div><div class="summary-value">${arquivosExtras.length}</div></div></div></aside>
+          </section>
+          <section class="upload-center"><div class="upload-head"><div><h2>Enviar Arquivos Extras</h2><p>Suba pacotes zipados com extratos, relatórios, CTEs, planilhas e materiais complementares do fechamento.</p></div></div><form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="upload-form-premium"><div class="field-group"><label for="titulo">Nome do pacote</label><input id="titulo" name="titulo" placeholder="Ex.: Extratos Bancários" required /></div><div class="field-group"><label for="arquivo_zip">Arquivo zipado</label><div class="file-zone"><span>📁</span><input id="arquivo_zip" type="file" name="arquivo_zip" accept=".zip" required /></div></div><div><input type="hidden" name="mes_ref" value="${mes}" /><button type="submit" class="btn btn-primary">📦 Enviar pacote</button></div></form></section>
+          <section class="extras-panel"><div class="extras-head"><div><h2>Arquivos Extras do Mês</h2><p>Pacotes adicionais disponíveis para o contador baixar.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="extras"><select name="status" class="status-select ${statusMes.status_extras === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_extras === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_extras)}</select></form></div><div class="extra-list">${extrasHtml}</div></section>
+        </main>
       </body>
       </html>
     `);
