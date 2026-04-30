@@ -5784,6 +5784,7 @@ body {
                     <option value="Boleto">Boleto</option>
                     <option value="Guia">Guia</option>
                     <option value="Dinheiro">Dinheiro</option>
+                    <option value="DEB">DEB</option>
                     <option value="DOP">DOP</option>
                     <option value="CAR Inter">CAR Inter</option>
                     <option value="CAR VISA CX">CAR VISA CX</option>
@@ -6546,6 +6547,7 @@ body {
                     <option value="Boleto" ${tipoPagamentoPadrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipoPagamentoPadrao === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipoPagamentoPadrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${tipoPagamentoPadrao === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipoPagamentoPadrao === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipoPagamentoPadrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipoPagamentoPadrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -7430,6 +7432,7 @@ body {
                     <option value="Boleto" ${lancamento.tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${lancamento.tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${lancamento.tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${lancamento.tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${lancamento.tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${lancamento.tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${lancamento.tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -8584,6 +8587,7 @@ body {
                     <option value="Boleto" ${tipo_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
                     <option value="Guia" ${tipo_pagamento === 'Guia' ? 'selected' : ''}>Guia</option>
                     <option value="Dinheiro" ${tipo_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="DEB" ${tipo_pagamento === 'DEB' ? 'selected' : ''}>DEB</option>
                     <option value="DOP" ${tipo_pagamento === 'DOP' ? 'selected' : ''}>DOP</option>
                     <option value="CAR Inter" ${tipo_pagamento === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                     <option value="CAR VISA CX" ${tipo_pagamento === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
@@ -12641,6 +12645,7 @@ body {
                   <option value="Boleto">Boleto</option>
                   <option value="Guia">Guia</option>
                   <option value="Dinheiro">Dinheiro</option>
+                  <option value="DEB">DEB</option>
                   <option value="DOP">DOP</option>
                   <option value="CAR Inter">CAR Inter</option>
                   <option value="CAR VISA CX">CAR VISA CX</option>
@@ -13311,6 +13316,7 @@ body {
                   <option value="Boleto" ${item.tipo_pagamento_padrao === 'Boleto' ? 'selected' : ''}>Boleto</option>
                   <option value="Guia" ${item.tipo_pagamento_padrao === 'Guia' ? 'selected' : ''}>Guia</option>
                   <option value="Dinheiro" ${item.tipo_pagamento_padrao === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                  <option value="DEB" ${item.tipo_pagamento_padrao === 'DEB' ? 'selected' : ''}>DEB</option>
                   <option value="DOP" ${item.tipo_pagamento_padrao === 'DOP' ? 'selected' : ''}>DOP</option>
                   <option value="CAR Inter" ${item.tipo_pagamento_padrao === 'CAR Inter' ? 'selected' : ''}>CAR Inter</option>
                   <option value="CAR VISA CX" ${item.tipo_pagamento_padrao === 'CAR VISA CX' ? 'selected' : ''}>CAR VISA CX</option>
