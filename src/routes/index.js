@@ -744,9 +744,11 @@ function renderGlobalHeader(req, config = {}) {
   const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - Deus é Mais');
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da Deus é Mais.');
   const isAdmin = usuario.perfil === 'ADMIN';
+  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos'];
+  const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
   const menuBase = [
-    { key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true },
-    { key: 'dashboard', href: '/dashboard', label: 'Voltar ao Painel' },
+    ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
+    { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Lançamentos Mensais' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Lista de Lançamentos' },
     { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
