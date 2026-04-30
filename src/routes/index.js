@@ -3246,6 +3246,76 @@ body {
             </div>
           </section>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -3809,6 +3879,76 @@ body {
             </form>
           </div>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -4364,6 +4504,76 @@ body {
             </form>
           </div>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -5136,6 +5346,76 @@ body {
             </table>
           </div>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -5808,6 +6088,76 @@ body {
             </form>
           </div>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -7466,6 +7816,76 @@ body {
             </form>
           </div>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -8824,6 +9244,76 @@ body {
           });
         </script>
 
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -13718,41 +14208,75 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const getExtrasByTitle = (titulo) => arquivosExtras.filter(item => normalizarTitulo(item.titulo) === normalizarTitulo(titulo));
     const countExtrasByTitle = (titulo) => getExtrasByTitle(titulo).length;
 
-    const renderArquivosAnexados = (titulo) => {
-      const itens = getExtrasByTitle(titulo);
-      if (!itens.length) {
-        return `<div class="attached-empty">Nenhum arquivo anexado</div>`;
+    const renderArquivosAnexadosResumo = (titulo) => {
+      const total = getExtrasByTitle(titulo).length;
+      if (!total) {
+        return `<span class="empty-inline">Vazio</span>`;
       }
-      return `
-        <div class="attached-list">
-          ${itens.map(item => `
-            <div class="attached-item">
-              <span title="${escapeHtml(item.nome_original || item.nome_arquivo)}">${escapeHtml(item.nome_original || item.nome_arquivo)}</span>
-              <div class="attached-actions">
-                <a class="attached-link" href="/espaco-contador/download-extra/${item.id}" title="Baixar arquivo">⬇</a>
-                <form method="POST" action="/espaco-contador/excluir-extra/${item.id}" onsubmit="return confirm('Excluir este arquivo anexado?')">
-                  <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
-                  <button type="submit" class="attached-delete" title="Excluir arquivo">🗑</button>
-                </form>
-              </div>
-            </div>
-          `).join('')}
-        </div>`;
+      return `<span class="clip-indicator" title="${total} arquivo(s) anexado(s)">📎 ${total}</span>`;
     };
 
-    const uploadForm = (titulo) => `
-      <div class="upload-stack">
-        <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="inline-upload-form">
-          <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}" />
-          <input type="hidden" name="titulo" value="${escapeHtml(titulo)}" />
-          <label class="upload-chip">
-            <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Inserir arquivo'" />
-            <span class="upload-name">Inserir arquivo</span>
-          </label>
-          <button type="submit" class="btn btn-mini btn-green">Enviar</button>
-        </form>
-        ${renderArquivosAnexados(titulo)}
-      </div>`;
+    const renderArquivosModal = (titulo) => {
+      const itens = getExtrasByTitle(titulo);
+      if (!itens.length) {
+        return `<div class="modal-empty">Nenhum arquivo anexado.</div>`;
+      }
+      return itens.map(item => `
+        <div class="modal-file-row">
+          <span title="${escapeHtml(item.nome_original || item.nome_arquivo)}">${escapeHtml(item.nome_original || item.nome_arquivo)}</span>
+          <form method="POST" action="/espaco-contador/excluir-extra/${item.id}" onsubmit="return confirm('Excluir este arquivo anexado?')">
+            <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+            <button type="submit" class="modal-delete" title="Excluir arquivo">🗑</button>
+          </form>
+        </div>
+      `).join('');
+    };
+
+    const uploadForm = (config) => {
+      const modalId = `modal-upload-${config.key}`;
+      return `
+        <div class="upload-cell-compact">
+          <button type="button" class="btn btn-mini btn-upload-open" onclick="abrirModalUpload('${modalId}')">Inserir Arquivo</button>
+          ${renderArquivosAnexadosResumo(config.titulo)}
+        </div>
+
+        <div class="upload-modal-overlay" id="${modalId}" aria-hidden="true">
+          <div class="upload-modal-card">
+            <div class="upload-modal-header">
+              <div>
+                <strong>${escapeHtml(config.label)}</strong>
+                <span>Inclua ou exclua arquivos deste grupo no mês ${escapeHtml(labelMes)}.</span>
+              </div>
+              <button type="button" class="modal-close" onclick="fecharModalUpload('${modalId}')">×</button>
+            </div>
+
+            <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="modal-upload-form" data-modal-form="${modalId}">
+              <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}" />
+              <input type="hidden" name="titulo" value="${escapeHtml(config.titulo)}" />
+
+              <label class="modal-file-picker">
+                <input type="file" name="arquivos" multiple required onchange="atualizarPreviewArquivos(this)" />
+                <span>📎 Escolher arquivo</span>
+              </label>
+
+              <div class="modal-preview-title">Arquivos selecionados para salvar</div>
+              <div class="modal-preview-list" data-preview-list>
+                <div class="modal-empty">Nenhum arquivo selecionado.</div>
+              </div>
+
+              <div class="modal-preview-title">Arquivos já anexados</div>
+              <div class="modal-attached-list">
+                ${renderArquivosModal(config.titulo)}
+              </div>
+
+              <div class="modal-actions">
+                <button type="button" class="btn btn-dark" onclick="fecharModalUpload('${modalId}')">Cancelar</button>
+                <button type="submit" class="btn btn-green">Salvar arquivos</button>
+              </div>
+            </form>
+          </div>
+        </div>`;
+    };
 
     const downloadPill = (status) => {
       const finalStatus = normalizarStatusDownload(status);
@@ -13763,7 +14287,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const configs = getContadorArquivoConfig();
     const linhasTabelaHtml = configs.map((config) => {
       const quantidade = config.countKey === 'xml' ? totalXml : config.countKey === 'pdf' ? totalPdf : countExtrasByTitle(config.titulo);
-      const envio = config.auto ? 'Automático' : uploadForm(config.titulo);
+      const envio = config.auto ? 'Automático' : uploadForm(config);
       const statusAtual = statusMes[config.statusColumn] || (config.key === 'xml' ? statusMes.status_xml : config.key === 'pdf' ? statusMes.status_pdf : 'Aguardar') || 'Aguardar';
       const statusPronto = statusForm(config.key, statusAtual);
       const downloadBtn = `<a class="btn btn-mini btn-green btn-download" href="${config.downloadHref(mes)}">${config.downloadLabel}</a>`;
@@ -13859,6 +14383,29 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .extra-title { font-weight:900; color:#0f172a; margin-bottom:2px; font-size:12px; }
           .extra-sub { color:#64748b; font-size:11px; font-weight:700; }
           .empty-state { color:#94a3b8; font-size:13px; padding:14px 0; font-weight:800; }
+          .upload-cell-compact { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; }
+          .btn-upload-open { min-width:118px; background:#f8fafc !important; color:#334155 !important; border:1px dashed #94a3b8 !important; box-shadow:none !important; }
+          .empty-inline { color:#94a3b8; font-size:10px; font-weight:900; }
+          .clip-indicator { display:inline-flex; align-items:center; justify-content:center; min-width:52px; height:28px; padding:0 8px; border-radius:999px; background:#ecfdf5; color:#047857; border:1px solid #86efac; font-size:11px; font-weight:900; }
+          .upload-modal-overlay { position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(15,23,42,.42); backdrop-filter:blur(5px); }
+          .upload-modal-overlay.is-open { display:flex; }
+          .upload-modal-card { width:min(620px, calc(100vw - 34px)); max-height:86vh; overflow:auto; background:#fff; border:1px solid #e2e8f0; border-radius:22px; box-shadow:0 28px 80px rgba(15,23,42,.22); padding:18px; }
+          .upload-modal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:4px 4px 14px; border-bottom:1px solid #e5e7eb; margin-bottom:14px; }
+          .upload-modal-header strong { display:block; font-size:18px; color:#101828; margin-bottom:4px; }
+          .upload-modal-header span { display:block; color:#64748b; font-size:12px; font-weight:700; }
+          .modal-close { width:34px; height:34px; border-radius:10px; border:1px solid #e5e7eb; background:#f8fafc; color:#334155; font-size:22px; line-height:1; cursor:pointer; }
+          .modal-upload-form { background:transparent !important; border:none !important; box-shadow:none !important; padding:0 !important; margin:0 !important; }
+          .modal-file-picker { width:100%; min-height:58px; border:1.5px dashed #94a3b8; border-radius:16px; background:#f8fafc; display:flex; align-items:center; justify-content:center; cursor:pointer; margin-bottom:14px; }
+          .modal-file-picker input { display:none; }
+          .modal-file-picker span { color:#0f172a; font-size:14px; font-weight:900; }
+          .modal-preview-title { margin:12px 0 7px; color:#334155; font-size:12px; font-weight:900; }
+          .modal-preview-list, .modal-attached-list { display:flex; flex-direction:column; gap:6px; }
+          .modal-file-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border-radius:12px; background:#f8fafc; border:1px solid #e5e7eb; }
+          .modal-file-row span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#1f2937; font-size:12px; font-weight:800; }
+          .modal-file-row form { margin:0 !important; padding:0 !important; background:transparent !important; border:none !important; box-shadow:none !important; }
+          .modal-delete { width:30px; height:30px; border-radius:9px !important; border:1px solid #fecdd3 !important; background:#fff1f2 !important; color:#be123c !important; cursor:pointer; box-shadow:none !important; padding:0 !important; }
+          .modal-empty { color:#94a3b8; font-size:12px; font-weight:800; padding:8px 0; }
+          .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid #e5e7eb; }
           @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
@@ -13916,6 +14463,76 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
             </div>
           </section>
         </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -13924,30 +14541,28 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
   }
 });
 
-router.post('/espaco-contador/upload-extra', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), upload.single('arquivo_zip'), async (req, res) => {
+router.post('/espaco-contador/upload-extra', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), upload.array('arquivos', 30), async (req, res) => {
   try {
     await ensureContadorTables();
     const mesRef = req.body.mes_ref || getMesAtualRef();
     const titulo = String(req.body.titulo || '').trim();
+    const arquivos = req.files || [];
 
-    if (!req.file) {
-      return res.send('<pre>Selecione um arquivo ZIP para enviar.</pre>');
+    if (!arquivos.length) {
+      return res.send('<pre>Selecione pelo menos um arquivo para enviar.</pre>');
     }
 
     if (!titulo) {
+      arquivos.forEach(file => { try { fs.unlinkSync(getUploadFilePath(file.filename)); } catch (e) {} });
       return res.send('<pre>Informe o tipo/nome do pacote.</pre>');
     }
 
-    const ext = path.extname(req.file.originalname || '').toLowerCase();
-    if (ext !== '.zip') {
-      try { fs.unlinkSync(getUploadFilePath(req.file.filename)); } catch (e) {}
-      return res.send('<pre>Envie apenas arquivo compactado em .zip.</pre>');
+    for (const file of arquivos) {
+      await pool.query(`
+        INSERT INTO contador_arquivos_extras (mes_ref, titulo, nome_arquivo, nome_original, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+      `, [mesRef, titulo, file.filename, file.originalname || file.filename]);
     }
-
-    await pool.query(`
-      INSERT INTO contador_arquivos_extras (mes_ref, titulo, nome_arquivo, nome_original, created_at)
-      VALUES ($1, $2, $3, $4, NOW())
-    `, [mesRef, titulo, req.file.filename, req.file.originalname || req.file.filename]);
 
     res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
   } catch (error) {
