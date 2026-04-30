@@ -13714,30 +13714,45 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         </select>
       </form>`;
 
-    const extrasHtml = arquivosExtras.length
-      ? arquivosExtras.map(item => `
-          <div class="extra-item">
-            <div>
-              <div class="extra-title">${escapeHtml(item.titulo)}</div>
-              <div class="extra-sub">${escapeHtml(item.nome_original || item.nome_arquivo)}</div>
-            </div>
-            <a class="btn btn-mini btn-soft-green" href="/espaco-contador/download-extra/${item.id}">⬇ Baixar</a>
-          </div>`).join('')
-      : `<div class="empty-state">Nenhum arquivo extra enviado para este mês.</div>`;
-
     const normalizarTitulo = (text = '') => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-    const countExtrasByTitle = (titulo) => arquivosExtras.filter(item => normalizarTitulo(item.titulo) === normalizarTitulo(titulo)).length;
+    const getExtrasByTitle = (titulo) => arquivosExtras.filter(item => normalizarTitulo(item.titulo) === normalizarTitulo(titulo));
+    const countExtrasByTitle = (titulo) => getExtrasByTitle(titulo).length;
+
+    const renderArquivosAnexados = (titulo) => {
+      const itens = getExtrasByTitle(titulo);
+      if (!itens.length) {
+        return `<div class="attached-empty">Nenhum arquivo anexado</div>`;
+      }
+      return `
+        <div class="attached-list">
+          ${itens.map(item => `
+            <div class="attached-item">
+              <span title="${escapeHtml(item.nome_original || item.nome_arquivo)}">${escapeHtml(item.nome_original || item.nome_arquivo)}</span>
+              <div class="attached-actions">
+                <a class="attached-link" href="/espaco-contador/download-extra/${item.id}" title="Baixar arquivo">⬇</a>
+                <form method="POST" action="/espaco-contador/excluir-extra/${item.id}" onsubmit="return confirm('Excluir este arquivo anexado?')">
+                  <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+                  <button type="submit" class="attached-delete" title="Excluir arquivo">🗑</button>
+                </form>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+    };
 
     const uploadForm = (titulo) => `
-      <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="inline-upload-form">
-        <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}" />
-        <input type="hidden" name="titulo" value="${escapeHtml(titulo)}" />
-        <label class="upload-chip">
-          <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Inserir ZIP'" />
-          <span class="upload-name">Inserir ZIP</span>
-        </label>
-        <button type="submit" class="btn btn-mini btn-green">Enviar</button>
-      </form>`;
+      <div class="upload-stack">
+        <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="inline-upload-form">
+          <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}" />
+          <input type="hidden" name="titulo" value="${escapeHtml(titulo)}" />
+          <label class="upload-chip">
+            <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Inserir arquivo'" />
+            <span class="upload-name">Inserir arquivo</span>
+          </label>
+          <button type="submit" class="btn btn-mini btn-green">Enviar</button>
+        </form>
+        ${renderArquivosAnexados(titulo)}
+      </div>`;
 
     const downloadPill = (status) => {
       const finalStatus = normalizarStatusDownload(status);
@@ -13794,12 +13809,11 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .btn-download { min-width:150px; }
           .btn-soft-green { color:#047857; background:#ecfdf5; border-color:#bbf7d0; }
           .contador-board { background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.82); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
-          .responsibility-row { display:grid; grid-template-columns: 21% 35% 44%; border-bottom:1px solid #111827; font-size:18px; font-weight:900; text-align:center; }
-          .responsibility-row div { padding:7px 8px; background:#dcf4d2; }
-          .responsibility-row .empresa { background:#dbeafe; }
           .table-wrap { width:100%; overflow-x:hidden; }
           .contador-table { width:100%; border-collapse:collapse; table-layout:fixed; background:#fff; }
           .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:10px 7px; font-size:13px; line-height:1.1; text-align:center; white-space:normal; }
+          .contador-table .responsibility-head th { padding:8px 7px; font-size:17px; font-weight:900; color:#0f172a !important; background:#dcf4d2 !important; border-top:1px solid #111827; }
+          .contador-table .responsibility-head th.empresa { background:#dbeafe !important; }
           .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:21%; }
           .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:9%; }
           .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:19%; }
@@ -13821,10 +13835,19 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .download-status { display:inline-flex; align-items:center; justify-content:center; min-width:72px; height:28px; border-radius:999px; font-size:10.5px; font-weight:900; }
           .download-baixar { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
           .download-baixado { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+          .upload-stack { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; width:100%; }
           .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:6px; margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; }
           .upload-chip { margin:0; width:130px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:10.5px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 8px; }
           .upload-chip input { display:none; }
           .upload-name { max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .attached-list { width:100%; max-width:210px; display:flex; flex-direction:column; gap:4px; }
+          .attached-empty { color:#94a3b8; font-size:10px; font-weight:800; }
+          .attached-item { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:4px 6px; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb; }
+          .attached-item span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-size:10px; font-weight:800; }
+          .attached-actions { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+          .attached-actions form { margin:0; padding:0; background:transparent !important; border:none !important; box-shadow:none !important; }
+          .attached-link, .attached-delete { width:22px; height:22px; border:0 !important; border-radius:7px !important; display:inline-flex; align-items:center; justify-content:center; background:#ecfdf5 !important; color:#047857 !important; font-size:11px; text-decoration:none; cursor:pointer; padding:0 !important; box-shadow:none !important; }
+          .attached-delete { background:#fff1f2 !important; color:#be123c !important; }
           .extra-section { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:20px; box-shadow:var(--shadow); padding:18px 20px; margin-top:14px; }
           .extra-section h2 { margin:0 0 4px; font-size:22px; color:#101828; }
           .card-sub { color:#52627a; font-size:12px; font-weight:700; margin-bottom:12px; }
@@ -13834,7 +13857,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .extra-sub { color:#64748b; font-size:11px; font-weight:700; }
           .empty-state { color:#94a3b8; font-size:13px; padding:14px 0; font-weight:800; }
           @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
-          @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .responsibility-row{grid-template-columns:1fr;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
+          @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
       </head>
       <body>
@@ -13858,14 +13881,14 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           </section>
 
           <section class="contador-board">
-            <div class="responsibility-row">
-              <div></div>
-              <div class="empresa">Responsabilidade da empresa</div>
-              <div>Responsabilidade do Contador</div>
-            </div>
             <div class="table-wrap">
               <table class="contador-table">
                 <thead>
+                  <tr class="responsibility-head">
+                    <th></th>
+                    <th colspan="3" class="empresa">Responsabilidade da empresa</th>
+                    <th colspan="3">Responsabilidade do Contador</th>
+                  </tr>
                   <tr>
                     <th>Tipo de arquivo</th>
                     <th>Qtde</th>
@@ -13879,12 +13902,6 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
                 <tbody>${linhasTabelaHtml}</tbody>
               </table>
             </div>
-          </section>
-
-          <section class="extra-section">
-            <h2>Arquivos Extras do Mês</h2>
-            <div class="card-sub">Pacotes adicionais enviados para ${escapeHtml(labelMes)}.</div>
-            <div class="extra-list">${extrasHtml}</div>
           </section>
         </div>
       </body>
@@ -13923,6 +13940,37 @@ router.post('/espaco-contador/upload-extra', protegerRota, permitirPerfis('ADMIN
     res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
   } catch (error) {
     res.send(`<pre>Erro ao enviar arquivo extra:\n${error.message}</pre>`);
+  }
+});
+
+
+router.post('/espaco-contador/excluir-extra/:id', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
+  try {
+    await ensureContadorTables();
+    const id = Number.parseInt(req.params.id, 10);
+    const mesRef = req.body.mes_ref || getMesAtualRef();
+
+    if (!Number.isFinite(id)) {
+      return res.send('<pre>Arquivo inválido para exclusão.</pre>');
+    }
+
+    const result = await pool.query('SELECT * FROM contador_arquivos_extras WHERE id = $1 LIMIT 1', [id]);
+    const item = result.rows[0];
+
+    if (!item) {
+      return res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
+    }
+
+    const filePath = getUploadFilePath(item.nome_arquivo);
+    if (filePath && fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) {}
+    }
+
+    await pool.query('DELETE FROM contador_arquivos_extras WHERE id = $1', [id]);
+    res.redirect('/espaco-contador?mes=' + encodeURIComponent(item.mes_ref || mesRef));
+  } catch (error) {
+    res.send(`<pre>Erro ao excluir arquivo anexado:
+${error.message}</pre>`);
   }
 });
 
