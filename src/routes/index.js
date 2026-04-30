@@ -13554,7 +13554,6 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           AND anexo_xml IS NOT NULL
           AND TRIM(anexo_xml) <> ''
       `, [mes]),
-
       pool.query(`
         SELECT COUNT(*)::int AS total
         FROM lancamentos
@@ -13562,14 +13561,12 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           AND anexo_pdf IS NOT NULL
           AND TRIM(anexo_pdf) <> ''
       `, [mes]),
-
       pool.query(`
         SELECT *
         FROM contador_arquivos_extras
         WHERE mes_ref = $1
         ORDER BY created_at DESC, id DESC
       `, [mes]),
-
       pool.query(`
         SELECT *
         FROM contador_status_mensal
@@ -13581,58 +13578,92 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const totalXml = xmlCountResult.rows[0]?.total || 0;
     const totalPdf = pdfCountResult.rows[0]?.total || 0;
     const arquivosExtras = extrasResult.rows;
-    const statusMes = statusResult.rows[0] || {
-      status_xml: 'Aguardar',
-      status_pdf: 'Aguardar',
-      status_extras: 'Aguardar'
-    };
+    const statusMes = statusResult.rows[0] || { status_xml: 'Aguardar', status_pdf: 'Aguardar', status_extras: 'Aguardar' };
 
     const hoje = new Date();
     const opcoesMes = [];
-
     for (let i = 0; i < 12; i++) {
       const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       const ano = data.getFullYear();
       const mesNum = String(data.getMonth() + 1).padStart(2, '0');
       const valor = `${ano}-${mesNum}`;
-      const label = data.toLocaleDateString('pt-BR', {
-        month: 'long',
-        year: 'numeric'
-      });
-
-      opcoesMes.push({
-        valor,
-        label: label.charAt(0).toUpperCase() + label.slice(1)
-      });
+      const label = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      opcoesMes.push({ valor, label: label.charAt(0).toUpperCase() + label.slice(1) });
     }
 
     const optionsMes = opcoesMes.map(item => `
-      <option value="${item.valor}" ${item.valor === mes ? 'selected' : ''}>
-        ${item.label}
-      </option>
+      <option value="${item.valor}" ${item.valor === mes ? 'selected' : ''}>${item.label}</option>
     `).join('');
 
-    const extrasHtml = arquivosExtras.length
-      ? arquivosExtras.map(item => `
-          <div class="extra-item">
-            <div class="extra-left">
-              <div class="extra-title">${item.titulo}</div>
-              <div class="extra-sub">
-                Arquivo: ${item.nome_original || item.nome_arquivo}
-              </div>
-            </div>
-            <a class="btn btn-download" href="/espaco-contador/download-extra/${item.id}">
-              ⬇ Baixar
-            </a>
-          </div>
-        `).join('')
-      : `<div class="empty-state">Nenhum arquivo extra enviado para este mês.</div>`;
+    const escapeHtml = (text = '') => String(text || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
+
+    const labelMes = opcoesMes.find(item => item.valor === mes)?.label || mes;
 
     const renderStatusOptions = (atual) => `
       <option value="Aguardar" ${atual === 'Aguardar' ? 'selected' : ''}>Aguardar</option>
       <option value="Em andamento" ${atual === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
       <option value="Liberado para baixar" ${atual === 'Liberado para baixar' ? 'selected' : ''}>Liberado para baixar</option>
     `;
+
+    const statusClass = (status) => {
+      if (status === 'Liberado para baixar') return 'status-liberado';
+      if (status === 'Em andamento') return 'status-andamento';
+      return 'status-aguardar';
+    };
+
+    const statusForm = (tipoStatus, atual) => `
+      <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
+        <input type="hidden" name="mes_ref" value="${mes}">
+        <input type="hidden" name="tipo_status" value="${tipoStatus}">
+        <select name="status" class="status-select ${statusClass(atual)}" onchange="this.form.submit()">
+          ${renderStatusOptions(atual)}
+        </select>
+      </form>`;
+
+    const extrasHtml = arquivosExtras.length
+      ? arquivosExtras.map(item => `
+          <div class="extra-item">
+            <div>
+              <div class="extra-title">${escapeHtml(item.titulo)}</div>
+              <div class="extra-sub">${escapeHtml(item.nome_original || item.nome_arquivo)}</div>
+            </div>
+            <a class="btn btn-mini btn-soft-green" href="/espaco-contador/download-extra/${item.id}">⬇ Baixar</a>
+          </div>`).join('')
+      : `<div class="empty-state">Nenhum arquivo extra enviado para este mês.</div>`;
+
+    const countExtras = (key) => arquivosExtras.filter(item => String(item.titulo || '').toLowerCase().includes(key.toLowerCase())).length;
+
+    const uploadForm = (titulo) => `
+      <form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="inline-upload-form">
+        <input type="hidden" name="mes_ref" value="${mes}" />
+        <input type="hidden" name="titulo" value="${escapeHtml(titulo)}" />
+        <label class="upload-chip">
+          <input type="file" name="arquivo_zip" accept=".zip" required onchange="this.closest('form').querySelector('.upload-name').textContent = this.files[0] ? this.files[0].name : 'Escolher arquivo'" />
+          <span class="upload-name">Escolher arquivo ⬆️</span>
+        </label>
+        <button type="submit" class="btn btn-mini btn-green">Enviar</button>
+      </form>`;
+
+    const rows = [
+      ['XML - Notas Despesas', totalXml, 'Automático', statusForm('xml', statusMes.status_xml), `<a class="btn btn-mini btn-green" href="/espaco-contador/download/xml?mes=${mes}">⬇ Baixar XML em massa</a>`, 'Registro última data e hora baixado'],
+      ['PDF - Notas Despesas', totalPdf, 'Automático', statusForm('pdf', statusMes.status_pdf), `<a class="btn btn-mini btn-green" href="/espaco-contador/download/pdf?mes=${mes}">⬇ Baixar PDF em massa</a>`, 'Registro última data e hora baixado'],
+      ['CTEs Fretes Marketplaces', countExtras('cte'), uploadForm('CTEs Fretes Marketplaces'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
+      ['CMV - Custo Mercadoria Vendida', countExtras('cmv'), uploadForm('CMV - Custo Mercadoria Vendida'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
+      ['Extratos Bancários', countExtras('extrato'), uploadForm('Extratos Bancários'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado'],
+      ['Lista das despesas do Mês', countExtras('lista'), uploadForm('Lista das despesas do Mês'), statusForm('extras', statusMes.status_extras), 'Botão STATUS: Baixar ou Baixado', 'Registro última data e hora baixado']
+    ];
+
+    const linhasTabelaHtml = rows.map((r, idx) => `
+      <tr>
+        <td class="tipo-cell"><strong>${escapeHtml(r[0])}</strong></td>
+        <td class="center-cell"><span class="qtd-pill">${r[1]}</span></td>
+        <td class="center-cell">${r[2]}</td>
+        <td class="center-cell">${r[3]}</td>
+        <td class="center-cell">${r[4]}</td>
+        <td class="center-cell muted-cell">${r[5]}</td>
+      </tr>`).join('');
 
     res.send(`
       <!DOCTYPE html>
@@ -13643,89 +13674,113 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         <title>Espaço do Contador</title>
         <style>
           * { box-sizing: border-box; }
-          :root { --dm-green:#00B050; --dm-green-dark:#009640; --dm-green-soft:#E8F7EE; --dm-text:#172033; --dm-muted:#64748b; --dm-card:rgba(255,255,255,.88); --dm-shadow:0 22px 55px rgba(15,23,42,.09); --dm-shadow-soft:0 12px 28px rgba(15,23,42,.06); }
-          body { margin:0; min-height:100vh; font-family:Arial,Helvetica,sans-serif; color:var(--dm-text); background: radial-gradient(circle at 0% 0%, rgba(0,176,80,.55) 0%, rgba(178,232,199,.42) 18%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.75) 31%, transparent 56%), linear-gradient(135deg,#E8F7EE 0%,#f7f9fc 42%,#eef3f8 100%); }
-          .contador-shell { width:min(1560px,calc(100% - 64px)); margin:28px auto 34px; }
-          .contador-hero,.control-panel,.operation-card,.upload-center,.extras-panel,.status-summary { background:var(--dm-card); border:1px solid rgba(255,255,255,.78); border-radius:24px; box-shadow:var(--dm-shadow); backdrop-filter:blur(14px); }
-          .contador-hero { padding:30px; margin-bottom:22px; }
-          .hero-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:24px; }
-          .hero-title h1 { margin:0 0 10px; font-size:clamp(26px,2vw,36px); line-height:1.05; letter-spacing:-.7px; color:#101828; }
-          .hero-title p { margin:0; max-width:760px; color:#52627a; font-size:15px; font-weight:600; }
-          .hero-badge { min-width:160px; border-radius:999px; padding:10px 16px; text-align:center; background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:900; font-size:12px; box-shadow:var(--dm-shadow-soft); }
-          .control-panel { padding:18px; display:grid; grid-template-columns:minmax(260px,360px) auto auto 1fr; align-items:end; gap:12px; box-shadow:var(--dm-shadow-soft); }
-          .field-group label { display:block; margin-bottom:7px; color:#344054; font-size:13px; font-weight:900; }
-          .field-group select,.field-group input[type='text'],.field-group input[type='file'] { width:100%; min-height:48px; border:1px solid #dce3ec; border-radius:14px; padding:0 16px; background:rgba(255,255,255,.94); color:#172033; outline:none; font-size:14px; font-weight:700; }
-          .btn { min-height:48px; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:0 20px; border-radius:14px; text-decoration:none; border:1px solid transparent; font-size:14px; font-weight:900; cursor:pointer; white-space:nowrap; transition:transform .14s ease, filter .14s ease, box-shadow .14s ease; }
-          .btn:hover { transform:translateY(-1px); filter:brightness(1.03); }
-          .btn-primary,.btn-green { background:linear-gradient(135deg,var(--dm-green),var(--dm-green-dark)); color:#fff; border-color:rgba(0,176,80,.88); box-shadow:0 14px 26px rgba(0,176,80,.20); }
-          .btn-neutral { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border-color:#e0e6ef; box-shadow:0 10px 20px rgba(15,23,42,.06); }
-          .btn-download { width:100%; min-height:54px; font-size:15px; }
-          .dashboard-grid { display:grid; grid-template-columns:1fr 1fr 360px; gap:18px; margin-bottom:20px; }
-          .operation-card { position:relative; overflow:hidden; min-height:300px; padding:24px; }
-          .operation-card::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 90% 10%,rgba(0,176,80,.10),transparent 34%); pointer-events:none; }
-          .card-top,.metric-row,.card-actions { position:relative; z-index:1; }
-          .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
-          .card-icon { width:56px; height:56px; border-radius:18px; display:grid; place-items:center; font-size:26px; background:#E8F7EE; color:var(--dm-green-dark); box-shadow:inset 0 1px 0 rgba(255,255,255,.7); margin-bottom:14px; }
-          .card-title h2 { margin:0 0 7px; font-size:24px; letter-spacing:-.45px; color:#101828; }
-          .card-title p { margin:0; color:#64748b; font-size:13px; font-weight:700; }
-          .status-form-inline { margin:0; padding:0; background:transparent; border:none; box-shadow:none; }
-          .status-select { width:230px; min-height:40px; padding:0 16px; border-radius:999px; font-size:13px; font-weight:900; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none; background-image:none; outline:none; }
-          .status-aguardar { background:#eef2f7!important; color:#374151!important; border:1px solid #cbd5e1!important; }
-          .status-andamento { background:#fef3c7!important; color:#92400e!important; border:1px solid #fcd34d!important; }
-          .status-liberado { background:#dcfce7!important; color:#166534!important; border:1px solid #86efac!important; }
-          .metric-row { display:grid; grid-template-columns:110px 1fr; gap:18px; align-items:center; margin:22px 0 24px; }
-          .metric-number { font-size:56px; line-height:.9; font-weight:900; letter-spacing:-1px; color:#101828; }
-          .progress-wrap small { display:block; color:#64748b; font-size:12px; font-weight:800; margin-bottom:8px; }
-          .progress-track { height:12px; border-radius:999px; background:#e9edf4; overflow:hidden; }
-          .progress-fill { height:100%; min-width:8%; border-radius:999px; background:linear-gradient(90deg,var(--dm-green),var(--dm-green-dark)); }
-          .status-summary { padding:22px; min-height:300px; }
-          .status-summary h2 { margin:0 0 16px; color:#101828; font-size:20px; letter-spacing:-.35px; }
-          .summary-list { display:grid; gap:12px; }
-          .summary-item { display:grid; grid-template-columns:44px 1fr auto; align-items:center; gap:12px; padding:12px; border-radius:16px; background:rgba(248,250,252,.84); border:1px solid #edf1f6; }
-          .summary-ico { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; background:#E8F7EE; font-size:21px; }
-          .summary-item strong { display:block; color:#101828; font-size:14px; margin-bottom:3px; }
-          .summary-item span { display:block; color:#64748b; font-size:11px; font-weight:700; }
-          .summary-value { color:#101828; font-size:23px; font-weight:900; }
-          .upload-center { padding:24px; margin-bottom:20px; }
-          .upload-head { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
-          .upload-head h2,.extras-panel h2 { margin:0 0 6px; color:#101828; font-size:24px; letter-spacing:-.45px; }
-          .upload-head p,.extras-panel p { margin:0; color:#64748b; font-size:13px; font-weight:700; }
-          .upload-form-premium { display:grid; grid-template-columns:1.15fr 1fr auto; gap:14px; align-items:end; }
-          .file-zone { min-height:48px; display:flex; align-items:center; gap:10px; padding:0 14px; border:1px dashed #b7c4d6; border-radius:14px; background:rgba(248,250,252,.86); }
-          .file-zone input[type='file'] { border:none!important; background:transparent!important; padding:0!important; min-height:auto; }
-          .extras-panel { padding:24px; }
-          .extras-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
-          .extra-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-          .extra-item { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px; border-radius:16px; background:rgba(248,250,252,.82); border:1px solid #edf1f6; }
-          .extra-title { color:#101828; font-size:15px; font-weight:900; margin-bottom:4px; }
+          :root { --green:#00B050; --green-dark:#009640; --soft:#E8F7EE; --text:#172033; --muted:#64748b; --shadow:0 18px 45px rgba(15,23,42,.08); }
+          body { margin:0; min-height:100vh; font-family:Arial, Helvetica, sans-serif; color:var(--text); background:radial-gradient(circle at 0% 0%, rgba(0,176,80,.50) 0%, rgba(178,232,199,.38) 18%, transparent 34%), radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.75) 31%, transparent 56%), linear-gradient(135deg,#E8F7EE 0%,#f7f9fc 42%,#eef3f8 100%); }
+          .container { width:min(1760px, calc(100% - 56px)); margin:24px auto 34px; }
+          .hero { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:26px; box-shadow:var(--shadow); backdrop-filter:blur(14px); padding:28px 34px 30px; margin-bottom:10px; }
+          .hero-top { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:26px; }
+          .hero h1 { margin:0 0 8px; font-size:clamp(30px,2.1vw,40px); line-height:1; letter-spacing:-.9px; color:#101828; }
+          .hero p { margin:0; color:#52627a; font-size:15px; font-weight:700; }
+          .hero-badge { min-width:230px; height:64px; border-radius:999px; background:linear-gradient(180deg,#fff,#f8fafc); box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 18px 35px rgba(15,23,42,.04); }
+          .filter-box { display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; background:rgba(255,255,255,.92); border:1px solid rgba(226,232,240,.9); border-radius:20px; padding:20px 22px; box-shadow:0 18px 45px rgba(15,23,42,.05); }
+          .filter-group { min-width:330px; }
+          label { display:block; margin-bottom:8px; font-size:13px; font-weight:900; color:#334155; }
+          select, input[type="text"] { width:100%; height:48px; border-radius:12px; border:1px solid #dce3ec; background:rgba(255,255,255,.95); color:#172033; font-size:14px; font-weight:700; padding:0 16px; outline:none; }
+          select:focus, input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(0,176,80,.14); }
+          .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 22px; border-radius:13px; border:1px solid transparent; text-decoration:none; font-weight:900; font-size:14px; cursor:pointer; white-space:nowrap; }
+          .btn-green { background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; border-color:rgba(0,176,80,.88); box-shadow:0 14px 25px rgba(0,176,80,.18); }
+          .btn-dark { background:linear-gradient(180deg,#f8fafc,#eef2f7); color:#222b3b; border:1px solid #e0e6ef; box-shadow:0 10px 20px rgba(15,23,42,.06); }
+          .btn:hover { transform:translateY(-1px); filter:brightness(1.02); }
+          .btn-mini { min-height:36px; padding:0 14px; border-radius:10px; font-size:12px; }
+          .btn-soft-green { background:#ecfdf5; color:#087a3b; border:1px solid #bbf7d0; box-shadow:none; }
+          .contador-board { background:rgba(255,255,255,.92); border:1px solid rgba(255,255,255,.72); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; }
+          .responsibility-row { display:grid; grid-template-columns:1.15fr 2.45fr 2.45fr; border-top:2px solid #111827; border-bottom:1px solid #111827; }
+          .responsibility-row div { padding:8px 12px; text-align:center; font-size:20px; font-weight:800; color:#111827; background:#dff3d5; }
+          .responsibility-row .empresa { background:#dbeafe; }
+          .table-wrap { width:100%; overflow-x:auto; }
+          .contador-table { width:100%; min-width:1280px; border-collapse:collapse; table-layout:fixed; background:#fff; }
+          .contador-table th { background:#f0fdf4; color:#00A34A; border-bottom:1px solid #111827; border-right:1px solid #e5e7eb; padding:14px 10px; font-size:18px; line-height:1.1; text-align:center; white-space:nowrap; }
+          .contador-table th:nth-child(1), .contador-table td:nth-child(1) { width:310px; }
+          .contador-table th:nth-child(2), .contador-table td:nth-child(2) { width:200px; }
+          .contador-table th:nth-child(3), .contador-table td:nth-child(3) { width:260px; }
+          .contador-table th:nth-child(4), .contador-table td:nth-child(4) { width:300px; }
+          .contador-table th:nth-child(5), .contador-table td:nth-child(5) { width:285px; }
+          .contador-table th:nth-child(6), .contador-table td:nth-child(6) { width:270px; }
+          .contador-table td { border-bottom:1px solid #cfd8e3; border-right:1px solid #e5e7eb; padding:12px 10px; vertical-align:middle; font-size:13px; color:#111827; }
+          .tipo-cell { background:#dcf4d2; color:#17324d; }
+          .tipo-cell strong { font-size:22px; line-height:1.12; font-weight:900; }
+          .center-cell { text-align:center; }
+          .muted-cell { color:#111827; font-weight:700; }
+          .qtd-pill { display:inline-flex; align-items:center; justify-content:center; min-width:56px; height:36px; border-radius:999px; background:#eef2f7; color:#111827; font-size:20px; font-weight:900; }
+          .status-form-inline { margin:0; padding:0; background:transparent; border:none; box-shadow:none; display:inline-flex; }
+          .status-select { width:245px; height:36px; padding:0 12px; border-radius:999px; font-size:12px; font-weight:900; cursor:pointer; appearance:none; text-align:center; }
+          .status-aguardar { background-color:#e5e7eb !important; color:#374151 !important; border:1px solid #cbd5e1 !important; }
+          .status-andamento { background-color:#fef3c7 !important; color:#92400e !important; border:1px solid #fcd34d !important; }
+          .status-liberado { background-color:#dcfce7 !important; color:#166534 !important; border:1px solid #86efac !important; }
+          .inline-upload-form { display:flex; align-items:center; justify-content:center; gap:8px; margin:0; padding:0; background:transparent; border:none; box-shadow:none; }
+          .upload-chip { margin:0; width:165px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px dashed #9ca3af; background:#f8fafc; color:#334155; font-size:12px; font-weight:900; cursor:pointer; overflow:hidden; padding:0 10px; }
+          .upload-chip input { display:none; }
+          .upload-name { max-width:145px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .extra-section { background:rgba(255,255,255,.88); border:1px solid rgba(255,255,255,.72); border-radius:22px; box-shadow:var(--shadow); padding:22px 24px; margin-top:18px; }
+          .extra-section h2 { margin:0 0 6px; font-size:24px; color:#101828; }
+          .card-sub { color:#52627a; font-size:14px; font-weight:700; margin-bottom:16px; }
+          .extra-list { display:flex; flex-direction:column; gap:10px; }
+          .extra-item { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 14px; border-radius:14px; background:#f8fafc; border:1px solid #e5e7eb; }
+          .extra-title { font-weight:900; color:#0f172a; margin-bottom:3px; }
           .extra-sub { color:#64748b; font-size:12px; font-weight:700; }
-          .empty-state { color:#94a3b8; font-size:14px; padding:18px; font-weight:800; border-radius:16px; background:rgba(248,250,252,.7); border:1px dashed #d5dce8; }
-          @media (max-width:1180px) { .dashboard-grid{grid-template-columns:1fr;} .control-panel{grid-template-columns:1fr;} .upload-form-premium{grid-template-columns:1fr;} .extra-list{grid-template-columns:1fr;} }
-          @media (max-width:720px) { .contador-shell{width:min(100% - 24px,680px); margin-top:16px;} .contador-hero,.operation-card,.upload-center,.extras-panel{padding:18px;} .hero-header,.upload-head,.extras-head,.card-top{flex-direction:column; align-items:flex-start;} .metric-row{grid-template-columns:1fr;} .status-select{width:100%;} .btn{width:100%;} }
+          .empty-state { color:#94a3b8; font-size:14px; padding:18px 0; font-weight:800; }
+          @media (max-width:1100px) { .container{width:min(100% - 28px,1100px);} .responsibility-row{grid-template-columns:1fr;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         </style>
       </head>
       <body>
-        <main class="contador-shell">
-          <section class="contador-hero">
-            <div class="hero-header">
-              <div class="hero-title"><h1>👨‍💼 Espaço do Contador</h1><p>Baixe em massa os arquivos do mês e disponibilize pacotes extras para o fechamento contábil.</p></div>
-              <div class="hero-badge">Central de fechamento</div>
+        <div class="container">
+          <section class="hero">
+            <div class="hero-top">
+              <div>
+                <h1>👨‍💼 Espaço do Contador</h1>
+                <p>Baixe em massa os arquivos do mês e disponibilize pacotes extras para o fechamento contábil.</p>
+              </div>
+              <div class="hero-badge"></div>
             </div>
-            <form method="GET" action="/espaco-contador" class="control-panel">
-              <div class="field-group"><label for="mes">Escolha o mês dos arquivos</label><select id="mes" name="mes">${optionsMes}</select></div>
-              <button type="submit" class="btn btn-primary">Aplicar mês</button>
-              <a href="/dashboard" class="btn btn-neutral">Voltar ao Painel</a>
-              <div></div>
+            <form method="GET" action="/espaco-contador" class="filter-box">
+              <div class="filter-group">
+                <label for="mes">Escolha o mês dos arquivos</label>
+                <select id="mes" name="mes">${optionsMes}</select>
+              </div>
+              <button type="submit" class="btn btn-green">Aplicar mês</button>
+              <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
             </form>
           </section>
-          <section class="dashboard-grid">
-            <div class="operation-card"><div class="card-top"><div class="card-title"><div class="card-icon">🧾</div><h2>XML das Notas</h2><p>Arquivos XML disponíveis para o mês selecionado.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="xml"><select name="status" class="status-select ${statusMes.status_xml === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_xml === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_xml)}</select></form></div><div class="metric-row"><div class="metric-number">${totalXml}</div><div class="progress-wrap"><small>${totalXml} arquivo(s) XML no mês selecionado</small><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(8, Number(totalXml || 0) * 12))}%;"></div></div></div></div><div class="card-actions"><a class="btn btn-primary btn-download" href="/espaco-contador/download/xml?mes=${mes}">⬇ Baixar XML em massa</a></div></div>
-            <div class="operation-card"><div class="card-top"><div class="card-title"><div class="card-icon">📄</div><h2>PDF das Notas</h2><p>Arquivos PDF disponíveis para o mês selecionado.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="pdf"><select name="status" class="status-select ${statusMes.status_pdf === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_pdf === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_pdf)}</select></form></div><div class="metric-row"><div class="metric-number">${totalPdf}</div><div class="progress-wrap"><small>${totalPdf} arquivo(s) PDF no mês selecionado</small><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, Math.max(8, Number(totalPdf || 0) * 12))}%;"></div></div></div></div><div class="card-actions"><a class="btn btn-primary btn-download" href="/espaco-contador/download/pdf?mes=${mes}">⬇ Baixar PDF em massa</a></div></div>
-            <aside class="status-summary"><h2>Resumo do mês</h2><div class="summary-list"><div class="summary-item"><div class="summary-ico">🧾</div><div><strong>XMLs</strong><span>${statusMes.status_xml}</span></div><div class="summary-value">${totalXml}</div></div><div class="summary-item"><div class="summary-ico">📄</div><div><strong>PDFs</strong><span>${statusMes.status_pdf}</span></div><div class="summary-value">${totalPdf}</div></div><div class="summary-item"><div class="summary-ico">📦</div><div><strong>Extras</strong><span>${statusMes.status_extras}</span></div><div class="summary-value">${arquivosExtras.length}</div></div></div></aside>
+
+          <section class="contador-board">
+            <div class="responsibility-row">
+              <div></div>
+              <div class="empresa">Responsabilidade da empresa</div>
+              <div>Responsabilidade do Contador</div>
+            </div>
+            <div class="table-wrap">
+              <table class="contador-table">
+                <thead>
+                  <tr>
+                    <th>Tipo de arquivo</th>
+                    <th>Qtde Arquivos</th>
+                    <th>Enviar Arquivo</th>
+                    <th>Arquivos prontos</th>
+                    <th>Baixar Arquivos em massa</th>
+                    <th>Data Download Contador</th>
+                  </tr>
+                </thead>
+                <tbody>${linhasTabelaHtml}</tbody>
+              </table>
+            </div>
           </section>
-          <section class="upload-center"><div class="upload-head"><div><h2>Enviar Arquivos Extras</h2><p>Suba pacotes zipados com extratos, relatórios, CTEs, planilhas e materiais complementares do fechamento.</p></div></div><form method="POST" action="/espaco-contador/upload-extra" enctype="multipart/form-data" class="upload-form-premium"><div class="field-group"><label for="titulo">Nome do pacote</label><input id="titulo" name="titulo" placeholder="Ex.: Extratos Bancários" required /></div><div class="field-group"><label for="arquivo_zip">Arquivo zipado</label><div class="file-zone"><span>📁</span><input id="arquivo_zip" type="file" name="arquivo_zip" accept=".zip" required /></div></div><div><input type="hidden" name="mes_ref" value="${mes}" /><button type="submit" class="btn btn-primary">📦 Enviar pacote</button></div></form></section>
-          <section class="extras-panel"><div class="extras-head"><div><h2>Arquivos Extras do Mês</h2><p>Pacotes adicionais disponíveis para o contador baixar.</p></div><form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline"><input type="hidden" name="mes_ref" value="${mes}"><input type="hidden" name="tipo_status" value="extras"><select name="status" class="status-select ${statusMes.status_extras === 'Liberado para baixar' ? 'status-liberado' : statusMes.status_extras === 'Em andamento' ? 'status-andamento' : 'status-aguardar'}" onchange="this.form.submit()">${renderStatusOptions(statusMes.status_extras)}</select></form></div><div class="extra-list">${extrasHtml}</div></section>
-        </main>
+
+          <section class="extra-section">
+            <h2>Arquivos Extras do Mês</h2>
+            <div class="card-sub">Pacotes adicionais enviados para ${escapeHtml(labelMes)}.</div>
+            <div class="extra-list">${extrasHtml}</div>
+          </section>
+        </div>
       </body>
       </html>
     `);
@@ -13733,6 +13788,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     res.send(`<pre>Erro ao abrir Espaço do Contador:\n${error.message}</pre>`);
   }
 });
+
 
 router.post('/espaco-contador/salvar-status', async (req, res) => {
   try {
