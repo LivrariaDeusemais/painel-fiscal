@@ -744,7 +744,7 @@ function renderGlobalHeader(req, config = {}) {
   const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - Deus é Mais');
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da Deus é Mais.');
   const isAdmin = usuario.perfil === 'ADMIN';
-  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos'];
+  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador'];
   const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
   const menuBase = [
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
@@ -1855,9 +1855,9 @@ body {
 
         <nav class="nav-panel" aria-label="Menu principal">
           <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Lançamentos Mensais</a>
-          <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Ver Lançamentos</a>
-          <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
+          <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Ver Documentos</a>
           <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Documentos Fiscais</a>
+          <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
         </nav>
