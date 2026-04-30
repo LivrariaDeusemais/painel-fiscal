@@ -13595,7 +13595,7 @@ async function ensureContadorTables() {
 }
 
 function normalizarStatusDownload(value) {
-  return String(value || '').trim().toLowerCase() === 'baixado' ? 'Baixado' : 'Baixar';
+  return String(value || '').trim().toLowerCase() === 'baixado' ? 'Baixado' : 'Não Baixado';
 }
 
 function formatDateTimeBR(value) {
