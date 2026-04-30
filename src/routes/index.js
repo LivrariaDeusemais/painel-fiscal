@@ -745,7 +745,7 @@ function renderGlobalHeader(req, config = {}) {
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da Deus é Mais.');
   const isAdmin = usuario.perfil === 'ADMIN';
   const menuBase = [
-    { key: 'novo', href: '/novo', label: '+ Novo lançamento', primary: true },
+    { key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true },
     { key: 'dashboard', href: '/dashboard', label: 'Voltar ao Painel' },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Lançamentos Mensais' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Lista de Lançamentos' },
@@ -758,6 +758,7 @@ function renderGlobalHeader(req, config = {}) {
     .filter(item => item.key !== paginaAtual)
     .map(item => `<a class="dm-menu-btn ${item.primary ? 'dm-menu-primary' : ''}" href="${item.href}">${escapeHtmlGlobal(item.label)}</a>`)
     .join('');
+  const extraActionsHtml = String(config.extraActions || '').trim();
   return `
     <style>
       .dm-global-header-shell{width:min(1560px,calc(100% - 48px));margin:18px auto 14px;font-family:Arial,Helvetica,sans-serif;color:#172033;}
@@ -775,8 +776,10 @@ function renderGlobalHeader(req, config = {}) {
       .dm-global-online{position:absolute;right:3px;bottom:5px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:3px solid #fff;}
       .dm-global-logout{height:44px;padding:0 16px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;font-weight:900;box-shadow:0 10px 20px rgba(15,23,42,.06);white-space:nowrap;}
       .dm-global-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:10px 14px;margin-top:12px;}
-      .dm-menu-btn{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;box-shadow:0 8px 18px rgba(15,23,42,.05);white-space:nowrap;}
+      .dm-menu-btn,.dm-global-nav button{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640 !important;border:1px solid #d7eadf;box-shadow:0 8px 18px rgba(15,23,42,.05);white-space:nowrap;cursor:pointer;}
       .dm-menu-primary{background:linear-gradient(135deg,#00B050,#009640) !important;color:#fff !important;border-color:rgba(0,176,80,.88) !important;box-shadow:0 12px 22px rgba(0,176,80,.18) !important;}
+      .dm-menu-extra-form{display:inline-flex !important;align-items:center !important;margin:0 !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
+      .dm-menu-extra-separator{width:1px;height:26px;background:#dbe7df;margin:0 2px;}
       .dm-menu-btn:hover,.dm-global-logout:hover{transform:translateY(-1px);filter:brightness(1.03);}
       body.dm-global-page .container{margin-top:14px !important;}
       body.dm-global-page .container > .card > h1:first-child{display:none !important;}
@@ -795,7 +798,7 @@ function renderGlobalHeader(req, config = {}) {
           <a class="dm-global-logout" href="/logout">Sair</a>
         </div>
       </div>
-      <nav class="dm-global-nav">${menuHtml}</nav>
+      <nav class="dm-global-nav">${menuHtml}${extraActionsHtml ? `<span class="dm-menu-extra-separator"></span>${extraActionsHtml}` : ''}</nav>
     </header>`;
 }
 
@@ -9053,20 +9056,19 @@ body {
 </style>
       </head>
       <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Lista de Lançamentos', subtitulo: 'Consulte, filtre, edite e acompanhe todos os lançamentos cadastrados.', paginaAtual: 'lancamentos' })}
+        ${renderGlobalHeader(req, {
+          titulo: 'Lista de Lançamentos',
+          subtitulo: 'Consulte, filtre, edite e acompanhe todos os lançamentos cadastrados.',
+          paginaAtual: 'lancamentos',
+          extraActions: `
+            <a class="dm-menu-btn" href="/exportar-excel?fornecedor=${encodeURIComponent(fornecedor)}&categoria_id=${encodeURIComponent(categoria_id)}&tipo_pagamento=${encodeURIComponent(tipo_pagamento)}&cnpj_cpf=${encodeURIComponent(cnpj_cpf)}&codigo_pagamento=${encodeURIComponent(codigo_pagamento)}&numero_documento=${encodeURIComponent(numero_documento)}&data_inicio=${encodeURIComponent(data_inicio)}&data_fim=${encodeURIComponent(data_fim)}">Exportar Excel</a>
+            <button type="button" class="dm-menu-btn" onclick="togglePainelColunas()">Colunas</button>
+          `
+        })}
         <div class="ml-skeleton-overlay" id="mlSkeletonOverlay" aria-hidden="true"><div class="ml-skeleton-card"><div class="ml-skeleton-title"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div></div></div>
         <div class="container">
           <div class="card">
             <h1>📋 Lista de lançamentos</h1>
-
-            <div class="actions">
-              <a class="btn btn-primary" href="/novo">+ Novo lançamento</a>
-              <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
-              <a class="btn btn-dark" href="/documentos">Documentos Fiscais</a>
-<a class="btn btn-dark" href="/rotina-despesas">📋 Levantamento de Despesas Mensais</a>
-              <a class="btn btn-dark" href="/exportar-excel?fornecedor=${encodeURIComponent(fornecedor)}&categoria_id=${encodeURIComponent(categoria_id)}&tipo_pagamento=${encodeURIComponent(tipo_pagamento)}&cnpj_cpf=${encodeURIComponent(cnpj_cpf)}&codigo_pagamento=${encodeURIComponent(codigo_pagamento)}&numero_documento=${encodeURIComponent(numero_documento)}&data_inicio=${encodeURIComponent(data_inicio)}&data_fim=${encodeURIComponent(data_fim)}">Exportar Excel</a>
-              <button type="button" class="btn btn-dark" onclick="togglePainelColunas()">Colunas</button>
-            </div>
 
             <div id="painel-colunas" class="painel-colunas" style="display:none;">
               <label><input type="checkbox" data-col="col-cnpj"> CNPJ/CPF</label>
@@ -12344,29 +12346,25 @@ tbody td {
 /* ===== FIM AJUSTE SENIOR ROTINA ===== */
 </style>
     </head>
-    <body>
+    <body class="dm-global-page">
+      ${renderGlobalHeader(req, {
+        titulo: 'Levantamento de Despesas Mensais',
+        subtitulo: 'Controle operacional das despesas mensais, status, vencimentos e competência.',
+        paginaAtual: 'rotina-despesas',
+        primaryHref: '/rotina-despesas/novo',
+        primaryLabel: '+ Novo item',
+        extraActions: `
+          <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
+            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Mudar todos para PENDENTE</button>
+          </form>
+          <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
+        `
+      })}
       <div class="container">
         <div class="card">
           <h1>📋 Levantamento de Despesas Mensais</h1>
 
           <div class="top-bar">
-            <div class="actions">
-              <a class="btn btn-primary" href="/rotina-despesas/novo">+ Novo item</a>
-              <a class="btn btn-dark" href="/lancamentos">📊 Lista de lançamentos</a>
-              <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
-
-              <form method="POST" action="/rotina-despesas/reset-status" style="display:inline;">
-                <button
-                  type="submit"
-                  class="btn btn-dark"
-                  onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');"
-                >
-                  🔄 Mudar todos para PENDENTE
-                </button>
-              </form>
-              <button type="button" class="btn btn-dark" onclick="togglePainelColunasRotina()">Colunas</button>
-            </div>
-
             <div id="painel-colunas-rotina" class="painel-colunas" style="display:none;">
               <label><input type="checkbox" data-col="col-rot-cnpj"> CNPJ/CPF</label>
               <label><input type="checkbox" data-col="col-rot-fato"> Fato Gerador</label>
