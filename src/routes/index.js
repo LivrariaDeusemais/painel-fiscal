@@ -750,7 +750,7 @@ function renderGlobalHeader(req, config = {}) {
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Lançamentos Mensais' },
-    { key: 'lancamentos', href: '/lancamentos', label: 'Lista de Lançamentos' },
+    { key: 'lancamentos', href: '/lancamentos', label: 'Despesas Mensais' },
     { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
@@ -8234,7 +8234,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Lista de lançamentos</title>
+        <title>Despesas Mensais</title>
         <style>
           * { box-sizing: border-box; }
           body {
@@ -8857,7 +8857,7 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-/* ===== TABELA NÍVEL MERCADO LIVRE - LISTA DE LANÇAMENTOS ===== */
+/* ===== TABELA NÍVEL MERCADO LIVRE - DESPESAS MENSAIS ===== */
 .ml-table-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 8px; color:#64748b; font-size:12px; font-weight:800; }
 .ml-table-shell { position:relative; width:100%; max-height:calc(100vh - 360px); min-height:320px; overflow:auto; border:1px solid rgba(226,232,240,.92); border-radius:16px; background:rgba(255,255,255,.88); box-shadow:inset 0 1px 0 rgba(255,255,255,.75); }
 .ml-table { width:100%; min-width:1280px; border-collapse:separate !important; border-spacing:0 !important; table-layout:auto; background:transparent !important; border-radius:0 !important; }
@@ -8913,7 +8913,7 @@ body {
 .ml-table thead .sticky-actions { z-index: 1001 !important; }
 /* ===== FIM CORREÇÃO STICKY IGUAL ROTINA ===== */
 
-/* ===== HEADER FIXO REAL - LISTA DE LANÇAMENTOS =====
+/* ===== HEADER FIXO REAL - DESPESAS MENSAIS =====
    Solução sênior: usamos uma cópia fixa do cabeçalho quando a página rola.
    Assim os filtros e o topo sobem normalmente, mas os títulos ficam presos no topo. */
 .ml-table thead th {
@@ -8967,7 +8967,7 @@ body {
       </head>
       <body class="dm-global-page">
         ${renderGlobalHeader(req, {
-          titulo: 'Lista de Lançamentos',
+          titulo: 'Despesas Mensais',
           subtitulo: 'Consulte, filtre, edite e acompanhe todos os lançamentos cadastrados.',
           paginaAtual: 'lancamentos',
           extraActions: `
@@ -8978,7 +8978,7 @@ body {
         <div class="ml-skeleton-overlay" id="mlSkeletonOverlay" aria-hidden="true"><div class="ml-skeleton-card"><div class="ml-skeleton-title"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div></div></div>
         <div class="container">
           <div class="card">
-            <h1>📋 Lista de lançamentos</h1>
+            <h1>📋 Despesas Mensais</h1>
 
             <div id="painel-colunas" class="painel-colunas" style="display:none;">
               <label><input type="checkbox" data-col="col-cnpj"> CNPJ/CPF</label>
