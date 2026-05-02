@@ -6839,6 +6839,135 @@ body {
           }
           .nf-paste-msg.ok { color: #047857; }
           .nf-paste-msg.warn { color: #92400e; }
+
+          /* ===== COPIAR DO PDF - MODAL COM POP-UP FLUTUANTE ===== */
+          .pdf-copy-btn {
+            background: linear-gradient(135deg, #0f766e, #059669) !important;
+            color: #ffffff !important;
+          }
+          .pdf-copy-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(15, 23, 42, 0.88);
+          }
+          .pdf-copy-modal.active { display: block; }
+          .pdf-copy-viewer-wrap {
+            position: absolute;
+            inset: 14px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 22px 60px rgba(0,0,0,.35);
+          }
+          .pdf-copy-viewer {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #ffffff;
+          }
+          .pdf-copy-empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 30px;
+            color: #475569;
+            font-weight: 800;
+            background: #f8fafc;
+          }
+          .pdf-copy-panel {
+            position: absolute;
+            top: 72px;
+            right: 42px;
+            width: min(470px, calc(100vw - 38px));
+            background: rgba(255,255,255,.96);
+            border: 2px solid #00B050;
+            border-radius: 14px;
+            box-shadow: 0 18px 45px rgba(0,0,0,.28);
+            padding: 14px;
+            cursor: default;
+            user-select: none;
+          }
+          .pdf-copy-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            cursor: move;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dbe7df;
+            margin-bottom: 10px;
+          }
+          .pdf-copy-panel-header strong {
+            color: #2f7d20;
+            font-size: 19px;
+          }
+          .pdf-copy-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px !important;
+            padding: 0 !important;
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+            border: 1px solid #fecaca !important;
+            box-shadow: none !important;
+          }
+          .pdf-copy-file-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+          }
+          .pdf-copy-file-row input {
+            width: 100%;
+            font-size: 12px;
+            padding: 9px !important;
+          }
+          .pdf-copy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .pdf-copy-grid .full { grid-column: 1 / -1; }
+          .pdf-copy-panel label {
+            margin: 0 0 4px;
+            font-size: 12px;
+            color: #0f172a;
+          }
+          .pdf-copy-panel input,
+          .pdf-copy-panel select {
+            padding: 9px 10px !important;
+            font-size: 13px !important;
+            border-radius: 8px !important;
+          }
+          .pdf-copy-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 12px;
+            flex-wrap: wrap;
+          }
+          .pdf-copy-actions button {
+            min-height: 38px !important;
+            padding: 0 14px !important;
+          }
+          .pdf-copy-help {
+            margin: 8px 0 0;
+            color: #64748b;
+            font-size: 11px;
+            line-height: 1.35;
+            user-select: text;
+          }
+          @media(max-width: 760px) {
+            .pdf-copy-viewer-wrap { inset: 8px; }
+            .pdf-copy-panel { top: 58px; left: 14px; right: auto; width: calc(100vw - 28px); }
+            .pdf-copy-grid { grid-template-columns: 1fr; }
+          }
+
 </style>
       </head>
       <body class="dm-global-page">
@@ -6855,12 +6984,13 @@ body {
               <textarea id="texto_nf_colado" placeholder="Cole aqui o texto copiado da NF..."></textarea>
               <div class="nf-paste-actions">
                 <button type="button" onclick="preencherPorTextoNF()">Preencher automaticamente</button>
+                <button type="button" class="pdf-copy-btn" onclick="abrirCopiarDoPDF()">📄 Copiar do PDF</button>
                 <button type="button" class="btn-secondary" onclick="limparTextoNF()">Limpar texto</button>
                 <span id="nf_paste_msg" class="nf-paste-msg"></span>
               </div>
             </div>
 
-            <form method="POST" action="/novo" enctype="multipart/form-data">
+            <form id="novoLancamentoForm" method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
 
               <div class="grid">
@@ -6950,8 +7080,194 @@ body {
             </form>
           </div>
         </div>
+
+        <div id="pdfCopyModal" class="pdf-copy-modal" aria-hidden="true">
+          <div class="pdf-copy-viewer-wrap">
+            <iframe id="pdfCopyViewer" class="pdf-copy-viewer" title="Visualizador do PDF"></iframe>
+            <div id="pdfCopyEmpty" class="pdf-copy-empty">
+              <div>
+                <div style="font-size:22px;margin-bottom:8px;">📄 Selecione o PDF</div>
+                <div>Use o botão “Escolher PDF” no quadro flutuante para abrir a nota em tela cheia.</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="pdfCopyPanel" class="pdf-copy-panel">
+            <div id="pdfCopyDragHandle" class="pdf-copy-panel-header">
+              <strong>Preencher</strong>
+              <button type="button" class="pdf-copy-close" onclick="fecharCopiarDoPDF()" title="Fechar">×</button>
+            </div>
+
+            <div class="pdf-copy-file-row">
+              <input id="pdfCopyFile" type="file" accept="application/pdf,.pdf" onchange="carregarPDFManual(event)" />
+            </div>
+
+            <div class="pdf-copy-grid">
+              <div>
+                <label for="pdf_tipo_documento">Tipo do documento</label>
+                <select id="pdf_tipo_documento">
+                  ${renderTipoDocumentoOptions()}
+                </select>
+              </div>
+              <div>
+                <label for="pdf_numero_documento">Número do documento</label>
+                <input id="pdf_numero_documento" placeholder="Ex.: NF12341" />
+              </div>
+              <div>
+                <label for="pdf_data_despesa">Dt Emissão</label>
+                <input id="pdf_data_despesa" type="date" />
+              </div>
+              <div>
+                <label for="pdf_valor">Valor</label>
+                <input id="pdf_valor" type="text" inputmode="decimal" placeholder="R$ 0,00" />
+              </div>
+              <div>
+                <label for="pdf_cnpj_cpf">CNPJ/CPF</label>
+                <input id="pdf_cnpj_cpf" placeholder="00.000.000/0000-00" />
+              </div>
+              <div>
+                <label for="pdf_fornecedor">Razão Social</label>
+                <input id="pdf_fornecedor" placeholder="Nome/Razão Social" />
+              </div>
+            </div>
+
+            <p class="pdf-copy-help">Arraste este quadro pela barra “Preencher”. Ao salvar, os dados serão enviados para os campos da tela Novo Lançamento.</p>
+
+            <div class="pdf-copy-actions">
+              <button type="button" class="btn-secondary" onclick="limparCamposCopiarDoPDF()">Limpar</button>
+              <button type="button" onclick="salvarCopiarDoPDF()">Salvar</button>
+            </div>
+          </div>
+        </div>
+
       
         <script>
+          var pdfCopyObjectUrl = null;
+
+          function abrirCopiarDoPDF() {
+            var modal = document.getElementById('pdfCopyModal');
+            if (!modal) return;
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            carregarCamposAtuaisNoPopupPDF();
+          }
+
+          function fecharCopiarDoPDF() {
+            var modal = document.getElementById('pdfCopyModal');
+            if (!modal) return;
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+          }
+
+          function carregarPDFManual(event) {
+            var file = event && event.target && event.target.files ? event.target.files[0] : null;
+            if (!file) return;
+            if (file.type && file.type !== 'application/pdf') {
+              alert('Selecione um arquivo PDF.');
+              event.target.value = '';
+              return;
+            }
+            if (pdfCopyObjectUrl) URL.revokeObjectURL(pdfCopyObjectUrl);
+            pdfCopyObjectUrl = URL.createObjectURL(file);
+            document.getElementById('pdfCopyViewer').src = pdfCopyObjectUrl;
+            document.getElementById('pdfCopyEmpty').style.display = 'none';
+          }
+
+          function getCampoNovoLancamento(id) {
+            return document.getElementById(id) || document.querySelector('[name="' + id + '"]');
+          }
+
+          function setValorCampoNovoLancamento(id, valor) {
+            var campo = getCampoNovoLancamento(id);
+            if (!campo) return;
+            campo.value = valor || '';
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+            campo.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+
+          function carregarCamposAtuaisNoPopupPDF() {
+            var pares = [
+              ['tipo_documento', 'pdf_tipo_documento'],
+              ['numero_documento', 'pdf_numero_documento'],
+              ['data_despesa', 'pdf_data_despesa'],
+              ['valor', 'pdf_valor'],
+              ['cnpj_cpf', 'pdf_cnpj_cpf'],
+              ['fornecedor', 'pdf_fornecedor']
+            ];
+            pares.forEach(function(par) {
+              var origem = getCampoNovoLancamento(par[0]);
+              var destino = document.getElementById(par[1]);
+              if (origem && destino && origem.value && !destino.value) destino.value = origem.value;
+            });
+          }
+
+          function salvarCopiarDoPDF() {
+            setValorCampoNovoLancamento('tipo_documento', document.getElementById('pdf_tipo_documento').value);
+            setValorCampoNovoLancamento('numero_documento', document.getElementById('pdf_numero_documento').value);
+            setValorCampoNovoLancamento('data_despesa', document.getElementById('pdf_data_despesa').value);
+            setValorCampoNovoLancamento('valor', document.getElementById('pdf_valor').value);
+            setValorCampoNovoLancamento('cnpj_cpf', document.getElementById('pdf_cnpj_cpf').value);
+            setValorCampoNovoLancamento('fornecedor', document.getElementById('pdf_fornecedor').value);
+            fecharCopiarDoPDF();
+            var msg = document.getElementById('nf_paste_msg');
+            if (msg) {
+              msg.className = 'nf-paste-msg ok';
+              msg.textContent = 'Dados do PDF enviados para o lançamento.';
+            }
+          }
+
+          function limparCamposCopiarDoPDF() {
+            ['pdf_tipo_documento','pdf_numero_documento','pdf_data_despesa','pdf_valor','pdf_cnpj_cpf','pdf_fornecedor'].forEach(function(id) {
+              var el = document.getElementById(id);
+              if (el) el.value = '';
+            });
+          }
+
+          (function habilitarArrastePopupPDF() {
+            var panel = document.getElementById('pdfCopyPanel');
+            var handle = document.getElementById('pdfCopyDragHandle');
+            if (!panel || !handle) return;
+
+            var arrastando = false;
+            var offsetX = 0;
+            var offsetY = 0;
+
+            function iniciar(e) {
+              var evento = e.touches ? e.touches[0] : e;
+              arrastando = true;
+              var rect = panel.getBoundingClientRect();
+              offsetX = evento.clientX - rect.left;
+              offsetY = evento.clientY - rect.top;
+              panel.style.left = rect.left + 'px';
+              panel.style.top = rect.top + 'px';
+              panel.style.right = 'auto';
+              document.body.style.userSelect = 'none';
+            }
+
+            function mover(e) {
+              if (!arrastando) return;
+              var evento = e.touches ? e.touches[0] : e;
+              var maxLeft = window.innerWidth - panel.offsetWidth - 8;
+              var maxTop = window.innerHeight - panel.offsetHeight - 8;
+              var left = Math.max(8, Math.min(maxLeft, evento.clientX - offsetX));
+              var top = Math.max(8, Math.min(maxTop, evento.clientY - offsetY));
+              panel.style.left = left + 'px';
+              panel.style.top = top + 'px';
+            }
+
+            function parar() {
+              arrastando = false;
+              document.body.style.userSelect = '';
+            }
+
+            handle.addEventListener('mousedown', iniciar);
+            document.addEventListener('mousemove', mover);
+            document.addEventListener('mouseup', parar);
+            handle.addEventListener('touchstart', iniciar, { passive: true });
+            document.addEventListener('touchmove', mover, { passive: true });
+            document.addEventListener('touchend', parar);
+          })();
+
           function somenteDigitosNF(valor) {
             return String(valor || '').replace(/\\D/g, '');
           }
