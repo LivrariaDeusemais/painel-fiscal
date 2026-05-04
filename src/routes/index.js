@@ -15330,3 +15330,19 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 });
 
 module.exports = router;
+// ===== AUTO ANEXAR PDF DO POPUP =====
+function anexarPdfNoFormulario(file){
+  const inputPdf = document.querySelector('input[name="pdf"]');
+  if(!inputPdf) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  inputPdf.files = dt.files;
+}
+
+// ajustar salvar popup
+function salvarDadosPDF() {
+  const fileInput = document.querySelector('#popupPreencher input[type="file"]');
+  if(fileInput && fileInput.files[0]){
+    anexarPdfNoFormulario(fileInput.files[0]);
+  }
+}
