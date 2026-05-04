@@ -741,8 +741,8 @@ function renderGlobalHeader(req, config = {}) {
   const usuarioNome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
   const usuarioPerfil = escapeHtmlGlobal(usuario.perfil || '');
   const paginaAtual = String(config.paginaAtual || '');
-  const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - Deus é Mais');
-  const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da Deus é Mais.');
+  const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - PlennaTec');
+  const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da PlennaTec.');
   const isAdmin = usuario.perfil === 'ADMIN';
   const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador'];
   const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
@@ -791,12 +791,12 @@ function renderGlobalHeader(req, config = {}) {
     <header class="dm-global-header-shell">
       <div class="dm-global-top">
         <div class="dm-global-brand">
-          <img class="dm-global-logo" src="/assets/logo-deus-e-mais-perfil.png" onerror="this.style.display='none'" alt="Deus é Mais" />
+          <img class="dm-global-logo" src="/assets/logo-plennatec-perfil.png" onerror="this.style.display='none'" alt="PlennaTec" />
           <div class="dm-global-title"><h1>${titulo}</h1><p>${subtitulo}</p></div>
         </div>
         <div class="dm-global-user">
           <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
-          <div class="dm-global-avatar"><img src="/assets/logo-deus-e-mais-perfil.png" onerror="this.src='/assets/logo-deus-e-mais.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
+          <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
           <a class="dm-global-logout" href="/logout">Sair</a>
         </div>
       </div>
@@ -965,7 +965,7 @@ function renderDashboard(data) {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Painel Fiscal - Deus é Mais</title>
+      <title>Painel Fiscal - PlennaTec</title>
       <style>
         * { box-sizing: border-box; }
 
@@ -1441,7 +1441,7 @@ function renderDashboard(data) {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -1661,7 +1661,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -1835,7 +1835,7 @@ body {
           <div class="brand-left">
             <div class="app-mark" aria-hidden="true"><span></span><span></span><span></span></div>
             <div class="brand-title">
-              <h1>Painel Fiscal - Deus é Mais</h1>
+              <h1>Painel Fiscal - PlennaTec</h1>
               <p>${subtituloFiltro}</p>
             </div>
           </div>
@@ -1845,7 +1845,7 @@ body {
               <strong>${escapeHtml(usuario.nome || usuario.email || 'Usuário')}</strong>
               <span>${escapeHtml(usuario.perfil || 'Dashboard gerencial interno')}</span>
             </div>
-            <div class="avatar-wrap"><img src="/assets/logo-deus-e-mais-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-deus-e-mais.png'" /><span class="online-dot"></span></div>
+            <div class="avatar-wrap"><img src="/assets/logo-plennatec-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-plennatec.png'" /><span class="online-dot"></span></div>
             <a class="logout-btn" href="/logout" title="Sair">
               <span class="logout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
               Sair
@@ -1910,7 +1910,7 @@ body {
           </article>
         </section>
 
-        <div class="footer-note">© 2024 Deus é Mais. Todos os direitos reservados.</div>
+        <div class="footer-note">© 2024 PlennaTec. Todos os direitos reservados.</div>
       </main>
     </body>
     </html>
@@ -1925,7 +1925,7 @@ router.get('/login', (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Painel Contábil Deus é Mais</title>
+  <title>Login - Painel Contábil PlennaTec</title>
   <style>
     * {
       box-sizing: border-box;
@@ -2043,7 +2043,7 @@ router.get('/login', (req, res) => {
     }
   
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -2263,7 +2263,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -2434,9 +2434,9 @@ body {
 
 <body>
   <div class="login-page">
-    <img src="/assets/logo-deus-e-mais.png" class="logo" alt="Livraria Cristã Deus é Mais" />
+    <img src="/assets/logo-plennatec-login.png" class="logo" alt="PlennaTec" />
 
-    <h1>Seja bem-vindo ao Painel Contábil Deus é Mais</h1>
+    <h1>Painel Contábil PlennaTec Controle hoje - Economize sempre</h1>
     <p class="subtitle">Acesse sua área administrativa com segurança.</p>
 
     <div class="card">
@@ -2469,7 +2469,7 @@ body {
     </div>
 
     <div class="footer">
-      Deus é Mais Comércio e Negócios
+      Plennatec Soluções Digitais Ltda
     </div>
   </div>
 
@@ -2645,7 +2645,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Usuários - Deus é Mais</title>
+        <title>Usuários - PlennaTec</title>
         <style>
           * { box-sizing: border-box; }
 
@@ -2874,7 +2874,7 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
           }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -3094,7 +3094,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -3270,7 +3270,7 @@ body {
             <div class="hero-top">
               <div>
                 <h1>👥 Gestão de Usuários</h1>
-                <p class="subtitle">Controle de acesso do sistema Deus é Mais.</p>
+                <p class="subtitle">Controle de acesso do sistema PlannaTec.</p>
               </div>
 
               <div class="actions">
@@ -3477,7 +3477,7 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
           }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -3697,7 +3697,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -4099,7 +4099,7 @@ router.get('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (req
           }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -4328,7 +4328,7 @@ button.btn-primary,
 
 /* ===== FIM PADRÃO ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -4924,7 +4924,7 @@ tr:hover td {
 }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -5144,7 +5144,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -5640,7 +5640,7 @@ tr:hover {
 }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -5860,7 +5860,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -6408,7 +6408,7 @@ router.get('/novo', async (req, res) => {
           }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -6628,7 +6628,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -7298,7 +7298,7 @@ body {
             var linhas = normalizarTextoNF(texto).split(/\\n/).map(function(l) { return l.trim(); }).filter(Boolean);
             var meuCnpj = '18862388000103';
             var empresaRegex = /(LTDA\\.?|S\\.A\\.?|\\bSA\\b|EIRELI|\\bME\\b|EPP)/i;
-            var ignorar = /(DEUS\\s+E\\s+MAIS|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\\/CNPJ|CNPJ\\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA)/i;
+            var ignorar = /(PLENNATEC|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\\/CNPJ|CNPJ\\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA)/i;
 
             for (var i = 0; i < linhas.length; i++) {
               var linha = linhas[i];
@@ -7674,7 +7674,7 @@ button:hover {
 }
 
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC- APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -7894,7 +7894,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -8788,7 +8788,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
           }
         
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -9008,7 +9008,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -9908,7 +9908,7 @@ router.get('/categorias', protegerRota, async (req, res) => {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -10128,7 +10128,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -10415,7 +10415,7 @@ router.get('/categorias/nova', async (req, res) => {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -10635,7 +10635,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -10954,7 +10954,7 @@ router.get('/categorias/editar/:id', async (req, res) => {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -11174,7 +11174,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -11912,7 +11912,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -12132,7 +12132,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -13056,7 +13056,7 @@ router.get('/rotina-despesas/novo', async (req, res) => {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -13276,7 +13276,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
@@ -13728,7 +13728,7 @@ router.get('/rotina-despesas/editar/:id', async (req, res) => {
         }
       
 
-/* ===== PADRÃO VISUAL DEUS É MAIS - APLICADO NAS TELAS INTERNAS ===== */
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
 :root {
   --dm-orange: #00B050;
   --dm-orange-dark: #009640;
@@ -13948,7 +13948,7 @@ tr:hover {
 }
 /* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
 
-/* ===== FIM PADRÃO VISUAL DEUS É MAIS ===== */
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
 
       
 
