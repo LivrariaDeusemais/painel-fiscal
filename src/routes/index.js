@@ -7201,6 +7201,25 @@ body {
             });
           }
 
+          function anexarPDFSelecionadoNoFormulario() {
+            var origem = document.getElementById('pdfCopyFile');
+            var destino = document.getElementById('anexo_pdf') || document.querySelector('input[name="anexo_pdf"]');
+
+            if (!origem || !destino || !origem.files || !origem.files[0]) return false;
+
+            try {
+              var dt = new DataTransfer();
+              dt.items.add(origem.files[0]);
+              destino.files = dt.files;
+              destino.dispatchEvent(new Event('input', { bubbles: true }));
+              destino.dispatchEvent(new Event('change', { bubbles: true }));
+              return true;
+            } catch (erro) {
+              console.error('Não foi possível anexar automaticamente o PDF:', erro);
+              return false;
+            }
+          }
+
           function salvarCopiarDoPDF() {
             setValorCampoNovoLancamento('tipo_documento', document.getElementById('pdf_tipo_documento').value);
             setValorCampoNovoLancamento('numero_documento', document.getElementById('pdf_numero_documento').value);
@@ -7208,11 +7227,16 @@ body {
             setValorCampoNovoLancamento('valor', document.getElementById('pdf_valor').value);
             setValorCampoNovoLancamento('cnpj_cpf', document.getElementById('pdf_cnpj_cpf').value);
             setValorCampoNovoLancamento('fornecedor', document.getElementById('pdf_fornecedor').value);
+
+            var pdfAnexado = anexarPDFSelecionadoNoFormulario();
+
             fecharCopiarDoPDF();
             var msg = document.getElementById('nf_paste_msg');
             if (msg) {
-              msg.className = 'nf-paste-msg ok';
-              msg.textContent = 'Dados do PDF enviados para o lançamento.';
+              msg.className = pdfAnexado ? 'nf-paste-msg ok' : 'nf-paste-msg';
+              msg.textContent = pdfAnexado
+                ? 'Dados enviados e PDF anexado automaticamente.'
+                : 'Dados enviados. Nenhum PDF foi selecionado no popup.';
             }
           }
 
@@ -15330,19 +15354,3 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 });
 
 module.exports = router;
-// ===== AUTO ANEXAR PDF DO POPUP =====
-function anexarPdfNoFormulario(file){
-  const inputPdf = document.querySelector('input[name="pdf"]');
-  if(!inputPdf) return;
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  inputPdf.files = dt.files;
-}
-
-// ajustar salvar popup
-function salvarDadosPDF() {
-  const fileInput = document.querySelector('#popupPreencher input[type="file"]');
-  if(fileInput && fileInput.files[0]){
-    anexarPdfNoFormulario(fileInput.files[0]);
-  }
-}
