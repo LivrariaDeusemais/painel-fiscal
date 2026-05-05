@@ -813,6 +813,9 @@ function renderDashboard(data) {
     meses = [],
     categorias = [],
     fornecedores = [],
+    mesesDetalhes = [],
+    categoriasDetalhes = [],
+    fornecedoresDetalhes = [],
     mesSelecionado = '',
     usuario = {}
   } = data || {};
@@ -958,6 +961,28 @@ function renderDashboard(data) {
         `;
       }).join('')
     : `<div class="empty-state">Sem dados por fornecedor para o filtro selecionado.</div>`;
+
+
+  const dashboardDetalhes = {
+    meses: (mesesDetalhes || []).map(item => ({
+      mes: item.mes || item.label || '',
+      quantidade: Number(item.quantidade || 0),
+      total: Number(item.total || 0)
+    })),
+    categorias: (categoriasDetalhes || []).map(item => ({
+      principal: item.principal || 'Sem categoria',
+      subcategoria: item.subcategoria || 'Sem subcategoria',
+      quantidade: Number(item.quantidade || 0),
+      total: Number(item.total || 0)
+    })),
+    fornecedores: (fornecedoresDetalhes || []).map(item => ({
+      fornecedor: item.fornecedor || 'Sem fornecedor',
+      quantidade: Number(item.quantidade || 0),
+      total: Number(item.total || 0)
+    }))
+  };
+
+  const dashboardDetalhesJson = JSON.stringify(dashboardDetalhes).replace(/</g, '\u003c');
 
   return `
     <!DOCTYPE html>
@@ -1304,7 +1329,23 @@ function renderDashboard(data) {
           padding: 18px 22px 16px;
           position: relative;
           overflow: hidden;
+          cursor: pointer;
         }
+        .chart-card:hover { transform: translateY(-2px); box-shadow: 0 22px 52px rgba(15, 23, 42, 0.12); }
+        .dashboard-logo-wrap{width:76px;height:58px;border-radius:16px;background:rgba(255,255,255,.82);border:1px solid #e2e8f0;display:grid;place-items:center;padding:7px;box-shadow:0 8px 22px rgba(15,23,42,.07);flex:0 0 auto;}
+        .dashboard-logo-img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+        .dashboard-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;}
+        .dashboard-modal{width:min(1120px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 35px 90px rgba(15,23,42,.32);padding:22px 24px 26px;border:1px solid rgba(226,232,240,.9);}
+        .dashboard-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px;border-bottom:1px solid #e5e7eb;padding-bottom:12px;}
+        .dashboard-modal-header h2{margin:0;font-size:22px;color:#101828;}
+        .dashboard-modal-header p{margin:6px 0 0;color:#64748b;font-size:13px;font-weight:700;}
+        .dashboard-modal-close{width:42px;height:42px;border:0;border-radius:12px;background:#f1f5f9;color:#0f172a;font-size:22px;font-weight:900;cursor:pointer;}
+        .dashboard-modal-chart{background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:14px;margin-bottom:16px;}
+        .dashboard-modal-table{width:100%;border-collapse:collapse;font-size:13px;overflow:hidden;border-radius:14px;}
+        .dashboard-modal-table th,.dashboard-modal-table td{padding:11px 12px;border-bottom:1px solid #e5e7eb;text-align:left;}
+        .dashboard-modal-table th{background:#f1f5f9;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.03em;}
+        .dashboard-modal-table td:last-child,.dashboard-modal-table th:last-child{text-align:right;font-weight:900;}
+        .dashboard-modal-total{margin-top:12px;text-align:right;font-size:15px;font-weight:900;color:#00B050;}
 
         .chart-card::after {
           content: '';
@@ -1827,13 +1868,27 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+/* ===== LOGIN COMPACTO PLENNATEC ===== */
+.login-page{max-width:380px !important;}
+.login-page .logo{max-width:250px !important;width:74% !important;margin:0 auto 12px !important;display:block !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
+.login-page h1{font-size:22px !important;line-height:1.15 !important;margin:0 0 8px !important;color:#101828 !important;}
+.login-page h1 span{display:block;font-size:22px;font-weight:900;}
+.login-page h1 small{display:block;margin-top:5px;font-size:15px;font-weight:900;color:#00B050;}
+.login-page .subtitle{font-size:13px !important;margin-bottom:12px !important;}
+.login-page .card{padding:22px 24px !important;border-radius:17px !important;}
+.login-page label{font-size:14px !important;margin-bottom:6px !important;}
+.login-page input[type="email"],.login-page input[type="password"],.login-page input[type="text"]{height:43px !important;font-size:14px !important;margin-bottom:13px !important;}
+.login-page .options{font-size:12px !important;margin-bottom:16px !important;gap:6px !important;}
+.login-page button{height:46px !important;font-size:15px !important;border-radius:13px !important;}
+.login-page .footer{font-size:12px !important;margin-top:14px !important;}
+
 </style>
     </head>
     <body>
       <main class="page-shell">
         <header class="topbar">
           <div class="brand-left">
-            <div class="app-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="dashboard-logo-wrap"><img class="dashboard-logo-img" src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" /></div>
             <div class="brand-title">
               <h1>Painel Fiscal - PlennaTec</h1>
               <p>${subtituloFiltro}</p>
@@ -1892,19 +1947,19 @@ body {
         </form>
 
         <section class="charts-grid">
-          <article class="chart-card">
-            <div class="chart-heading"><h2>Despesas por mês</h2><p>Últimos 6 meses lançados</p></div>
+          <article class="chart-card" onclick="abrirDetalhesDashboard('meses')">
+            <div class="chart-heading"><h2>Despesas por mês</h2><p>Últimos 6 meses lançados • clique para detalhes</p></div>
             ${mesesHtml}
           </article>
 
-          <article class="chart-card">
-            <div class="chart-heading"><h2>Despesas por categoria</h2><p>Top categorias por valor no filtro atual</p></div>
+          <article class="chart-card" onclick="abrirDetalhesDashboard('categorias')">
+            <div class="chart-heading"><h2>Despesas por categoria</h2><p>Top categorias por valor no filtro atual • clique para detalhes</p></div>
             <div class="hbar-list">${categoriasHtml}</div>
             <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></div>
           </article>
 
-          <article class="chart-card">
-            <div class="chart-heading"><h2>Despesas por fornecedor</h2><p>Top fornecedores por valor no filtro atual</p></div>
+          <article class="chart-card" onclick="abrirDetalhesDashboard('fornecedores')">
+            <div class="chart-heading"><h2>Despesas por fornecedor</h2><p>Top fornecedores por valor no filtro atual • clique para detalhes</p></div>
             <div class="hbar-list">${fornecedoresHtml}</div>
             <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           </article>
@@ -1912,6 +1967,86 @@ body {
 
         <div class="footer-note">© 2024 PlennaTec. Todos os direitos reservados.</div>
       </main>
+
+      <div id="dashboardDetalheModal" class="dashboard-modal-overlay" onclick="fecharDetalhesDashboard(event)">
+        <div class="dashboard-modal" onclick="event.stopPropagation()">
+          <div class="dashboard-modal-header">
+            <div>
+              <h2 id="dashboardModalTitulo">Detalhes</h2>
+              <p id="dashboardModalSubtitulo">Indicadores detalhados do painel.</p>
+            </div>
+            <button type="button" class="dashboard-modal-close" onclick="fecharDetalhesDashboard()">×</button>
+          </div>
+          <div id="dashboardModalChart" class="dashboard-modal-chart"></div>
+          <div id="dashboardModalTabela"></div>
+        </div>
+      </div>
+
+      <script>
+        const dashboardDetalhes = ${dashboardDetalhesJson};
+        const formatMoneyModal = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const escapeModal = (text) => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c] || c));
+
+        function barraModal(label, valor, maximo) {
+          const largura = maximo > 0 ? Math.max((Number(valor || 0) / maximo) * 100, valor > 0 ? 4 : 0) : 0;
+          return '<div style="margin:10px 0;">' +
+            '<div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;font-weight:800;color:#334155;margin-bottom:6px;"><span>' + escapeModal(label) + '</span><strong>' + formatMoneyModal(valor) + '</strong></div>' +
+            '<div style="height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;"><div style="height:100%;width:' + largura + '%;background:#00B050;border-radius:999px;"></div></div>' +
+          '</div>';
+        }
+
+        function renderTabela(headers, rows, total) {
+          const thead = '<thead><tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr></thead>';
+          const tbody = '<tbody>' + rows.join('') + '</tbody>';
+          return '<table class="dashboard-modal-table">' + thead + tbody + '</table>' +
+            '<div class="dashboard-modal-total">Total geral: ' + formatMoneyModal(total) + '</div>';
+        }
+
+        function abrirDetalhesDashboard(tipo) {
+          const modal = document.getElementById('dashboardDetalheModal');
+          const titulo = document.getElementById('dashboardModalTitulo');
+          const subtitulo = document.getElementById('dashboardModalSubtitulo');
+          const chart = document.getElementById('dashboardModalChart');
+          const tabela = document.getElementById('dashboardModalTabela');
+          const dados = dashboardDetalhes[tipo] || [];
+          const total = dados.reduce((acc, item) => acc + Number(item.total || 0), 0);
+          const maximo = Math.max(...dados.map(item => Number(item.total || 0)), 1);
+
+          if (tipo === 'meses') {
+            titulo.textContent = 'Detalhamento das despesas por mês';
+            subtitulo.textContent = 'Quantidade de lançamentos e valor total mensal.';
+            chart.innerHTML = dados.map(item => barraModal(item.mes, item.total, maximo)).join('') || '<div class="empty-state">Sem dados.</div>';
+            tabela.innerHTML = renderTabela(['Mês', 'Qtd. lançamentos', 'Valor total'], dados.map(item =>
+              '<tr><td>' + escapeModal(item.mes) + '</td><td>' + Number(item.quantidade || 0) + '</td><td>' + formatMoneyModal(item.total) + '</td></tr>'
+            ), total);
+          }
+
+          if (tipo === 'categorias') {
+            titulo.textContent = 'Detalhamento das despesas por categoria';
+            subtitulo.textContent = 'Categorias principais, subcategorias, quantidades e valores.';
+            chart.innerHTML = dados.map(item => barraModal(item.principal + ' > ' + item.subcategoria, item.total, maximo)).join('') || '<div class="empty-state">Sem dados.</div>';
+            tabela.innerHTML = renderTabela(['Categoria principal', 'Subcategoria', 'Qtd.', 'Valor total'], dados.map(item =>
+              '<tr><td>' + escapeModal(item.principal) + '</td><td>' + escapeModal(item.subcategoria) + '</td><td>' + Number(item.quantidade || 0) + '</td><td>' + formatMoneyModal(item.total) + '</td></tr>'
+            ), total);
+          }
+
+          if (tipo === 'fornecedores') {
+            titulo.textContent = 'Detalhamento das despesas por fornecedor';
+            subtitulo.textContent = 'Fornecedores, total de lançamentos e valor total.';
+            chart.innerHTML = dados.map(item => barraModal(item.fornecedor, item.total, maximo)).join('') || '<div class="empty-state">Sem dados.</div>';
+            tabela.innerHTML = renderTabela(['Fornecedor', 'Qtd. lançamentos', 'Valor total'], dados.map(item =>
+              '<tr><td>' + escapeModal(item.fornecedor) + '</td><td>' + Number(item.quantidade || 0) + '</td><td>' + formatMoneyModal(item.total) + '</td></tr>'
+            ), total);
+          }
+
+          modal.style.display = 'flex';
+        }
+
+        function fecharDetalhesDashboard(event) {
+          if (event && event.target && event.target.id !== 'dashboardDetalheModal') return;
+          document.getElementById('dashboardDetalheModal').style.display = 'none';
+        }
+      </script>
     </body>
     </html>
   `;
@@ -2436,7 +2571,7 @@ body {
   <div class="login-page">
     <img src="/assets/logo-plennatec-login.png" class="logo" alt="PlennaTec" />
 
-    <h1>Painel Contábil PlennaTec Controle hoje - Economize sempre</h1>
+    <h1><span>Painel Contábil PlennaTec</span><small>Controle hoje - Economize sempre!</small></h1>
     <p class="subtitle">Acesse sua área administrativa com segurança.</p>
 
     <div class="card">
@@ -4645,7 +4780,10 @@ router.get('/dashboard', protegerRota, async (req, res) => {
       fornecedoresResult,
       categoriasGraficoResult,
       fornecedoresGraficoResult,
-      mesesGraficoResult
+      mesesGraficoResult,
+      mesesDetalhesResult,
+      categoriasDetalhesResult,
+      fornecedoresDetalhesResult
     ] = await Promise.all([
       pool.query(`
         SELECT COUNT(*)::int AS total
@@ -4703,7 +4841,54 @@ router.get('/dashboard', protegerRota, async (req, res) => {
           AND data_despesa >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
         GROUP BY DATE_TRUNC('month', data_despesa)
         ORDER BY DATE_TRUNC('month', data_despesa)
-      `)
+      `),
+
+      pool.query(`
+        SELECT
+          TO_CHAR(DATE_TRUNC('month', data_despesa), 'YYYY-MM') AS mes_ref,
+          COUNT(*)::int AS quantidade,
+          COALESCE(SUM(valor), 0)::numeric AS total
+        FROM lancamentos
+        WHERE data_despesa IS NOT NULL
+          AND data_despesa >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+        GROUP BY DATE_TRUNC('month', data_despesa)
+        ORDER BY DATE_TRUNC('month', data_despesa)
+      `),
+
+      pool.query(`
+        SELECT
+          COALESCE(p.nome, c.nome, 'Sem categoria') AS principal,
+          CASE
+            WHEN p.nome IS NOT NULL THEN COALESCE(c.nome, 'Sem subcategoria')
+            WHEN c.nome IS NOT NULL THEN 'Categoria principal'
+            ELSE 'Sem categoria'
+          END AS subcategoria,
+          COUNT(*)::int AS quantidade,
+          COALESCE(SUM(l.valor), 0)::numeric AS total
+        FROM lancamentos l
+        LEFT JOIN categorias c ON c.id = l.categoria_id
+        LEFT JOIN categorias p ON p.id = c.categoria_pai_id
+        ${whereFiltro ? whereFiltro.replace(/data_despesa/g, 'l.data_despesa') : ''}
+        GROUP BY
+          COALESCE(p.nome, c.nome, 'Sem categoria'),
+          CASE
+            WHEN p.nome IS NOT NULL THEN COALESCE(c.nome, 'Sem subcategoria')
+            WHEN c.nome IS NOT NULL THEN 'Categoria principal'
+            ELSE 'Sem categoria'
+          END
+        ORDER BY COALESCE(p.nome, c.nome, 'Sem categoria') ASC, total DESC
+      `, valuesFiltro),
+
+      pool.query(`
+        SELECT
+          COALESCE(NULLIF(TRIM(fornecedor), ''), 'Sem fornecedor') AS fornecedor,
+          COUNT(*)::int AS quantidade,
+          COALESCE(SUM(valor), 0)::numeric AS total
+        FROM lancamentos
+        ${whereFiltro}
+        GROUP BY COALESCE(NULLIF(TRIM(fornecedor), ''), 'Sem fornecedor')
+        ORDER BY total DESC, fornecedor ASC
+      `, valuesFiltro)
     ]);
 
     const hoje = new Date();
@@ -4731,11 +4916,26 @@ router.get('/dashboard', protegerRota, async (req, res) => {
     const mesesMap = new Map(
       mesesGraficoResult.rows.map(item => [item.mes_ref, Number(item.total || 0)])
     );
+    const mesesDetalhesMap = new Map(
+      mesesDetalhesResult.rows.map(item => [item.mes_ref, {
+        quantidade: Number(item.quantidade || 0),
+        total: Number(item.total || 0)
+      }])
+    );
 
     const meses = mesesBase.map(item => ({
       label: item.label,
       total: mesesMap.get(item.mes_ref) || 0
     }));
+
+    const mesesDetalhes = mesesBase.map(item => {
+      const detalhes = mesesDetalhesMap.get(item.mes_ref) || { quantidade: 0, total: 0 };
+      return {
+        mes: item.label,
+        quantidade: detalhes.quantidade,
+        total: detalhes.total
+      };
+    });
 
     res.send(renderDashboard({
       totalLancamentos: totalResult.rows[0]?.total || 0,
@@ -4749,6 +4949,18 @@ router.get('/dashboard', protegerRota, async (req, res) => {
       })),
       fornecedores: fornecedoresGraficoResult.rows.map(item => ({
         nome: item.nome,
+        total: Number(item.total || 0)
+      })),
+      mesesDetalhes,
+      categoriasDetalhes: categoriasDetalhesResult.rows.map(item => ({
+        principal: item.principal,
+        subcategoria: item.subcategoria,
+        quantidade: Number(item.quantidade || 0),
+        total: Number(item.total || 0)
+      })),
+      fornecedoresDetalhes: fornecedoresDetalhesResult.rows.map(item => ({
+        fornecedor: item.fornecedor,
+        quantidade: Number(item.quantidade || 0),
         total: Number(item.total || 0)
       })),
       mesSelecionado: mes,
