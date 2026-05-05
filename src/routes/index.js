@@ -749,7 +749,7 @@ function renderGlobalHeader(req, config = {}) {
   const menuBase = [
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
-    { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Lançamentos Mensais' },
+    { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Despesas Mensais' },
     { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
@@ -1854,7 +1854,7 @@ body {
         </header>
 
         <nav class="nav-panel" aria-label="Menu principal">
-          <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Lançamentos Mensais</a>
+          <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Ver Documentos</a>
           <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Documentos Fiscais</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
@@ -6247,7 +6247,7 @@ router.post('/documentos/gerar-lancamento/:id', async (req, res) => {
 });
 
 // =============================
-// LANÇAMENTOS
+// CONTAS A PAGAR
 // =============================
     
 router.get('/novo', async (req, res) => {
@@ -7075,7 +7075,7 @@ body {
 
               <div class="actions">
                 <button type="submit">Salvar</button>
-                <a class="btn-secondary" href="/rotina-despesas">Voltar para Levantamento de Despesas Mensais</a>
+                <a class="btn-secondary" href="/rotina-despesas">Voltar para Lista de Contas à pagar</a>
               </div>
             </form>
           </div>
@@ -11595,7 +11595,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8" />
-      <title>Levantamento de Despesas Mensais</title>
+      <title>Lista de Contas à pagar</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -12325,7 +12325,7 @@ body {
 
 
 /* ===== AJUSTE SENIOR ROTINA: ALINHAMENTO FINO + CABEÇALHO FIXO REAL ===== */
-/* Bloco final da página de Levantamento. Fica no fim do <style> para vencer regras antigas. */
+/* Bloco final da página de Lista de Contas à pagar. Fica no fim do <style> para vencer regras antigas. */
 .container {
   max-width: 1420px !important;
   margin: 38px auto 24px !important;
@@ -12598,7 +12598,7 @@ tbody td {
     </head>
     <body class="dm-global-page">
       ${renderGlobalHeader(req, {
-        titulo: 'Levantamento de Despesas Mensais',
+        titulo: 'Lista de Contas à pagar',
         subtitulo: 'Controle operacional das despesas mensais, status, vencimentos e competência.',
         paginaAtual: 'rotina-despesas',
         primaryHref: '/rotina-despesas/novo',
@@ -12612,7 +12612,7 @@ tbody td {
       })}
       <div class="container">
         <div class="card">
-          <h1>📋 Levantamento de Despesas Mensais</h1>
+          <h1>📋 Lista de Contas à pagar</h1>
 
           <div class="top-bar">
             <div id="painel-colunas-rotina" class="painel-colunas" style="display:none;">
