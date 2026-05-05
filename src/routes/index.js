@@ -750,7 +750,7 @@ function renderGlobalHeader(req, config = {}) {
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
-    { key: 'lancamentos', href: '/lancamentos', label: 'Despesas Mensais' },
+    { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
     { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
@@ -8574,7 +8574,7 @@ const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Despesas Mensais</title>
+        <title>Comprovantes Fiscais</title>
         <style>
           * { box-sizing: border-box; }
           body {
@@ -9307,7 +9307,7 @@ body {
       </head>
       <body class="dm-global-page">
         ${renderGlobalHeader(req, {
-          titulo: 'Despesas Mensais',
+          titulo: 'Comprovantes Fiscais',
           subtitulo: 'Consulte, filtre, edite e acompanhe todos os lançamentos cadastrados.',
           paginaAtual: 'lancamentos',
           extraActions: `
@@ -9318,7 +9318,7 @@ body {
         <div class="ml-skeleton-overlay" id="mlSkeletonOverlay" aria-hidden="true"><div class="ml-skeleton-card"><div class="ml-skeleton-title"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div><div class="ml-skeleton-line"></div></div></div>
         <div class="container">
           <div class="card">
-            <h1>📋 Despesas Mensais</h1>
+            <h1>📋 Comprovantes Fiscais </h1>
 
             <div id="painel-colunas" class="painel-colunas" style="display:none;">
               <label><input type="checkbox" data-col="col-cnpj"> CNPJ/CPF</label>
