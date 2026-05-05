@@ -3314,6 +3314,218 @@ body {
 }
 /* ===== FIM PLENNATEC VERSÃO FINAL PREMIUM COMPACTA ===== */
 
+
+/* ===== AJUSTE FINAL: FILTRO ABAIXO DOS TOTALIZADORES + TOTALIZADORES MAIS CHEIOS ===== */
+.topbar-filter {
+  display: none !important;
+}
+
+.page-shell {
+  grid-template-rows: 64px 88px 54px minmax(0, 1fr) 16px !important;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar stats"
+    "sidebar filter"
+    "sidebar charts"
+    "sidebar footer" !important;
+  gap: 10px 18px !important;
+}
+
+.page-shell > .filter-panel {
+  grid-area: filter !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-height: 54px !important;
+  height: 54px !important;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,.94) !important;
+  border: 1px solid #eef2f4 !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.06) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.page-shell > .filter-panel label {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 4px 0 2px !important;
+  color: #172033 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.page-shell > .filter-panel select {
+  width: 230px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  border: 1px solid #dfe7ef !important;
+  background: #fff !important;
+  color: #172033 !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  outline: none !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-apply {
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg,#047b3a,#009640) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: 0 11px 21px rgba(0,128,64,.18) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-clear {
+  height: 38px !important;
+  padding: 0 15px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  color: #172033 !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-apply:hover,
+.page-shell > .filter-panel .btn-filter-clear:hover {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.03) !important;
+}
+
+/* Totalizadores mais preenchidos, mantendo a mesma quantidade de linhas */
+.stat-card {
+  height: 88px !important;
+  min-height: 88px !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  gap: 13px !important;
+  padding: 12px 16px !important;
+}
+
+.stat-icon-box {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.stat-content small {
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+}
+
+.stat-content strong {
+  font-size: clamp(21px, 1.55vw, 27px) !important;
+  line-height: 1.02 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+}
+
+.stat-content span {
+  font-size: 10.5px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stat-card::after {
+  left: 72px !important;
+  right: 14px !important;
+  bottom: 9px !important;
+  height: 20px !important;
+  opacity: .55 !important;
+}
+
+.charts-grid {
+  min-height: 0 !important;
+}
+
+@media (max-height: 760px) {
+  .page-shell {
+    grid-template-rows: 58px 78px 48px minmax(0, 1fr) 14px !important;
+  }
+
+  .page-shell > .filter-panel {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 6px 10px !important;
+  }
+
+  .page-shell > .filter-panel select,
+  .page-shell > .filter-panel .btn-filter-apply,
+  .page-shell > .filter-panel .btn-filter-clear {
+    height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .stat-card {
+    height: 78px !important;
+    min-height: 78px !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .stat-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .stat-content small {
+    font-size: 9.5px !important;
+  }
+
+  .stat-content strong {
+    font-size: 19px !important;
+  }
+
+  .stat-content span {
+    font-size: 8.8px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    grid-template-areas:
+      "topbar"
+      "stats"
+      "filter"
+      "charts"
+      "footer" !important;
+    grid-template-rows: auto auto auto auto auto !important;
+  }
+
+  .page-shell > .filter-panel {
+    height: auto !important;
+    min-height: 54px !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-shell > .filter-panel {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .page-shell > .filter-panel label,
+  .page-shell > .filter-panel select,
+  .page-shell > .filter-panel .btn-filter-apply,
+  .page-shell > .filter-panel .btn-filter-clear {
+    width: 100% !important;
+  }
+}
+/* ===== FIM AJUSTE FINAL ===== */
+
 </style>
     </head>
     <body>
