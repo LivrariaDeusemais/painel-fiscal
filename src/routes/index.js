@@ -3526,6 +3526,97 @@ body {
 }
 /* ===== FIM AJUSTE FINAL ===== */
 
+
+/* ===== AJUSTE TOTALIZADORES 60% MAIORES ===== */
+.stats-grid .stat-card {
+  height: 96px !important;
+  min-height: 96px !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  gap: 15px !important;
+  padding: 13px 17px !important;
+}
+
+.stats-grid .stat-icon-box {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.stats-grid .stat-icon {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.stats-grid .stat-content small {
+  font-size: 17.5px !important;
+  line-height: 1.04 !important;
+  margin-bottom: 4px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.25px !important;
+  white-space: nowrap !important;
+}
+
+.stats-grid .stat-content strong {
+  font-size: clamp(30px, 2vw, 37px) !important;
+  line-height: 0.98 !important;
+  margin-bottom: 4px !important;
+  font-weight: 950 !important;
+  letter-spacing: -1px !important;
+  white-space: nowrap !important;
+}
+
+.stats-grid .stat-content span {
+  font-size: 16px !important;
+  line-height: 1.02 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.25px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ajuste para caber melhor em telas com altura menor */
+@media (max-height: 760px) {
+  .stats-grid .stat-card {
+    height: 88px !important;
+    min-height: 88px !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 11px 14px !important;
+  }
+
+  .stats-grid .stat-icon-box {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .stats-grid .stat-content small {
+    font-size: 15px !important;
+  }
+
+  .stats-grid .stat-content strong {
+    font-size: clamp(26px, 1.8vw, 32px) !important;
+  }
+
+  .stats-grid .stat-content span {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 1450px) {
+  .stats-grid .stat-content small {
+    font-size: 15px !important;
+  }
+
+  .stats-grid .stat-content strong {
+    font-size: clamp(25px, 1.8vw, 32px) !important;
+  }
+
+  .stats-grid .stat-content span {
+    font-size: 13px !important;
+  }
+}
+/* ===== FIM AJUSTE TOTALIZADORES 60% MAIORES ===== */
+
 </style>
     </head>
     <body>
