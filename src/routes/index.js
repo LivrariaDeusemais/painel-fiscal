@@ -2014,11 +2014,40 @@ body {
             function renderFiltroMes(tipoFiltro, dados, onChangeName) {
               const meses = getMesesDisponiveis(dados);
               if (!controls) return 'todos';
+
               const opcoes = ['<option value="todos">Todos os meses</option>'].concat(
                 meses.map(m => '<option value="' + escDashboard(m) + '">' + escDashboard(m) + '</option>')
               ).join('');
+
               controls.className = 'dashboard-detail-controls';
-              controls.innerHTML = '<div class="dashboard-filter-box"><label for="dashboardFiltroMes">Filtrar mês</label><select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select><button type="button" class="dashboard-filter-btn" onclick="' + onChangeName + '(document.getElementById(\'dashboardFiltroMes\').value)">Aplicar</button></div><div class="dashboard-detail-total"><small>Total do período selecionado</small><strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong></div>';
+              controls.innerHTML =
+                '<div class="dashboard-filter-box">' +
+                  '<label for="dashboardFiltroMes">Filtrar mês</label>' +
+                  '<select id="dashboardFiltroMes">' + opcoes + '</select>' +
+                  '<button type="button" id="dashboardFiltroMesBtn" class="dashboard-filter-btn">Aplicar</button>' +
+                '</div>' +
+                '<div class="dashboard-detail-total">' +
+                  '<small>Total do período selecionado</small>' +
+                  '<strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong>' +
+                '</div>';
+
+              const selectFiltro = document.getElementById('dashboardFiltroMes');
+              const botaoFiltro = document.getElementById('dashboardFiltroMesBtn');
+
+              function aplicarFiltro() {
+                const valorSelecionado = selectFiltro ? selectFiltro.value : 'todos';
+                if (onChangeName === 'atualizarDetalheCategorias') {
+                  atualizarDetalheCategorias(valorSelecionado);
+                  return;
+                }
+                if (onChangeName === 'atualizarDetalheFornecedores') {
+                  atualizarDetalheFornecedores(valorSelecionado);
+                }
+              }
+
+              if (selectFiltro) selectFiltro.addEventListener('change', aplicarFiltro);
+              if (botaoFiltro) botaoFiltro.addEventListener('click', aplicarFiltro);
+
               return 'todos';
             }
 
