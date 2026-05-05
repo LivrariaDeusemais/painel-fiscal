@@ -17034,19 +17034,314 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .add-row-modal-form input { width:100%; min-height:46px; border-radius:12px; border:1px solid #dbe3ee; padding:0 14px; font-size:14px; font-weight:700; }
           @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
-        </style>
+        
+
+/* ===== ESPAÇO DO CONTADOR — PLENNATEC PREMIUM ISOLADO ===== */
+body.contador-premium-page {
+  margin: 0 !important;
+  min-height: 100vh !important;
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232,247,238,.80) 0%, transparent 30%),
+    linear-gradient(135deg, #f7faf9 0%, #ffffff 46%, #f3f7f6 100%) !important;
+}
+
+.contador-premium-shell {
+  width: min(1740px, calc(100% - 20px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 16px 0 14px;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.contador-premium-sidebar {
+  position: sticky;
+  top: 16px;
+  height: calc(100vh - 32px);
+  overflow: hidden;
+  border-radius: 0 28px 28px 0;
+  padding: 24px 18px 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 40% 20%, rgba(32,201,112,.30), transparent 28%),
+    linear-gradient(180deg, #063d31 0%, #075236 46%, #043324 100%);
+  box-shadow: 0 28px 80px rgba(4,51,36,.24);
+  display: flex;
+  flex-direction: column;
+}
+
+.contador-premium-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.10), transparent 32%),
+    radial-gradient(circle at 20% 80%, rgba(0,176,80,.22), transparent 30%);
+  pointer-events: none;
+}
+
+.contador-premium-sidebar > * { position: relative; z-index: 1; }
+
+.contador-sidebar-logo {
+  height: 70px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 18px 36px rgba(0,0,0,.18);
+}
+.contador-sidebar-logo img { width: 100%; max-height: 48px; object-fit: contain; }
+
+.contador-sidebar-nav { display: flex; flex-direction: column; gap: 8px; }
+.contador-sidebar-nav a {
+  height: 45px; padding: 0 14px; border-radius: 14px;
+  display: flex; align-items: center; gap: 12px; text-decoration: none;
+  color: rgba(255,255,255,.88) !important; font-size: 14px; font-weight: 850;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.contador-sidebar-nav a span { width: 22px; height: 22px; display: inline-grid; place-items: center; color: #dcffe9; }
+.contador-sidebar-nav a:hover { transform: translateX(4px); background: rgba(255,255,255,.10); }
+.contador-sidebar-nav a.active {
+  background: linear-gradient(135deg, #13bd58, #079241);
+  box-shadow: 0 15px 32px rgba(19,189,88,.33), inset 0 1px 0 rgba(255,255,255,.24);
+  color: #fff !important;
+}
+
+.contador-sidebar-card {
+  margin-top: auto; padding: 16px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(29,185,84,.22), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.14);
+}
+.contador-sidebar-card strong { display: block; font-size: 13px; margin-bottom: 8px; }
+.contador-sidebar-card small { display: block; color: rgba(255,255,255,.75); font-size: 11px; line-height: 1.45; margin-bottom: 12px; }
+.contador-sidebar-card a {
+  height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; width: 100%;
+  text-decoration: none; color: #06412d !important; background: #d8ffe4; font-weight: 900;
+}
+.contador-sidebar-user { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.16); display: flex; align-items: center; gap: 11px; }
+.contador-sidebar-user img { width: 42px; height: 42px; border-radius: 999px; object-fit: contain; background: #fff; padding: 4px; }
+.contador-sidebar-user strong, .contador-sidebar-user small { display: block; }
+.contador-sidebar-user strong { font-size: 12px; color: #fff; }
+.contador-sidebar-user small { color: rgba(255,255,255,.70); font-size: 10px; margin-top: 3px; }
+
+.contador-premium-main { min-width: 0; }
+.contador-premium-page .dm-global-header-shell { width: 100% !important; margin: 0 0 14px !important; }
+.contador-premium-page .dm-global-top {
+  min-height: 78px; background: rgba(255,255,255,.92) !important; border: 1px solid rgba(226,232,240,.88) !important;
+  border-radius: 24px !important; box-shadow: 0 18px 46px rgba(15,23,42,.07) !important;
+}
+.contador-premium-page .dm-global-nav { display: none !important; }
+.contador-premium-page .container { width: 100% !important; margin: 0 !important; }
+
+.contador-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.contador-kpi-card {
+  min-height: 112px; padding: 18px; border-radius: 20px; background: #fff; border: 1px solid #eef2f4;
+  box-shadow: 0 18px 42px rgba(15,23,42,.08); display: grid; grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center; gap: 14px; position: relative; overflow: hidden; transition: transform .18s ease, box-shadow .18s ease;
+}
+.contador-kpi-card:hover { transform: translateY(-4px); box-shadow: 0 28px 70px rgba(15,23,42,.13); }
+.contador-kpi-card::after {
+  content: ''; position: absolute; left: 84px; right: 18px; bottom: 16px; height: 26px; opacity: .58;
+  background: linear-gradient(90deg, rgba(0,176,80,.05), rgba(0,176,80,.16));
+  clip-path: polygon(0 70%, 12% 58%, 22% 66%, 34% 42%, 48% 56%, 62% 34%, 78% 57%, 100% 24%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+.contador-kpi-icon { width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; font-size: 22px; font-weight: 900; }
+.contador-kpi-icon.green { color:#00B050; background:#E8F7EE; }
+.contador-kpi-icon.blue { color:#1684f8; background:#eaf4ff; }
+.contador-kpi-icon.purple { color:#8657ff; background:#f0eaff; }
+.contador-kpi-icon.lime { color:#65a30d; background:#ecfccb; }
+.contador-kpi-card small { display:block; font-size: 12px; color:#334155; font-weight:900; margin-bottom: 6px; }
+.contador-kpi-card strong { display:block; font-size: 27px; color:#0f172a; letter-spacing:-.7px; line-height:1; margin-bottom: 6px; }
+.contador-kpi-card span { display:block; font-size: 11px; color:#047857; font-weight:850; }
+
+.contador-premium-page .hero {
+  background: rgba(255,255,255,.92) !important; border: 1px solid rgba(226,232,240,.82) !important;
+  border-radius: 20px !important; box-shadow: 0 18px 46px rgba(15,23,42,.07) !important;
+  padding: 16px 18px !important; margin-bottom: 14px !important;
+}
+.contador-premium-page .filter-box {
+  background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important;
+  display:flex !important; align-items:center !important; gap: 12px !important;
+}
+.contador-premium-page .filter-group {
+  min-width: 0 !important; width: 360px !important; display: grid !important; grid-template-columns: 96px 1fr !important;
+  align-items: center !important; gap: 12px !important;
+}
+.contador-premium-page .filter-group label { margin: 0 !important; color:#52627a !important; font-weight:900 !important; }
+.contador-premium-page .filter-group select, .contador-premium-page .filter-box select {
+  height: 44px !important; border-radius: 14px !important; background:#fff !important; border:1px solid #dfe7ef !important;
+  box-shadow:0 10px 22px rgba(15,23,42,.05) !important;
+}
+.contador-premium-page .btn {
+  height: 44px !important; border-radius: 14px !important; font-weight: 950 !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease !important;
+}
+.contador-premium-page .btn:hover, .contador-premium-page button:hover { transform: translateY(-2px) !important; filter: brightness(1.03) !important; }
+
+.contador-premium-page .contador-board {
+  border-radius: 24px !important; background: rgba(255,255,255,.92) !important; border: 1px solid rgba(226,232,240,.82) !important;
+  box-shadow: 0 24px 70px rgba(15,23,42,.08) !important; padding: 18px !important; overflow: hidden !important;
+}
+.contador-premium-page .table-wrap { width: 100% !important; overflow-x: auto !important; border-radius: 19px !important; }
+.contador-premium-page .contador-table {
+  width: 100% !important; min-width: 1120px !important; border-collapse: separate !important; border-spacing: 0 !important;
+  table-layout: fixed !important; background: #fff !important; border: 1px solid #e5eaf0 !important; border-radius: 19px !important; overflow: hidden !important;
+}
+.contador-premium-page .contador-table col:nth-child(1) { width: 22% !important; }
+.contador-premium-page .contador-table col:nth-child(2) { width: 7% !important; }
+.contador-premium-page .contador-table col:nth-child(3) { width: 17% !important; }
+.contador-premium-page .contador-table col:nth-child(4) { width: 16% !important; }
+.contador-premium-page .contador-table col:nth-child(5) { width: 18% !important; }
+.contador-premium-page .contador-table col:nth-child(6) { width: 10% !important; }
+.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
+
+.contador-premium-page .contador-table th, .contador-premium-page .contador-table td {
+  border-right: 1px solid #e7edf3 !important; border-bottom: 1px solid #e7edf3 !important;
+  color: #172033 !important; padding: 13px 14px !important; font-size: 12px !important; vertical-align: middle !important;
+}
+.contador-premium-page .contador-table tr > *:last-child { border-right: 0 !important; }
+.contador-premium-page .contador-table thead th {
+  background: linear-gradient(180deg,#fff,#f7fafc) !important; color:#0f172a !important; font-weight: 950 !important;
+}
+.contador-premium-page .contador-table thead tr:nth-child(3) th {
+  color: #008f45 !important; font-size: 11.5px !important; background: linear-gradient(180deg,#ffffff,#fbfcfd) !important;
+}
+.contador-premium-page .contador-table .responsibility-head th {
+  font-size: 16px !important; color: #0f172a !important; background: linear-gradient(180deg,#f8fafc,#eef4f1) !important;
+  border-top: 0 !important; border-bottom: 1px solid #dbe4ef !important;
+}
+.contador-premium-page .contador-table .responsibility-head th.empresa { background: linear-gradient(180deg,#f8fbff,#eef6ff) !important; }
+
+.contador-premium-page .contador-table th:nth-child(5),
+.contador-premium-page .contador-table td:nth-child(5),
+.contador-premium-page .contador-table .responsibility-head th:nth-child(3) {
+  border-left: 2px solid #d2dbe7 !important;
+  box-shadow: inset 10px 0 16px -18px rgba(15,23,42,.35) !important;
+}
+.contador-premium-page .add-row-cell {
+  text-align: left !important; background: #fff !important; padding: 14px 10px 10px !important; border-bottom: 0 !important;
+}
+.contador-premium-page .btn-add-file-row {
+  height: 44px !important; border: 0 !important; border-radius: 13px !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important; color:#fff !important; font-weight: 950 !important;
+  padding: 0 18px !important; box-shadow: 0 14px 26px rgba(0,176,80,.22) !important; cursor: pointer !important;
+}
+.contador-premium-page .contador-table tbody tr { background: #fff !important; transition: background .16s ease; }
+.contador-premium-page .contador-table tbody tr:nth-child(even) { background: #fbfcfd !important; }
+.contador-premium-page .contador-table tbody tr:hover { background: #f7fbf8 !important; }
+
+.contador-premium-page .tipo-cell {
+  background: linear-gradient(180deg,#fbfcfd,#f3f6f8) !important; color:#172033 !important; font-weight: 950 !important;
+  position: relative !important; padding-left: 58px !important;
+}
+.contador-premium-page .tipo-cell::before {
+  content: '▧'; position:absolute; left: 18px; top:50%; transform:translateY(-50%);
+  width: 30px; height: 30px; border-radius: 10px; display:grid; place-items:center;
+  background:#eef7f1; color:#00A04A; font-size:14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+}
+.contador-premium-page .tipo-cell strong { font-size: 13px !important; color:#172033 !important; }
+.contador-premium-page .qtd-pill {
+  min-width: 38px !important; height: 32px !important; border-radius: 999px !important; background:#f1f5f9 !important;
+  color:#0f172a !important; font-size: 15px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+.contador-premium-page .status-select {
+  height: 36px !important; max-width: 150px !important; border-radius: 14px !important;
+  background: linear-gradient(180deg,#fff,#f7fafc) !important; box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+.contador-premium-page .btn-download {
+  min-width: 150px !important; height: 36px !important; border-radius: 12px !important;
+  background: linear-gradient(135deg,#00B050,#008f45) !important; color:#fff !important; border:0 !important;
+  box-shadow: 0 12px 22px rgba(0,176,80,.18) !important;
+}
+.contador-premium-page .upload-chip {
+  height: 34px !important; border-radius: 12px !important; background:#fff !important; border:1px dashed #9eb0c7 !important; color:#172033 !important;
+}
+.contador-premium-page .download-status-text {
+  display:inline-flex !important; align-items:center !important; justify-content:center !important; min-width: 86px !important; height: 28px !important;
+  border-radius: 999px !important; font-size: 10.5px !important; font-weight: 950 !important;
+}
+.contador-premium-page .download-text-nao-baixado { color:#b42318 !important; background:#ffe7ea !important; }
+.contador-premium-page .download-text-baixado { color:#166534 !important; background:#dcfce7 !important; }
+.contador-premium-page .muted-cell { color:#52627a !important; }
+.contador-premium-page .attached-item { border-radius: 10px !important; background:#f8fafc !important; }
+.contador-premium-page .upload-modal-card { border-radius: 22px !important; box-shadow: 0 34px 92px rgba(15,23,42,.28) !important; }
+
+@media (max-width: 1180px) {
+  .contador-premium-shell { grid-template-columns: 1fr; width: min(100% - 24px, 1180px); }
+  .contador-premium-sidebar { display:none; }
+  .contador-kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  .contador-kpi-grid { grid-template-columns: 1fr; }
+  .contador-premium-page .filter-box, .contador-premium-page .filter-group {
+    display:flex !important; flex-direction:column !important; align-items:stretch !important; width:100% !important;
+  }
+}
+/* ===== FIM ESPAÇO DO CONTADOR PREMIUM ISOLADO ===== */
+
+</style>
       </head>
-      <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Espaço do Contador', subtitulo: 'Baixe arquivos fiscais, acompanhe status e gerencie pacotes por competência.', paginaAtual: 'espaco-contador' })}
-        <div class="container">
-          <section class="hero">
-            <div class="hero-top">
-              <div>
-                <h1>👨‍💼 Espaço do Contador</h1>
-                <p>Baixe em massa os arquivos do mês e disponibilize pacotes extras para o fechamento contábil.</p>
-              </div>
-              <div class="hero-badge"></div>
+      <body class="dm-global-page contador-premium-page">
+        <div class="contador-premium-shell">
+          <aside class="contador-premium-sidebar" aria-label="Menu lateral PlennaTec">
+            <div class="contador-sidebar-logo">
+              <img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" />
             </div>
+
+            <nav class="contador-sidebar-nav">
+              <a href="/dashboard"><span>⌂</span>Dashboard</a>
+              <a href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
+              <a href="/lancamentos"><span>▤</span>Comprovantes</a>
+              <a href="/documentos"><span>▣</span>Arquivo</a>
+              <a href="/categorias"><span>□</span>Categorias</a>
+              <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
+              ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
+            </nav>
+
+            <div class="contador-sidebar-card">
+              <strong>Gestão Premium</strong>
+              <small>Fechamento contábil com arquivos, status e downloads em massa.</small>
+              <a href="/novo">Novo lançamento</a>
+            </div>
+
+            <div class="contador-sidebar-user">
+              <img src="/assets/logo-plennatec-perfil.png" onerror="this.style.display='none'" alt="Perfil" />
+              <div>
+                <strong>${escapeHtmlGlobal(req.session.usuario?.nome || 'Genivaldo')}</strong>
+                <small>${escapeHtmlGlobal(req.session.usuario?.perfil || 'ADMIN')}</small>
+              </div>
+            </div>
+          </aside>
+
+          <main class="contador-premium-main">
+            ${renderGlobalHeader(req, { titulo: 'Espaço do Contador', subtitulo: 'Baixe arquivos fiscais, acompanhe status e gerencie pacotes por competência.', paginaAtual: 'espaco-contador' })}
+            <div class="container">
+          <section class="contador-kpi-grid" aria-label="Resumo do mês">
+            <div class="contador-kpi-card">
+              <div class="contador-kpi-icon green">▧</div>
+              <div><small>XML disponíveis</small><strong>${xmlCount}</strong><span>Arquivos fiscais do mês</span></div>
+            </div>
+            <div class="contador-kpi-card">
+              <div class="contador-kpi-icon blue">▤</div>
+              <div><small>PDF disponíveis</small><strong>${pdfCount}</strong><span>Comprovantes fiscais</span></div>
+            </div>
+            <div class="contador-kpi-card">
+              <div class="contador-kpi-icon purple">□</div>
+              <div><small>Linhas extras</small><strong>${extras.length}</strong><span>Pacotes adicionais</span></div>
+            </div>
+            <div class="contador-kpi-card">
+              <div class="contador-kpi-icon lime">⇣</div>
+              <div><small>Competência</small><strong>${formatMesLabel(mes)}</strong><span>Mês selecionado</span></div>
+            </div>
+          </section>
+
+          <section class="hero">
             <form method="GET" action="/espaco-contador" class="filter-box">
               <div class="filter-group">
                 <label for="mes">Escolha o mês dos arquivos</label>
@@ -17119,6 +17414,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
               </form>
             </div>
           </div>` : ''}
+            </div>
+          </main>
         </div>
         <script>
           function abrirModalUpload(id) {
