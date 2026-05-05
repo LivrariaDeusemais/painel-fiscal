@@ -1469,6 +1469,272 @@ function renderDashboard(data) {
         .dashboard-detail-table td.valor, .dashboard-detail-table th.valor { text-align:right; white-space:nowrap; }
         .dashboard-detail-group { background:#E8F7EE !important; font-weight:900; }
 
+
+/* ===== PLENNATEC PREMIUM UX - DASHBOARD FINTECH ===== */
+body {
+  animation: dmPageFadeIn .38s ease both;
+}
+
+@keyframes dmPageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.topbar {
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: -80px auto auto -120px;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(0,176,80,.18), transparent 64%);
+  pointer-events: none;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  inset: auto -120px -120px auto;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(47,128,237,.10), transparent 65%);
+  pointer-events: none;
+}
+
+.brand-left,
+.profile-area,
+.nav-panel,
+.stats-grid,
+.filter-panel,
+.charts-grid,
+.footer-note {
+  position: relative;
+  z-index: 1;
+}
+
+.app-mark.app-mark-logo {
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
+}
+
+.app-mark.app-mark-logo:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 16px 34px rgba(15,23,42,.12) !important;
+  filter: saturate(1.05);
+}
+
+.nav-btn,
+.btn-filter-apply,
+.btn-filter-clear,
+.logout-btn {
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.nav-btn:active,
+.btn-filter-apply:active,
+.btn-filter-clear:active,
+.logout-btn:active,
+.dashboard-filter-btn:active,
+.dashboard-detail-close:active {
+  transform: scale(.98);
+}
+
+.stat-card,
+.chart-card {
+  animation: dmCardRise .48s ease both;
+  will-change: transform;
+}
+
+.stat-card:nth-child(1) { animation-delay: .04s; }
+.stat-card:nth-child(2) { animation-delay: .08s; }
+.stat-card:nth-child(3) { animation-delay: .12s; }
+.stat-card:nth-child(4) { animation-delay: .16s; }
+.chart-card:nth-child(1) { animation-delay: .18s; }
+.chart-card:nth-child(2) { animation-delay: .22s; }
+.chart-card:nth-child(3) { animation-delay: .26s; }
+
+@keyframes dmCardRise {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(15,23,42,.12) !important;
+}
+
+.stat-icon-box {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.stat-card:hover .stat-icon-box {
+  transform: scale(1.06) rotate(-1deg);
+  box-shadow: 0 12px 26px rgba(0,176,80,.14);
+}
+
+.stat-content strong {
+  background: linear-gradient(135deg,#111827,#334155);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.chart-card {
+  isolation: isolate;
+}
+
+.chart-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.60), rgba(255,255,255,.08));
+  opacity: .42;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 26px 64px rgba(15,23,42,.13) !important;
+}
+
+.chart-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-heading h2::after {
+  content: '↗';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: #E8F7EE;
+  color: #00B050;
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.chart-card:hover .chart-heading h2::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.trend-line {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: dmDrawLine 1.15s ease .18s forwards;
+}
+
+@keyframes dmDrawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+.line-dot {
+  transform-origin: center;
+  animation: dmDotPop .45s ease both;
+}
+
+@keyframes dmDotPop {
+  from { opacity: 0; transform: scale(.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.hbar-fill {
+  transform-origin: left center;
+  animation: dmBarGrow .85s cubic-bezier(.2,.85,.2,1) both;
+}
+
+@keyframes dmBarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.filter-panel {
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+
+.filter-panel:focus-within {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 54px rgba(15,23,42,.11) !important;
+}
+
+.dashboard-detail-modal {
+  backdrop-filter: blur(6px);
+}
+
+.dashboard-detail-modal.is-open .dashboard-detail-card {
+  animation: dmModalIn .22s ease both;
+}
+
+@keyframes dmModalIn {
+  from { opacity: 0; transform: translateY(16px) scale(.965); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dashboard-detail-head h2 {
+  letter-spacing: -.5px;
+}
+
+.dashboard-detail-close {
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.dashboard-detail-close:hover {
+  transform: rotate(3deg) scale(1.04);
+  box-shadow: 0 12px 24px rgba(0,176,80,.20);
+}
+
+.dashboard-filter-btn {
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.dashboard-filter-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(0,176,80,.20) !important;
+  filter: brightness(1.03);
+}
+
+.dashboard-detail-table tbody tr {
+  transition: background .14s ease;
+}
+
+.dashboard-detail-table tbody tr:hover {
+  background: rgba(232,247,238,.72) !important;
+}
+
+.dashboard-detail-total strong {
+  animation: dmTotalPulse .55s ease both;
+}
+
+@keyframes dmTotalPulse {
+  from { opacity: .3; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* ===== FIM PLENNATEC PREMIUM UX ===== */
+
+
         .footer-note {
           margin-top: 14px;
           text-align: center;
@@ -2014,40 +2280,11 @@ body {
             function renderFiltroMes(tipoFiltro, dados, onChangeName) {
               const meses = getMesesDisponiveis(dados);
               if (!controls) return 'todos';
-
               const opcoes = ['<option value="todos">Todos os meses</option>'].concat(
                 meses.map(m => '<option value="' + escDashboard(m) + '">' + escDashboard(m) + '</option>')
               ).join('');
-
               controls.className = 'dashboard-detail-controls';
-              controls.innerHTML =
-                '<div class="dashboard-filter-box">' +
-                  '<label for="dashboardFiltroMes">Filtrar mês</label>' +
-                  '<select id="dashboardFiltroMes">' + opcoes + '</select>' +
-                  '<button type="button" id="dashboardFiltroMesBtn" class="dashboard-filter-btn">Aplicar</button>' +
-                '</div>' +
-                '<div class="dashboard-detail-total">' +
-                  '<small>Total do período selecionado</small>' +
-                  '<strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong>' +
-                '</div>';
-
-              const selectFiltro = document.getElementById('dashboardFiltroMes');
-              const botaoFiltro = document.getElementById('dashboardFiltroMesBtn');
-
-              function aplicarFiltro() {
-                const valorSelecionado = selectFiltro ? selectFiltro.value : 'todos';
-                if (onChangeName === 'atualizarDetalheCategorias') {
-                  atualizarDetalheCategorias(valorSelecionado);
-                  return;
-                }
-                if (onChangeName === 'atualizarDetalheFornecedores') {
-                  atualizarDetalheFornecedores(valorSelecionado);
-                }
-              }
-
-              if (selectFiltro) selectFiltro.addEventListener('change', aplicarFiltro);
-              if (botaoFiltro) botaoFiltro.addEventListener('click', aplicarFiltro);
-
+              controls.innerHTML = '<div class="dashboard-filter-box"><label for="dashboardFiltroMes">Filtrar mês</label><select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select><button type="button" class="dashboard-filter-btn" onclick="' + onChangeName + '(document.getElementById(\'dashboardFiltroMes\').value)">Aplicar</button></div><div class="dashboard-detail-total"><small>Total do período selecionado</small><strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong></div>';
               return 'todos';
             }
 
@@ -2094,7 +2331,7 @@ body {
               : detalhesCategorias.filter(item => item.mes_ref === mesSelecionadoDetalhe);
 
             const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
-            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
+            if (totalEl) { totalEl.textContent = fmtMoedaDashboard(totalPeriodo); totalEl.style.animation = 'none'; void totalEl.offsetWidth; totalEl.style.animation = ''; }
 
             const grupos = {};
             dadosFiltrados.forEach(item => {
@@ -2126,7 +2363,7 @@ body {
               : detalhesFornecedores.filter(item => item.mes_ref === mesSelecionadoDetalhe);
 
             const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
-            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
+            if (totalEl) { totalEl.textContent = fmtMoedaDashboard(totalPeriodo); totalEl.style.animation = 'none'; void totalEl.offsetWidth; totalEl.style.animation = ''; }
 
             table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Fornecedor</th><th>Quantidade de lançamentos</th><th class="valor">Valor total</th></tr></thead><tbody>' +
               (dadosFiltrados.length ? dadosFiltrados.map(item => '<tr><td>' + escDashboard(item.nome) + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>').join('') : '<tr><td colspan="3">Nenhuma despesa encontrada para o mês selecionado.</td></tr>') +
