@@ -1445,6 +1445,12 @@ function renderDashboard(data) {
         .dashboard-detail-head h2 { margin:0; font-size:22px; color:#101828; }
         .dashboard-detail-close { width:42px; height:42px; border-radius:12px; border:0; background:#00B050; color:#fff; font-size:22px; cursor:pointer; font-weight:900; }
         .dashboard-detail-chart { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:16px; }
+        .dashboard-detail-controls { display:flex; align-items:end; justify-content:space-between; gap:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin:0 0 14px; }
+        .dashboard-detail-controls label { display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:900; color:#334155; }
+        .dashboard-detail-controls select { min-width:190px; height:40px; border-radius:10px; border:1px solid #dce3ec; padding:0 12px; font-weight:800; background:#fff; color:#172033; }
+        .dashboard-detail-total { text-align:right; color:#101828; font-weight:900; }
+        .dashboard-detail-total small { display:block; color:#64748b; font-size:11px; margin-bottom:4px; }
+        .dashboard-detail-total strong { font-size:20px; color:#00B050; }
         .dashboard-detail-chart .line-chart { height:260px !important; max-height:260px !important; width:100% !important; display:block; }
         .dashboard-detail-card[data-detail-type="meses"] { width:min(820px, calc(100vw - 56px)); }
         .dashboard-detail-card[data-detail-type="meses"] .dashboard-detail-chart { padding:10px 12px; overflow:hidden; }
@@ -1963,6 +1969,7 @@ body {
               <button type="button" class="dashboard-detail-close" onclick="fecharDetalheDashboard()">×</button>
             </div>
             <div id="dashboardDetailChart" class="dashboard-detail-chart"></div>
+            <div id="dashboardDetailControls"></div>
             <div id="dashboardDetailTable"></div>
           </div>
         </div>
@@ -1988,7 +1995,30 @@ body {
             if (cardModal) cardModal.setAttribute('data-detail-type', tipo);
             const title = document.getElementById('dashboardDetailTitle');
             const chart = document.getElementById('dashboardDetailChart');
+            const controls = document.getElementById('dashboardDetailControls');
             const table = document.getElementById('dashboardDetailTable');
+            if (controls) controls.innerHTML = '';
+
+            function getMesesDisponiveis(dados) {
+              const set = new Set();
+              (dados || []).forEach(item => { if (item.mes_ref) set.add(item.mes_ref); });
+              return Array.from(set).sort();
+            }
+
+            function renderFiltroMes(tipoFiltro, dados, onChangeName) {
+              const meses = getMesesDisponiveis(dados);
+              if (!controls) return 'todos';
+              const opcoes = ['<option value="todos">Todos os meses</option>'].concat(
+                meses.map(m => '<option value="' + escDashboard(m) + '">' + escDashboard(m) + '</option>')
+              ).join('');
+              controls.innerHTML = '<label>Filtrar mês<select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select></label><div class="dashboard-detail-total"><small>Total do período selecionado</small><strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong></div>';
+              return 'todos';
+            }
+
+            function filtrarPorMes(dados, mes) {
+              if (!mes || mes === 'todos') return dados || [];
+              return (dados || []).filter(item => item.mes_ref === mes);
+            }
 
             if (tipo === 'meses') {
               title.textContent = 'Detalhes das despesas por mês';
@@ -2006,37 +2036,65 @@ body {
             if (tipo === 'categorias') {
               title.textContent = 'Detalhes das despesas por categoria';
               chart.innerHTML = document.getElementById('chartBodyCategorias')?.innerHTML || '';
-
-              const grupos = {};
-              detalhesCategorias.forEach(item => {
-                const principal = item.categoria_principal || 'Sem categoria';
-                if (!grupos[principal]) grupos[principal] = { quantidade: 0, total: 0, itens: [] };
-                grupos[principal].quantidade += Number(item.quantidade || 0);
-                grupos[principal].total += Number(item.total || 0);
-                grupos[principal].itens.push(item);
-              });
-
-              let linhas = '';
-              Object.keys(grupos).forEach(principal => {
-                const grupo = grupos[principal];
-                linhas += '<tr class="dashboard-detail-group"><td>' + escDashboard(principal) + '</td><td>' + grupo.quantidade + '</td><td class="valor">' + fmtMoedaDashboard(grupo.total) + '</td></tr>';
-                grupo.itens.forEach(item => {
-                  linhas += '<tr><td style="padding-left:28px;">↳ ' + escDashboard(item.subcategoria || 'Principal') + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>';
-                });
-              });
-
-              table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Categoria / Subcategoria</th><th>Quantidade</th><th class="valor">Valor total</th></tr></thead><tbody>' + linhas + '</tbody></table>';
+              renderFiltroMes('categorias', detalhesCategorias, 'atualizarDetalheCategorias');
+              atualizarDetalheCategorias('todos');
             }
 
             if (tipo === 'fornecedores') {
               title.textContent = 'Detalhes das despesas por fornecedor';
               chart.innerHTML = document.getElementById('chartBodyFornecedores')?.innerHTML || '';
-              table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Fornecedor</th><th>Quantidade de lançamentos</th><th class="valor">Valor total</th></tr></thead><tbody>' +
-                detalhesFornecedores.map(item => '<tr><td>' + escDashboard(item.nome) + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>').join('') +
-                '</tbody></table>';
+              renderFiltroMes('fornecedores', detalhesFornecedores, 'atualizarDetalheFornecedores');
+              atualizarDetalheFornecedores('todos');
             }
 
             modal.classList.add('is-open');
+          }
+
+          function atualizarDetalheCategorias(mesSelecionadoDetalhe) {
+            const table = document.getElementById('dashboardDetailTable');
+            const totalEl = document.getElementById('dashboardTotalFiltro');
+            const dadosFiltrados = (!mesSelecionadoDetalhe || mesSelecionadoDetalhe === 'todos')
+              ? detalhesCategorias
+              : detalhesCategorias.filter(item => item.mes_ref === mesSelecionadoDetalhe);
+
+            const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
+            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
+
+            const grupos = {};
+            dadosFiltrados.forEach(item => {
+              const principal = item.categoria_principal || 'Sem categoria';
+              if (!grupos[principal]) grupos[principal] = { quantidade: 0, total: 0, itens: [] };
+              grupos[principal].quantidade += Number(item.quantidade || 0);
+              grupos[principal].total += Number(item.total || 0);
+              grupos[principal].itens.push(item);
+            });
+
+            let linhas = '';
+            Object.keys(grupos).forEach(principal => {
+              const grupo = grupos[principal];
+              linhas += '<tr class="dashboard-detail-group"><td>' + escDashboard(principal) + '</td><td>' + grupo.quantidade + '</td><td class="valor">' + fmtMoedaDashboard(grupo.total) + '</td></tr>';
+              grupo.itens.forEach(item => {
+                linhas += '<tr><td style="padding-left:28px;">↳ ' + escDashboard(item.subcategoria || 'Principal') + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>';
+              });
+            });
+
+            if (!linhas) linhas = '<tr><td colspan="3">Nenhuma despesa encontrada para o mês selecionado.</td></tr>';
+            table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Categoria / Subcategoria</th><th>Quantidade</th><th class="valor">Valor total</th></tr></thead><tbody>' + linhas + '</tbody></table>';
+          }
+
+          function atualizarDetalheFornecedores(mesSelecionadoDetalhe) {
+            const table = document.getElementById('dashboardDetailTable');
+            const totalEl = document.getElementById('dashboardTotalFiltro');
+            const dadosFiltrados = (!mesSelecionadoDetalhe || mesSelecionadoDetalhe === 'todos')
+              ? detalhesFornecedores
+              : detalhesFornecedores.filter(item => item.mes_ref === mesSelecionadoDetalhe);
+
+            const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
+            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
+
+            table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Fornecedor</th><th>Quantidade de lançamentos</th><th class="valor">Valor total</th></tr></thead><tbody>' +
+              (dadosFiltrados.length ? dadosFiltrados.map(item => '<tr><td>' + escDashboard(item.nome) + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>').join('') : '<tr><td colspan="3">Nenhuma despesa encontrada para o mês selecionado.</td></tr>') +
+              '</tbody></table>';
           }
 
           function fecharDetalheDashboard(event) {
@@ -4935,6 +4993,7 @@ router.get('/dashboard', protegerRota, async (req, res) => {
 
       pool.query(`
         SELECT
+          TO_CHAR(DATE_TRUNC('month', l.data_despesa), 'YYYY-MM') AS mes_ref,
           COALESCE(p.nome, c.nome, 'Sem categoria') AS categoria_principal,
           CASE
             WHEN p.nome IS NOT NULL THEN COALESCE(c.nome, 'Sem subcategoria')
@@ -4945,25 +5004,27 @@ router.get('/dashboard', protegerRota, async (req, res) => {
         FROM lancamentos l
         LEFT JOIN categorias c ON c.id = l.categoria_id
         LEFT JOIN categorias p ON p.id = c.categoria_pai_id
-        ${whereFiltro ? whereFiltro.replace(/data_despesa/g, 'l.data_despesa') : ''}
+        ${whereFiltro ? whereFiltro.replace(/data_despesa/g, 'l.data_despesa') : 'WHERE l.data_despesa IS NOT NULL'}
         GROUP BY
+          DATE_TRUNC('month', l.data_despesa),
           COALESCE(p.nome, c.nome, 'Sem categoria'),
           CASE
             WHEN p.nome IS NOT NULL THEN COALESCE(c.nome, 'Sem subcategoria')
             ELSE 'Principal'
           END
-        ORDER BY categoria_principal ASC, total DESC
+        ORDER BY mes_ref DESC, categoria_principal ASC, total DESC
       `, valuesFiltro),
 
       pool.query(`
         SELECT
+          TO_CHAR(DATE_TRUNC('month', data_despesa), 'YYYY-MM') AS mes_ref,
           COALESCE(NULLIF(TRIM(fornecedor), ''), 'Sem fornecedor') AS nome,
           COUNT(*)::int AS quantidade,
           COALESCE(SUM(valor), 0)::numeric AS total
         FROM lancamentos
-        ${whereFiltro}
-        GROUP BY COALESCE(NULLIF(TRIM(fornecedor), ''), 'Sem fornecedor')
-        ORDER BY total DESC
+        ${whereFiltro || 'WHERE data_despesa IS NOT NULL'}
+        GROUP BY DATE_TRUNC('month', data_despesa), COALESCE(NULLIF(TRIM(fornecedor), ''), 'Sem fornecedor')
+        ORDER BY mes_ref DESC, total DESC
       `, valuesFiltro)
     ]);
 
@@ -5027,12 +5088,14 @@ router.get('/dashboard', protegerRota, async (req, res) => {
         total: Number(item.total || 0)
       })),
       detalhesCategorias: detalhesCategoriasResult.rows.map(item => ({
+        mes_ref: item.mes_ref,
         categoria_principal: item.categoria_principal,
         subcategoria: item.subcategoria,
         quantidade: Number(item.quantidade || 0),
         total: Number(item.total || 0)
       })),
       detalhesFornecedores: detalhesFornecedoresResult.rows.map(item => ({
+        mes_ref: item.mes_ref,
         nome: item.nome,
         quantidade: Number(item.quantidade || 0),
         total: Number(item.total || 0)
