@@ -1448,15 +1448,15 @@ function renderDashboard(data) {
         .dashboard-detail-head h2 { margin:0; font-size:22px; color:#101828; }
         .dashboard-detail-close { width:42px; height:42px; border-radius:12px; border:0; background:#00B050; color:#fff; font-size:22px; cursor:pointer; font-weight:900; }
         .dashboard-detail-chart { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:16px; }
-        .dashboard-detail-controls { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:18px !important; background:linear-gradient(180deg,#ffffff,#f7fafc) !important; border:1px solid #dbe4ef !important; border-radius:18px !important; padding:14px 16px !important; margin:0 0 16px !important; box-shadow:0 10px 24px rgba(15,23,42,.06) !important; }
-        .dashboard-filter-box { display:flex !important; align-items:center !important; gap:10px !important; flex-wrap:wrap !important; }
-        .dashboard-filter-box label { display:inline-flex !important; align-items:center !important; margin:0 !important; font-size:13px !important; font-weight:900 !important; color:#172033 !important; white-space:nowrap !important; }
-        .dashboard-filter-box select { min-width:230px !important; height:44px !important; border-radius:13px !important; border:1px solid #cfd9e6 !important; padding:0 14px !important; font-weight:900 !important; background:#fff !important; color:#172033 !important; box-shadow:0 6px 14px rgba(15,23,42,.05) !important; }
-        .dashboard-filter-btn { height:44px !important; padding:0 18px !important; border-radius:13px !important; border:1px solid rgba(0,176,80,.88) !important; background:linear-gradient(135deg,#00B050,#009640) !important; color:#fff !important; font-weight:900 !important; cursor:pointer !important; box-shadow:0 10px 20px rgba(0,176,80,.16) !important; }
-        .dashboard-detail-total { min-width:240px !important; text-align:right !important; color:#101828 !important; font-weight:900 !important; display:flex !important; flex-direction:column !important; justify-content:center !important; align-items:flex-end !important; padding-left:16px !important; border-left:1px solid #e2e8f0 !important; }
-        .dashboard-detail-total small { display:block !important; color:#64748b !important; font-size:11px !important; margin-bottom:5px !important; font-weight:900 !important; }
-        .dashboard-detail-total strong { font-size:23px !important; color:#00B050 !important; line-height:1 !important; letter-spacing:-.5px !important; }
-        @media(max-width:760px){.dashboard-detail-controls{align-items:stretch !important;flex-direction:column !important}.dashboard-filter-box{align-items:stretch !important;flex-direction:column !important}.dashboard-filter-box select,.dashboard-filter-btn{width:100% !important;min-width:0 !important}.dashboard-detail-total{align-items:flex-start !important;text-align:left !important;min-width:0 !important;border-left:0 !important;border-top:1px solid #e2e8f0 !important;padding-left:0 !important;padding-top:12px !important}}
+        .dashboard-detail-controls { display:flex; align-items:center; justify-content:space-between; gap:18px; background:linear-gradient(180deg,#ffffff,#f7fafc); border:1px solid #dbe4ef; border-radius:18px; padding:14px 16px; margin:0 0 16px; box-shadow:0 10px 24px rgba(15,23,42,.06); }
+        .dashboard-filter-box { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .dashboard-filter-box label { display:inline-flex; align-items:center; margin:0; font-size:13px; font-weight:900; color:#172033; white-space:nowrap; }
+        .dashboard-filter-box select { min-width:230px; height:44px; border-radius:13px; border:1px solid #cfd9e6; padding:0 14px; font-weight:900; background:#fff; color:#172033; box-shadow:0 6px 14px rgba(15,23,42,.05); }
+        .dashboard-filter-btn { height:44px; padding:0 18px; border-radius:13px; border:1px solid rgba(0,176,80,.88); background:linear-gradient(135deg,#00B050,#009640); color:#fff; font-weight:900; cursor:pointer; box-shadow:0 10px 20px rgba(0,176,80,.16); }
+        .dashboard-detail-total { min-width:240px; text-align:right; color:#101828; font-weight:900; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:16px; border-left:1px solid #e2e8f0; }
+        .dashboard-detail-total small { display:block; color:#64748b; font-size:11px; margin-bottom:5px; font-weight:900; }
+        .dashboard-detail-total strong { font-size:23px; color:#00B050; line-height:1; letter-spacing:-.5px; }
+        @media(max-width:760px){.dashboard-detail-controls{align-items:stretch;flex-direction:column}.dashboard-filter-box{align-items:stretch;flex-direction:column}.dashboard-filter-box select,.dashboard-filter-btn{width:100%;min-width:0}.dashboard-detail-total{align-items:flex-start;text-align:left;min-width:0;border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:12px}}
         .dashboard-detail-chart .line-chart { height:260px !important; max-height:260px !important; width:100% !important; display:block; }
         .dashboard-detail-card[data-detail-type="meses"] { width:min(820px, calc(100vw - 56px)); }
         .dashboard-detail-card[data-detail-type="meses"] .dashboard-detail-chart { padding:10px 12px; overflow:hidden; }
@@ -2003,7 +2003,7 @@ body {
             const chart = document.getElementById('dashboardDetailChart');
             const controls = document.getElementById('dashboardDetailControls');
             const table = document.getElementById('dashboardDetailTable');
-            if (controls) controls.innerHTML = ''; controls.className = '';
+            if (controls) { controls.innerHTML = ''; controls.className = ''; }
 
             function getMesesDisponiveis(dados) {
               const set = new Set();
@@ -2014,20 +2014,11 @@ body {
             function renderFiltroMes(tipoFiltro, dados, onChangeName) {
               const meses = getMesesDisponiveis(dados);
               if (!controls) return 'todos';
-              controls.className = 'dashboard-detail-controls';
               const opcoes = ['<option value="todos">Todos os meses</option>'].concat(
                 meses.map(m => '<option value="' + escDashboard(m) + '">' + escDashboard(m) + '</option>')
               ).join('');
-              controls.innerHTML =
-                '<div class="dashboard-filter-box">' +
-                  '<label for="dashboardFiltroMes">Filtrar mês</label>' +
-                  '<select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select>' +
-                  '<button type="button" class="dashboard-filter-btn" onclick="' + onChangeName + '(document.getElementById(\'dashboardFiltroMes\').value)">Aplicar</button>' +
-                '</div>' +
-                '<div class="dashboard-detail-total">' +
-                  '<small>Total do período selecionado</small>' +
-                  '<strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong>' +
-                '</div>';
+              controls.className = 'dashboard-detail-controls';
+              controls.innerHTML = '<div class="dashboard-filter-box"><label for="dashboardFiltroMes">Filtrar mês</label><select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select><button type="button" class="dashboard-filter-btn" onclick="' + onChangeName + '(document.getElementById(\'dashboardFiltroMes\').value)">Aplicar</button></div><div class="dashboard-detail-total"><small>Total do período selecionado</small><strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong></div>';
               return 'todos';
             }
 
