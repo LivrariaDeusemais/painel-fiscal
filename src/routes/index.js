@@ -4820,7 +4820,7 @@ router.get('/documentos', protegerRota, async (req, res) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Arquivo</title>
+        <title>Arquivo de Comprovantes Fiscais</title>
         <style>
           * { box-sizing: border-box; }
           body {
@@ -5316,7 +5316,7 @@ body {
         ${renderGlobalHeader(req, { titulo: 'Arquivo', subtitulo: 'Importe, consulte e gere lançamentos a partir dos arquivos de comprovantes fiscais.', paginaAtual: 'documentos' })}
         <div class="container">
           <div class="card">
-            <h1>📁 Arquivo de Comprovantes Fiscais</h1>
+            <h1>📁 Arquivo</h1>
 
             <form method="POST" action="/documentos/importar" enctype="multipart/form-data">
               <div class="grid">
