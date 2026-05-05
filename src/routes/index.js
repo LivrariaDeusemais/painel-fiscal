@@ -751,7 +751,7 @@ function renderGlobalHeader(req, config = {}) {
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
-    { key: 'documentos', href: '/documentos', label: 'Documentos Fiscais' },
+    { key: 'documentos', href: '/documentos', label: 'Arquivo' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
     ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
@@ -1856,7 +1856,7 @@ body {
         <nav class="nav-panel" aria-label="Menu principal">
           <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
-          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Documentos Fiscais</a>
+          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -4760,7 +4760,7 @@ router.get('/dashboard', protegerRota, async (req, res) => {
 });
 
 // =============================
-// DOCUMENTOS FISCAIS
+// ARQUIVO
 // =============================
 router.get('/documentos', protegerRota, async (req, res) => {
   try {
@@ -4820,7 +4820,7 @@ router.get('/documentos', protegerRota, async (req, res) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Documentos Fiscais</title>
+        <title>Arquivo</title>
         <style>
           * { box-sizing: border-box; }
           body {
@@ -5313,10 +5313,10 @@ body {
 </style>
       </head>
       <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Documentos Fiscais', subtitulo: 'Importe, consulte e gere lançamentos a partir dos documentos fiscais.', paginaAtual: 'documentos' })}
+        ${renderGlobalHeader(req, { titulo: 'Arquivo', subtitulo: 'Importe, consulte e gere lançamentos a partir dos arquivos de comprovantes fiscais.', paginaAtual: 'documentos' })}
         <div class="container">
           <div class="card">
-            <h1>📁 Documentos Fiscais</h1>
+            <h1>📁 Arquivo de Comprovantes Fiscais</h1>
 
             <form method="POST" action="/documentos/importar" enctype="multipart/form-data">
               <div class="grid">
