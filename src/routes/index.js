@@ -1029,7 +1029,7 @@ function renderDashboard(data) {
         .brand-left {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 18px;
           min-width: 0;
         }
 
@@ -1423,15 +1423,16 @@ function renderDashboard(data) {
 
 /* ===== REFINO LOGO DASHBOARD PLENNATEC ===== */
 .app-mark.app-mark-logo {
-  width: 112px !important;
-  height: 40px !important;
-  padding: 4px 9px !important;
+  width: 158px !important;
+  height: 48px !important;
+  padding: 5px 13px !important;
   border-radius: 12px !important;
-  background: rgba(255,255,255,.78) !important;
+  background: rgba(255,255,255,.86) !important;
 }
 .app-mark.app-mark-logo img {
-  max-width: 100% !important;
-  max-height: 34px !important;
+  width: 100% !important;
+  max-width: 132px !important;
+  max-height: 40px !important;
   object-fit: contain !important;
 }
 
@@ -1444,6 +1445,12 @@ function renderDashboard(data) {
         .dashboard-detail-head h2 { margin:0; font-size:22px; color:#101828; }
         .dashboard-detail-close { width:42px; height:42px; border-radius:12px; border:0; background:#00B050; color:#fff; font-size:22px; cursor:pointer; font-weight:900; }
         .dashboard-detail-chart { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:16px; }
+        .dashboard-detail-chart .line-chart { height:260px !important; max-height:260px !important; width:100% !important; display:block; }
+        .dashboard-detail-card[data-detail-type="meses"] { width:min(820px, calc(100vw - 56px)); }
+        .dashboard-detail-card[data-detail-type="meses"] .dashboard-detail-chart { padding:10px 12px; overflow:hidden; }
+        .dashboard-detail-card[data-detail-type="meses"] .point-value { font-size:12px !important; }
+        .dashboard-detail-card[data-detail-type="meses"] .month-label,
+        .dashboard-detail-card[data-detail-type="meses"] .axis-label { font-size:11px !important; }
         .dashboard-detail-table { width:100%; border-collapse:collapse; font-size:13px; }
         .dashboard-detail-table th, .dashboard-detail-table td { padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:left; }
         .dashboard-detail-table th { background:#f1f5f9 !important; color:#334155 !important; font-weight:900; }
@@ -1977,6 +1984,8 @@ body {
 
           function abrirDetalheDashboard(tipo) {
             const modal = document.getElementById('dashboardDetailModal');
+            const cardModal = modal ? modal.querySelector('.dashboard-detail-card') : null;
+            if (cardModal) cardModal.setAttribute('data-detail-type', tipo);
             const title = document.getElementById('dashboardDetailTitle');
             const chart = document.getElementById('dashboardDetailChart');
             const table = document.getElementById('dashboardDetailTable');
@@ -1984,6 +1993,11 @@ body {
             if (tipo === 'meses') {
               title.textContent = 'Detalhes das despesas por mês';
               chart.innerHTML = document.getElementById('chartBodyMeses')?.innerHTML || '';
+              const svgMes = chart.querySelector('svg.line-chart');
+              if (svgMes) {
+                svgMes.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                svgMes.style.height = '260px';
+              }
               table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Mês</th><th>Quantidade de lançamentos</th><th class="valor">Valor total</th></tr></thead><tbody>' +
                 detalhesMeses.map(item => '<tr><td>' + escDashboard(item.mes_ref) + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>').join('') +
                 '</tbody></table>';
@@ -2556,8 +2570,8 @@ body .login-page {
   max-width: 380px !important;
 }
 body .login-page .logo {
-  width: 245px !important;
-  max-width: 76% !important;
+  width: 320px !important;
+  max-width: 88% !important;
   height: auto !important;
   margin: 0 auto 14px !important;
   display: block !important;
@@ -2567,14 +2581,14 @@ body .login-page .logo {
   mix-blend-mode: multiply;
 }
 body .login-page .login-title {
-  margin: 0 0 8px !important;
+  margin: 0 0 14px !important;
   line-height: 1.08 !important;
   color: #101828 !important;
   text-align: center !important;
 }
 body .login-page .login-title-main {
   display: block !important;
-  font-size: 24px !important;
+  font-size: 23px !important;
   font-weight: 900 !important;
   letter-spacing: -0.45px !important;
   color: #101828 !important;
@@ -2582,12 +2596,12 @@ body .login-page .login-title-main {
 body .login-page .login-title-sub {
   display: block !important;
   margin-top: 5px !important;
-  font-size: 17px !important;
+  font-size: 16px !important;
   font-weight: 900 !important;
   color: #00B050 !important;
 }
 body .login-page .subtitle {
-  margin: 0 0 12px !important;
+  margin: 8px 0 14px !important;
   font-size: 13px !important;
   color: #334155 !important;
 }
