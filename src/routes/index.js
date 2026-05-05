@@ -1470,269 +1470,623 @@ function renderDashboard(data) {
         .dashboard-detail-group { background:#E8F7EE !important; font-weight:900; }
 
 
-/* ===== PLENNATEC PREMIUM UX - DASHBOARD FINTECH ===== */
+/* ===== PLENNATEC DASHBOARD PREMIUM - LAYOUT APROVADO ===== */
 body {
-  animation: dmPageFadeIn .38s ease both;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232,247,238,.78) 0%, transparent 30%),
+    linear-gradient(135deg, #f7faf9 0%, #ffffff 46%, #f3f7f6 100%) !important;
+  animation: premiumPageIn .35s ease both;
 }
 
-@keyframes dmPageFadeIn {
+@keyframes premiumPageIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.topbar {
-  position: relative;
+.page-shell {
+  width: min(1720px, calc(100% - 32px)) !important;
+  margin: 0 auto !important;
+  min-height: 100vh;
+  display: grid !important;
+  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar stats"
+    "sidebar filter"
+    "sidebar charts"
+    "sidebar footer";
+  gap: 18px 24px;
+  padding: 22px 0 18px;
+}
+
+.premium-sidebar {
+  grid-area: sidebar;
+  position: sticky;
+  top: 18px;
+  height: calc(100vh - 36px);
   overflow: hidden;
+  border-radius: 0 28px 28px 0;
+  padding: 26px 18px 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 40% 20%, rgba(32,201,112,.30), transparent 28%),
+    linear-gradient(180deg, #063d31 0%, #075236 46%, #043324 100%);
+  box-shadow: 0 28px 80px rgba(4,51,36,.24);
+  display: flex;
+  flex-direction: column;
 }
 
-.topbar::before {
+.premium-sidebar::before {
   content: '';
   position: absolute;
-  inset: -80px auto auto -120px;
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(0,176,80,.18), transparent 64%);
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.10), transparent 32%),
+    radial-gradient(circle at 20% 80%, rgba(0,176,80,.22), transparent 30%);
   pointer-events: none;
 }
 
-.topbar::after {
-  content: '';
-  position: absolute;
-  inset: auto -120px -120px auto;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(47,128,237,.10), transparent 65%);
-  pointer-events: none;
-}
-
-.brand-left,
-.profile-area,
-.nav-panel,
-.stats-grid,
-.filter-panel,
-.charts-grid,
-.footer-note {
+.premium-sidebar > * {
   position: relative;
   z-index: 1;
 }
 
-.app-mark.app-mark-logo {
-  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
-}
-
-.app-mark.app-mark-logo:hover {
-  transform: translateY(-2px) scale(1.015);
-  box-shadow: 0 16px 34px rgba(15,23,42,.12) !important;
-  filter: saturate(1.05);
-}
-
-.nav-btn,
-.btn-filter-apply,
-.btn-filter-clear,
-.logout-btn {
-  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
-}
-
-.nav-btn:active,
-.btn-filter-apply:active,
-.btn-filter-clear:active,
-.logout-btn:active,
-.dashboard-filter-btn:active,
-.dashboard-detail-close:active {
-  transform: scale(.98);
-}
-
-.stat-card,
-.chart-card {
-  animation: dmCardRise .48s ease both;
-  will-change: transform;
-}
-
-.stat-card:nth-child(1) { animation-delay: .04s; }
-.stat-card:nth-child(2) { animation-delay: .08s; }
-.stat-card:nth-child(3) { animation-delay: .12s; }
-.stat-card:nth-child(4) { animation-delay: .16s; }
-.chart-card:nth-child(1) { animation-delay: .18s; }
-.chart-card:nth-child(2) { animation-delay: .22s; }
-.chart-card:nth-child(3) { animation-delay: .26s; }
-
-@keyframes dmCardRise {
-  from { opacity: 0; transform: translateY(14px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 24px 60px rgba(15,23,42,.12) !important;
-}
-
-.stat-icon-box {
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-
-.stat-card:hover .stat-icon-box {
-  transform: scale(1.06) rotate(-1deg);
-  box-shadow: 0 12px 26px rgba(0,176,80,.14);
-}
-
-.stat-content strong {
-  background: linear-gradient(135deg,#111827,#334155);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent !important;
-}
-
-.chart-card {
-  isolation: isolate;
-}
-
-.chart-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,.60), rgba(255,255,255,.08));
-  opacity: .42;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.chart-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 26px 64px rgba(15,23,42,.13) !important;
-}
-
-.chart-heading h2 {
-  display: inline-flex;
+.premium-sidebar-logo {
+  width: 100%;
+  height: 68px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  padding: 11px 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 18px 36px rgba(0,0,0,.18);
 }
 
-.chart-heading h2::after {
-  content: '↗';
+.premium-sidebar-logo img {
+  width: 100%;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.premium-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.premium-side-link {
+  height: 48px;
+  padding: 0 15px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 14px;
+  font-weight: 850;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.premium-side-link span {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #dcffe9;
+}
+
+.premium-side-link:hover {
+  transform: translateX(4px);
+  background: rgba(255,255,255,.10);
+}
+
+.premium-side-link.active {
+  background: linear-gradient(135deg, #13bd58, #079241);
+  box-shadow: 0 15px 32px rgba(19,189,88,.33), inset 0 1px 0 rgba(255,255,255,.24);
+  color: #fff !important;
+}
+
+.premium-upgrade {
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(29,185,84,.22), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+.premium-upgrade strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.premium-upgrade small {
+  display: block;
+  color: rgba(255,255,255,.75);
+  font-size: 11px;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.premium-upgrade a {
+  height: 38px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 19px;
-  height: 19px;
-  border-radius: 999px;
-  background: #E8F7EE;
-  color: #00B050;
-  font-size: 12px;
+  width: 100%;
+  text-decoration: none;
+  color: #06412d !important;
+  background: #d8ffe4;
   font-weight: 900;
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity .18s ease, transform .18s ease;
+  transition: transform .16s ease, filter .16s ease;
 }
 
-.chart-card:hover .chart-heading h2::after {
-  opacity: 1;
-  transform: translateX(0);
+.premium-upgrade a:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.premium-sidebar-user {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.16);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.premium-sidebar-user img {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  object-fit: contain;
+  background: #fff;
+  padding: 4px;
+}
+
+.premium-sidebar-user strong,
+.premium-sidebar-user small {
+  display: block;
+}
+
+.premium-sidebar-user strong {
+  font-size: 12px;
+  color: #fff;
+}
+
+.premium-sidebar-user small {
+  color: rgba(255,255,255,.70);
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.topbar {
+  grid-area: topbar;
+  min-height: 74px !important;
+  border-radius: 24px !important;
+  padding: 18px 24px !important;
+  background: rgba(255,255,255,.86) !important;
+  box-shadow: 0 18px 46px rgba(15,23,42,.07) !important;
+  overflow: hidden;
+  animation: premiumSlideUp .42s ease both;
+}
+
+.topbar .app-mark.app-mark-logo {
+  display: none !important;
+}
+
+.brand-title h1 {
+  font-size: 26px !important;
+  letter-spacing: -.65px !important;
+}
+
+.brand-title p {
+  font-size: 13px !important;
+  color: #52627a !important;
+  font-weight: 700 !important;
+}
+
+.nav-panel {
+  display: none !important;
+}
+
+.stats-grid {
+  grid-area: stats;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+.stat-card {
+  min-height: 150px !important;
+  align-items: flex-start !important;
+  flex-direction: column;
+  gap: 12px !important;
+  padding: 22px !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 42px rgba(15,23,42,.08) !important;
+  position: relative;
+  overflow: hidden;
+  animation: premiumCardIn .44s ease both;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  height: 32px;
+  opacity: .74;
+  background:
+    linear-gradient(135deg, transparent 0 8%, rgba(0,176,80,.12) 8% 12%, transparent 12% 22%, rgba(0,176,80,.18) 22% 29%, transparent 29% 40%, rgba(0,176,80,.13) 40% 46%, transparent 46% 62%, rgba(0,176,80,.20) 62% 69%, transparent 69% 100%);
+  clip-path: polygon(0 70%, 12% 56%, 22% 66%, 34% 40%, 48% 54%, 62% 34%, 78% 56%, 100% 24%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 28px 70px rgba(15,23,42,.13) !important;
+}
+
+.stat-icon-box {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 15px !important;
+  box-shadow: 0 13px 24px rgba(0,176,80,.16);
+}
+
+.stat-content small {
+  font-size: 12px !important;
+  color: #334155 !important;
+  margin-bottom: 6px !important;
+}
+
+.stat-content strong {
+  font-size: 25px !important;
+  color: #0f172a !important;
+  letter-spacing: -.6px !important;
+}
+
+.stat-content span {
+  font-size: 12px !important;
+  color: #078a3d !important;
+  font-weight: 800 !important;
+}
+
+.filter-panel {
+  grid-area: filter;
+  margin: 0 !important;
+  min-height: 62px !important;
+  justify-content: flex-end;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.filter-panel label {
+  display: none;
+}
+
+.filter-panel select {
+  width: 260px !important;
+  height: 48px !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  box-shadow: 0 12px 26px rgba(15,23,42,.07);
+}
+
+.btn-filter-apply {
+  height: 48px !important;
+  border-radius: 15px !important;
+  background: linear-gradient(135deg,#047b3a,#009640) !important;
+  box-shadow: 0 16px 28px rgba(0,128,64,.18) !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.btn-filter-clear {
+  height: 48px !important;
+  border-radius: 15px !important;
+}
+
+.btn-filter-apply:hover,
+.btn-filter-clear:hover,
+.logout-btn:hover {
+  transform: translateY(-2px);
+}
+
+.charts-grid {
+  grid-area: charts;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 18px !important;
+  margin: 0 !important;
+}
+
+.chart-card {
+  min-height: 330px !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 42px rgba(15,23,42,.08) !important;
+  border: 1px solid #eef2f4 !important;
+  padding: 24px !important;
+  transition: transform .18s ease, box-shadow .18s ease;
+  animation: premiumCardIn .5s ease both;
+}
+
+.chart-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 28px 70px rgba(15,23,42,.13) !important;
+}
+
+.chart-card:nth-child(1) {
+  order: 3;
+  grid-column: 1 / span 2;
+  min-height: 390px !important;
+}
+
+.chart-card:nth-child(2) {
+  order: 1;
+}
+
+.chart-card:nth-child(3) {
+  order: 2;
+}
+
+.chart-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-left: 0 !important;
+}
+
+.chart-heading::before {
+  display: none !important;
+}
+
+.chart-heading h2 {
+  font-size: 20px !important;
+}
+
+.chart-heading p {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+.chart-heading::after {
+  content: 'Ver detalhes ↗';
+  color: #008f45;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: .95;
+}
+
+.hbar-list {
+  gap: 17px !important;
+  padding-top: 10px !important;
+}
+
+.hbar-header {
+  font-size: 13px !important;
+}
+
+.hbar-track {
+  height: 9px !important;
+}
+
+.line-chart {
+  height: 295px !important;
 }
 
 .trend-line {
   stroke-dasharray: 900;
   stroke-dashoffset: 900;
-  animation: dmDrawLine 1.15s ease .18s forwards;
-}
-
-@keyframes dmDrawLine {
-  to { stroke-dashoffset: 0; }
-}
-
-.line-dot {
-  transform-origin: center;
-  animation: dmDotPop .45s ease both;
-}
-
-@keyframes dmDotPop {
-  from { opacity: 0; transform: scale(.2); }
-  to { opacity: 1; transform: scale(1); }
+  animation: premiumDrawLine 1s ease .12s forwards;
 }
 
 .hbar-fill {
   transform-origin: left center;
-  animation: dmBarGrow .85s cubic-bezier(.2,.85,.2,1) both;
+  animation: premiumBarGrow .75s cubic-bezier(.2,.85,.2,1) both;
 }
 
-@keyframes dmBarGrow {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-.filter-panel {
-  transition: box-shadow .18s ease, transform .18s ease;
-}
-
-.filter-panel:focus-within {
-  transform: translateY(-1px);
-  box-shadow: 0 22px 54px rgba(15,23,42,.11) !important;
+.line-dot {
+  animation: premiumDotPop .35s ease both;
 }
 
 .dashboard-detail-modal {
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(7px);
 }
 
 .dashboard-detail-modal.is-open .dashboard-detail-card {
-  animation: dmModalIn .22s ease both;
+  animation: premiumModalIn .22s ease both;
 }
 
-@keyframes dmModalIn {
-  from { opacity: 0; transform: translateY(16px) scale(.965); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.dashboard-detail-card {
+  border-radius: 22px !important;
+  box-shadow: 0 34px 92px rgba(15,23,42,.28) !important;
 }
 
-.dashboard-detail-head h2 {
-  letter-spacing: -.5px;
+.dashboard-detail-controls {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  background:linear-gradient(180deg,#ffffff,#f7fafc) !important;
+  border:1px solid #dbe4ef !important;
+  border-radius:18px !important;
+  padding:14px 16px !important;
+  margin:0 0 16px !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06) !important;
 }
 
-.dashboard-detail-close {
-  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+.dashboard-filter-box {
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
 }
 
-.dashboard-detail-close:hover {
-  transform: rotate(3deg) scale(1.04);
-  box-shadow: 0 12px 24px rgba(0,176,80,.20);
+.dashboard-filter-box label {
+  display:inline-flex !important;
+  align-items:center !important;
+  margin:0 !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  color:#172033 !important;
+  white-space:nowrap !important;
+}
+
+.dashboard-filter-box select {
+  min-width:230px !important;
+  height:44px !important;
+  border-radius:13px !important;
+  border:1px solid #cfd9e6 !important;
+  padding:0 14px !important;
+  font-weight:900 !important;
+  background:#fff !important;
+  color:#172033 !important;
+  box-shadow:0 6px 14px rgba(15,23,42,.05) !important;
 }
 
 .dashboard-filter-btn {
+  height:44px !important;
+  padding:0 18px !important;
+  border-radius:13px !important;
+  border:1px solid rgba(0,176,80,.88) !important;
+  background:linear-gradient(135deg,#00B050,#009640) !important;
+  color:#fff !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+  box-shadow:0 10px 20px rgba(0,176,80,.16) !important;
   transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
 }
 
 .dashboard-filter-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(0,176,80,.20) !important;
-  filter: brightness(1.03);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(0,176,80,.22) !important;
 }
 
-.dashboard-detail-table tbody tr {
-  transition: background .14s ease;
+.dashboard-detail-total {
+  min-width:240px !important;
+  text-align:right !important;
+  color:#101828 !important;
+  font-weight:900 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:flex-end !important;
+  padding-left:16px !important;
+  border-left:1px solid #e2e8f0 !important;
 }
 
-.dashboard-detail-table tbody tr:hover {
-  background: rgba(232,247,238,.72) !important;
+.dashboard-detail-total small {
+  display:block !important;
+  color:#64748b !important;
+  font-size:11px !important;
+  margin-bottom:5px !important;
+  font-weight:900 !important;
 }
 
 .dashboard-detail-total strong {
-  animation: dmTotalPulse .55s ease both;
+  font-size:23px !important;
+  color:#00B050 !important;
+  line-height:1 !important;
+  letter-spacing:-.5px !important;
 }
 
-@keyframes dmTotalPulse {
-  from { opacity: .3; transform: translateY(3px); }
+.footer-note {
+  grid-area: footer;
+}
+
+@keyframes premiumCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes premiumSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: .001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .001ms !important;
-    scroll-behavior: auto !important;
+@keyframes premiumDrawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes premiumBarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes premiumDotPop {
+  from { opacity: 0; transform: scale(.25); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes premiumModalIn {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "topbar"
+      "filter"
+      "stats"
+      "charts"
+      "footer" !important;
+    width: min(100% - 24px, 1180px) !important;
+  }
+
+  .premium-sidebar {
+    display: none !important;
+  }
+
+  .nav-panel {
+    display: grid !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
   }
 }
-/* ===== FIM PLENNATEC PREMIUM UX ===== */
+
+@media (max-width: 760px) {
+  .stats-grid,
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chart-card:nth-child(1) {
+    grid-column: auto !important;
+  }
+
+  .filter-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-panel select,
+  .btn-filter-apply,
+  .btn-filter-clear {
+    width: 100% !important;
+  }
+}
+/* ===== FIM PLENNATEC DASHBOARD PREMIUM - LAYOUT APROVADO ===== */
 
 
         .footer-note {
@@ -2154,11 +2508,38 @@ body {
     </head>
     <body>
       <main class="page-shell">
+        <aside class="premium-sidebar" aria-label="Menu lateral PlennaTec">
+          <div class="premium-sidebar-logo">
+            <img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" />
+          </div>
+
+          <nav class="premium-side-nav">
+            <a class="premium-side-link active" href="/dashboard"><span>⌂</span>Dashboard</a>
+            <a class="premium-side-link" href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
+            <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
+            <a class="premium-side-link" href="/documentos"><span>▣</span>Arquivo</a>
+            <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
+            <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
+            <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
+          </nav>
+
+          <div class="premium-upgrade">
+            <strong>Gestão Premium</strong>
+            <small>Controle fiscal, financeiro e documentos em um painel executivo.</small>
+            <a href="/novo">Novo lançamento</a>
+          </div>
+
+          <div class="premium-sidebar-user">
+            <img src="/assets/logo-plennatec-perfil.png" onerror="this.style.display='none'" alt="Perfil" />
+            <div><strong>${escapeHtml(usuario.nome || 'Genivaldo Sestari')}</strong><small>${escapeHtml(usuario.perfil || 'Administrador')}</small></div>
+          </div>
+        </aside>
+
         <header class="topbar">
           <div class="brand-left">
             <div class="app-mark app-mark-logo" aria-hidden="true"><img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" /></div>
             <div class="brand-title">
-              <h1>Painel Fiscal - PlennaTec</h1>
+              <h1>Olá, ${escapeHtml((usuario.nome || 'Genivaldo').split(' ')[0] || 'Usuário')}! 👋</h1>
               <p>${subtituloFiltro}</p>
             </div>
           </div>
@@ -2280,11 +2661,42 @@ body {
             function renderFiltroMes(tipoFiltro, dados, onChangeName) {
               const meses = getMesesDisponiveis(dados);
               if (!controls) return 'todos';
+
               const opcoes = ['<option value="todos">Todos os meses</option>'].concat(
                 meses.map(m => '<option value="' + escDashboard(m) + '">' + escDashboard(m) + '</option>')
               ).join('');
+
               controls.className = 'dashboard-detail-controls';
-              controls.innerHTML = '<div class="dashboard-filter-box"><label for="dashboardFiltroMes">Filtrar mês</label><select id="dashboardFiltroMes" onchange="' + onChangeName + '(this.value)">' + opcoes + '</select><button type="button" class="dashboard-filter-btn" onclick="' + onChangeName + '(document.getElementById(\'dashboardFiltroMes\').value)">Aplicar</button></div><div class="dashboard-detail-total"><small>Total do período selecionado</small><strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong></div>';
+              controls.innerHTML =
+                '<div class="dashboard-filter-box">' +
+                  '<label for="dashboardFiltroMes">Filtrar mês</label>' +
+                  '<select id="dashboardFiltroMes">' + opcoes + '</select>' +
+                  '<button type="button" id="dashboardFiltroMesBtn" class="dashboard-filter-btn">Aplicar</button>' +
+                '</div>' +
+                '<div class="dashboard-detail-total">' +
+                  '<small>Total do período selecionado</small>' +
+                  '<strong id="dashboardTotalFiltro">' + fmtMoedaDashboard(0) + '</strong>' +
+                '</div>';
+
+              const selectFiltro = document.getElementById('dashboardFiltroMes');
+              const botaoFiltro = document.getElementById('dashboardFiltroMesBtn');
+
+              function aplicarFiltro() {
+                const valorSelecionado = selectFiltro ? selectFiltro.value : 'todos';
+
+                if (onChangeName === 'atualizarDetalheCategorias') {
+                  atualizarDetalheCategorias(valorSelecionado);
+                  return;
+                }
+
+                if (onChangeName === 'atualizarDetalheFornecedores') {
+                  atualizarDetalheFornecedores(valorSelecionado);
+                }
+              }
+
+              if (selectFiltro) selectFiltro.addEventListener('change', aplicarFiltro);
+              if (botaoFiltro) botaoFiltro.addEventListener('click', aplicarFiltro);
+
               return 'todos';
             }
 
@@ -2331,7 +2743,7 @@ body {
               : detalhesCategorias.filter(item => item.mes_ref === mesSelecionadoDetalhe);
 
             const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
-            if (totalEl) { totalEl.textContent = fmtMoedaDashboard(totalPeriodo); totalEl.style.animation = 'none'; void totalEl.offsetWidth; totalEl.style.animation = ''; }
+            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
 
             const grupos = {};
             dadosFiltrados.forEach(item => {
@@ -2363,7 +2775,7 @@ body {
               : detalhesFornecedores.filter(item => item.mes_ref === mesSelecionadoDetalhe);
 
             const totalPeriodo = dadosFiltrados.reduce((acc, item) => acc + Number(item.total || 0), 0);
-            if (totalEl) { totalEl.textContent = fmtMoedaDashboard(totalPeriodo); totalEl.style.animation = 'none'; void totalEl.offsetWidth; totalEl.style.animation = ''; }
+            if (totalEl) totalEl.textContent = fmtMoedaDashboard(totalPeriodo);
 
             table.innerHTML = '<table class="dashboard-detail-table"><thead><tr><th>Fornecedor</th><th>Quantidade de lançamentos</th><th class="valor">Valor total</th></tr></thead><tbody>' +
               (dadosFiltrados.length ? dadosFiltrados.map(item => '<tr><td>' + escDashboard(item.nome) + '</td><td>' + escDashboard(item.quantidade) + '</td><td class="valor">' + fmtMoedaDashboard(item.total) + '</td></tr>').join('') : '<tr><td colspan="3">Nenhuma despesa encontrada para o mês selecionado.</td></tr>') +
@@ -2374,6 +2786,30 @@ body {
             if (event && event.target && event.target.id !== 'dashboardDetailModal') return;
             document.getElementById('dashboardDetailModal')?.classList.remove('is-open');
           }
+
+          window.abrirDetalheDashboard = abrirDetalheDashboard;
+          window.fecharDetalheDashboard = fecharDetalheDashboard;
+          window.atualizarDetalheCategorias = atualizarDetalheCategorias;
+          window.atualizarDetalheFornecedores = atualizarDetalheFornecedores;
+
+          document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.chart-card.chart-clickable').forEach(function (card) {
+              if (card.dataset.popupBound === '1') return;
+              card.dataset.popupBound = '1';
+
+              const titulo = (card.querySelector('.chart-heading h2')?.textContent || '').toLowerCase();
+              let tipo = '';
+              if (titulo.includes('mês') || titulo.includes('mes')) tipo = 'meses';
+              if (titulo.includes('categoria')) tipo = 'categorias';
+              if (titulo.includes('fornecedor')) tipo = 'fornecedores';
+
+              if (tipo) {
+                card.addEventListener('click', function () {
+                  abrirDetalheDashboard(tipo);
+                });
+              }
+            });
+          });
         </script>
 
         <div class="footer-note">© 2024 PlennaTec. Todos os direitos reservados.</div>
