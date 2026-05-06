@@ -864,6 +864,17 @@ function renderDashboard(data) {
     </option>
   `).join('');
 
+  const mesDashboardSelecionado = mesSelecionado || '';
+  const mesDashboardAno = mesDashboardSelecionado && /^\d{4}-\d{2}$/.test(mesDashboardSelecionado)
+    ? mesDashboardSelecionado.slice(0, 4)
+    : String(new Date().getFullYear());
+  const mesDashboardNumero = mesDashboardSelecionado && /^\d{4}-\d{2}$/.test(mesDashboardSelecionado)
+    ? mesDashboardSelecionado.slice(5, 7)
+    : String(new Date().getMonth() + 1).padStart(2, '0');
+  const mesDashboardLabel = mesDashboardSelecionado
+    ? (opcoesMes.find(m => m.valor === mesDashboardSelecionado)?.label || mesDashboardSelecionado)
+    : 'Todos os meses';
+
   const subtituloFiltro = mesSelecionado
     ? `Dados filtrados para o mês ${escapeHtml(
         opcoesMes.find(m => m.valor === mesSelecionado)?.label || mesSelecionado
@@ -3617,6 +3628,149 @@ body {
 }
 /* ===== FIM AJUSTE TOTALIZADORES 60% MAIORES ===== */
 
+
+
+/* ===== FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+.month-smart-form {
+  overflow: visible !important;
+}
+
+.month-compact-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.month-current-display {
+  min-width: 120px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #dce3ec !important;
+  color: #172033 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.btn-month-open {
+  min-width: 118px !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+}
+
+.month-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.16);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 18px 18px;
+}
+
+.month-picker-overlay.open {
+  display: flex;
+}
+
+.month-picker-popover {
+  width: 338px;
+  max-width: calc(100vw - 28px);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid #dce3ec;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 14px;
+}
+
+.month-picker-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.month-nav-btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border: 0 !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.month-year-select {
+  height: 38px !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: #fff !important;
+}
+
+.month-grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.month-cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  background: #E8F7EE !important;
+  color: #14532d !important;
+  border: 1px solid #c8ecd4 !important;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
+  transition: all .16s ease !important;
+  cursor: pointer !important;
+}
+
+.month-cell:hover,
+.month-cell.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  color: #fff !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
+  transform: translateY(-1px);
+}
+
+.month-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.month-selected-preview {
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.month-picker-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+
 </style>
     </head>
     <body>
@@ -3698,15 +3852,45 @@ body {
           </div>
         </section>
 
-        <form method="GET" action="/dashboard" class="filter-panel">
-          <label for="mes">Filtrar mês</label>
-          <select id="mes" name="mes">
-            <option value="">Todos os meses</option>
-            ${opcoesMesHtml}
-          </select>
-          <button type="submit" class="btn-filter-apply">Aplicar filtro&nbsp;⌁</button>
+        <form method="GET" action="/dashboard" class="filter-panel month-smart-form" id="dashboardMonthForm">
+          <label>Filtrar mês</label>
+          <input type="hidden" id="dashboard_mes_picker_value" name="mes" value="${escapeHtml(mesDashboardSelecionado)}">
+          <div class="month-compact-row">
+            <span class="month-current-display" id="dashboardMesAtualLabel">${escapeHtml(mesDashboardLabel)}</span>
+            <button type="button" class="btn-filter-apply btn-month-open" onclick="abrirSeletorMesGenerico('dashboard')">Escolher mês</button>
+          </div>
+          <button type="button" class="btn-filter-apply" onclick="aplicarMesGenerico('dashboard')">Aplicar filtro&nbsp;⌁</button>
           <a href="/dashboard" class="btn-filter-clear">Limpar</a>
         </form>
+
+        <div id="dashboardMonthPickerOverlay" class="month-picker-overlay" onclick="fecharSeletorMesGenerico('dashboard', event)">
+          <div class="month-picker-popover" onclick="event.stopPropagation()">
+            <div class="month-picker-head">
+              <button type="button" class="month-nav-btn" onclick="mudarAnoPickerGenerico('dashboard', -1)">«</button>
+              <select id="dashboardMonthPickerYear" class="month-year-select" onchange="atualizarPreviewMesGenerico('dashboard')">
+                ${Array.from({ length: 21 }, (_, i) => 2020 + i).map(ano => `<option value="${ano}" ${String(mesDashboardAno) === String(ano) ? 'selected' : ''}>${ano}</option>`).join('')}
+              </select>
+              <button type="button" class="month-nav-btn" onclick="mudarAnoPickerGenerico('dashboard', 1)">»</button>
+            </div>
+
+            <div class="month-grid-picker" id="dashboardMonthGridPicker">
+              ${MESES_CURTOS_PT.map((nome, idx) => {
+                const mesValor = String(idx + 1).padStart(2, '0');
+                const ativo = mesValor === mesDashboardNumero ? 'active' : '';
+                return `<button type="button" class="month-cell ${ativo}" data-month="${mesValor}" onclick="selecionarMesGenerico('dashboard', '${mesValor}')">${nome}</button>`;
+              }).join('')}
+            </div>
+
+            <div class="month-picker-footer">
+              <span class="month-selected-preview" id="dashboardMonthSelectedPreview">Selecionado: ${escapeHtml(mesDashboardLabel)}</span>
+              <div class="month-picker-footer-actions">
+                <button type="button" class="btn-filter-clear" onclick="limparMesGenerico('dashboard')">Todos</button>
+                <button type="button" class="btn-filter-clear" onclick="fecharSeletorMesGenerico('dashboard')">Cancelar</button>
+                <button type="button" class="btn-filter-apply" onclick="aplicarMesGenerico('dashboard')">Filtrar mês</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <section class="charts-grid">
           <article class="chart-card chart-clickable" onclick="abrirDetalheDashboard('meses')">
@@ -3741,7 +3925,104 @@ body {
         </div>
 
         <script>
-          const detalhesMeses = ${detalhesMesesJson};
+  
+        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
+
+        function getMonthPickerPrefixConfig(prefix) {
+          return {
+            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
+            hidden: document.getElementById(prefix + '_mes_picker_value'),
+            label: document.getElementById(prefix + 'MesAtualLabel'),
+            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
+            year: document.getElementById(prefix + 'MonthPickerYear'),
+            grid: document.getElementById(prefix + 'MonthGridPicker'),
+            preview: document.getElementById(prefix + 'MonthSelectedPreview')
+          };
+        }
+
+        function iniciarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const valor = cfg.hidden?.value || '';
+          const hoje = new Date();
+          monthPickerState[prefix] = {
+            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
+            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
+          };
+          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
+          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function abrirSeletorMesGenerico(prefix) {
+          iniciarMesGenerico(prefix);
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.add('open');
+        }
+
+        function fecharSeletorMesGenerico(prefix, event) {
+          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.remove('open');
+        }
+
+        function selecionarMesGenerico(prefix, mes, atualizar = true) {
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.grid) {
+            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
+            });
+          }
+          if (atualizar) atualizarPreviewMesGenerico(prefix);
+        }
+
+        function mudarAnoPickerGenerico(prefix, delta) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
+          const novo = atual + Number(delta || 0);
+          if (cfg.year) {
+            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
+            if (!existeOpcao) {
+              const opt = document.createElement('option');
+              opt.value = String(novo);
+              opt.textContent = String(novo);
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = String(novo);
+          }
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].ano = String(novo);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function atualizarPreviewMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
+          monthPickerState[prefix].ano = String(ano);
+          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
+        }
+
+        function aplicarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
+          if (cfg.form) cfg.form.submit();
+        }
+
+        function limparMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.hidden) cfg.hidden.value = '';
+          if (cfg.form) cfg.form.submit();
+        }
+
+        const detalhesMeses = ${detalhesMesesJson};
           const detalhesCategorias = ${detalhesCategoriasJson};
           const detalhesFornecedores = ${detalhesFornecedoresJson};
 
@@ -16807,6 +17088,8 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
       .replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
 
     const labelMes = opcoesMes.find(item => item.valor === mes)?.label || mes;
+    const mesContadorAno = /^\d{4}-\d{2}$/.test(mes) ? mes.slice(0, 4) : String(new Date().getFullYear());
+    const mesContadorNumero = /^\d{4}-\d{2}$/.test(mes) ? mes.slice(5, 7) : String(new Date().getMonth() + 1).padStart(2, '0');
 
     const renderStatusOptions = (atual) => `
       <option value="Aguardar" ${atual === 'Aguardar' ? 'selected' : ''}>Aguardar</option>
@@ -18007,6 +18290,149 @@ body.contador-premium-page {
 }
 /* ===== FIM AJUSTE CONTADOR COMPETÊNCIA ===== */
 
+
+
+/* ===== FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+.month-smart-form {
+  overflow: visible !important;
+}
+
+.month-compact-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.month-current-display {
+  min-width: 120px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #dce3ec !important;
+  color: #172033 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.btn-month-open {
+  min-width: 118px !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+}
+
+.month-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.16);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 18px 18px;
+}
+
+.month-picker-overlay.open {
+  display: flex;
+}
+
+.month-picker-popover {
+  width: 338px;
+  max-width: calc(100vw - 28px);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid #dce3ec;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 14px;
+}
+
+.month-picker-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.month-nav-btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border: 0 !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.month-year-select {
+  height: 38px !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: #fff !important;
+}
+
+.month-grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.month-cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  background: #E8F7EE !important;
+  color: #14532d !important;
+  border: 1px solid #c8ecd4 !important;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
+  transition: all .16s ease !important;
+  cursor: pointer !important;
+}
+
+.month-cell:hover,
+.month-cell.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  color: #fff !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
+  transform: translateY(-1px);
+}
+
+.month-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.month-selected-preview {
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.month-picker-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -18064,15 +18490,47 @@ body.contador-premium-page {
           </section>
 
           <section class="hero">
-            <form method="GET" action="/espaco-contador" class="filter-box">
+            <form method="GET" action="/espaco-contador" class="filter-box month-smart-form" id="contadorMonthForm">
               <div class="filter-group">
-                <label for="mes">Escolha o mês dos arquivos</label>
-                <select id="mes" name="mes">${optionsMes}</select>
+                <label>Escolha o mês dos arquivos</label>
+                <input type="hidden" id="contador_mes_picker_value" name="mes" value="${escapeHtml(mes)}">
+                <div class="month-compact-row">
+                  <span class="month-current-display" id="contadorMesAtualLabel">${escapeHtml(labelMes)}</span>
+                  <button type="button" class="btn btn-dark btn-month-open" onclick="abrirSeletorMesGenerico('contador')">Escolher mês</button>
+                </div>
               </div>
-              <button type="submit" class="btn btn-green">Aplicar mês</button>
+              <button type="button" class="btn btn-green" onclick="aplicarMesGenerico('contador')">Aplicar mês</button>
               <span class="contador-filter-spacer"></span>
               ${isAdmin ? `<button type="button" class="btn btn-add-file-row btn-add-file-top" onclick="abrirModalUpload('modal-add-file-row')">Adicionar tipo de arquivo</button>` : ''}
             </form>
+
+            <div id="contadorMonthPickerOverlay" class="month-picker-overlay" onclick="fecharSeletorMesGenerico('contador', event)">
+              <div class="month-picker-popover" onclick="event.stopPropagation()">
+                <div class="month-picker-head">
+                  <button type="button" class="month-nav-btn" onclick="mudarAnoPickerGenerico('contador', -1)">«</button>
+                  <select id="contadorMonthPickerYear" class="month-year-select" onchange="atualizarPreviewMesGenerico('contador')">
+                    ${Array.from({ length: 21 }, (_, i) => 2020 + i).map(ano => `<option value="${ano}" ${String(mesContadorAno) === String(ano) ? 'selected' : ''}>${ano}</option>`).join('')}
+                  </select>
+                  <button type="button" class="month-nav-btn" onclick="mudarAnoPickerGenerico('contador', 1)">»</button>
+                </div>
+
+                <div class="month-grid-picker" id="contadorMonthGridPicker">
+                  ${MESES_CURTOS_PT.map((nome, idx) => {
+                    const mesValor = String(idx + 1).padStart(2, '0');
+                    const ativo = mesValor === mesContadorNumero ? 'active' : '';
+                    return `<button type="button" class="month-cell ${ativo}" data-month="${mesValor}" onclick="selecionarMesGenerico('contador', '${mesValor}')">${nome}</button>`;
+                  }).join('')}
+                </div>
+
+                <div class="month-picker-footer">
+                  <span class="month-selected-preview" id="contadorMonthSelectedPreview">Selecionado: ${escapeHtml(labelMes)}</span>
+                  <div class="month-picker-footer-actions">
+                    <button type="button" class="btn btn-dark" onclick="fecharSeletorMesGenerico('contador')">Cancelar</button>
+                    <button type="button" class="btn btn-green" onclick="aplicarMesGenerico('contador')">Filtrar mês</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section class="contador-board">
@@ -18140,6 +18598,103 @@ body.contador-premium-page {
           </main>
         </div>
         <script>
+
+        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
+
+        function getMonthPickerPrefixConfig(prefix) {
+          return {
+            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
+            hidden: document.getElementById(prefix + '_mes_picker_value'),
+            label: document.getElementById(prefix + 'MesAtualLabel'),
+            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
+            year: document.getElementById(prefix + 'MonthPickerYear'),
+            grid: document.getElementById(prefix + 'MonthGridPicker'),
+            preview: document.getElementById(prefix + 'MonthSelectedPreview')
+          };
+        }
+
+        function iniciarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const valor = cfg.hidden?.value || '';
+          const hoje = new Date();
+          monthPickerState[prefix] = {
+            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
+            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
+          };
+          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
+          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function abrirSeletorMesGenerico(prefix) {
+          iniciarMesGenerico(prefix);
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.add('open');
+        }
+
+        function fecharSeletorMesGenerico(prefix, event) {
+          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.remove('open');
+        }
+
+        function selecionarMesGenerico(prefix, mes, atualizar = true) {
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.grid) {
+            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
+            });
+          }
+          if (atualizar) atualizarPreviewMesGenerico(prefix);
+        }
+
+        function mudarAnoPickerGenerico(prefix, delta) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
+          const novo = atual + Number(delta || 0);
+          if (cfg.year) {
+            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
+            if (!existeOpcao) {
+              const opt = document.createElement('option');
+              opt.value = String(novo);
+              opt.textContent = String(novo);
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = String(novo);
+          }
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].ano = String(novo);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function atualizarPreviewMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
+          monthPickerState[prefix].ano = String(ano);
+          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
+        }
+
+        function aplicarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
+          if (cfg.form) cfg.form.submit();
+        }
+
+        function limparMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.hidden) cfg.hidden.value = '';
+          if (cfg.form) cfg.form.submit();
+        }
+
           function abrirModalUpload(id) {
             const modal = document.getElementById(id);
             if (modal) modal.classList.add('is-open');
