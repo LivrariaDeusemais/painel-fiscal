@@ -2353,6 +2353,333 @@ body.plennatec-premium-admin-page{
   }
 }
 
+
+/* ===== HARMONIA FINAL CATEGORIAS/USUÁRIOS - SEM ESTOURAR ===== */
+html, body.plennatec-premium-admin-page{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+}
+body.plennatec-premium-admin-page{
+  font-size:11.5px!important;
+}
+.plennatec-app-shell{
+  width:100%!important;
+  max-width:100vw!important;
+  min-height:100vh!important;
+  display:grid!important;
+  grid-template-columns:300px minmax(0, 1fr)!important;
+  gap:16px!important;
+  padding:18px 14px 18px 8px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+.plennatec-sidebar{
+  position:sticky!important;
+  top:18px!important;
+  width:300px!important;
+  min-width:300px!important;
+  max-width:300px!important;
+  height:calc(100vh - 36px)!important;
+  box-sizing:border-box!important;
+  z-index:3!important;
+}
+.plennatec-main{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  padding:0!important;
+  margin:0!important;
+}
+.plennatec-topbar{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  min-height:72px!important;
+  padding:13px 16px!important;
+  margin:0 0 12px 0!important;
+}
+.plennatec-title-wrap{
+  min-width:0!important;
+  flex:1 1 auto!important;
+}
+.plennatec-title-wrap h1{
+  font-size:22px!important;
+  line-height:1.05!important;
+}
+.plennatec-title-wrap p{
+  font-size:11px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.plennatec-top-user{
+  flex:0 0 auto!important;
+  min-width:190px!important;
+}
+.plennatec-logout{
+  height:38px!important;
+  padding:0 12px!important;
+  font-size:12px!important;
+}
+.plennatec-top-avatar,
+.plennatec-title-icon{
+  width:42px!important;
+  height:42px!important;
+  flex:0 0 42px!important;
+}
+.plennatec-top-avatar img,
+.plennatec-title-icon img{
+  width:34px!important;
+  height:34px!important;
+}
+
+/* Logo lateral dentro da caixa */
+.plennatec-side-logo{
+  width:100%!important;
+  height:70px!important;
+  min-height:70px!important;
+  max-height:70px!important;
+  padding:10px 15px!important;
+  box-sizing:border-box!important;
+  background:#fff!important;
+  border-radius:18px!important;
+  overflow:hidden!important;
+}
+.plennatec-side-logo img{
+  width:auto!important;
+  height:auto!important;
+  max-width:210px!important;
+  max-height:44px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+
+/* Conteúdo */
+.plennatec-main .container,
+.plennatec-main .card,
+.plennatec-main section{
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+.plennatec-main .card{
+  padding:14px!important;
+  border-radius:18px!important;
+  margin:0 0 12px 0!important;
+}
+.plennatec-main h1{font-size:20px!important;margin:0 0 12px!important;}
+.plennatec-main h2{font-size:17px!important;margin:0 0 12px!important;line-height:1.1!important;}
+.plennatec-main h3{font-size:14px!important;}
+.plennatec-main p,
+.plennatec-main label,
+.plennatec-main td,
+.plennatec-main a,
+.plennatec-main button,
+.plennatec-main input,
+.plennatec-main select{
+  font-size:11px!important;
+}
+.plennatec-main th{
+  font-size:10px!important;
+  padding:6px 7px!important;
+}
+.plennatec-main td{
+  font-size:11px!important;
+  padding:6px 7px!important;
+}
+.plennatec-main input,
+.plennatec-main select{
+  height:30px!important;
+  min-height:30px!important;
+  border-radius:10px!important;
+}
+
+/* Grid usuários: nunca invadir menu e caber na tela */
+.plennatec-main .grid{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(290px,340px) minmax(0,1fr)!important;
+  gap:12px!important;
+  align-items:start!important;
+  box-sizing:border-box!important;
+}
+.plennatec-main .grid > *{
+  min-width:0!important;
+  max-width:100%!important;
+}
+.plennatec-main .grid .card:first-child{
+  width:100%!important;
+  max-width:340px!important;
+}
+.plennatec-main .grid .card:nth-child(2){
+  width:100%!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+
+/* Formulário usuário mais compacto */
+.plennatec-main .grid .card:first-child form{
+  display:grid!important;
+  grid-template-columns:72px minmax(0,1fr)!important;
+  gap:7px 8px!important;
+  align-items:center!important;
+}
+.plennatec-main .grid .card:first-child form label{
+  margin:0!important;
+  line-height:1.05!important;
+}
+.plennatec-main .grid .card:first-child form input,
+.plennatec-main .grid .card:first-child form select{
+  width:100%!important;
+}
+.plennatec-main .grid .card:first-child form .hint{
+  grid-column:2!important;
+  margin:0!important;
+  font-size:10.5px!important;
+  line-height:1.18!important;
+}
+.plennatec-main .grid .card:first-child form button{
+  grid-column:2!important;
+  width:max-content!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:0 11px!important;
+  border-radius:10px!important;
+  font-size:10.5px!important;
+}
+
+/* Tabelas: compactas e sem estourar */
+.plennatec-main table{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+  border-collapse:separate!important;
+}
+.plennatec-main th,
+.plennatec-main td{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* Usuários cadastrados */
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(1),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(1){width:18%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(2),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(2){width:33%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(3),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(3){width:15%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(4),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(4){width:14%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(5),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(5){width:20%!important;text-align:center!important;}
+
+/* Categorias: ocupa a área útil sem empurrar sair */
+.plennatec-main section,
+.plennatec-main .container{
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.plennatec-main section > table,
+.plennatec-main .card > table{
+  width:100%!important;
+}
+.plennatec-main table th:last-child,
+.plennatec-main table td:last-child{
+  width:86px!important;
+  text-align:center!important;
+}
+.plennatec-main td:last-child a,
+.plennatec-main td:last-child button,
+.plennatec-main td:last-child form{
+  display:inline-flex!important;
+  margin:0 2px!important;
+  padding:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  border:0!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  min-width:0!important;
+  font-size:13px!important;
+  line-height:1!important;
+  color:inherit!important;
+  text-decoration:none!important;
+}
+.plennatec-main .acoes-user{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  white-space:nowrap!important;
+}
+.plennatec-main .acoes-user a,
+.plennatec-main .acoes-user button,
+.plennatec-main .acoes-user form{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  height:auto!important;
+  min-height:0!important;
+  width:auto!important;
+  min-width:0!important;
+  color:inherit!important;
+  text-decoration:none!important;
+  font-size:13px!important;
+  line-height:1!important;
+}
+.plennatec-main a[href="/categorias/nova"],
+.plennatec-main a[href="/categorias/novo"],
+.plennatec-main a[href*="/categorias/nova"],
+.plennatec-main a[href*="/categorias/novo"]{
+  height:32px!important;
+  padding:0 12px!important;
+  border-radius:10px!important;
+  font-size:10.5px!important;
+}
+
+/* remove resquícios */
+.plennatec-main .hero-top,
+.plennatec-main a[href="/dashboard"],
+.plennatec-main a[href="/logout"]:not(.plennatec-logout){
+  display:none!important;
+}
+
+@media(max-width:1100px){
+  .plennatec-app-shell{
+    grid-template-columns:1fr!important;
+    padding:12px!important;
+  }
+  .plennatec-sidebar{
+    position:relative!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    height:auto!important;
+    border-radius:24px!important;
+  }
+  .plennatec-main .grid{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
     </head>
     <body class="plennatec-premium-admin-page">
