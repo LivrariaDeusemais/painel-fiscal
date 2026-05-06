@@ -474,7 +474,134 @@ function renderPlennaTecNoOverflowFinalAssets() {
           grid-template-columns: 1fr !important;
         }
       }
-    </style>
+    
+/* =====================================================
+   PATCH DEFINITIVO ALINHAMENTO VISUAL MAC + WINDOWS
+===================================================== */
+
+/* Todas as áreas centrais com mesma largura */
+body.dm-global-page .dm-global-header-shell,
+body.dm-global-page .dm-global-top,
+body.dm-global-page .dm-global-nav,
+body.dm-global-page .filters-card,
+body.dm-global-page .summary-card,
+body.dm-global-page .summary-grid,
+body.dm-global-page .table-responsive,
+body.dm-global-page .table-wrap,
+body.dm-global-page .lancamentos-table-wrap,
+body.dm-global-page .rotina-table-wrap,
+body.dm-global-page .documentos-table-wrap,
+body.dm-global-page .content-card,
+body.dm-global-page .table-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Limita toda a página horizontal */
+body.dm-global-page .page-shell,
+body.dm-global-page .container,
+body.dm-global-page .dm-global-page-shell {
+  width: min(1450px, calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Cabeçalhos nunca maiores que tabela */
+body.dm-global-page .dm-global-top,
+body.dm-global-page .dm-global-nav {
+  overflow: hidden !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+/* Área das tabelas centralizadas */
+body.dm-global-page .table-responsive,
+body.dm-global-page .table-wrap {
+  display: block !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+/* Tabela comprovantes */
+body.dm-global-page .lancamentos-table,
+body.dm-global-page table.lancamentos-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Tabela contas a pagar */
+body.dm-global-page .rotina-table,
+body.dm-global-page table.rotina-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Espaço contador */
+.contador-premium-page .contador-premium-shell {
+  width: min(1450px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  margin: 0 auto !important;
+  overflow-x: hidden !important;
+  grid-template-columns: 250px minmax(0,1fr) !important;
+}
+
+.contador-premium-page .contador-premium-main {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.contador-premium-page .contador-board,
+.contador-premium-page .contador-metrics,
+.contador-premium-page .filter-box,
+.contador-premium-page .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+}
+
+/* Corrige estouro da tabela do contador */
+.contador-premium-page .contador-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.contador-premium-page .contador-table th,
+.contador-premium-page .contador-table td {
+  font-size: 10.8px !important;
+  padding: 7px 6px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Dashboard filtros */
+#dashboardMonthForm {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 18px !important;
+}
+
+/* Evita elementos maiores que tela */
+img, table, iframe, canvas, svg {
+  max-width: 100% !important;
+}
+
+
+</style>
     <script>
       (function(){
         if (window.__plennatecNoOverflowFinalReady) return;
