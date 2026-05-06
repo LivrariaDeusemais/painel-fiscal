@@ -2201,6 +2201,158 @@ body.plennatec-premium-admin-page{
   .plennatec-main .grid{grid-template-columns:1fr!important;}
 }
 
+
+/* ===== FIX SOBREPOSIÇÃO MENU + COMPACTAÇÃO FINAL ===== */
+body.plennatec-premium-admin-page{
+  overflow-x:hidden!important;
+  font-size:11.5px!important;
+}
+.plennatec-app-shell{
+  display:grid!important;
+  grid-template-columns:300px minmax(0,1fr)!important;
+  gap:24px!important;
+  padding:18px 22px 18px 10px!important;
+  align-items:start!important;
+}
+.plennatec-sidebar{
+  position:sticky!important;
+  top:18px!important;
+  width:300px!important;
+  max-width:300px!important;
+  min-width:300px!important;
+  height:calc(100vh - 36px)!important;
+  flex:0 0 300px!important;
+  z-index:2!important;
+}
+.plennatec-main{
+  min-width:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  position:relative!important;
+  z-index:1!important;
+}
+.plennatec-side-logo{
+  width:100%!important;
+  height:70px!important;
+  min-height:70px!important;
+  max-height:70px!important;
+  padding:10px 16px!important;
+  box-sizing:border-box!important;
+}
+.plennatec-side-logo img{
+  max-width:212px!important;
+  max-height:44px!important;
+  width:auto!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+.plennatec-topbar{
+  width:100%!important;
+  max-width:100%!important;
+  min-height:74px!important;
+  padding:14px 20px!important;
+  margin:0 0 14px 0!important;
+}
+.plennatec-title-wrap h1{font-size:23px!important;}
+.plennatec-title-wrap p{font-size:11.5px!important;}
+.plennatec-main .card{
+  padding:16px!important;
+  border-radius:18px!important;
+}
+.plennatec-main h1{font-size:21px!important;}
+.plennatec-main h2{font-size:18px!important;}
+.plennatec-main p,
+.plennatec-main label,
+.plennatec-main td{
+  font-size:11.5px!important;
+}
+.plennatec-main th{
+  font-size:10.5px!important;
+  padding:7px 8px!important;
+}
+.plennatec-main td{
+  padding:7px 8px!important;
+}
+.plennatec-main input,
+.plennatec-main select{
+  height:32px!important;
+  min-height:32px!important;
+  font-size:11.5px!important;
+}
+.plennatec-main .grid{
+  width:100%!important;
+  max-width:100%!important;
+  display:grid!important;
+  grid-template-columns:minmax(310px,360px) minmax(0,1fr)!important;
+  gap:14px!important;
+  align-items:start!important;
+}
+.plennatec-main .grid .card:first-child{
+  max-width:360px!important;
+}
+.plennatec-main .grid .card:nth-child(2){
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.plennatec-main table{
+  width:100%!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+}
+.plennatec-main table th,
+.plennatec-main table td{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(1),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(1){width:18%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(2),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(2){width:34%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(3),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(3){width:15%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(4),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(4){width:15%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(5),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(5){width:18%!important;}
+.plennatec-main .col-acoes{
+  width:auto!important;
+  min-width:86px!important;
+}
+.plennatec-main .acoes-user{
+  gap:6px!important;
+}
+.plennatec-main .acoes-user a,
+.plennatec-main .acoes-user button{
+  font-size:14px!important;
+}
+.plennatec-main a[href="/categorias/nova"],
+.plennatec-main a[href="/categorias/novo"],
+.plennatec-main a[href*="/categorias/nova"],
+.plennatec-main a[href*="/categorias/novo"]{
+  height:34px!important;
+  font-size:11.5px!important;
+  padding:0 13px!important;
+}
+@media(max-width:1220px){
+  .plennatec-app-shell{
+    grid-template-columns:1fr!important;
+    padding:12px!important;
+  }
+  .plennatec-sidebar{
+    position:relative!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    height:auto!important;
+    border-radius:24px!important;
+  }
+  .plennatec-main .grid{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
     </head>
     <body class="plennatec-premium-admin-page">
