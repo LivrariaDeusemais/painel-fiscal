@@ -782,6 +782,81 @@ function renderMonthPickerAssets() {
         .month-picker-footer-actions { grid-auto-flow: row; grid-template-columns: 1fr; }
         .month-footer-btn { width: 100% !important; }
       }
+
+
+      /* Correção final: seletor de mês sempre abre acima de qualquer card/filtro */
+      body > .month-picker-overlay,
+      .month-picker-overlay.open {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483000 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        padding-top: 92px !important;
+      }
+
+      body > .month-picker-overlay:not(.open),
+      .month-picker-overlay:not(.open) {
+        display: none !important;
+      }
+
+      body > .month-picker-overlay .month-picker-popover {
+        position: relative !important;
+        z-index: 2147483001 !important;
+      }
+
+      /* Correção final: Dashboard com respiro e texto compacto no filtro */
+      #dashboardMonthForm {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        flex-wrap: wrap !important;
+        margin-top: 0 !important;
+        margin-bottom: 18px !important;
+      }
+
+      #dashboardMonthForm .month-current-display {
+        min-width: 96px !important;
+        max-width: 112px !important;
+        height: 34px !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        line-height: 1 !important;
+      }
+
+      /* Correção final: Espaço do Contador com filtro e botão Aplicar mês na mesma linha */
+      .contador-premium-page .filter-box.month-smart-form,
+      .contador-premium-page #contadorMonthForm {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 10px !important;
+        flex-wrap: nowrap !important;
+        overflow: visible !important;
+      }
+
+      .contador-premium-page #contadorMonthForm .filter-group {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: auto !important;
+        margin: 0 !important;
+      }
+
+      .contador-premium-page #contadorMonthForm .contador-apply-month-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        align-self: center !important;
+        margin: 0 !important;
+        transform: none !important;
+      }
+
       /* ===== FIM COMPONENTE GLOBAL DE MÊS — PLENNATEC DEFINITIVO ===== */
     </style>
     <script>
@@ -842,13 +917,31 @@ function renderMonthPickerAssets() {
         window.abrirSeletorMesGlobal = function(prefix){
           window.iniciarMesGlobal(prefix);
           const cfg = window.getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.add('open');
+          if (cfg.overlay) {
+            // Correção definitiva: o pop-up pode nascer dentro de formulários/cards com filtros,
+            // o que em alguns navegadores cria conflito de camada/posição.
+            // Ao abrir, movemos o overlay para o body e forçamos a camada acima de tudo.
+            if (cfg.overlay.parentElement !== document.body) {
+              document.body.appendChild(cfg.overlay);
+            }
+            cfg.overlay.classList.add('open');
+            cfg.overlay.style.display = 'flex';
+            cfg.overlay.style.visibility = 'visible';
+            cfg.overlay.style.opacity = '1';
+            cfg.overlay.style.pointerEvents = 'auto';
+          }
         };
 
         window.fecharSeletorMesGlobal = function(prefix, event){
           if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
           const cfg = window.getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.remove('open');
+          if (cfg.overlay) {
+            cfg.overlay.classList.remove('open');
+            cfg.overlay.style.display = '';
+            cfg.overlay.style.visibility = '';
+            cfg.overlay.style.opacity = '';
+            cfg.overlay.style.pointerEvents = '';
+          }
         };
 
         window.selecionarMesGlobal = function(prefix, mes, atualizar = true){
