@@ -77,23 +77,32 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
 });
 
 // =====================================================
-// PATCH FINAL WINDOWS — LARGURA CABEÇALHO/TABELA + DASHBOARD FILTRO
+// PATCH DEFINITIVO CROSS-PLATFORM — NÃO ESTOURAR MAC/WINDOWS
+// Este middleware precisa ficar antes dos outros patches para que seu CSS seja aplicado por último.
 // =====================================================
-function renderPlennaTecWindowsFinalFixAssets() {
+function renderPlennaTecNoOverflowFinalAssets() {
   return `
-    <style id="plennatec-windows-final-fix">
+    <style id="plennatec-no-overflow-final">
+      /* ===== BASE: nada deve empurrar a página para fora da viewport ===== */
       *, *::before, *::after { box-sizing: border-box !important; }
-      html, body { width:100% !important; max-width:100% !important; overflow-x:auto !important; }
+      html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
 
-      /* ===== LARGURA ÚNICA PARA CABEÇALHO, BOTÕES, FILTROS E TABELA ===== */
+      /* =====================================================
+         PÁGINAS COM CABEÇALHO HORIZONTAL: COMPROVANTES / CONTAS / ARQUIVO
+      ===================================================== */
       body.dm-global-page .dm-global-header-shell,
       body.dm-global-page .container,
       body.dm-global-page .page-shell {
-        width: min(1760px, calc(100vw - 48px)) !important;
-        max-width: none !important;
+        width: min(1500px, calc(100vw - 48px)) !important;
+        max-width: calc(100vw - 48px) !important;
         margin-left: auto !important;
         margin-right: auto !important;
         box-sizing: border-box !important;
+        overflow: visible !important;
       }
 
       body.dm-global-page .dm-global-top,
@@ -104,106 +113,245 @@ function renderPlennaTecWindowsFinalFixAssets() {
       body.dm-global-page .filters,
       body.dm-global-page .card,
       body.dm-global-page section,
-      body.dm-global-page .table-responsive,
-      body.dm-global-page .table-wrapper,
-      body.dm-global-page .table-scroll,
-      body.dm-global-page .lancamentos-table-wrap,
-      body.dm-global-page .rotina-table-wrap {
+      body.dm-global-page .summary-grid {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
       }
 
-      /* ===== TABELAS NÃO DEVEM DIMINUIR O CABEÇALHO ===== */
-      .lancamentos-table,
-      .rotina-table,
-      table.lancamentos-table,
-      table.rotina-table {
-        width: 100% !important;
-        min-width: 1180px !important;
-        table-layout: auto !important;
+      body.dm-global-page .dm-global-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
       }
 
-      .table-responsive,
-      .table-wrapper,
-      .table-scroll,
-      .lancamentos-table-wrap,
-      .rotina-table-wrap {
+      /* Tabelas devem ficar dentro da mesma largura do cabeçalho */
+      body.dm-global-page .table-responsive,
+      body.dm-global-page .table-wrapper,
+      body.dm-global-page .table-scroll,
+      body.dm-global-page .lancamentos-table-wrap,
+      body.dm-global-page .rotina-table-wrap,
+      body.dm-global-page .documentos-table-wrap,
+      body.dm-global-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
         overflow-x: auto !important;
         overflow-y: visible !important;
+        box-sizing: border-box !important;
         -webkit-overflow-scrolling: touch !important;
       }
 
-      @media (min-width: 1450px) {
-        .lancamentos-table,
-        .rotina-table,
-        table.lancamentos-table,
-        table.rotina-table {
-          min-width: 100% !important;
-        }
+      body.dm-global-page table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
       }
 
-      /* ===== COMPROVANTES: FILTROS CABEM NO WINDOWS ===== */
+      body.dm-global-page th,
+      body.dm-global-page td {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        vertical-align: middle !important;
+      }
+
+      /* Comprovantes Fiscais: cabe dentro da largura útil */
+      body.dm-global-page .lancamentos-table,
+      body.dm-global-page table.lancamentos-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .lancamentos-table th,
+      body.dm-global-page .lancamentos-table td {
+        font-size: 12px !important;
+        padding: 9px 8px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page .lancamentos-table th:nth-child(1),
+      body.dm-global-page .lancamentos-table td:nth-child(1) { width: 4.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(2),
+      body.dm-global-page .lancamentos-table td:nth-child(2) { width: 8.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(3),
+      body.dm-global-page .lancamentos-table td:nth-child(3) { width: 11.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(4),
+      body.dm-global-page .lancamentos-table td:nth-child(4) { width: 7% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(5),
+      body.dm-global-page .lancamentos-table td:nth-child(5) { width: 24% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(6),
+      body.dm-global-page .lancamentos-table td:nth-child(6) { width: 7.5% !important; text-align:right !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(7),
+      body.dm-global-page .lancamentos-table td:nth-child(7) { width: 8% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(8),
+      body.dm-global-page .lancamentos-table td:nth-child(8) { width: 14% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(9),
+      body.dm-global-page .lancamentos-table td:nth-child(9) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(10),
+      body.dm-global-page .lancamentos-table td:nth-child(10) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(11),
+      body.dm-global-page .lancamentos-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+
+      /* Contas a Pagar: reduz para caber sem vazar */
+      body.dm-global-page .rotina-table,
+      body.dm-global-page table.rotina-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .rotina-table th,
+      body.dm-global-page .rotina-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+        white-space: normal !important;
+        line-height: 1.12 !important;
+      }
+
+      body.dm-global-page .rotina-table th:nth-child(1),
+      body.dm-global-page .rotina-table td:nth-child(1) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(2),
+      body.dm-global-page .rotina-table td:nth-child(2) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(3),
+      body.dm-global-page .rotina-table td:nth-child(3) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(4),
+      body.dm-global-page .rotina-table td:nth-child(4) { width: 12% !important; }
+      body.dm-global-page .rotina-table th:nth-child(5),
+      body.dm-global-page .rotina-table td:nth-child(5) { width: 7% !important; }
+      body.dm-global-page .rotina-table th:nth-child(6),
+      body.dm-global-page .rotina-table td:nth-child(6) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(7),
+      body.dm-global-page .rotina-table td:nth-child(7) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(8),
+      body.dm-global-page .rotina-table td:nth-child(8) { width: 7% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(9),
+      body.dm-global-page .rotina-table td:nth-child(9) { width: 10% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(10),
+      body.dm-global-page .rotina-table td:nth-child(10) { width: 9% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(11),
+      body.dm-global-page .rotina-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(12),
+      body.dm-global-page .rotina-table td:nth-child(12) { width: 6% !important; text-align:center !important; }
+
+      /* Filtros de comprovantes com largura segura */
       body.dm-global-page form[action="/lancamentos"] .filters {
         display: grid !important;
         grid-template-columns:
-          minmax(150px, 1.15fr)
-          minmax(135px, 1fr)
           minmax(130px, 1fr)
-          minmax(145px, 1fr)
-          minmax(145px, 1fr)
+          minmax(125px, .9fr)
+          minmax(125px, .9fr)
+          minmax(135px, .95fr)
+          minmax(140px, 1fr)
           minmax(120px, .85fr)
-          minmax(120px, .85fr)
-          minmax(120px, .85fr)
+          minmax(115px, .75fr)
+          minmax(115px, .75fr)
           max-content !important;
         gap: 8px !important;
         align-items: end !important;
         width: 100% !important;
       }
+
       body.dm-global-page form[action="/lancamentos"] .filters > div { min-width: 0 !important; }
+
       body.dm-global-page form[action="/lancamentos"] .filters label {
-        font-size: 10px !important; line-height: 1.05 !important; margin-bottom: 4px !important; white-space: nowrap !important;
+        font-size: 10px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+        white-space: nowrap !important;
       }
+
       body.dm-global-page form[action="/lancamentos"] .filters input,
       body.dm-global-page form[action="/lancamentos"] .filters select {
-        width: 100% !important; min-width: 0 !important; height: 32px !important; min-height: 32px !important; font-size: 11px !important; padding: 0 8px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
       }
+
       body.dm-global-page form[action="/lancamentos"] .filter-buttons {
-        display: inline-flex !important; align-items: end !important; gap: 6px !important; min-width: 130px !important;
+        display: inline-flex !important;
+        align-items: end !important;
+        gap: 6px !important;
+        min-width: 128px !important;
       }
+
       body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
       body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
-        height: 32px !important; min-height: 32px !important; padding: 0 11px !important; font-size: 10.5px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 11px !important;
+        font-size: 10.5px !important;
       }
 
-      @media (max-width: 1350px) {
-        body.dm-global-page form[action="/lancamentos"] .filters {
-          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
-        }
+      /* =====================================================
+         ESPAÇO DO CONTADOR: sidebar + conteúdo sem vazar
+      ===================================================== */
+      body.contador-premium-page {
+        overflow-x: hidden !important;
       }
 
-      /* ===== CONTAS A PAGAR ===== */
-      body.dm-global-page .rotina-filters,
-      body.dm-global-page .rotina-filter-row,
-      body.dm-global-page form[action="/rotina-despesas"] .filters {
+      .contador-premium-page .contador-premium-shell {
+        width: min(1540px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+        gap: 18px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-sidebar {
+        width: 250px !important;
+        max-width: 250px !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-premium-main {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-metrics,
+      .contador-premium-page .filter-box,
+      .contador-premium-page .contador-board {
         width: 100% !important;
         max-width: 100% !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-        align-items: end !important;
-        gap: 8px !important;
-      }
-      body.dm-global-page form[action="/rotina-despesas"] input,
-      body.dm-global-page form[action="/rotina-despesas"] select,
-      body.dm-global-page .rotina-filters input,
-      body.dm-global-page .rotina-filters select {
-        height: 32px !important; min-height: 32px !important; font-size: 11px !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
 
-      /* ===== DASHBOARD: FILTRO SEM SOBREPOSIÇÃO ===== */
+      .contador-premium-page .contador-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(170px, 1fr)) !important;
+        gap: 14px !important;
+      }
+
+      .contador-premium-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+      }
+
+      .contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 1040px !important;
+        table-layout: fixed !important;
+      }
+
+      .contador-premium-page .contador-table th,
+      .contador-premium-page .contador-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+      }
+
+      /* =====================================================
+         DASHBOARD: filtros separados e sem negrito pesado
+      ===================================================== */
       body:has(#dashboardMonthForm) .page-shell {
-        width: min(1680px, calc(100vw - 64px)) !important;
-        max-width: none !important;
+        width: min(1500px, calc(100vw - 56px)) !important;
+        max-width: calc(100vw - 56px) !important;
       }
 
       #dashboardMonthForm,
@@ -214,8 +362,8 @@ function renderPlennaTecWindowsFinalFixAssets() {
         flex-wrap: nowrap !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        gap: 22px !important;
-        column-gap: 22px !important;
+        gap: 24px !important;
+        column-gap: 24px !important;
         row-gap: 10px !important;
         overflow: visible !important;
         width: 100% !important;
@@ -225,20 +373,19 @@ function renderPlennaTecWindowsFinalFixAssets() {
 
       #dashboardMonthForm > * {
         flex: 0 0 auto !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
+        margin: 0 !important;
       }
 
       #dashboardMonthForm label {
+        min-width: 82px !important;
         font-size: 12px !important;
         font-weight: 500 !important;
         white-space: nowrap !important;
-        min-width: 80px !important;
       }
 
       #dashboardMonthForm .global-month-picker {
+        min-width: 255px !important;
         flex: 0 0 auto !important;
-        min-width: 245px !important;
       }
 
       #dashboardMonthForm .month-compact-row {
@@ -255,7 +402,6 @@ function renderPlennaTecWindowsFinalFixAssets() {
         padding: 0 10px !important;
         font-size: 11.5px !important;
         font-weight: 500 !important;
-        white-space: nowrap !important;
       }
 
       #dashboardMonthForm .month-open-btn,
@@ -269,21 +415,11 @@ function renderPlennaTecWindowsFinalFixAssets() {
         white-space: nowrap !important;
       }
 
-      @media (max-width: 1200px) {
-        #dashboardMonthForm,
-        .filter-panel.month-smart-form#dashboardMonthForm,
-        form#dashboardMonthForm.filter-panel {
-          flex-wrap: wrap !important;
-          gap: 14px !important;
-        }
-      }
-
-      /* ===== DASHBOARD: TIRAR NEGRITO EXCESSIVO ===== */
       body:has(#dashboardMonthForm) * { font-weight: 400 !important; }
+
       body:has(#dashboardMonthForm) h1,
       body:has(#dashboardMonthForm) h2,
       body:has(#dashboardMonthForm) h3,
-      body:has(#dashboardMonthForm) .brand-title h1,
       body:has(#dashboardMonthForm) .stat-value,
       body:has(#dashboardMonthForm) .stat-number,
       body:has(#dashboardMonthForm) button,
@@ -291,6 +427,7 @@ function renderPlennaTecWindowsFinalFixAssets() {
       body:has(#dashboardMonthForm) .dm-menu-btn {
         font-weight: 650 !important;
       }
+
       body:has(#dashboardMonthForm) .stat-label,
       body:has(#dashboardMonthForm) .stat-subtitle,
       body:has(#dashboardMonthForm) .hbar-header span,
@@ -301,20 +438,51 @@ function renderPlennaTecWindowsFinalFixAssets() {
       body:has(#dashboardMonthForm) span {
         font-weight: 400 !important;
       }
+
+      @media (max-width: 1350px) {
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+        }
+
+        #dashboardMonthForm,
+        .filter-panel.month-smart-form#dashboardMonthForm,
+        form#dashboardMonthForm.filter-panel {
+          flex-wrap: wrap !important;
+          gap: 14px !important;
+        }
+
+        .contador-premium-page .contador-metrics {
+          grid-template-columns: repeat(2, minmax(170px, 1fr)) !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body.dm-global-page .dm-global-header-shell,
+        body.dm-global-page .container,
+        body.dm-global-page .page-shell,
+        body:has(#dashboardMonthForm) .page-shell {
+          width: calc(100vw - 24px) !important;
+          max-width: calc(100vw - 24px) !important;
+        }
+
+        #dashboardMonthForm {
+          flex-direction: column !important;
+          align-items: stretch !important;
+        }
+
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: 1fr !important;
+        }
+      }
     </style>
     <script>
       (function(){
-        if (window.__plennatecWindowsFinalFixReady) return;
-        window.__plennatecWindowsFinalFixReady = true;
+        if (window.__plennatecNoOverflowFinalReady) return;
+        window.__plennatecNoOverflowFinalReady = true;
 
-        function normalizeWidePages(){
-          var isWidePage = document.querySelector('form[action="/lancamentos"], .lancamentos-table, .rotina-table, form[action="/rotina-despesas"]');
-          if (!isWidePage) return;
-
-          document.body.classList.add('plennatec-wide-data-page');
-
-          document.querySelectorAll('.lancamentos-table, .rotina-table').forEach(function(table){
-            if (!table.closest('.table-responsive')) {
+        function wrapSafeTables(){
+          document.querySelectorAll('.lancamentos-table, .rotina-table, .contador-table').forEach(function(table){
+            if (!table.closest('.table-responsive') && !table.closest('.table-wrap')) {
               var wrap = document.createElement('div');
               wrap.className = 'table-responsive';
               table.parentNode.insertBefore(wrap, table);
@@ -324,9 +492,9 @@ function renderPlennaTecWindowsFinalFixAssets() {
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', normalizeWidePages);
+          document.addEventListener('DOMContentLoaded', wrapSafeTables);
         } else {
-          normalizeWidePages();
+          wrapSafeTables();
         }
       })();
     </script>
@@ -335,10 +503,10 @@ function renderPlennaTecWindowsFinalFixAssets() {
 
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
-  res.send = function plennatecWindowsFinalSend(body) {
+  res.send = function plennatecNoOverflowFinalSend(body) {
     try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-windows-final-fix')) {
-        body = body.replace('</head>', `${renderPlennaTecWindowsFinalFixAssets()}</head>`);
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-no-overflow-final')) {
+        body = body.replace('</head>', `${renderPlennaTecNoOverflowFinalAssets()}</head>`);
       }
     } catch (error) {}
     return originalSend(body);
