@@ -17325,19 +17325,19 @@ body.contador-premium-page {
           <section class="contador-kpi-grid" aria-label="Resumo do mês">
             <div class="contador-kpi-card">
               <div class="contador-kpi-icon green">▧</div>
-              <div><small>XML disponíveis</small><strong>${xmlCount}</strong><span>Arquivos fiscais do mês</span></div>
+              <div><small>XML disponíveis</small><strong>${totalXml}</strong><span>Arquivos fiscais do mês</span></div>
             </div>
             <div class="contador-kpi-card">
               <div class="contador-kpi-icon blue">▤</div>
-              <div><small>PDF disponíveis</small><strong>${pdfCount}</strong><span>Comprovantes fiscais</span></div>
+              <div><small>PDF disponíveis</small><strong>${totalPdf}</strong><span>Comprovantes fiscais</span></div>
             </div>
             <div class="contador-kpi-card">
               <div class="contador-kpi-icon purple">□</div>
-              <div><small>Linhas extras</small><strong>${extras.length}</strong><span>Pacotes adicionais</span></div>
+              <div><small>Linhas extras</small><strong>${arquivosExtras.length}</strong><span>Pacotes adicionais</span></div>
             </div>
             <div class="contador-kpi-card">
               <div class="contador-kpi-icon lime">⇣</div>
-              <div><small>Competência</small><strong>${formatMesLabel(mes)}</strong><span>Mês selecionado</span></div>
+              <div><small>Competência</small><strong>${labelMes}</strong><span>Mês selecionado</span></div>
             </div>
           </section>
 
