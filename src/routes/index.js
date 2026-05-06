@@ -17285,6 +17285,236 @@ body.contador-premium-page {
 }
 /* ===== FIM ESPAÇO DO CONTADOR PREMIUM ISOLADO ===== */
 
+
+
+/* ===== AJUSTE ESPAÇO DO CONTADOR MAIS COMPACTO E HARMÔNICO ===== */
+.contador-premium-page .dm-global-top {
+  min-height: 68px !important;
+  padding: 12px 20px !important;
+  border-radius: 21px !important;
+}
+
+.contador-premium-page .dm-global-logo {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.contador-premium-page .dm-global-title h1 {
+  font-size: clamp(23px, 1.55vw, 29px) !important;
+  margin-bottom: 4px !important;
+}
+
+.contador-premium-page .dm-global-title p {
+  font-size: 12px !important;
+}
+
+.contador-kpi-grid {
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.contador-kpi-card {
+  min-height: 92px !important;
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+
+.contador-kpi-icon {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 14px !important;
+  font-size: 18px !important;
+}
+
+.contador-kpi-card small {
+  font-size: 10.5px !important;
+  margin-bottom: 4px !important;
+}
+
+.contador-kpi-card strong {
+  font-size: 23px !important;
+  margin-bottom: 4px !important;
+  line-height: 1 !important;
+}
+
+.contador-kpi-card span {
+  font-size: 10px !important;
+}
+
+.contador-kpi-card::after {
+  left: 70px !important;
+  right: 14px !important;
+  bottom: 12px !important;
+  height: 20px !important;
+}
+
+.contador-premium-page .hero {
+  padding: 12px 14px !important;
+  margin-bottom: 12px !important;
+  border-radius: 18px !important;
+}
+
+.contador-premium-page .filter-box {
+  gap: 10px !important;
+}
+
+.contador-premium-page .filter-group {
+  width: 310px !important;
+  grid-template-columns: 82px 1fr !important;
+  gap: 10px !important;
+}
+
+.contador-premium-page .filter-group label {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+
+.contador-premium-page .filter-group select,
+.contador-premium-page .filter-box select {
+  height: 38px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+}
+
+.contador-premium-page .btn {
+  height: 38px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  padding: 0 15px !important;
+}
+
+.contador-premium-page .contador-board {
+  padding: 14px !important;
+  border-radius: 22px !important;
+}
+
+.contador-premium-page .btn-add-file-row {
+  height: 38px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  padding: 0 15px !important;
+}
+
+.contador-premium-page .add-row-cell {
+  padding: 10px 10px 8px !important;
+}
+
+.contador-premium-page .contador-table th,
+.contador-premium-page .contador-table td {
+  padding: 9px 10px !important;
+  font-size: 11px !important;
+}
+
+.contador-premium-page .contador-table .responsibility-head th {
+  font-size: 14px !important;
+  padding: 10px 8px !important;
+}
+
+.contador-premium-page .contador-table thead tr:nth-child(3) th {
+  font-size: 10.5px !important;
+  padding: 9px 8px !important;
+}
+
+.contador-premium-page .tipo-cell {
+  padding-left: 48px !important;
+}
+
+.contador-premium-page .tipo-cell::before {
+  left: 14px !important;
+  width: 25px !important;
+  height: 25px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+}
+
+.contador-premium-page .tipo-cell strong {
+  font-size: 11.5px !important;
+  line-height: 1.08 !important;
+}
+
+.contador-premium-page .qtd-pill {
+  min-width: 32px !important;
+  height: 28px !important;
+  font-size: 13px !important;
+}
+
+.contador-premium-page .status-select {
+  height: 32px !important;
+  max-width: 140px !important;
+  border-radius: 12px !important;
+  font-size: 10px !important;
+}
+
+.contador-premium-page .btn-download {
+  min-width: 132px !important;
+  height: 32px !important;
+  border-radius: 11px !important;
+  font-size: 10px !important;
+  padding: 0 10px !important;
+}
+
+.contador-premium-page .upload-chip {
+  height: 31px !important;
+  width: 118px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+}
+
+.contador-premium-page .download-status-text {
+  min-width: 78px !important;
+  height: 25px !important;
+  font-size: 9.5px !important;
+}
+
+.contador-premium-page .muted-cell,
+.contador-premium-page .empty-inline,
+.contador-premium-page .attached-empty {
+  font-size: 9.5px !important;
+}
+
+.contador-premium-page .contador-table {
+  min-width: 1080px !important;
+}
+
+/* Menor impacto também na lateral, mantendo o padrão visual */
+.contador-premium-sidebar {
+  padding-top: 20px !important;
+}
+
+.contador-sidebar-logo {
+  height: 62px !important;
+  margin-bottom: 18px !important;
+}
+
+.contador-sidebar-logo img {
+  max-height: 42px !important;
+}
+
+.contador-sidebar-nav {
+  gap: 7px !important;
+}
+
+.contador-sidebar-nav a {
+  height: 40px !important;
+  font-size: 13px !important;
+}
+
+.contador-sidebar-card {
+  padding: 13px 14px !important;
+}
+
+.contador-sidebar-card small {
+  font-size: 10px !important;
+}
+
+.contador-sidebar-card a {
+  height: 34px !important;
+  font-size: 12px !important;
+}
+/* ===== FIM AJUSTE ESPAÇO DO CONTADOR COMPACTO ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
