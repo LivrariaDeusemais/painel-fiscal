@@ -656,7 +656,7 @@ function renderMonthPickerAssets() {
 
       /* Dashboard: respiro entre totalizadores e filtro */
       .stats-grid {
-        margin-bottom: 18px !important;
+        margin-bottom: 26px !important;
       }
 
       .filter-panel.month-smart-form {
