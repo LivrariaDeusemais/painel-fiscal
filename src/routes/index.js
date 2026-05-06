@@ -1780,13 +1780,54 @@ body.plennatec-premium-admin-page{
   .plennatec-topbar{flex-direction:column;align-items:flex-start;}
   .plennatec-top-user{width:100%;justify-content:space-between;}
 }
+
+/* ===== AJUSTE FINO CATEGORIAS/USUÁRIOS - PLENNATEC ===== */
+body.plennatec-premium-admin-page{font-size:13px!important;}
+.plennatec-app-shell{grid-template-columns:270px minmax(0,1fr)!important;gap:20px!important;padding:18px 22px 18px 10px!important;}
+.plennatec-sidebar{padding:22px 20px!important;}
+.plennatec-side-logo{min-height:74px!important;height:74px!important;padding:10px 14px!important;border-radius:18px!important;overflow:hidden!important;}
+.plennatec-side-logo img{width:100%!important;height:100%!important;max-width:220px!important;max-height:52px!important;object-fit:contain!important;display:block!important;}
+.plennatec-side-nav a{height:44px!important;border-radius:13px!important;padding:0 16px!important;font-size:13px!important;font-weight:900!important;gap:11px!important;}
+.plennatec-side-card{padding:14px!important;}
+.plennatec-side-card strong{font-size:13px!important;}
+.plennatec-side-card span{font-size:11px!important;}
+.plennatec-topbar{min-height:78px!important;padding:16px 22px!important;border-radius:22px!important;}
+.plennatec-title-icon{width:48px!important;height:48px!important;}
+.plennatec-title-icon img,.plennatec-top-avatar img{width:38px!important;height:38px!important;object-fit:contain!important;}
+.plennatec-top-avatar{width:48px!important;height:48px!important;}
+.plennatec-title-wrap h1{font-size:clamp(22px,1.75vw,30px)!important;margin-bottom:5px!important;}
+.plennatec-title-wrap p{font-size:12px!important;}
+.plennatec-logout{height:42px!important;padding:0 16px!important;font-size:13px!important;}
+.plennatec-main .card,.plennatec-card{padding:18px!important;}
+.plennatec-main h1{font-size:25px!important;line-height:1.05!important;margin:0 0 14px!important;}
+.plennatec-main h2{font-size:20px!important;line-height:1.15!important;margin:0 0 14px!important;}
+.plennatec-main h3{font-size:16px!important;}
+.plennatec-main p,.plennatec-main label,.plennatec-main td{font-size:13px!important;}
+.plennatec-main th{font-size:11.5px!important;}
+.plennatec-main td,.plennatec-main th{padding:10px 12px!important;}
+.plennatec-main input,.plennatec-main select{min-height:36px!important;height:36px!important;font-size:12px!important;padding:0 10px!important;}
+.plennatec-main button,.plennatec-main .btn,.plennatec-main a.btn,.plennatec-main input[type="submit"]{height:36px!important;min-height:36px!important;padding:0 13px!important;font-size:12px!important;border-radius:11px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;text-decoration:none!important;}
+.plennatec-main a[href*="/categorias/nova"],.plennatec-main a[href*="/nova-categoria"],.plennatec-main a[href="/categorias/novo"],.plennatec-main a[href="/categorias/nova"]{height:38px!important;padding:0 15px!important;border-radius:12px!important;background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;text-decoration:none!important;font-weight:950!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-shadow:0 12px 22px rgba(0,176,80,.18)!important;}
+.plennatec-main a[href="/dashboard"],.plennatec-main a[href="/logout"]:not(.plennatec-logout){display:none!important;}
+.plennatec-main a{font-size:13px!important;font-weight:850;}
+.plennatec-main .admin-content-grid{display:grid!important;grid-template-columns:minmax(340px,.72fr) minmax(560px,1.5fr)!important;gap:16px!important;align-items:start!important;}
+.plennatec-main .admin-content-grid .card{margin:0!important;}
+.plennatec-main form{font-size:13px!important;}
+.plennatec-main form br{display:none!important;}
+.plennatec-main form label{margin-right:5px!important;}
+.plennatec-main .usuarios-create-form{display:flex!important;flex-wrap:wrap!important;align-items:end!important;gap:8px!important;}
+.plennatec-main .usuarios-create-form > *{margin-top:0!important;margin-bottom:0!important;}
+.plennatec-main .usuarios-create-form input{width:145px!important;}
+.plennatec-main .usuarios-create-form select{width:145px!important;}
+@media(max-width:1180px){.plennatec-main .admin-content-grid{grid-template-columns:1fr!important;}}
+
 </style>
     </head>
     <body class="plennatec-premium-admin-page">
       <div class="plennatec-app-shell">
         <aside class="plennatec-sidebar">
           <div class="plennatec-side-logo">
-            <img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec">
+            <img src="/assets/plennatec.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec">
           </div>
           <nav class="plennatec-side-nav">${nav}</nav>
           <div class="plennatec-side-spacer"></div>
@@ -1999,22 +2040,46 @@ router.use((req, res, next) => {
       const html = typeof body === 'string' ? body : '';
       if (isPremiumTarget && html.includes('<html') && !html.includes('plennatec-premium-admin-page')) {
         const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        const inner = bodyMatch ? bodyMatch[1] : html;
-        const cleanInner = inner
-          .replace(/<header class="dm-global-header-shell"[\s\S]*?<\/header>/i, '')
-          .replace(/<nav class="dm-global-nav"[\s\S]*?<\/nav>/i, '');
+        let inner = bodyMatch ? bodyMatch[1] : html;
+
+        inner = inner
+          .replace(/<header class="dm-global-header-shell"[\s\S]*?<\/header>/ig, '')
+          .replace(/<nav class="dm-global-nav"[\s\S]*?<\/nav>/ig, '')
+          .replace(/<a[^>]+href=["']\/dashboard["'][^>]*>[\s\S]*?<\/a>/ig, '')
+          .replace(/<a[^>]+href=["']\/logout["'][^>]*>[\s\S]*?<\/a>/ig, '')
+          .replace(/<a[^>]*>[\s\S]*?Voltar[\s\S]*?<\/a>/ig, '')
+          .replace(/<a[^>]*>[\s\S]*?Sair[\s\S]*?<\/a>/ig, '');
+
+        if (pathOnly === '/categorias') {
+          inner = inner
+            .replace(/<a([^>]+href=["']\/categorias\/nova["'][^>]*)>/ig, '<a class="btn btn-primary" $1>')
+            .replace(/<a([^>]+href=["']\/categorias\/novo["'][^>]*)>/ig, '<a class="btn btn-primary" $1>');
+        }
+
+        if (pathOnly === '/usuarios') {
+          const cards = inner.match(/<div[^>]*class=["'][^"']*card[^"']*["'][^>]*>[\s\S]*?<\/div>/ig);
+          if (cards && cards.length >= 2) {
+            const beforeCards = inner.slice(0, inner.indexOf(cards[0]));
+            const afterCards = inner.slice(inner.indexOf(cards[cards.length - 1]) + cards[cards.length - 1].length);
+            inner = beforeCards + '<div class="admin-content-grid">' + cards.join('') + '</div>' + afterCards;
+          }
+          inner = inner
+            .replace(/<form/ig, '<form class="usuarios-create-form"')
+            .replace(/<h1[^>]*>[\s\S]*?Gestão de Usuários[\s\S]*?<\/h1>/i, '')
+            .replace(/Controle de acesso do sistema PlennaTec\./ig, '');
+        }
+
         const cfg = pathOnly === '/categorias'
           ? { paginaAtual: 'categorias', titulo: 'Categorias', subtitulo: 'Organize e gerencie as categorias financeiras.' }
           : { paginaAtual: 'usuarios', titulo: 'Usuários', subtitulo: 'Gerencie acessos, perfis e permissões do sistema.' };
-        return originalSend(renderPremiumAdminShell(req, cfg, cleanInner));
+        return originalSend(renderPremiumAdminShell(req, cfg, inner));
       }
-    } catch (error) {
-      // Em caso de qualquer incompatibilidade, mantém a página original.
-    }
+    } catch (error) {}
     return originalSend(body);
   };
   next();
 });
+
 
 
 function renderDashboard(data) {
@@ -5376,6 +5441,47 @@ body.plennatec-premium-admin-page{
   .plennatec-topbar{flex-direction:column;align-items:flex-start;}
   .plennatec-top-user{width:100%;justify-content:space-between;}
 }
+
+/* ===== AJUSTE FINO CATEGORIAS/USUÁRIOS - PLENNATEC ===== */
+body.plennatec-premium-admin-page{font-size:13px!important;}
+.plennatec-app-shell{grid-template-columns:270px minmax(0,1fr)!important;gap:20px!important;padding:18px 22px 18px 10px!important;}
+.plennatec-sidebar{padding:22px 20px!important;}
+.plennatec-side-logo{min-height:74px!important;height:74px!important;padding:10px 14px!important;border-radius:18px!important;overflow:hidden!important;}
+.plennatec-side-logo img{width:100%!important;height:100%!important;max-width:220px!important;max-height:52px!important;object-fit:contain!important;display:block!important;}
+.plennatec-side-nav a{height:44px!important;border-radius:13px!important;padding:0 16px!important;font-size:13px!important;font-weight:900!important;gap:11px!important;}
+.plennatec-side-card{padding:14px!important;}
+.plennatec-side-card strong{font-size:13px!important;}
+.plennatec-side-card span{font-size:11px!important;}
+.plennatec-topbar{min-height:78px!important;padding:16px 22px!important;border-radius:22px!important;}
+.plennatec-title-icon{width:48px!important;height:48px!important;}
+.plennatec-title-icon img,.plennatec-top-avatar img{width:38px!important;height:38px!important;object-fit:contain!important;}
+.plennatec-top-avatar{width:48px!important;height:48px!important;}
+.plennatec-title-wrap h1{font-size:clamp(22px,1.75vw,30px)!important;margin-bottom:5px!important;}
+.plennatec-title-wrap p{font-size:12px!important;}
+.plennatec-logout{height:42px!important;padding:0 16px!important;font-size:13px!important;}
+.plennatec-main .card,.plennatec-card{padding:18px!important;}
+.plennatec-main h1{font-size:25px!important;line-height:1.05!important;margin:0 0 14px!important;}
+.plennatec-main h2{font-size:20px!important;line-height:1.15!important;margin:0 0 14px!important;}
+.plennatec-main h3{font-size:16px!important;}
+.plennatec-main p,.plennatec-main label,.plennatec-main td{font-size:13px!important;}
+.plennatec-main th{font-size:11.5px!important;}
+.plennatec-main td,.plennatec-main th{padding:10px 12px!important;}
+.plennatec-main input,.plennatec-main select{min-height:36px!important;height:36px!important;font-size:12px!important;padding:0 10px!important;}
+.plennatec-main button,.plennatec-main .btn,.plennatec-main a.btn,.plennatec-main input[type="submit"]{height:36px!important;min-height:36px!important;padding:0 13px!important;font-size:12px!important;border-radius:11px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;text-decoration:none!important;}
+.plennatec-main a[href*="/categorias/nova"],.plennatec-main a[href*="/nova-categoria"],.plennatec-main a[href="/categorias/novo"],.plennatec-main a[href="/categorias/nova"]{height:38px!important;padding:0 15px!important;border-radius:12px!important;background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;text-decoration:none!important;font-weight:950!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;box-shadow:0 12px 22px rgba(0,176,80,.18)!important;}
+.plennatec-main a[href="/dashboard"],.plennatec-main a[href="/logout"]:not(.plennatec-logout){display:none!important;}
+.plennatec-main a{font-size:13px!important;font-weight:850;}
+.plennatec-main .admin-content-grid{display:grid!important;grid-template-columns:minmax(340px,.72fr) minmax(560px,1.5fr)!important;gap:16px!important;align-items:start!important;}
+.plennatec-main .admin-content-grid .card{margin:0!important;}
+.plennatec-main form{font-size:13px!important;}
+.plennatec-main form br{display:none!important;}
+.plennatec-main form label{margin-right:5px!important;}
+.plennatec-main .usuarios-create-form{display:flex!important;flex-wrap:wrap!important;align-items:end!important;gap:8px!important;}
+.plennatec-main .usuarios-create-form > *{margin-top:0!important;margin-bottom:0!important;}
+.plennatec-main .usuarios-create-form input{width:145px!important;}
+.plennatec-main .usuarios-create-form select{width:145px!important;}
+@media(max-width:1180px){.plennatec-main .admin-content-grid{grid-template-columns:1fr!important;}}
+
 </style>
 </head>
     <body>
