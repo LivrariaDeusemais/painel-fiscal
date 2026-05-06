@@ -2680,6 +2680,111 @@ body.plennatec-premium-admin-page{
   }
 }
 
+
+/* ===== AJUSTE FINAL ANOTAÇÕES - CATEGORIAS/USUÁRIOS ===== */
+
+/* 1) Alinha o topo do menu lateral com o topo do cabeçalho */
+.plennatec-app-shell{
+  align-items:start!important;
+  padding-top:18px!important;
+}
+.plennatec-sidebar{
+  margin-top:0!important;
+  top:18px!important;
+  align-self:start!important;
+}
+.plennatec-topbar{
+  margin-top:0!important;
+}
+
+/* 2) Evita qualquer avanço do conteúdo para cima/por baixo do menu */
+.plennatec-main{
+  padding-top:0!important;
+}
+.plennatec-main > *:first-child{
+  margin-top:0!important;
+}
+
+/* 3) Usuários: mais respiro entre formulário e tabela e sem campo estourando */
+.plennatec-main .grid{
+  grid-template-columns:minmax(300px,350px) minmax(0,1fr)!important;
+  gap:18px!important;
+}
+.plennatec-main .grid .card:first-child{
+  max-width:350px!important;
+  overflow:hidden!important;
+}
+.plennatec-main .grid .card:first-child form{
+  grid-template-columns:68px minmax(0,1fr)!important;
+  gap:7px 8px!important;
+}
+.plennatec-main .grid .card:first-child form input,
+.plennatec-main .grid .card:first-child form select{
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+.plennatec-main .grid .card:first-child form .hint{
+  max-width:100%!important;
+  overflow-wrap:break-word!important;
+}
+
+/* 4) Tabela de usuários: reduz Perfil/Data/Ações para dar mais equilíbrio */
+.plennatec-main .grid .card:nth-child(2) table{
+  table-layout:fixed!important;
+}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(1),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(1){width:20%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(2),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(2){width:38%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(3),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(3){width:12%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(4),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(4){width:12%!important;}
+.plennatec-main .grid .card:nth-child(2) table th:nth-child(5),
+.plennatec-main .grid .card:nth-child(2) table td:nth-child(5){width:18%!important;text-align:center!important;}
+.plennatec-main .grid .card:nth-child(2) table td,
+.plennatec-main .grid .card:nth-child(2) table th{
+  font-size:10.5px!important;
+  padding:6px 6px!important;
+}
+
+/* 5) Categorias: tabela dentro do espaço útil, com ações enxutas */
+.plennatec-main .card > table,
+.plennatec-main section > table{
+  width:100%!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+}
+.plennatec-main .card > table th:nth-child(1),
+.plennatec-main .card > table td:nth-child(1){width:7%!important;}
+.plennatec-main .card > table th:nth-child(2),
+.plennatec-main .card > table td:nth-child(2){width:38%!important;}
+.plennatec-main .card > table th:nth-child(3),
+.plennatec-main .card > table td:nth-child(3){width:20%!important;}
+.plennatec-main .card > table th:nth-child(4),
+.plennatec-main .card > table td:nth-child(4){width:25%!important;}
+.plennatec-main .card > table th:nth-child(5),
+.plennatec-main .card > table td:nth-child(5){width:10%!important;text-align:center!important;}
+
+/* 6) Botão sair sempre visível */
+.plennatec-top-user{
+  min-width:170px!important;
+  max-width:220px!important;
+}
+.plennatec-logout{
+  flex:0 0 auto!important;
+}
+
+/* 7) Texto geral ainda mais harmonizado */
+.plennatec-main td,
+.plennatec-main th,
+.plennatec-main label,
+.plennatec-main input,
+.plennatec-main select{
+  line-height:1.15!important;
+}
+
 </style>
     </head>
     <body class="plennatec-premium-admin-page">
