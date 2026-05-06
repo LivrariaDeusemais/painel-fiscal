@@ -17609,6 +17609,171 @@ body.contador-premium-page {
 }
 /* ===== FIM AJUSTE CONTADOR BOTÃO BAIXAR CURTO ===== */
 
+
+
+/* ===== AJUSTES FINAIS CONTADOR: MENU, BOTÃO TOPO, SEM ÍCONES ===== */
+
+/* Menu lateral com leitura igual ao Dashboard */
+.contador-sidebar-nav a {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.15px !important;
+}
+
+.contador-sidebar-nav a span {
+  font-size: 14px !important;
+}
+
+/* Botão novo agora fica no topo, junto do filtro */
+.contador-premium-page .btn-add-file-top {
+  height: 38px !important;
+  min-width: 138px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: 0 12px 22px rgba(0,176,80,.18) !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.contador-premium-page .btn-add-file-top:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 16px 30px rgba(0,176,80,.24) !important;
+  filter: brightness(1.03) !important;
+}
+
+/* A linha antiga do botão dentro da tabela fica anulada caso ainda exista */
+.contador-premium-page .add-row-cell {
+  display: none !important;
+}
+
+/* Remover ícones da primeira coluna e devolver espaço para o texto */
+.contador-premium-page .tipo-cell::before {
+  display: none !important;
+  content: none !important;
+}
+
+.contador-premium-page .tipo-cell {
+  padding-left: 14px !important;
+  padding-right: 12px !important;
+  background: linear-gradient(180deg,#fbfcfd,#f3f6f8) !important;
+}
+
+.contador-premium-page .tipo-cell strong {
+  padding-left: 0 !important;
+  display: block !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.14 !important;
+  font-size: 12px !important;
+}
+
+/* Tabela mais compacta e mais premium */
+.contador-premium-page .contador-table th,
+.contador-premium-page .contador-table td {
+  padding: 8px 9px !important;
+  font-size: 11px !important;
+}
+
+.contador-premium-page .contador-table .responsibility-head th {
+  padding: 9px 8px !important;
+  font-size: 14px !important;
+}
+
+.contador-premium-page .contador-table thead tr:nth-child(3) th {
+  padding: 8px 7px !important;
+  font-size: 10.5px !important;
+}
+
+/* Rebalancear colunas depois de encurtar o botão baixar */
+.contador-premium-page .contador-table col:nth-child(1) { width: 23% !important; }
+.contador-premium-page .contador-table col:nth-child(2) { width: 6% !important; }
+.contador-premium-page .contador-table col:nth-child(3) { width: 16% !important; }
+.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+.contador-premium-page .contador-table col:nth-child(5) { width: 12% !important; }
+.contador-premium-page .contador-table col:nth-child(6) { width: 10% !important; }
+.contador-premium-page .contador-table col:nth-child(7) { width: 18% !important; }
+
+/* Botões e controles menores */
+.contador-premium-page .btn-download {
+  width: 86px !important;
+  min-width: 86px !important;
+  height: 30px !important;
+  font-size: 10px !important;
+  padding: 0 8px !important;
+}
+
+.contador-premium-page .status-select {
+  height: 30px !important;
+  max-width: 128px !important;
+  font-size: 9.5px !important;
+}
+
+.contador-premium-page .qtd-pill {
+  min-width: 30px !important;
+  height: 26px !important;
+  font-size: 12px !important;
+}
+
+.contador-premium-page .upload-chip {
+  height: 30px !important;
+  width: 112px !important;
+  font-size: 9.8px !important;
+}
+
+.contador-premium-page .download-status-text {
+  min-width: 76px !important;
+  height: 24px !important;
+  font-size: 9.3px !important;
+}
+
+/* Coluna de data/lixeira com folga */
+.contador-premium-page .contador-table td:nth-child(7),
+.contador-premium-page .contador-table th:nth-child(7) {
+  padding-left: 10px !important;
+  padding-right: 12px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+.contador-premium-page .trash-history {
+  flex-shrink: 0 !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  margin-left: 4px !important;
+}
+
+/* Filtro com o botão novo alinhado e sem pesar visualmente */
+.contador-premium-page .filter-box {
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.contador-premium-page .filter-group {
+  width: 305px !important;
+}
+
+/* Em telas menores, mantém usabilidade */
+@media (max-width: 1180px) {
+  .contador-premium-page .btn-add-file-top {
+    width: auto !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .contador-premium-page .btn-add-file-top {
+    width: 100% !important;
+  }
+}
+/* ===== FIM AJUSTES FINAIS CONTADOR ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -17673,6 +17838,7 @@ body.contador-premium-page {
               </div>
               <button type="submit" class="btn btn-green">Aplicar mês</button>
               <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
+              ${isAdmin ? `<button type="button" class="btn btn-add-file-row btn-add-file-top" onclick="abrirModalUpload('modal-add-file-row')">+ Novo arquivo</button>` : ''}
             </form>
           </section>
 
@@ -17690,11 +17856,7 @@ body.contador-premium-page {
                 </colgroup>
                 <thead>
                   ${isAdmin ? `
-                  <tr>
-                    <th colspan="7" class="add-row-cell">
-                      <button type="button" class="btn-add-file-row" onclick="abrirModalUpload('modal-add-file-row')">Adicionar nova linha de arquivo ✚</button>
-                    </th>
-                  </tr>` : ''}
+                  ` : ''}
                   <tr class="responsibility-head">
                     <th></th>
                     <th colspan="3" class="empresa">Responsabilidade da empresa</th>
