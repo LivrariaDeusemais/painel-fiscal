@@ -24328,6 +24328,254 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 }
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
+
+
+/* =====================================================
+   HOTFIX RAIZ — ESPAÇO DO CONTADOR CABENDO NA VIEWPORT
+   Causa raiz: CSS premium antigo ainda definia shell até 1740px,
+   tabela com min-width acima da área útil e overflow hidden no main.
+   Este bloco fica DENTRO do style da própria rota, no final, portanto
+   vence os patches anteriores e padroniza Mac/Windows.
+===================================================== */
+body.contador-premium-page,
+body.contador-premium-page html {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+body.contador-premium-page .contador-premium-shell {
+  width: calc(100vw - 24px) !important;
+  max-width: calc(100vw - 24px) !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  padding: 14px 0 !important;
+  display: grid !important;
+  grid-template-columns: 258px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  overflow: hidden !important;
+}
+
+body.contador-premium-page .contador-premium-sidebar {
+  width: 258px !important;
+  min-width: 258px !important;
+  max-width: 258px !important;
+  overflow: hidden !important;
+}
+
+body.contador-premium-page .contador-premium-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+body.contador-premium-page .dm-global-header-shell,
+body.contador-premium-page .dm-global-top,
+body.contador-premium-page .container,
+body.contador-premium-page .hero,
+body.contador-premium-page .contador-kpi-grid,
+body.contador-premium-page .contador-board,
+body.contador-premium-page .filter-box,
+body.contador-premium-page .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+body.contador-premium-page .contador-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  overflow: hidden !important;
+}
+
+body.contador-premium-page .contador-kpi-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 13px 14px !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  gap: 11px !important;
+}
+
+body.contador-premium-page .contador-kpi-card small,
+body.contador-premium-page .contador-kpi-card span,
+body.contador-premium-page .contador-kpi-card strong {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.contador-premium-page .contador-board {
+  padding: 14px !important;
+  overflow: hidden !important;
+}
+
+body.contador-premium-page .table-wrap {
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  border-radius: 18px !important;
+}
+
+body.contador-premium-page .contador-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+}
+
+body.contador-premium-page .contador-table col:nth-child(1) { width: 26% !important; }
+body.contador-premium-page .contador-table col:nth-child(2) { width: 5.5% !important; }
+body.contador-premium-page .contador-table col:nth-child(3) { width: 6.5% !important; }
+body.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+body.contador-premium-page .contador-table col:nth-child(5) { width: 14% !important; }
+body.contador-premium-page .contador-table col:nth-child(6) { width: 10.5% !important; }
+body.contador-premium-page .contador-table col:nth-child(7) { width: 11% !important; }
+body.contador-premium-page .contador-table col:nth-child(8) { width: 11.5% !important; }
+
+body.contador-premium-page .contador-table th,
+body.contador-premium-page .contador-table td {
+  padding: 7px 5px !important;
+  font-size: 10px !important;
+  line-height: 1.12 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+body.contador-premium-page .contador-table .responsibility-head th {
+  font-size: 13px !important;
+  padding: 8px 5px !important;
+}
+
+body.contador-premium-page .contador-table thead tr:nth-child(3) th {
+  font-size: 9.6px !important;
+  padding: 7px 4px !important;
+}
+
+body.contador-premium-page .tipo-cell {
+  padding-left: 38px !important;
+  padding-right: 6px !important;
+}
+
+body.contador-premium-page .tipo-cell::before {
+  left: 10px !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+body.contador-premium-page .tipo-cell strong {
+  font-size: 10.4px !important;
+  white-space: normal !important;
+  line-height: 1.08 !important;
+}
+
+body.contador-premium-page .qtd-pill {
+  min-width: 28px !important;
+  height: 25px !important;
+  font-size: 12px !important;
+}
+
+body.contador-premium-page .btn-upload-open,
+body.contador-premium-page .upload-chip {
+  width: 92px !important;
+  min-width: 92px !important;
+  max-width: 92px !important;
+  height: 28px !important;
+  padding: 0 5px !important;
+  font-size: 9.2px !important;
+}
+
+body.contador-premium-page .btn-download {
+  width: 82px !important;
+  min-width: 82px !important;
+  max-width: 82px !important;
+  height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 9.2px !important;
+}
+
+body.contador-premium-page .status-select {
+  width: 100% !important;
+  max-width: 125px !important;
+  height: 29px !important;
+  padding: 0 6px !important;
+  font-size: 9.2px !important;
+}
+
+body.contador-premium-page .download-status-text {
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: 24px !important;
+  padding: 0 6px !important;
+  font-size: 8.8px !important;
+}
+
+body.contador-premium-page .download-date-wrap,
+body.contador-premium-page .muted-cell {
+  font-size: 8.8px !important;
+  white-space: nowrap !important;
+}
+
+body.contador-premium-page .inline-trash-form,
+body.contador-premium-page .trash-history {
+  max-width: 18px !important;
+}
+
+@media (max-width: 1366px) {
+  body.contador-premium-page .contador-premium-shell {
+    width: calc(100vw - 18px) !important;
+    max-width: calc(100vw - 18px) !important;
+    grid-template-columns: 240px minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  body.contador-premium-page .contador-premium-sidebar {
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+  }
+
+  body.contador-premium-page .contador-board {
+    padding: 10px !important;
+  }
+
+  body.contador-premium-page .contador-kpi-grid {
+    gap: 10px !important;
+  }
+
+  body.contador-premium-page .contador-kpi-card {
+    min-height: 82px !important;
+    padding: 11px 12px !important;
+  }
+
+  body.contador-premium-page .contador-table th,
+  body.contador-premium-page .contador-table td {
+    font-size: 9.4px !important;
+    padding: 6px 4px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  body.contador-premium-page .contador-premium-shell {
+    grid-template-columns: 1fr !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  body.contador-premium-page .contador-premium-sidebar {
+    display: none !important;
+  }
+
+  body.contador-premium-page .contador-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -24922,151 +25170,3 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 });
 
 module.exports = router;
-
-// =====================================================
-// PATCH ULTRA DEFINITIVO — ESPAÇO CONTADOR MAC/WINDOWS
-// Corrige estouro horizontal e desalinhamento visual
-// =====================================================
-function renderPlennaTecUltraFixAssets() {
-  return `
-  <style id="plennatec-ultra-fix-assets">
-
-    *, *::before, *::after{
-      box-sizing:border-box !important;
-    }
-
-    html, body{
-      width:100% !important;
-      max-width:100% !important;
-      overflow-x:hidden !important;
-    }
-
-    body.contador-premium-page{
-      overflow-x:hidden !important;
-    }
-
-    body.contador-premium-page .contador-premium-shell{
-      width:min(1440px, calc(100vw - 32px)) !important;
-      max-width:calc(100vw - 32px) !important;
-      margin:0 auto !important;
-
-      display:grid !important;
-      grid-template-columns:250px minmax(0,1fr) !important;
-
-      gap:18px !important;
-
-      overflow:hidden !important;
-    }
-
-    body.contador-premium-page .contador-premium-sidebar{
-      width:250px !important;
-      min-width:250px !important;
-      max-width:250px !important;
-
-      overflow:hidden !important;
-    }
-
-    body.contador-premium-page .contador-premium-main{
-      width:100% !important;
-      max-width:100% !important;
-      min-width:0 !important;
-
-      overflow:hidden !important;
-    }
-
-    body.contador-premium-page .contador-topbar,
-    body.contador-premium-page .contador-actions,
-    body.contador-premium-page .contador-metrics,
-    body.contador-premium-page .filter-box,
-    body.contador-premium-page .contador-board{
-      width:100% !important;
-      max-width:100% !important;
-      min-width:0 !important;
-
-      overflow:hidden !important;
-    }
-
-    body.contador-premium-page .contador-metrics{
-      display:grid !important;
-      grid-template-columns:repeat(auto-fit,minmax(180px,1fr)) !important;
-      gap:12px !important;
-    }
-
-    body.contador-premium-page .table-wrap{
-      width:100% !important;
-      max-width:100% !important;
-
-      overflow-x:auto !important;
-      overflow-y:visible !important;
-
-      -webkit-overflow-scrolling:touch !important;
-    }
-
-    body.contador-premium-page .contador-table{
-      width:100% !important;
-      min-width:980px !important;
-      table-layout:fixed !important;
-      border-collapse:collapse !important;
-    }
-
-    body.contador-premium-page .contador-table th,
-    body.contador-premium-page .contador-table td{
-      font-size:10.5px !important;
-      padding:7px 6px !important;
-
-      overflow:hidden !important;
-      text-overflow:ellipsis !important;
-      white-space:nowrap !important;
-    }
-
-    body.contador-premium-page .contador-table select,
-    body.contador-premium-page .contador-table button{
-      max-width:100% !important;
-      font-size:10px !important;
-    }
-
-    @media (max-width:1280px){
-
-      body.contador-premium-page .contador-premium-shell{
-        grid-template-columns:230px minmax(0,1fr) !important;
-      }
-
-      body.contador-premium-page .contador-premium-sidebar{
-        width:230px !important;
-        min-width:230px !important;
-        max-width:230px !important;
-      }
-
-      body.contador-premium-page .contador-table{
-        min-width:920px !important;
-      }
-
-    }
-
-  </style>
-  `;
-}
-
-router.use((req, res, next) => {
-  const originalSend = res.send.bind(res);
-
-  res.send = function ultraFixSend(body){
-    try{
-      if(
-        typeof body === 'string' &&
-        body.includes('</head>') &&
-        !body.includes('plennatec-ultra-fix-assets')
-      ){
-        body = body.replace(
-          '</head>',
-          renderPlennaTecUltraFixAssets() + '</head>'
-        );
-      }
-    }catch(err){}
-
-    return originalSend(body);
-  };
-
-  next();
-});
-
