@@ -1463,6 +1463,364 @@ function escapeHtmlGlobal(text = '') {
     .replace(/'/g, '&#039;');
 }
 
+
+function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
+  const usuario = req?.session?.usuario || {};
+  const nome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
+  const perfil = escapeHtmlGlobal(usuario.perfil || '');
+  const paginaAtual = String(config.paginaAtual || '');
+  const titulo = escapeHtmlGlobal(config.titulo || 'PlennaTec');
+  const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão inteligente de despesas.');
+  const navItems = [
+    { key:'dashboard', href:'/dashboard', label:'⌂ Dashboard' },
+    { key:'rotina-despesas', href:'/rotina-despesas', label:'▦ Contas a Pagar' },
+    { key:'lancamentos', href:'/lancamentos', label:'▤ Comprovantes' },
+    { key:'documentos', href:'/documentos', label:'▣ Arquivo' },
+    { key:'categorias', href:'/categorias', label:'▫ Categorias' },
+    { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
+    ...(usuario.perfil === 'ADMIN' ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
+  ];
+  const nav = navItems.map(item => `<a class="${item.key === paginaAtual ? 'active' : ''}" href="${item.href}">${item.label}</a>`).join('');
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${titulo} - PlennaTec</title>
+      <style>
+/* ===== PLENNATEC PREMIUM SIDEBAR - CATEGORIAS E USUÁRIOS ===== */
+body.plennatec-premium-admin-page{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#0f172a;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0,176,80,.42) 0%, rgba(178,232,199,.30) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.72) 31%, transparent 56%),
+    linear-gradient(135deg,#f7fbf8 0%,#f7f9fc 42%,#eef3f8 100%);
+}
+.plennatec-app-shell{
+  width:100%;
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:290px minmax(0,1fr);
+  gap:22px;
+  padding:18px 22px 18px 12px;
+}
+.plennatec-sidebar{
+  position:sticky;
+  top:18px;
+  height:calc(100vh - 36px);
+  border-radius:0 26px 26px 0;
+  padding:26px 24px;
+  background:linear-gradient(180deg,#064e3b 0%,#005f3a 45%,#003f2c 100%);
+  color:#fff;
+  box-shadow:0 24px 70px rgba(6,78,59,.26);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.plennatec-side-logo{
+  width:100%;
+  min-height:74px;
+  border-radius:18px;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 18px;
+  margin-bottom:24px;
+  box-shadow:0 14px 28px rgba(0,0,0,.12);
+}
+.plennatec-side-logo img{
+  max-width:100%;
+  max-height:52px;
+  object-fit:contain;
+}
+.plennatec-side-nav{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.plennatec-side-nav a{
+  height:48px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 18px;
+  text-decoration:none;
+  color:#eafff2!important;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:-.1px;
+  transition:.16s ease;
+}
+.plennatec-side-nav a:hover{
+  background:rgba(255,255,255,.10);
+  transform:translateX(2px);
+}
+.plennatec-side-nav a.active{
+  background:linear-gradient(135deg,#12c767,#00a64c);
+  color:#fff!important;
+  box-shadow:0 14px 28px rgba(0,176,80,.30);
+}
+.plennatec-side-spacer{flex:1;}
+.plennatec-side-card{
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  padding:16px;
+  margin-top:18px;
+}
+.plennatec-side-card strong{
+  display:block;
+  font-size:14px;
+  margin-bottom:8px;
+}
+.plennatec-side-card span{
+  display:block;
+  font-size:12px;
+  line-height:1.4;
+  color:#d8fbe5;
+}
+.plennatec-side-user{
+  border-top:1px solid rgba(255,255,255,.14);
+  padding-top:18px;
+  margin-top:20px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.plennatec-side-user img{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#fff;
+  padding:4px;
+}
+.plennatec-side-user strong{
+  display:block;
+  font-size:13px;
+}
+.plennatec-side-user span{
+  display:block;
+  font-size:11px;
+  opacity:.82;
+  font-weight:800;
+}
+.plennatec-main{
+  min-width:0;
+}
+.plennatec-topbar{
+  min-height:92px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:22px;
+  box-shadow:0 18px 45px rgba(15,23,42,.08);
+  backdrop-filter:blur(14px);
+  padding:18px 24px;
+  margin-bottom:14px;
+}
+.plennatec-title-wrap{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.plennatec-title-icon{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  display:grid;
+  place-items:center;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+}
+.plennatec-title-icon img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+}
+.plennatec-title-wrap h1{
+  margin:0 0 6px;
+  font-size:clamp(25px,2.1vw,34px);
+  line-height:1;
+  letter-spacing:-.7px;
+  color:#101828;
+}
+.plennatec-title-wrap p{
+  margin:0;
+  color:#52627a;
+  font-size:13px;
+  font-weight:800;
+}
+.plennatec-top-user{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.plennatec-top-user-copy{
+  text-align:right;
+}
+.plennatec-top-user-copy strong{
+  display:block;
+  color:#00a64c;
+  font-size:14px;
+}
+.plennatec-top-user-copy span{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.plennatec-top-avatar{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  display:grid;
+  place-items:center;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+}
+.plennatec-top-avatar img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+}
+.plennatec-logout{
+  height:46px;
+  padding:0 18px;
+  border-radius:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#f8fafc,#eef2f7);
+  color:#172033!important;
+  text-decoration:none;
+  border:1px solid #dde6ef;
+  font-weight:950;
+  box-shadow:0 10px 20px rgba(15,23,42,.06);
+}
+.plennatec-card,
+.plennatec-main .container,
+.plennatec-main .card{
+  background:rgba(255,255,255,.88)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:22px!important;
+  box-shadow:0 18px 45px rgba(15,23,42,.08)!important;
+  backdrop-filter:blur(14px);
+}
+.plennatec-main .container{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.plennatec-main .card{
+  padding:22px!important;
+}
+.plennatec-main table{
+  width:100%;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  overflow:hidden;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e2e8f0;
+}
+.plennatec-main th{
+  background:#f8fafc!important;
+  color:#172033!important;
+  font-size:12px!important;
+  text-transform:none!important;
+  font-weight:950!important;
+}
+.plennatec-main td,
+.plennatec-main th{
+  border-bottom:1px solid #e7edf5!important;
+  padding:12px 14px!important;
+}
+.plennatec-main button,
+.plennatec-main .btn,
+.plennatec-main a.btn,
+.plennatec-main input[type="submit"]{
+  border-radius:12px!important;
+  font-weight:950!important;
+}
+.plennatec-main .btn-primary,
+.plennatec-main .btn-success,
+.plennatec-main button[type="submit"],
+.plennatec-main input[type="submit"]{
+  background:linear-gradient(135deg,#00B050,#009640)!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 12px 22px rgba(0,176,80,.18)!important;
+}
+.plennatec-main input,
+.plennatec-main select{
+  border:1px solid #dce3ec!important;
+  border-radius:12px!important;
+  min-height:40px;
+}
+@media(max-width:980px){
+  .plennatec-app-shell{grid-template-columns:1fr;padding:12px;}
+  .plennatec-sidebar{position:relative;height:auto;border-radius:24px;}
+  .plennatec-side-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .plennatec-topbar{flex-direction:column;align-items:flex-start;}
+  .plennatec-top-user{width:100%;justify-content:space-between;}
+}
+</style>
+    </head>
+    <body class="plennatec-premium-admin-page">
+      <div class="plennatec-app-shell">
+        <aside class="plennatec-sidebar">
+          <div class="plennatec-side-logo">
+            <img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec">
+          </div>
+          <nav class="plennatec-side-nav">${nav}</nav>
+          <div class="plennatec-side-spacer"></div>
+          <div class="plennatec-side-card">
+            <strong>Gestão Premium</strong>
+            <span>Controle operacional com padrão visual unificado e foco em produtividade.</span>
+          </div>
+          <div class="plennatec-side-user">
+            <img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil">
+            <div><strong>${nome}</strong><span>${perfil}</span></div>
+          </div>
+        </aside>
+        <main class="plennatec-main">
+          <header class="plennatec-topbar">
+            <div class="plennatec-title-wrap">
+              <div class="plennatec-title-icon">
+                <img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec">
+              </div>
+              <div><h1>${titulo}</h1><p>${subtitulo}</p></div>
+            </div>
+            <div class="plennatec-top-user">
+              <div class="plennatec-top-user-copy"><strong>${nome}</strong><span>${perfil}</span></div>
+              <div class="plennatec-top-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil"></div>
+              <a class="plennatec-logout" href="/logout">Sair</a>
+            </div>
+          </header>
+          ${innerHtml}
+        </main>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 function renderGlobalHeader(req, config = {}) {
   const usuario = req?.session?.usuario || {};
   const usuarioNome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
@@ -1629,6 +1987,35 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
       <nav class="dm-global-nav">${menuHtml}${extraActionsHtml ? `<span class="dm-menu-extra-separator"></span>${extraActionsHtml}` : ''}</nav>
     </header>`;
 }
+
+
+// Middleware visual: aplica shell premium nas telas Categorias e Usuários sem alterar regras de negócio.
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+  res.send = function patchedPremiumSend(body) {
+    try {
+      const pathOnly = String(req.path || '');
+      const isPremiumTarget = req.method === 'GET' && (pathOnly === '/categorias' || pathOnly === '/usuarios');
+      const html = typeof body === 'string' ? body : '';
+      if (isPremiumTarget && html.includes('<html') && !html.includes('plennatec-premium-admin-page')) {
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const inner = bodyMatch ? bodyMatch[1] : html;
+        const cleanInner = inner
+          .replace(/<header class="dm-global-header-shell"[\s\S]*?<\/header>/i, '')
+          .replace(/<nav class="dm-global-nav"[\s\S]*?<\/nav>/i, '');
+        const cfg = pathOnly === '/categorias'
+          ? { paginaAtual: 'categorias', titulo: 'Categorias', subtitulo: 'Organize e gerencie as categorias financeiras.' }
+          : { paginaAtual: 'usuarios', titulo: 'Usuários', subtitulo: 'Gerencie acessos, perfis e permissões do sistema.' };
+        return originalSend(renderPremiumAdminShell(req, cfg, cleanInner));
+      }
+    } catch (error) {
+      // Em caso de qualquer incompatibilidade, mantém a página original.
+    }
+    return originalSend(body);
+  };
+  next();
+});
+
 
 function renderDashboard(data) {
   const {
@@ -4697,7 +5084,300 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
-    </head>
+    <style>
+/* ===== PLENNATEC PREMIUM SIDEBAR - CATEGORIAS E USUÁRIOS ===== */
+body.plennatec-premium-admin-page{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#0f172a;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0,176,80,.42) 0%, rgba(178,232,199,.30) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226,235,245,.95) 0%, rgba(240,244,249,.72) 31%, transparent 56%),
+    linear-gradient(135deg,#f7fbf8 0%,#f7f9fc 42%,#eef3f8 100%);
+}
+.plennatec-app-shell{
+  width:100%;
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:290px minmax(0,1fr);
+  gap:22px;
+  padding:18px 22px 18px 12px;
+}
+.plennatec-sidebar{
+  position:sticky;
+  top:18px;
+  height:calc(100vh - 36px);
+  border-radius:0 26px 26px 0;
+  padding:26px 24px;
+  background:linear-gradient(180deg,#064e3b 0%,#005f3a 45%,#003f2c 100%);
+  color:#fff;
+  box-shadow:0 24px 70px rgba(6,78,59,.26);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.plennatec-side-logo{
+  width:100%;
+  min-height:74px;
+  border-radius:18px;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 18px;
+  margin-bottom:24px;
+  box-shadow:0 14px 28px rgba(0,0,0,.12);
+}
+.plennatec-side-logo img{
+  max-width:100%;
+  max-height:52px;
+  object-fit:contain;
+}
+.plennatec-side-nav{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.plennatec-side-nav a{
+  height:48px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 18px;
+  text-decoration:none;
+  color:#eafff2!important;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:-.1px;
+  transition:.16s ease;
+}
+.plennatec-side-nav a:hover{
+  background:rgba(255,255,255,.10);
+  transform:translateX(2px);
+}
+.plennatec-side-nav a.active{
+  background:linear-gradient(135deg,#12c767,#00a64c);
+  color:#fff!important;
+  box-shadow:0 14px 28px rgba(0,176,80,.30);
+}
+.plennatec-side-spacer{flex:1;}
+.plennatec-side-card{
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  padding:16px;
+  margin-top:18px;
+}
+.plennatec-side-card strong{
+  display:block;
+  font-size:14px;
+  margin-bottom:8px;
+}
+.plennatec-side-card span{
+  display:block;
+  font-size:12px;
+  line-height:1.4;
+  color:#d8fbe5;
+}
+.plennatec-side-user{
+  border-top:1px solid rgba(255,255,255,.14);
+  padding-top:18px;
+  margin-top:20px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.plennatec-side-user img{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#fff;
+  padding:4px;
+}
+.plennatec-side-user strong{
+  display:block;
+  font-size:13px;
+}
+.plennatec-side-user span{
+  display:block;
+  font-size:11px;
+  opacity:.82;
+  font-weight:800;
+}
+.plennatec-main{
+  min-width:0;
+}
+.plennatec-topbar{
+  min-height:92px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:22px;
+  box-shadow:0 18px 45px rgba(15,23,42,.08);
+  backdrop-filter:blur(14px);
+  padding:18px 24px;
+  margin-bottom:14px;
+}
+.plennatec-title-wrap{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.plennatec-title-icon{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  display:grid;
+  place-items:center;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+}
+.plennatec-title-icon img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+}
+.plennatec-title-wrap h1{
+  margin:0 0 6px;
+  font-size:clamp(25px,2.1vw,34px);
+  line-height:1;
+  letter-spacing:-.7px;
+  color:#101828;
+}
+.plennatec-title-wrap p{
+  margin:0;
+  color:#52627a;
+  font-size:13px;
+  font-weight:800;
+}
+.plennatec-top-user{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.plennatec-top-user-copy{
+  text-align:right;
+}
+.plennatec-top-user-copy strong{
+  display:block;
+  color:#00a64c;
+  font-size:14px;
+}
+.plennatec-top-user-copy span{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.plennatec-top-avatar{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  display:grid;
+  place-items:center;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+}
+.plennatec-top-avatar img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+}
+.plennatec-logout{
+  height:46px;
+  padding:0 18px;
+  border-radius:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#f8fafc,#eef2f7);
+  color:#172033!important;
+  text-decoration:none;
+  border:1px solid #dde6ef;
+  font-weight:950;
+  box-shadow:0 10px 20px rgba(15,23,42,.06);
+}
+.plennatec-card,
+.plennatec-main .container,
+.plennatec-main .card{
+  background:rgba(255,255,255,.88)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:22px!important;
+  box-shadow:0 18px 45px rgba(15,23,42,.08)!important;
+  backdrop-filter:blur(14px);
+}
+.plennatec-main .container{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.plennatec-main .card{
+  padding:22px!important;
+}
+.plennatec-main table{
+  width:100%;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  overflow:hidden;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #e2e8f0;
+}
+.plennatec-main th{
+  background:#f8fafc!important;
+  color:#172033!important;
+  font-size:12px!important;
+  text-transform:none!important;
+  font-weight:950!important;
+}
+.plennatec-main td,
+.plennatec-main th{
+  border-bottom:1px solid #e7edf5!important;
+  padding:12px 14px!important;
+}
+.plennatec-main button,
+.plennatec-main .btn,
+.plennatec-main a.btn,
+.plennatec-main input[type="submit"]{
+  border-radius:12px!important;
+  font-weight:950!important;
+}
+.plennatec-main .btn-primary,
+.plennatec-main .btn-success,
+.plennatec-main button[type="submit"],
+.plennatec-main input[type="submit"]{
+  background:linear-gradient(135deg,#00B050,#009640)!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 12px 22px rgba(0,176,80,.18)!important;
+}
+.plennatec-main input,
+.plennatec-main select{
+  border:1px solid #dce3ec!important;
+  border-radius:12px!important;
+  min-height:40px;
+}
+@media(max-width:980px){
+  .plennatec-app-shell{grid-template-columns:1fr;padding:12px;}
+  .plennatec-sidebar{position:relative;height:auto;border-radius:24px;}
+  .plennatec-side-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .plennatec-topbar{flex-direction:column;align-items:flex-start;}
+  .plennatec-top-user{width:100%;justify-content:space-between;}
+}
+</style>
+</head>
     <body>
       ${renderMonthPickerAssets()}
       <style>
