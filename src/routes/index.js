@@ -470,7 +470,7 @@ function renderMonthPickerComponent({
 function renderMonthPickerAssets() {
   return `
     <style>
-      /* ===== COMPONENTE GLOBAL DE MÊS — PLENNATEC ESTÁVEL ===== */
+      /* ===== COMPONENTE GLOBAL DE MÊS — PLENNATEC DEFINITIVO ===== */
       .global-month-picker,
       .month-smart-form {
         overflow: visible !important;
@@ -485,16 +485,16 @@ function renderMonthPickerAssets() {
 
       .month-current-display {
         min-width: 104px !important;
-        height: 36px !important;
+        height: 34px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        padding: 0 12px !important;
+        padding: 0 10px !important;
         border-radius: 12px !important;
         background: #ffffff !important;
         border: 1px solid #dce3ec !important;
         color: #172033 !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         font-weight: 950 !important;
         white-space: nowrap !important;
         box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
@@ -502,7 +502,7 @@ function renderMonthPickerAssets() {
 
       .month-open-btn {
         min-width: 108px !important;
-        height: 36px !important;
+        height: 34px !important;
         padding: 0 12px !important;
         border-radius: 12px !important;
         border: 1px solid #dce3ec !important;
@@ -654,15 +654,25 @@ function renderMonthPickerAssets() {
         border: 1px solid #dce3ec !important;
       }
 
-      /* Dashboard: separa filtro dos totalizadores e reduz texto selecionado */
+      /* Dashboard: respiro entre totalizadores e filtro */
+      .stats-grid {
+        margin-bottom: 18px !important;
+      }
+
       .filter-panel.month-smart-form {
         display: flex !important;
         align-items: center !important;
         gap: 10px !important;
         overflow: visible !important;
-        margin-top: 8px !important;
-        margin-bottom: 14px !important;
+        margin-top: 0 !important;
+        margin-bottom: 18px !important;
         min-height: 58px !important;
+        padding: 10px 18px !important;
+      }
+
+      .filter-panel.month-smart-form label {
+        font-size: 12px !important;
+        margin-right: 4px !important;
       }
 
       .filter-panel.month-smart-form .global-month-picker {
@@ -670,9 +680,9 @@ function renderMonthPickerAssets() {
       }
 
       .filter-panel.month-smart-form .month-current-display {
-        min-width: 116px !important;
+        min-width: 112px !important;
         height: 34px !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
         padding: 0 10px !important;
       }
 
@@ -685,7 +695,7 @@ function renderMonthPickerAssets() {
         font-size: 11.5px !important;
       }
 
-      /* Contador: tudo na mesma linha desde o label */
+      /* Contador: filtro todo na mesma linha */
       .contador-premium-page .filter-box.month-smart-form {
         display: flex !important;
         align-items: center !important;
@@ -705,12 +715,13 @@ function renderMonthPickerAssets() {
       }
 
       .contador-premium-page .filter-box .filter-group label {
-        width: 92px !important;
-        min-width: 92px !important;
+        width: auto !important;
+        min-width: 165px !important;
         margin: 0 !important;
-        line-height: 1.08 !important;
+        line-height: 1 !important;
         font-size: 11px !important;
         font-weight: 950 !important;
+        white-space: nowrap !important;
       }
 
       .contador-premium-page .filter-box .global-month-picker {
@@ -719,7 +730,7 @@ function renderMonthPickerAssets() {
 
       .contador-premium-page .filter-box .month-current-display {
         height: 34px !important;
-        min-width: 104px !important;
+        min-width: 92px !important;
         font-size: 13px !important;
       }
 
@@ -771,7 +782,7 @@ function renderMonthPickerAssets() {
         .month-picker-footer-actions { grid-auto-flow: row; grid-template-columns: 1fr; }
         .month-footer-btn { width: 100% !important; }
       }
-      /* ===== FIM COMPONENTE GLOBAL DE MÊS — PLENNATEC ESTÁVEL ===== */
+      /* ===== FIM COMPONENTE GLOBAL DE MÊS — PLENNATEC DEFINITIVO ===== */
     </style>
     <script>
       (function(){
@@ -904,6 +915,22 @@ function renderMonthPickerAssets() {
           const form = window.getMonthPickerForm(prefix);
           if (form) form.submit();
         };
+
+        document.addEventListener('click', function(event) {
+          const openBtn = event.target.closest('.month-open-btn');
+          if (openBtn) {
+            event.preventDefault();
+            const picker = openBtn.closest('[data-month-prefix]');
+            if (picker) window.abrirSeletorMesGlobal(picker.getAttribute('data-month-prefix'));
+          }
+
+          const monthCell = event.target.closest('.month-cell');
+          if (monthCell) {
+            event.preventDefault();
+            const picker = monthCell.closest('[data-month-prefix]');
+            if (picker) window.selecionarMesGlobal(picker.getAttribute('data-month-prefix'), monthCell.dataset.month);
+          }
+        });
       })();
     </script>
   `;
@@ -4376,7 +4403,6 @@ body {
           <button type="button" class="btn-filter-apply" onclick="aplicarMesGlobal('dashboard')">Aplicar filtro&nbsp;⌁</button>
           <a href="/dashboard" class="btn-filter-clear">Limpar</a>
         </form>
-        </div>
 
         <section class="charts-grid">
           <article class="chart-card chart-clickable" onclick="abrirDetalheDashboard('meses')">
@@ -18898,7 +18924,6 @@ body.contador-premium-page {
               <span class="contador-filter-spacer"></span>
               ${isAdmin ? `<button type="button" class="btn btn-add-file-row btn-add-file-top" onclick="abrirModalUpload('modal-add-file-row')">Adicionar tipo de arquivo</button>` : ''}
             </form>
-            </div>
           </section>
 
           <section class="contador-board">
