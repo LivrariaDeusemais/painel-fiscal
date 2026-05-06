@@ -77,6 +77,291 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
 });
 
 
+
+// =====================================================
+// PATCH FOCO FINAL — ESPAÇO DO CONTADOR + BOTÕES CONTAS A PAGAR WINDOWS
+// Diagnóstico:
+// 1) Espaço do Contador usa tabela larga com min-width e cards métricos fixos.
+//    O conteúdo principal estava maior que a área útil ao lado do menu.
+//    Solução: main com overflow controlado, cards auto-fit, tabela com rolagem interna.
+// 2) Lista de Contas à Pagar no Windows quebra os botões porque o botão grande
+//    "Mudar todos..." e o botão "Colunas" não cabem com os tamanhos atuais.
+//    Solução: nav em uma linha, botões compactos e gap menor apenas nessa tela.
+// =====================================================
+function renderPlennaTecFocoContadorRotinaAssets() {
+  return `
+    <style id="plennatec-foco-contador-rotina">
+      *, *::before, *::after {
+        box-sizing: border-box !important;
+      }
+
+      html, body {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      /* =====================================================
+         ESPAÇO DO CONTADOR — CORREÇÃO PRINCIPAL
+      ===================================================== */
+
+      body.contador-premium-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      body.contador-premium-page .contador-premium-shell {
+        width: calc(100vw - 20px) !important;
+        max-width: calc(100vw - 20px) !important;
+        min-width: 0 !important;
+        margin: 0 auto !important;
+        padding: 16px 0 14px !important;
+        display: grid !important;
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+        gap: 16px !important;
+        overflow: hidden !important;
+      }
+
+      body.contador-premium-page .contador-premium-sidebar {
+        width: 250px !important;
+        min-width: 250px !important;
+        max-width: 250px !important;
+        flex: 0 0 250px !important;
+        overflow: hidden !important;
+      }
+
+      body.contador-premium-page .contador-premium-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+      }
+
+      body.contador-premium-page .contador-topbar,
+      body.contador-premium-page .contador-actions,
+      body.contador-premium-page .contador-metrics,
+      body.contador-premium-page .filter-box,
+      body.contador-premium-page .contador-board {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Métricas: não podem empurrar a página para a direita */
+      body.contador-premium-page .contador-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+        gap: 12px !important;
+      }
+
+      body.contador-premium-page .contador-metric-card {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      /* Barra de filtro do contador */
+      body.contador-premium-page .filter-box.month-smart-form,
+      body.contador-premium-page #contadorMonthForm {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 10px !important;
+        overflow: visible !important;
+      }
+
+      body.contador-premium-page .btn-add-file-top {
+        margin-left: auto !important;
+        max-width: 260px !important;
+        white-space: nowrap !important;
+      }
+
+      /* Tabela: rolagem interna dentro do card, não na página inteira */
+      body.contador-premium-page .contador-board {
+        overflow: hidden !important;
+      }
+
+      body.contador-premium-page .contador-board .table-wrap,
+      body.contador-premium-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      body.contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 980px !important;
+        max-width: none !important;
+        table-layout: fixed !important;
+      }
+
+      body.contador-premium-page .contador-table th,
+      body.contador-premium-page .contador-table td {
+        font-size: 10.4px !important;
+        padding: 6px 5px !important;
+        line-height: 1.12 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+
+      body.contador-premium-page .contador-table col:nth-child(1) { width: 25% !important; }
+      body.contador-premium-page .contador-table col:nth-child(2) { width: 5% !important; }
+      body.contador-premium-page .contador-table col:nth-child(3) { width: 6% !important; }
+      body.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+      body.contador-premium-page .contador-table col:nth-child(5) { width: 14% !important; }
+      body.contador-premium-page .contador-table col:nth-child(6) { width: 12% !important; }
+      body.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
+      body.contador-premium-page .contador-table col:nth-child(8) { width: 13% !important; }
+
+      body.contador-premium-page .contador-table .btn,
+      body.contador-premium-page .contador-table button,
+      body.contador-premium-page .contador-table select {
+        max-width: 100% !important;
+        font-size: 10px !important;
+      }
+
+      body.contador-premium-page .contador-table .btn-upload-open,
+      body.contador-premium-page .contador-table .upload-chip {
+        min-width: 96px !important;
+        width: 96px !important;
+        height: 28px !important;
+        padding: 0 6px !important;
+        font-size: 9.6px !important;
+      }
+
+      body.contador-premium-page .contador-table .btn-download {
+        min-width: 80px !important;
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 9.8px !important;
+      }
+
+      body.contador-premium-page .contador-table select {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding-left: 7px !important;
+        padding-right: 22px !important;
+      }
+
+      body.contador-premium-page .contador-table .status-pill,
+      body.contador-premium-page .contador-table .download-status {
+        min-width: 78px !important;
+        max-width: 100% !important;
+        font-size: 9.6px !important;
+        padding: 6px 7px !important;
+      }
+
+      /* Em telas menores, mantém a página parada e a rolagem só na tabela */
+      @media (max-width: 1300px) {
+        body.contador-premium-page .contador-premium-shell {
+          grid-template-columns: 238px minmax(0, 1fr) !important;
+          gap: 12px !important;
+        }
+
+        body.contador-premium-page .contador-premium-sidebar {
+          width: 238px !important;
+          min-width: 238px !important;
+          max-width: 238px !important;
+        }
+
+        body.contador-premium-page .contador-table {
+          min-width: 960px !important;
+        }
+      }
+
+      /* =====================================================
+         LISTA DE CONTAS A PAGAR — BOTÕES NA MESMA LINHA NO WINDOWS
+      ===================================================== */
+
+      body.dm-global-page:has(.rotina-table) .dm-global-nav,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important;
+        overflow: hidden !important;
+        width: 100% !important;
+      }
+
+      body.dm-global-page:has(.rotina-table) .dm-menu-btn,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-menu-btn,
+      body.dm-global-page:has(.rotina-table) .dm-global-nav a,
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav a,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page:has(.rotina-table) .dm-global-nav .btn,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav .btn {
+        font-size: 12px !important;
+      }
+
+      /* Botão grande “Mudar todos...” mais compacto */
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+        padding-left: 13px !important;
+        padding-right: 13px !important;
+        max-width: 250px !important;
+      }
+
+      /* Botão Colunas não quebra para baixo */
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button:last-child,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button:last-child {
+        max-width: 100px !important;
+      }
+
+      @media (max-width: 1280px) {
+        body.dm-global-page:has(.rotina-table) .dm-global-nav,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav {
+          gap: 6px !important;
+        }
+
+        body.dm-global-page:has(.rotina-table) .dm-menu-btn,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-menu-btn,
+        body.dm-global-page:has(.rotina-table) .dm-global-nav a,
+        body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav a,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+          padding-left: 9px !important;
+          padding-right: 9px !important;
+          font-size: 11px !important;
+        }
+      }
+    </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecFocoContadorRotinaSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-foco-contador-rotina')) {
+        body = body.replace('</head>', `${renderPlennaTecFocoContadorRotinaAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
 // =====================================================
 // DIAGNÓSTICO E CORREÇÃO DEFINITIVA DE LARGURA — PLENNATEC
 // Causa corrigida: as telas usam wrappers diferentes.
