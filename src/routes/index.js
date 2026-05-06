@@ -16559,12 +16559,12 @@ async function gerarZipEEnviar(res, arquivos, nomeZip) {
 
 function getContadorArquivoConfig() {
   return [
-    { key: 'xml', label: 'XML - Notas Despesas', auto: true, countKey: 'xml', statusColumn: 'status_xml', downloadStatusColumn: 'download_xml_status', downloadAtColumn: 'download_xml_at', downloadHref: (mes) => `/espaco-contador/download/xml?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar XML em massa' },
-    { key: 'pdf', label: 'PDF - Notas Despesas', auto: true, countKey: 'pdf', statusColumn: 'status_pdf', downloadStatusColumn: 'download_pdf_status', downloadAtColumn: 'download_pdf_at', downloadHref: (mes) => `/espaco-contador/download/pdf?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar PDF em massa' },
-    { key: 'ctes', label: 'CTEs Fretes Marketplaces', titulo: 'CTEs Fretes Marketplaces', statusColumn: 'status_ctes', downloadStatusColumn: 'download_ctes_status', downloadAtColumn: 'download_ctes_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/ctes?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar CTEs em massa' },
-    { key: 'cmv', label: 'CMV - Custo Mercadoria Vendida', titulo: 'CMV - Custo Mercadoria Vendida', statusColumn: 'status_cmv', downloadStatusColumn: 'download_cmv_status', downloadAtColumn: 'download_cmv_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/cmv?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar CMV em massa' },
-    { key: 'extratos', label: 'Extratos Bancários', titulo: 'Extratos Bancários', statusColumn: 'status_extratos', downloadStatusColumn: 'download_extratos_status', downloadAtColumn: 'download_extratos_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/extratos?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar Extratos em massa' },
-    { key: 'lista', label: 'Lista das despesas do Mês', titulo: 'Lista das despesas do Mês', statusColumn: 'status_lista', downloadStatusColumn: 'download_lista_status', downloadAtColumn: 'download_lista_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/lista?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar Lista em massa' }
+    { key: 'xml', label: 'XML - Notas Despesas', auto: true, countKey: 'xml', statusColumn: 'status_xml', downloadStatusColumn: 'download_xml_status', downloadAtColumn: 'download_xml_at', downloadHref: (mes) => `/espaco-contador/download/xml?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' },
+    { key: 'pdf', label: 'PDF - Notas Despesas', auto: true, countKey: 'pdf', statusColumn: 'status_pdf', downloadStatusColumn: 'download_pdf_status', downloadAtColumn: 'download_pdf_at', downloadHref: (mes) => `/espaco-contador/download/pdf?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' },
+    { key: 'ctes', label: 'CTEs Fretes Marketplaces', titulo: 'CTEs Fretes Marketplaces', statusColumn: 'status_ctes', downloadStatusColumn: 'download_ctes_status', downloadAtColumn: 'download_ctes_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/ctes?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' },
+    { key: 'cmv', label: 'CMV - Custo Mercadoria Vendida', titulo: 'CMV - Custo Mercadoria Vendida', statusColumn: 'status_cmv', downloadStatusColumn: 'download_cmv_status', downloadAtColumn: 'download_cmv_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/cmv?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' },
+    { key: 'extratos', label: 'Extratos Bancários', titulo: 'Extratos Bancários', statusColumn: 'status_extratos', downloadStatusColumn: 'download_extratos_status', downloadAtColumn: 'download_extratos_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/extratos?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' },
+    { key: 'lista', label: 'Lista das despesas do Mês', titulo: 'Lista das despesas do Mês', statusColumn: 'status_lista', downloadStatusColumn: 'download_lista_status', downloadAtColumn: 'download_lista_at', downloadHref: (mes) => `/espaco-contador/download-extra-grupo/lista?mes=${encodeURIComponent(mes)}`, downloadLabel: '⬇ Baixar' }
   ];
 }
 
@@ -16588,7 +16588,7 @@ async function getContadorArquivoConfigCompleta() {
     downloadStatusColumn: null,
     downloadAtColumn: null,
     downloadHref: (mes) => `/espaco-contador/download-extra-grupo/custom_${row.id}?mes=${encodeURIComponent(mes)}`,
-    downloadLabel: `⬇ Baixar ${row.label} em massa`
+    downloadLabel: `⬇ Baixar`
   }));
 
   return [...fixos, ...personalizados];
@@ -17515,6 +17515,100 @@ body.contador-premium-page {
 }
 /* ===== FIM AJUSTE ESPAÇO DO CONTADOR COMPACTO ===== */
 
+
+
+/* ===== AJUSTE CONTADOR: BOTÃO BAIXAR CURTO + ESPAÇOS DA TABELA ===== */
+.contador-premium-page .contador-table {
+  min-width: 1060px !important;
+}
+
+/* Rebalanceamento das colunas: mais espaço no tipo e na data/lixeira */
+.contador-premium-page .contador-table col:nth-child(1) { width: 24% !important; }
+.contador-premium-page .contador-table col:nth-child(2) { width: 6% !important; }
+.contador-premium-page .contador-table col:nth-child(3) { width: 16% !important; }
+.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+.contador-premium-page .contador-table col:nth-child(5) { width: 13% !important; }
+.contador-premium-page .contador-table col:nth-child(6) { width: 10% !important; }
+.contador-premium-page .contador-table col:nth-child(7) { width: 16% !important; }
+
+/* Primeira coluna: o ícone não invade mais o nome */
+.contador-premium-page .tipo-cell {
+  padding-left: 54px !important;
+  padding-right: 12px !important;
+  overflow: visible !important;
+}
+
+.contador-premium-page .tipo-cell::before {
+  left: 15px !important;
+  width: 25px !important;
+  height: 25px !important;
+}
+
+.contador-premium-page .tipo-cell strong {
+  display: block !important;
+  padding-left: 4px !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.12 !important;
+}
+
+/* Botão baixar curto e elegante */
+.contador-premium-page .btn-download {
+  min-width: 92px !important;
+  width: 92px !important;
+  height: 31px !important;
+  padding: 0 10px !important;
+  font-size: 10.5px !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+/* Coluna de data com mais respiro para não cortar a lixeira */
+.contador-premium-page .contador-table td:nth-child(7),
+.contador-premium-page .contador-table th:nth-child(7) {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+.contador-premium-page .download-history-wrap,
+.contador-premium-page .download-date-wrap,
+.contador-premium-page td:nth-child(7) span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+}
+
+.contador-premium-page .trash-history,
+.contador-premium-page .attached-delete {
+  flex-shrink: 0 !important;
+  width: 23px !important;
+  height: 23px !important;
+  min-width: 23px !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Leve compactação horizontal geral */
+.contador-premium-page .contador-table th,
+.contador-premium-page .contador-table td {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .status-select {
+  max-width: 132px !important;
+  font-size: 9.5px !important;
+}
+/* ===== FIM AJUSTE CONTADOR BOTÃO BAIXAR CURTO ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -17956,7 +18050,7 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
     }
     return gerarZipEEnviar(res, arquivos, `${config.label}-${mes}`);
   } catch (error) {
-    res.send(`<pre>Erro ao baixar arquivos extras em massa:\n${error.message}</pre>`);
+    res.send(`<pre>Erro ao Baixar:\n${error.message}</pre>`);
   }
 });
 
@@ -18047,7 +18141,7 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 
     await archive.finalize();
   } catch (error) {
-    res.send(`<pre>Erro ao baixar arquivos em massa:\n${error.message}</pre>`);
+    res.send(`<pre>Erro ao Baixar:\n${error.message}</pre>`);
   }
 });
 
