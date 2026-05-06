@@ -395,7 +395,7 @@ const MESES_CURTOS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago',
 function formatMesAnoCurto(mesAno = '') {
   const text = String(mesAno || '').trim();
   const match = text.match(/^(\d{4})-(\d{2})$/);
-  if (!match) return text ? text : 'Selecione';
+  if (!match) return 'Selecione';
   const ano = match[1];
   const mesIndex = Number(match[2]) - 1;
   const mes = MESES_CURTOS_PT[mesIndex] || match[2];
@@ -410,7 +410,6 @@ function getMesAnoAtualRef() {
 function renderMonthPickerComponent({
   prefix,
   selectedValue = '',
-  formId,
   fieldName = 'mes',
   allowAll = false,
   allLabel = 'Todos os meses',
@@ -470,193 +469,3652 @@ function renderMonthPickerComponent({
 function renderMonthPickerAssets() {
   return `
     <style>
-      /* ===== COMPONENTE GLOBAL FILTRO DE MÊS PLENNATEC ===== */
-      .global-month-picker,
-      .month-smart-form {
-        overflow: visible !important;
-      }
-
-      .month-compact-row {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        min-width: 0 !important;
-      }
-
-      .month-current-display {
-        min-width: 118px !important;
-        height: 38px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 14px !important;
-        border-radius: 12px !important;
-        background: #ffffff !important;
-        border: 1px solid #dce3ec !important;
-        color: #172033 !important;
-        font-weight: 950 !important;
-        white-space: nowrap !important;
-        box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
-      }
-
-      .month-open-btn,
-      .btn-month-open {
-        min-width: 116px !important;
-        height: 38px !important;
-        padding: 0 13px !important;
-        border-radius: 12px !important;
-        border: 1px solid #dce3ec !important;
-        background: linear-gradient(180deg,#f8fafc,#eef2f7) !important;
-        color: #172033 !important;
-        font-size: 12px !important;
-        font-weight: 950 !important;
-        cursor: pointer !important;
-        box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
-        white-space: nowrap !important;
-      }
-
-      .month-picker-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        background: rgba(15, 23, 42, 0.16);
-        align-items: flex-start;
-        justify-content: center;
-        padding: 88px 18px 18px;
-      }
-
-      .month-picker-overlay.open {
-        display: flex;
-      }
-
-      .month-picker-popover {
-        width: 372px;
-        max-width: calc(100vw - 28px);
-        border-radius: 18px;
-        background: rgba(255,255,255,0.98);
-        border: 1px solid #dce3ec;
-        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
-        padding: 14px;
-      }
-
-      .month-picker-head {
-        display: grid;
-        grid-template-columns: 42px 1fr 42px;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 14px;
-      }
-
-      .month-nav-btn {
-        height: 36px !important;
-        min-height: 36px !important;
-        border-radius: 12px !important;
-        padding: 0 !important;
-        font-size: 18px !important;
-        line-height: 1 !important;
-        border: 0 !important;
-        background: linear-gradient(135deg,#00B050,#009640) !important;
-        color: #fff !important;
-        font-weight: 900 !important;
-        cursor: pointer !important;
-      }
-
-      .month-year-select {
-        height: 36px !important;
-        text-align: center !important;
-        font-weight: 950 !important;
-        border-radius: 12px !important;
-        border: 1px solid #dce3ec !important;
-        background: #fff !important;
-      }
-
-      .month-grid-picker {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-      }
-
-      .month-cell {
-        height: 36px !important;
-        min-height: 36px !important;
-        padding: 0 !important;
-        border-radius: 11px !important;
-        font-size: 12.5px !important;
-        font-weight: 950 !important;
-        background: #E8F7EE !important;
-        color: #14532d !important;
-        border: 1px solid #c8ecd4 !important;
-        box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
-        transition: all .16s ease !important;
-        cursor: pointer !important;
-      }
-
-      .month-cell:hover,
-      .month-cell.active {
-        background: linear-gradient(135deg, #00B050, #009640) !important;
-        color: #fff !important;
-        border-color: rgba(0, 176, 80, .9) !important;
-        box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
-        transform: translateY(-1px);
-      }
-
-      .month-picker-footer {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 10px;
-        margin-top: 14px;
-      }
-
-      .month-selected-preview {
-        color: #14532d;
-        font-size: 12px;
-        font-weight: 950;
-        white-space: nowrap;
-      }
-
-      .month-picker-footer-actions {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: minmax(74px, auto);
-        gap: 7px;
-        align-items: center;
-      }
-
-      .month-footer-btn {
-        height: 36px !important;
-        min-width: 74px !important;
-        padding: 0 10px !important;
-        border-radius: 12px !important;
-        border: 0 !important;
-        font-size: 11.5px !important;
-        font-weight: 950 !important;
-        cursor: pointer !important;
-        white-space: nowrap !important;
-      }
-
-      .month-footer-btn.primary {
-        background: linear-gradient(135deg,#00B050,#009640) !important;
-        color: #fff !important;
-        box-shadow: 0 10px 20px rgba(0,176,80,.16) !important;
-      }
-
-      .month-footer-btn.soft {
-        background: #eef2f7 !important;
-        color: #172033 !important;
-        border: 1px solid #dce3ec !important;
-      }
-
-      @media(max-width: 520px) {
-        .month-picker-popover { width: min(360px, calc(100vw - 28px)); }
-        .month-picker-footer { grid-template-columns: 1fr; }
-        .month-picker-footer-actions { grid-auto-flow: row; grid-template-columns: 1fr; }
-        .month-footer-btn { width: 100% !important; }
-      }
-      /* ===== FIM COMPONENTE GLOBAL FILTRO DE MÊS PLENNATEC ===== */
+      .global-month-picker,.month-smart-form{overflow:visible!important;}
+      .month-compact-row{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;}
+      .month-current-display{min-width:118px!important;height:38px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 14px!important;border-radius:12px!important;background:#fff!important;border:1px solid #dce3ec!important;color:#172033!important;font-weight:950!important;white-space:nowrap!important;box-shadow:0 8px 18px rgba(15,23,42,.05)!important;}
+      .month-open-btn,.btn-month-open{min-width:116px!important;height:38px!important;padding:0 13px!important;border-radius:12px!important;border:1px solid #dce3ec!important;background:linear-gradient(180deg,#f8fafc,#eef2f7)!important;color:#172033!important;font-size:12px!important;font-weight:950!important;cursor:pointer!important;box-shadow:0 8px 18px rgba(15,23,42,.05)!important;white-space:nowrap!important;}
+      .month-picker-overlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.16);align-items:flex-start;justify-content:center;padding:88px 18px 18px;}
+      .month-picker-overlay.open{display:flex;}
+      .month-picker-popover{width:372px;max-width:calc(100vw - 28px);border-radius:18px;background:rgba(255,255,255,.98);border:1px solid #dce3ec;box-shadow:0 24px 70px rgba(15,23,42,.22);padding:14px;}
+      .month-picker-head{display:grid;grid-template-columns:42px 1fr 42px;gap:8px;align-items:center;margin-bottom:14px;}
+      .month-nav-btn{height:36px!important;min-height:36px!important;border-radius:12px!important;padding:0!important;font-size:18px!important;line-height:1!important;border:0!important;background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;font-weight:900!important;cursor:pointer!important;}
+      .month-year-select{height:36px!important;text-align:center!important;font-weight:950!important;border-radius:12px!important;border:1px solid #dce3ec!important;background:#fff!important;}
+      .month-grid-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+      .month-cell{height:36px!important;min-height:36px!important;padding:0!important;border-radius:11px!important;font-size:12.5px!important;font-weight:950!important;background:#E8F7EE!important;color:#14532d!important;border:1px solid #c8ecd4!important;box-shadow:0 8px 16px rgba(15,23,42,.04)!important;transition:all .16s ease!important;cursor:pointer!important;}
+      .month-cell:hover,.month-cell.active{background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;border-color:rgba(0,176,80,.9)!important;box-shadow:0 10px 18px rgba(0,176,80,.22)!important;transform:translateY(-1px);}
+      .month-picker-footer{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;margin-top:14px;}
+      .month-selected-preview{color:#14532d;font-size:12px;font-weight:950;white-space:nowrap;}
+      .month-picker-footer-actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(74px,auto);gap:7px;align-items:center;}
+      .month-footer-btn{height:36px!important;min-width:74px!important;padding:0 10px!important;border-radius:12px!important;border:0!important;font-size:11.5px!important;font-weight:950!important;cursor:pointer!important;white-space:nowrap!important;}
+      .month-footer-btn.primary{background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;box-shadow:0 10px 20px rgba(0,176,80,.16)!important;}
+      .month-footer-btn.soft{background:#eef2f7!important;color:#172033!important;border:1px solid #dce3ec!important;}
+      .filter-panel.month-smart-form{display:flex!important;align-items:center!important;gap:10px!important;overflow:visible!important;}
+      .filter-panel.month-smart-form .global-month-picker{flex:0 0 auto!important;}
+      .filter-panel.month-smart-form .btn-filter-apply,.filter-panel.month-smart-form .btn-filter-clear{height:38px!important;min-height:38px!important;padding:0 14px!important;}
+      .contador-premium-page .filter-box.month-smart-form{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:nowrap!important;overflow:visible!important;}
+      .contador-premium-page .filter-box .filter-group{width:auto!important;min-width:0!important;display:flex!important;align-items:center!important;gap:10px!important;margin:0!important;}
+      .contador-premium-page .filter-box .filter-group label{width:92px!important;min-width:92px!important;margin:0!important;line-height:1.1!important;}
+      .contador-premium-page .contador-apply-month-btn,.contador-premium-page .filter-box .btn-green{height:38px!important;align-self:center!important;margin:0!important;}
+      .contador-premium-page .btn-add-file-top{align-self:center!important;margin-left:auto!important;}
+      .contador-premium-page .contador-filter-spacer{flex:1 1 auto!important;}
+      @media(max-width:980px){.filter-panel.month-smart-form,.contador-premium-page .filter-box.month-smart-form{flex-wrap:wrap!important}.contador-premium-page .contador-filter-spacer{display:none!important}.contador-premium-page .btn-add-file-top{margin-left:0!important}}
+      @media(max-width:520px){.month-picker-popover{width:min(360px,calc(100vw - 28px));}.month-picker-footer{grid-template-columns:1fr;}.month-picker-footer-actions{grid-auto-flow:row;grid-template-columns:1fr;}.month-footer-btn{width:100%!important;}}
     </style>
     <script>
+      const MESES_PICKER_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
+      function formatMesAnoCurtoJS(valor){const match=String(valor||'').match(/^(\\d{4})-(\\d{2})$/);if(!match)return valor||'Selecione';const nomeMes=MESES_PICKER_PT[Number(match[2])-1]||match[2];return nomeMes+'-'+String(match[1]).slice(-2);}
+      function getMonthPickerPrefixConfig(prefix){return{root:document.querySelector('[data-month-prefix="'+prefix+'"]'),hidden:document.getElementById(prefix+'_mes_picker_value'),label:document.getElementById(prefix+'MesAtualLabel'),overlay:document.getElementById(prefix+'MonthPickerOverlay'),year:document.getElementById(prefix+'MonthPickerYear'),grid:document.getElementById(prefix+'MonthGridPicker'),preview:document.getElementById(prefix+'MonthSelectedPreview')};}
+      function getMonthPickerForm(prefix){const cfg=getMonthPickerPrefixConfig(prefix);return cfg.root?cfg.root.closest('form'):null;}
+      function iniciarMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);const valor=cfg.hidden?.value||'';const hoje=new Date();monthPickerState[prefix]={ano:/^\\d{4}-\\d{2}$/.test(valor)?valor.slice(0,4):String(hoje.getFullYear()),mes:/^\\d{4}-\\d{2}$/.test(valor)?valor.slice(5,7):String(hoje.getMonth()+1).padStart(2,'0')};if(cfg.year){const anoAtual=monthPickerState[prefix].ano;const existe=Array.from(cfg.year.options).some(opt=>String(opt.value)===String(anoAtual));if(!existe){const opt=document.createElement('option');opt.value=anoAtual;opt.textContent=anoAtual;cfg.year.appendChild(opt);}cfg.year.value=anoAtual;}selecionarMesGlobal(prefix,monthPickerState[prefix].mes,false);atualizarPreviewMesGlobal(prefix);}
+      function abrirSeletorMesGlobal(prefix){iniciarMesGlobal(prefix);const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.overlay)cfg.overlay.classList.add('open');}
+      function fecharSeletorMesGlobal(prefix,event){if(event&&event.target&&event.target.id!==prefix+'MonthPickerOverlay')return;const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.overlay)cfg.overlay.classList.remove('open');}
+      function selecionarMesGlobal(prefix,mes,atualizar=true){monthPickerState[prefix]=monthPickerState[prefix]||{};monthPickerState[prefix].mes=String(mes).padStart(2,'0');const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.grid){cfg.grid.querySelectorAll('.month-cell').forEach(btn=>{btn.classList.toggle('active',btn.dataset.month===monthPickerState[prefix].mes);});}if(atualizar)atualizarPreviewMesGlobal(prefix);}
+      function mudarAnoPickerGlobal(prefix,delta){const cfg=getMonthPickerPrefixConfig(prefix);const atual=parseInt(cfg.year?.value||monthPickerState[prefix]?.ano||String(new Date().getFullYear()),10);const novo=atual+Number(delta||0);if(cfg.year){const existe=Array.from(cfg.year.options).some(opt=>String(opt.value)===String(novo));if(!existe){const opt=document.createElement('option');opt.value=String(novo);opt.textContent=String(novo);cfg.year.appendChild(opt);}cfg.year.value=String(novo);}monthPickerState[prefix]=monthPickerState[prefix]||{};monthPickerState[prefix].ano=String(novo);atualizarPreviewMesGlobal(prefix);}
+      function atualizarPreviewMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);monthPickerState[prefix]=monthPickerState[prefix]||{};const ano=cfg.year?.value||monthPickerState[prefix].ano||String(new Date().getFullYear());const mes=monthPickerState[prefix].mes||String(new Date().getMonth()+1).padStart(2,'0');const label=formatMesAnoCurtoJS(ano+'-'+mes);monthPickerState[prefix].ano=String(ano);if(cfg.preview)cfg.preview.textContent='Selecionado: '+label;}
+      function aplicarMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);monthPickerState[prefix]=monthPickerState[prefix]||{};const ano=cfg.year?.value||monthPickerState[prefix].ano||String(new Date().getFullYear());const mes=monthPickerState[prefix].mes||String(new Date().getMonth()+1).padStart(2,'0');if(cfg.hidden)cfg.hidden.value=ano+'-'+mes;const form=getMonthPickerForm(prefix);if(form)form.submit();}
+      function limparMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.hidden)cfg.hidden.value='';const form=getMonthPickerForm(prefix);if(form)form.submit();}
+    </script>
+  `;
+}
+
+function normalizarDiaVencimento(value) {
+  if (value === undefined || value === null) return '';
+  const text = String(value).trim();
+  if (!text) return '';
+  const match = text.match(/\d{1,2}/);
+  if (!match) return '';
+  const dia = Number.parseInt(match[0], 10);
+  if (!Number.isFinite(dia) || dia < 1 || dia > 31) return '';
+  return String(dia);
+}
+
+function formatDiaVencimento(value) {
+  const dia = normalizarDiaVencimento(value);
+  return dia ? dia.padStart(2, '0') : '';
+}
+
+function gerarOpcoesDiaVencimento(selectedValue = '', placeholder = 'Selecione o dia') {
+  const selected = normalizarDiaVencimento(selectedValue);
+  let options = `<option value="" ${selected === '' ? 'selected' : ''}>${placeholder}</option>`;
+  for (let i = 1; i <= 31; i++) {
+    const valor = String(i);
+    const label = valor.padStart(2, '0');
+    options += `<option value="${valor}" ${selected === valor ? 'selected' : ''}>${label}</option>`;
+  }
+  return options;
+}
+
+async function parseXmlDocumento(filePath) {
+  const xmlContent = fs.readFileSync(filePath, 'utf8');
+
+  function toNumberString(value) {
+    if (value === undefined || value === null) return '';
+    const text = String(value).trim();
+    if (!text) return '';
+
+    if (text.includes(',') && text.includes('.')) {
+      return text.replace(/\./g, '').replace(',', '.');
+    }
+
+    if (text.includes(',')) {
+      return text.replace(',', '.');
+    }
+
+    return text;
+  }
+
+  function extractFirst(obj, paths) {
+    for (const pathArray of paths) {
+      const value = getDeep(obj, pathArray);
+      const picked = pickFirst(value);
+      if (picked) return picked;
+    }
+    return '';
+  }
+
+  // ===== NFS-e Cajamar / ConsultaSituacaoLoteAsyncResposta =====
+  if (/<ConsultaSituacaoLoteAsyncResposta>/i.test(xmlContent) && /<Nfse>/i.test(xmlContent)) {
+    const parser = new xml2js.Parser({ explicitArray: false, trim: true });
+    const parsed = await parser.parseStringPromise(xmlContent);
+
+    const nfse = getDeep(parsed, ['ConsultaSituacaoLoteAsyncResposta', 'Nfse']) || {};
+    const prestador = nfse.PrestadorServico || {};
+    const identificacaoPrestador = prestador.IdentificacaoPrestador || {};
+    const identificacaoNfse = nfse.IdentificacaoNfse || {};
+    const servico = nfse.Servico || {};
+    const valores = servico.Valores || {};
+
+    return {
+      origem_layout: 'NFS-e Cajamar',
+      status: 'Lido automaticamente',
+      tipo_documento: 'NFS-e',
+      numero_documento: pickFirst(identificacaoNfse.NumeroNfse, getDeep(nfse, ['IdentificacaoRps', 'NumeroRps'])),
+      data_documento: normalizeDate(pickFirst(nfse.DataEmissao, nfse.DataLancamento)),
+      fornecedor: pickFirst(prestador.RazaoSocial),
+      cnpj_cpf: pickFirst(identificacaoPrestador.CnpjCpf),
+      valor: toNumberString(pickFirst(valores.ValorServicos, valores.BaseCalculo)),
+      erro_leitura: null
+    };
+  }
+
+  // ===== NFS-e Prefeitura SP =====
+  if (/<RetornoConsulta/i.test(xmlContent) && /<NumeroNFe>/i.test(xmlContent)) {
+    const parser = new xml2js.Parser({ explicitArray: false, trim: true });
+    const parsedOriginal = await parser.parseStringPromise(xmlContent);
+    const parsed = removeNamespaces(parsedOriginal);
+
+    const nfe = getDeep(parsed, ['RetornoConsulta', 'NFe']) || {};
+
+    return {
+      origem_layout: 'NFS-e Prefeitura SP',
+      status: 'Lido automaticamente',
+      tipo_documento: 'NFS-e',
+      numero_documento: pickFirst(
+        getDeep(nfe, ['ChaveNFe', 'NumeroNFe']),
+        nfe.NumeroNFe,
+        nfe.Numero,
+        nfe.NumeroNota
+      ),
+      data_documento: normalizeDate(pickFirst(
+        nfe.DataEmissaoNFe,
+        nfe.DataEmissaoRPS,
+        nfe.DataFatoGeradorNFe
+      )),
+      fornecedor: pickFirst(nfe.RazaoSocialPrestador, nfe.Prestador, nfe.NomePrestador),
+      cnpj_cpf: pickFirst(
+        getDeep(nfe, ['CPFCNPJPrestador', 'CNPJ']),
+        getDeep(nfe, ['CPFCNPJPrestador', 'CPF'])
+      ),
+      valor: toNumberString(pickFirst(nfe.ValorServicos, nfe.ValorFinalCobrado, nfe.ValorLiquidoNFe)),
+      erro_leitura: null
+    };
+  }
+
+  // ===== NFS-e nacional / diversos layouts =====
+  if (/<NFSe/i.test(xmlContent) || /<infNFSe/i.test(xmlContent) || /<DPS/i.test(xmlContent)) {
+    try {
+      const parser = new xml2js.Parser({ explicitArray: false, trim: true });
+      const parsedOriginal = await parser.parseStringPromise(xmlContent);
+      const parsed = removeNamespaces(parsedOriginal);
+
+      const infNFSe =
+        getDeep(parsed, ['NFSe', 'infNFSe']) ||
+        getDeep(parsed, ['NFSe', 'Nfse', 'infNFSe']) ||
+        getDeep(parsed, ['Nfse', 'infNFSe']) ||
+        getDeep(parsed, ['CompNfse', 'Nfse', 'InfNfse']) ||
+        getDeep(parsed, ['CompNfse', 'Nfse', 'infNfse']) ||
+        getDeep(parsed, ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse']) ||
+        {};
+
+      const emit =
+        infNFSe.emit ||
+        infNFSe.Emit ||
+        infNFSe.prest ||
+        infNFSe.PrestadorServico ||
+        getDeep(infNFSe, ['Prestador']) ||
+        {};
+
+      const valores =
+        infNFSe.valores ||
+        infNFSe.Valores ||
+        getDeep(infNFSe, ['Servico', 'Valores']) ||
+        {};
+
+      const dps =
+        infNFSe.DPS ||
+        infNFSe.dps ||
+        getDeep(infNFSe, ['DeclaracaoPrestacaoServico']) ||
+        getDeep(infNFSe, ['InfDeclaracaoPrestacaoServico']) ||
+        {};
+
+      const prestadorServico =
+        getDeep(infNFSe, ['PrestadorServico']) ||
+        getDeep(dps, ['Prestador']) ||
+        getDeep(dps, ['PrestadorServico']) ||
+        {};
+
+      const identificacaoPrestador =
+        getDeep(prestadorServico, ['IdentificacaoPrestador']) ||
+        getDeep(prestadorServico, ['CpfCnpj']) ||
+        {};
+
+      const numeroDocumento = extractFirst(parsed, [
+        ['NFSe', 'infNFSe', 'nNFSe'],
+        ['NFSe', 'infNFSe', 'nDFSe'],
+        ['Nfse', 'infNFSe', 'nNFSe'],
+        ['CompNfse', 'Nfse', 'InfNfse', 'Numero'],
+        ['CompNfse', 'Nfse', 'infNfse', 'Numero'],
+        ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'Numero']
+      ]) || pickFirst(
+        infNFSe.nNFSe,
+        infNFSe.nDFSe,
+        infNFSe.Numero,
+        infNFSe.numero
+      );
+
+      const dataDocumento = normalizeDate(
+        extractFirst(parsed, [
+          ['NFSe', 'infNFSe', 'dhProc'],
+          ['NFSe', 'infNFSe', 'dhEmi'],
+          ['NFSe', 'infNFSe', 'dCompet'],
+          ['Nfse', 'infNFSe', 'dhProc'],
+          ['CompNfse', 'Nfse', 'InfNfse', 'DataEmissao'],
+          ['CompNfse', 'Nfse', 'infNfse', 'DataEmissao'],
+          ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'DataEmissao']
+        ]) || pickFirst(
+          infNFSe.dhProc,
+          infNFSe.dhEmi,
+          infNFSe.dCompet,
+          infNFSe.DataEmissao
+        )
+      );
+
+      const fornecedor = extractFirst(parsed, [
+        ['NFSe', 'infNFSe', 'emit', 'xNome'],
+        ['Nfse', 'infNFSe', 'emit', 'xNome'],
+        ['CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'RazaoSocial'],
+        ['CompNfse', 'Nfse', 'infNfse', 'PrestadorServico', 'RazaoSocial'],
+        ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'RazaoSocial']
+      ]) || pickFirst(
+        emit.xNome,
+        emit.nome,
+        emit.RazaoSocial,
+        prestadorServico.RazaoSocial,
+        prestadorServico.razaoSocial
+      );
+
+      const cnpjCpf = extractFirst(parsed, [
+        ['NFSe', 'infNFSe', 'emit', 'CNPJ'],
+        ['NFSe', 'infNFSe', 'emit', 'CPF'],
+        ['Nfse', 'infNFSe', 'emit', 'CNPJ'],
+        ['Nfse', 'infNFSe', 'emit', 'CPF'],
+        ['CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cnpj'],
+        ['CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cpf'],
+        ['CompNfse', 'Nfse', 'infNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cnpj'],
+        ['CompNfse', 'Nfse', 'infNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cpf'],
+        ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cnpj'],
+        ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'PrestadorServico', 'IdentificacaoPrestador', 'Cpf']
+      ]) || pickFirst(
+        emit.CNPJ,
+        emit.CPF,
+        identificacaoPrestador.Cnpj,
+        identificacaoPrestador.CPF,
+        identificacaoPrestador.CnpjCpf
+      );
+
+      const valor = toNumberString(
+        extractFirst(parsed, [
+          ['NFSe', 'infNFSe', 'valores', 'vLiq'],
+          ['NFSe', 'infNFSe', 'valores', 'vBC'],
+          ['Nfse', 'infNFSe', 'valores', 'vLiq'],
+          ['Nfse', 'infNFSe', 'valores', 'vBC'],
+          ['CompNfse', 'Nfse', 'InfNfse', 'Servico', 'Valores', 'ValorServicos'],
+          ['CompNfse', 'Nfse', 'infNfse', 'Servico', 'Valores', 'ValorServicos'],
+          ['GerarNfseResposta', 'ListaNfse', 'CompNfse', 'Nfse', 'InfNfse', 'Servico', 'Valores', 'ValorServicos']
+        ]) || pickFirst(
+          valores.vLiq,
+          valores.vBC,
+          valores.ValorServicos,
+          valores.ValorLiquidoNfse,
+          valores.ValorLiquido,
+          infNFSe.valor,
+          infNFSe.ValorServicos
+        )
+      );
+
+      if (fornecedor || cnpjCpf || valor || dataDocumento || numeroDocumento) {
+        return {
+          origem_layout: 'NFS-e NFSe nacional',
+          status: 'Lido automaticamente',
+          tipo_documento: 'NFS-e',
+          numero_documento: numeroDocumento,
+          data_documento: dataDocumento,
+          fornecedor,
+          cnpj_cpf: cnpjCpf,
+          valor,
+          erro_leitura: null
+        };
+      }
+    } catch (error) {
+      // segue para próximas tentativas
+    }
+  }
+
+  // ===== NF-e padrão =====
+  try {
+    const parser = new xml2js.Parser({
+      explicitArray: false,
+      trim: true,
+      normalizeTags: false
+    });
+
+    const parsedOriginal = await parser.parseStringPromise(xmlContent);
+    const parsed = removeNamespaces(parsedOriginal);
+
+    const nfe =
+      getDeep(parsed, ['nfeProc', 'NFe', 'infNFe']) ||
+      getDeep(parsed, ['NFe', 'infNFe']) ||
+      getDeep(parsed, ['procNFe', 'NFe', 'infNFe']) ||
+      getDeep(parsed, ['enviNFe', 'NFe', 'infNFe']) ||
+      null;
+
+    if (nfe) {
+      const emit = nfe.emit || {};
+      const ide = nfe.ide || {};
+      const total = getDeep(nfe, ['total', 'ICMSTot']) || {};
+
+      return {
+        origem_layout: 'NF-e padrão',
+        status: 'Lido automaticamente',
+        tipo_documento: 'NF-e',
+        numero_documento: pickFirst(ide.nNF, ide.cNF, ide.serie),
+        data_documento: normalizeDate(pickFirst(ide.dhEmi, ide.dEmi, ide.dhSaiEnt, ide.dSaiEnt)),
+        fornecedor: pickFirst(emit.xNome, emit.xFant),
+        cnpj_cpf: pickFirst(emit.CNPJ, emit.CPF),
+        valor: toNumberString(pickFirst(total.vNF, total.vProd, total.vLiq)),
+        erro_leitura: null
+      };
+    }
+  } catch (error) {
+    // segue para fallback
+  }
+
+  return {
+    origem_layout: 'Nao identificado',
+    status: 'Nao reconhecido',
+    tipo_documento: '',
+    numero_documento: '',
+    data_documento: '',
+    fornecedor: '',
+    cnpj_cpf: '',
+    valor: '',
+    erro_leitura: 'Layout de XML ainda não reconhecido automaticamente.'
+  };
+}
+
+async function getCategoriasOptions(selectedValue = '') {
+  const categorias = await pool.query('SELECT * FROM categorias ORDER BY nome ASC');
+  let options = '<option value="">Selecione a categoria</option>';
+  categorias.rows.forEach(cat => {
+    const selected = String(selectedValue) === String(cat.id) ? 'selected' : '';
+    options += `<option value="${cat.id}" ${selected}>${cat.nome}</option>`;
+  });
+  return options;
+}
+
+function escapeHtmlGlobal(text = '') {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderGlobalHeader(req, config = {}) {
+  const usuario = req?.session?.usuario || {};
+  const usuarioNome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
+  const usuarioPerfil = escapeHtmlGlobal(usuario.perfil || '');
+  const paginaAtual = String(config.paginaAtual || '');
+  const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - PlennaTec');
+  const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da PlennaTec.');
+  const isAdmin = usuario.perfil === 'ADMIN';
+  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador'];
+  const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
+  const menuBase = [
+    ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
+    { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
+    { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
+    { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
+    { key: 'documentos', href: '/documentos', label: 'Arquivo' },
+    { key: 'categorias', href: '/categorias', label: 'Categorias' },
+    { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
+    ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
+  ];
+  const menuHtml = menuBase
+    .filter(item => item.key !== paginaAtual)
+    .map(item => `<a class="dm-menu-btn ${item.primary ? 'dm-menu-primary' : ''}" href="${item.href}">${escapeHtmlGlobal(item.label)}</a>`)
+    .join('');
+  const extraActionsHtml = String(config.extraActions || '').trim();
+  return `
+    <style>
+      .dm-global-header-shell{width:min(1560px,calc(100% - 48px));margin:18px auto 14px;font-family:Arial,Helvetica,sans-serif;color:#172033;}
+      .dm-global-top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.72);border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:16px 24px;}
+      .dm-global-brand{display:flex;align-items:center;gap:14px;min-width:0;}
+      .dm-global-logo{width:54px;height:54px;border-radius:999px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:4px;box-shadow:0 8px 22px rgba(15,23,42,.08);}
+      .dm-global-title h1{margin:0 0 5px;font-size:clamp(22px,1.8vw,32px);line-height:1;letter-spacing:-.7px;color:#101828;}
+      .dm-global-title p{margin:0;color:#52627a;font-size:13px;font-weight:700;}
+      .dm-global-user{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+      .dm-global-user-copy{text-align:right;line-height:1.15;}
+      .dm-global-user-copy strong{display:block;font-size:14px;color:#00B050;margin-bottom:4px;}
+      .dm-global-user-copy span{display:block;font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase;}
+      .dm-global-avatar{position:relative;width:50px;height:50px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;display:grid;place-items:center;box-shadow:0 8px 22px rgba(15,23,42,.08);overflow:hidden;}
+      .dm-global-avatar img{width:42px;height:42px;object-fit:contain;border-radius:50%;}
+      .dm-global-online{position:absolute;right:3px;bottom:5px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:3px solid #fff;}
+      .dm-global-logout{height:44px;padding:0 16px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;font-weight:900;box-shadow:0 10px 20px rgba(15,23,42,.06);white-space:nowrap;}
+      .dm-global-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:10px 14px;margin-top:12px;}
+      .dm-menu-btn,.dm-global-nav button{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640 !important;border:1px solid #d7eadf;box-shadow:0 8px 18px rgba(15,23,42,.05);white-space:nowrap;cursor:pointer;}
+      .dm-menu-primary{background:linear-gradient(135deg,#00B050,#009640) !important;color:#fff !important;border-color:rgba(0,176,80,.88) !important;box-shadow:0 12px 22px rgba(0,176,80,.18) !important;}
+      .dm-menu-extra-form{display:inline-flex !important;align-items:center !important;margin:0 !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
+      .dm-menu-extra-separator{width:1px;height:26px;background:#dbe7df;margin:0 2px;}
+      .dm-menu-btn:hover,.dm-global-logout:hover{transform:translateY(-1px);filter:brightness(1.03);}
+      body.dm-global-page .container{margin-top:14px !important;}
+      body.dm-global-page .container > .card > h1:first-child{display:none !important;}
+      body.dm-global-page .container > .hero > .hero-top:first-child{display:none !important;}
+      @media(max-width:900px){.dm-global-header-shell{width:min(100% - 24px,900px);}.dm-global-top{align-items:flex-start;flex-direction:column;}.dm-global-user{width:100%;justify-content:space-between;}.dm-global-user-copy{text-align:left;}.dm-global-nav{overflow-x:auto;flex-wrap:nowrap;}.dm-menu-btn{flex:0 0 auto;}}
+    </style>
+    <header class="dm-global-header-shell">
+      <div class="dm-global-top">
+        <div class="dm-global-brand">
+          <img class="dm-global-logo" src="/assets/logo-plennatec-perfil.png" onerror="this.style.display='none'" alt="PlennaTec" />
+          <div class="dm-global-title"><h1>${titulo}</h1><p>${subtitulo}</p></div>
+        </div>
+        <div class="dm-global-user">
+          <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
+          <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
+          <a class="dm-global-logout" href="/logout">Sair</a>
+        </div>
+      </div>
+      <nav class="dm-global-nav">${menuHtml}${extraActionsHtml ? `<span class="dm-menu-extra-separator"></span>${extraActionsHtml}` : ''}</nav>
+    </header>`;
+}
+
+function renderDashboard(data) {
+  const {
+    totalLancamentos = 0,
+    valorTotal = 0,
+    totalCategorias = 0,
+    totalFornecedores = 0,
+    meses = [],
+    categorias = [],
+    fornecedores = [],
+    detalhesMeses = [],
+    detalhesCategorias = [],
+    detalhesFornecedores = [],
+    mesSelecionado = '',
+    usuario = {}
+  } = data || {};
+
+  const formatMoney = (valor) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(Number(valor || 0));
+
+  const escapeHtml = (text = '') =>
+    String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  const safeJson = (value) => JSON.stringify(value || []).replace(/</g, '\\u003c');
+  const detalhesMesesJson = safeJson(detalhesMeses);
+  const detalhesCategoriasJson = safeJson(detalhesCategorias);
+  const detalhesFornecedoresJson = safeJson(detalhesFornecedores);
+
+  const hoje = new Date();
+  const opcoesMes = [];
+
+  for (let i = 0; i < 12; i++) {
+    const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const valor = `${ano}-${mes}`;
+    const label = data.toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric'
+    });
+
+    opcoesMes.push({
+      valor,
+      label: label.charAt(0).toUpperCase() + label.slice(1)
+    });
+  }
+
+  const opcoesMesHtml = opcoesMes.map(item => `
+    <option value="${item.valor}" ${mesSelecionado === item.valor ? 'selected' : ''}>
+      ${escapeHtml(item.label)}
+    </option>
+  `).join('');
+
+  const mesDashboardSelecionado = mesSelecionado || '';
+  const mesDashboardAno = mesDashboardSelecionado && /^\d{4}-\d{2}$/.test(mesDashboardSelecionado)
+    ? mesDashboardSelecionado.slice(0, 4)
+    : String(new Date().getFullYear());
+  const mesDashboardNumero = mesDashboardSelecionado && /^\d{4}-\d{2}$/.test(mesDashboardSelecionado)
+    ? mesDashboardSelecionado.slice(5, 7)
+    : String(new Date().getMonth() + 1).padStart(2, '0');
+  const mesDashboardLabel = mesDashboardSelecionado
+    ? formatMesAnoCurto(mesDashboardSelecionado)
+    : 'Todos os meses';
+
+  const subtituloFiltro = mesSelecionado
+    ? `Dados filtrados para o mês ${escapeHtml(
+        formatMesAnoCurto(mesSelecionado)
+      )}.`
+    : 'Visão executiva geral das despesas, lançamentos e distribuição financeira.';
+
+  const maxMes = Math.max(...meses.map(m => Number(m.total || 0)), 1);
+  const yTicks = [maxMes, maxMes * 0.75, maxMes * 0.5, maxMes * 0.25, 0];
+  const chartW = 520;
+  const chartH = 245;
+  const plotLeft = 70;
+  const plotRight = 28;
+  const plotTop = 22;
+  const plotBottom = 42;
+  const plotW = chartW - plotLeft - plotRight;
+  const plotH = chartH - plotTop - plotBottom;
+
+  const points = meses.map((item, index) => {
+    const x = plotLeft + (meses.length <= 1 ? 0 : (index * plotW) / (meses.length - 1));
+    const y = plotTop + plotH - ((Number(item.total || 0) / maxMes) * plotH);
+    return { x, y, item, total: Number(item.total || 0) };
+  });
+
+  const svgPoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPoints = points.length
+    ? `${points[0].x.toFixed(1)},${plotTop + plotH} ${svgPoints} ${points[points.length - 1].x.toFixed(1)},${plotTop + plotH}`
+    : '';
+
+  const gridHtml = yTicks.map(value => {
+    const y = plotTop + plotH - ((Number(value || 0) / maxMes) * plotH);
+    return `
+      <line x1="${plotLeft}" y1="${y.toFixed(1)}" x2="${chartW - plotRight}" y2="${y.toFixed(1)}" class="grid-line" />
+      <text x="8" y="${(y + 4).toFixed(1)}" class="axis-label">${formatMoney(value).replace(',00', '')}</text>
+    `;
+  }).join('');
+
+  const pointsHtml = points.map(p => `
+    <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" class="line-dot" />
+    <text x="${p.x.toFixed(1)}" y="${Math.max(14, p.y - 14).toFixed(1)}" text-anchor="middle" class="point-value">${formatMoney(p.total)}</text>
+  `).join('');
+
+  const xLabelsHtml = points.map(p => `
+    <text x="${p.x.toFixed(1)}" y="${chartH - 10}" text-anchor="middle" class="month-label">${escapeHtml(p.item.label)}</text>
+  `).join('');
+
+  const mesesHtml = meses.length
+    ? `
+      <svg class="line-chart" viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" aria-label="Despesas por mês">
+        <defs>
+          <linearGradient id="areaOrange" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00B050" stop-opacity="0.38" />
+            <stop offset="100%" stop-color="#00B050" stop-opacity="0.02" />
+          </linearGradient>
+        </defs>
+        ${gridHtml}
+        <line x1="${plotLeft}" y1="${plotTop}" x2="${plotLeft}" y2="${plotTop + plotH}" class="axis-line" />
+        <line x1="${plotLeft}" y1="${plotTop + plotH}" x2="${chartW - plotRight}" y2="${plotTop + plotH}" class="axis-line" />
+        <polygon points="${areaPoints}" fill="url(#areaOrange)" />
+        <polyline points="${svgPoints}" class="trend-line" />
+        ${pointsHtml}
+        ${xLabelsHtml}
+      </svg>
+    `
+    : `<div class="empty-state">Sem dados de despesas por mês.</div>`;
+
+  const categoriasHtml = categorias.length
+    ? categorias.map(item => {
+        const total = Number(item.total || 0);
+        const maxCategoria = Math.max(...categorias.map(c => Number(c.total || 0)), 1);
+        const largura = Math.max((total / maxCategoria) * 100, total > 0 ? 5 : 0);
+        return `
+          <div class="hbar-row">
+            <div class="hbar-header">
+              <span>${escapeHtml(item.nome)}</span>
+              <strong>${formatMoney(total)}</strong>
+            </div>
+            <div class="hbar-track">
+              <div class="hbar-fill hbar-orange" style="width:${largura}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('')
+    : `<div class="empty-state">Sem dados por categoria para o filtro selecionado.</div>`;
+
+  const fornecedoresHtml = fornecedores.length
+    ? fornecedores.map(item => {
+        const total = Number(item.total || 0);
+        const maxFornecedor = Math.max(...fornecedores.map(f => Number(f.total || 0)), 1);
+        const largura = Math.max((total / maxFornecedor) * 100, total > 0 ? 5 : 0);
+        return `
+          <div class="hbar-row">
+            <div class="hbar-header">
+              <span>${escapeHtml(item.nome)}</span>
+              <strong>${formatMoney(total)}</strong>
+            </div>
+            <div class="hbar-track">
+              <div class="hbar-fill hbar-green" style="width:${largura}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('')
+    : `<div class="empty-state">Sem dados por fornecedor para o filtro selecionado.</div>`;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Painel Fiscal - PlennaTec</title>
+      <style>
+        * { box-sizing: border-box; }
+
+        :root {
+          --orange: #00B050;
+          --orange-dark: #009640;
+          --green: #1fbd42;
+          --text: #172033;
+          --muted: #64748b;
+          --soft: rgba(255, 255, 255, 0.78);
+          --border: rgba(226, 232, 240, 0.82);
+          --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        body {
+          margin: 0;
+          min-height: 100vh;
+          font-family: Arial, Helvetica, sans-serif;
+          color: var(--text);
+          background:
+            radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+            radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+            linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%);
+        }
+
+        .page-shell {
+          width: min(1680px, calc(100% - 64px));
+          margin: 18px auto 12px;
+        }
+
+        .topbar,
+        .nav-panel,
+        .filter-panel,
+        .stat-card,
+        .chart-card {
+          background: rgba(255, 255, 255, 0.82);
+          border: 1px solid rgba(255, 255, 255, 0.72);
+          border-radius: 18px;
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(14px);
+        }
+
+        .topbar {
+          min-height: 78px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 16px 26px;
+          margin-bottom: 14px;
+        }
+
+        .brand-left {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          min-width: 0;
+        }
+
+.app-mark {
+          width: 88px;
+          height: 42px;
+          border-radius: 12px;
+          background: rgba(255,255,255,.86);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 5px 8px;
+          border: 1px solid #e2e8f0;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), 0 8px 18px rgba(15,23,42,.06);
+          overflow: hidden;
+          flex: 0 0 auto;
+        }
+        .app-mark img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          display: block;
+        }
+        .app-mark span { display:none !important; }
+
+        .brand-title h1 {
+          margin: 0 0 5px;
+          font-size: clamp(22px, 1.7vw, 30px);
+          line-height: 1;
+          letter-spacing: -0.7px;
+          color: #101828;
+        }
+
+        .brand-title p {
+          margin: 0;
+          color: #52627a;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .profile-area {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 14px;
+          flex-shrink: 0;
+        }
+
+        .profile-copy { text-align: right; }
+        .profile-copy strong {
+          display: block;
+          color: var(--orange);
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+        .profile-copy span {
+          color: #59677d;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .avatar-wrap {
+          position: relative;
+          width: 56px;
+          height: 56px;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(180deg, #ffffff, #f5f7fb);
+          border: 2px solid #e6ebf3;
+          box-shadow: inset 0 2px 7px rgba(15, 23, 42, 0.04);
+        }
+
+        .avatar-icon {
+          width: 31px;
+          height: 31px;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 50% 28%, #c6ccd6 0 21%, transparent 22%),
+            radial-gradient(ellipse at 50% 88%, #c6ccd6 0 45%, transparent 46%);
+          opacity: .92;
+        }
+        .avatar-img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
+
+        .online-dot {
+          position: absolute;
+          right: 0;
+          bottom: 8px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #23c33a;
+          border: 3px solid white;
+        }
+
+        .logout-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          min-width: 96px;
+          height: 50px;
+          border-radius: 12px;
+          text-decoration: none;
+          color: #222b3b;
+          font-weight: 800;
+          background: linear-gradient(180deg, #f8fafc, #eef2f7);
+          border: 1px solid #e0e6ef;
+          box-shadow: 0 10px 20px rgba(15, 23, 42, .06);
+        }
+
+        .nav-panel {
+          min-height: 64px;
+          padding: 8px 36px;
+          display: grid;
+          grid-template-columns: 1.35fr repeat(5, 1fr);
+          gap: 22px;
+          align-items: center;
+          margin-bottom: 18px;
+        }
+
+        .nav-btn {
+          height: 52px;
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          text-decoration: none;
+          color: #20293a;
+          font-size: 14px;
+          font-weight: 900;
+          background: rgba(239, 242, 247, 0.72);
+          border: 1px solid rgba(226, 232, 240, 0.72);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+          transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+        }
+
+        .nav-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 26px rgba(15, 23, 42, .08);
+        }
+
+        .nav-btn.active {
+          color: white;
+          background: linear-gradient(135deg, #00B050, #009640);
+          border-color: rgba(0, 176, 80, .9);
+          box-shadow: 0 14px 24px rgba(0, 176, 80, .22);
+        }
+
+        .nav-icon,
+        .stat-icon,
+        .chart-soft-icon,
+        .filter-icon,
+        .logout-icon {
+          width: 21px;
+          height: 21px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: currentColor;
+          flex-shrink: 0;
+        }
+
+        .nav-icon svg,
+        .stat-icon svg,
+        .filter-icon svg,
+        .logout-icon svg { width: 100%; height: 100%; }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+          margin-bottom: 16px;
+        }
+
+        .stat-card {
+          min-height: 112px;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 18px 22px;
+        }
+
+        .stat-icon-box {
+          width: 58px;
+          height: 58px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+        }
+        .stat-icon-box.orange { color: #00B050; background: #E8F7EE; }
+        .stat-icon-box.green { color: #1db94b; background: #eaf9ed; }
+        .stat-icon-box.purple { color: #8657ff; background: #f0eaff; }
+
+        .stat-content small {
+          display: block;
+          color: #637083;
+          font-size: 10px;
+          font-weight: 700;
+          margin-bottom: 8px;
+        }
+        .stat-content strong {
+          display: block;
+          color: #111827;
+          font-size: 25px;
+          letter-spacing: -0.4px;
+          margin-bottom: 6px;
+        }
+        .stat-content span {
+          color: #657386;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .filter-panel {
+          min-height: 70px;
+          padding: 12px 24px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+
+        .filter-panel label {
+          font-weight: 900;
+          color: #1f2937;
+          margin-right: 8px;
+          font-size: 13px;
+        }
+
+        .filter-panel select,
+        .filter-panel input[type="date"] {
+          width: 310px;
+          height: 44px;
+          border-radius: 10px;
+          border: 1px solid #dce3ec;
+          padding: 0 18px;
+          color: #334155;
+          font-weight: 700;
+          font-size: 13px;
+          background: #fff;
+          outline: none;
+        }
+
+        .btn-filter-apply {
+          height: 44px;
+          padding: 0 20px;
+          border: none;
+          border-radius: 11px;
+          cursor: pointer;
+          background: linear-gradient(135deg, #00B050, #009640);
+          color: #fff;
+          font-weight: 900;
+          box-shadow: 0 12px 22px rgba(0, 176, 80, .22);
+        }
+
+        .btn-filter-clear {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 44px;
+          padding: 0 16px;
+          border-radius: 11px;
+          text-decoration: none;
+          color: #667085;
+          font-weight: 800;
+          background: #eef2f7;
+        }
+
+        .charts-grid {
+          display: grid;
+          grid-template-columns: 1.05fr .96fr 1.05fr;
+          gap: 18px;
+        }
+
+        .chart-card {
+          min-height: 310px;
+          padding: 18px 22px 16px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .chart-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 86% 88%, rgba(226, 232, 240, .55), transparent 23%);
+          pointer-events: none;
+        }
+
+        .chart-heading {
+          position: relative;
+          z-index: 1;
+          padding-left: 14px;
+          margin-bottom: 14px;
+        }
+        .chart-heading::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 3px;
+          height: 20px;
+          border-radius: 999px;
+          background: #94a3b8;
+        }
+        .chart-heading h2 {
+          margin: 0 0 6px;
+          font-size: 18px;
+          color: #171f31;
+          letter-spacing: -0.3px;
+        }
+        .chart-heading p {
+          margin: 0;
+          color: #59677d;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .line-chart {
+          position: relative;
+          z-index: 1;
+          display: block;
+          width: 100%;
+          height: 210px;
+          overflow: visible;
+        }
+        .grid-line { stroke: #dfe5ee; stroke-width: 1; stroke-dasharray: 4 4; }
+        .axis-line { stroke: #cfd7e3; stroke-width: 1.2; }
+        .trend-line { fill: none; stroke: #00B050; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .line-dot { fill: #00B050; stroke: #00B050; stroke-width: 2; }
+        .axis-label, .month-label, .point-value { fill: #52627a; font-weight: 800; font-size: 10px; }
+        .point-value { fill: #111827; font-size: 10px; }
+
+        .hbar-list {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 6px 8px 0 4px;
+        }
+        .hbar-row { display: flex; flex-direction: column; gap: 8px; }
+        .hbar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          color: #52627a;
+          font-weight: 800;
+          font-size: 12px;
+        }
+        .hbar-header strong { color: #111827; white-space: nowrap; }
+        .hbar-track {
+          width: 100%;
+          height: 10px;
+          background: #e9edf4;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .hbar-fill {
+          height: 100%;
+          border-radius: 999px;
+        }
+        .hbar-orange { background: linear-gradient(90deg, #00B050, #00B050); }
+        .hbar-green { background: linear-gradient(90deg, #23c33a, #16a634); }
+
+        .chart-soft-icon {
+          position: absolute;
+          left: 50%;
+          bottom: 16px;
+          transform: translateX(-50%);
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+          color: #667085;
+          background: linear-gradient(180deg, #e7ebf1, #d8dde6);
+          opacity: .95;
+        }
+        .chart-soft-icon svg { width: 34px; height: 24px; }
+
+        .empty-state {
+          color: #94a3b8;
+          font-size: 14px;
+          padding: 26px 0;
+          font-weight: 700;
+        }
+
+
+/* ===== REFINO LOGO DASHBOARD PLENNATEC ===== */
+.app-mark.app-mark-logo {
+  width: 205px !important;
+  height: 58px !important;
+  padding: 6px 18px !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.90) !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.app-mark.app-mark-logo img {
+  width: 100% !important;
+  max-width: 178px !important;
+  max-height: 48px !important;
+  object-fit: contain !important;
+}
+
+        .chart-clickable { cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }
+        .chart-clickable:hover { transform: translateY(-2px); box-shadow: 0 22px 50px rgba(15,23,42,.12); }
+        .dashboard-detail-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,.55); padding:28px; align-items:center; justify-content:center; }
+        .dashboard-detail-modal.is-open { display:flex; }
+        .dashboard-detail-card { width:min(900px, calc(100vw - 56px)); max-height:86vh; overflow:auto; background:#fff; border-radius:20px; box-shadow:0 28px 80px rgba(15,23,42,.28); padding:22px; border:1px solid #e2e8f0; }
+        .dashboard-detail-head { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:14px; }
+        .dashboard-detail-head h2 { margin:0; font-size:22px; color:#101828; }
+        .dashboard-detail-close { width:42px; height:42px; border-radius:12px; border:0; background:#00B050; color:#fff; font-size:22px; cursor:pointer; font-weight:900; }
+        .dashboard-detail-chart { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:16px; margin-bottom:16px; }
+        .dashboard-detail-controls { display:flex; align-items:center; justify-content:space-between; gap:18px; background:linear-gradient(180deg,#ffffff,#f7fafc); border:1px solid #dbe4ef; border-radius:18px; padding:14px 16px; margin:0 0 16px; box-shadow:0 10px 24px rgba(15,23,42,.06); }
+        .dashboard-filter-box { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .dashboard-filter-box label { display:inline-flex; align-items:center; margin:0; font-size:13px; font-weight:900; color:#172033; white-space:nowrap; }
+        .dashboard-filter-box select { min-width:230px; height:44px; border-radius:13px; border:1px solid #cfd9e6; padding:0 14px; font-weight:900; background:#fff; color:#172033; box-shadow:0 6px 14px rgba(15,23,42,.05); }
+        .dashboard-filter-btn { height:44px; padding:0 18px; border-radius:13px; border:1px solid rgba(0,176,80,.88); background:linear-gradient(135deg,#00B050,#009640); color:#fff; font-weight:900; cursor:pointer; box-shadow:0 10px 20px rgba(0,176,80,.16); }
+        .dashboard-detail-total { min-width:240px; text-align:right; color:#101828; font-weight:900; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:16px; border-left:1px solid #e2e8f0; }
+        .dashboard-detail-total small { display:block; color:#64748b; font-size:11px; margin-bottom:5px; font-weight:900; }
+        .dashboard-detail-total strong { font-size:23px; color:#00B050; line-height:1; letter-spacing:-.5px; }
+        @media(max-width:760px){.dashboard-detail-controls{align-items:stretch;flex-direction:column}.dashboard-filter-box{align-items:stretch;flex-direction:column}.dashboard-filter-box select,.dashboard-filter-btn{width:100%;min-width:0}.dashboard-detail-total{align-items:flex-start;text-align:left;min-width:0;border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:12px}}
+        .dashboard-detail-chart .line-chart { height:260px !important; max-height:260px !important; width:100% !important; display:block; }
+        .dashboard-detail-card[data-detail-type="meses"] { width:min(820px, calc(100vw - 56px)); }
+        .dashboard-detail-card[data-detail-type="meses"] .dashboard-detail-chart { padding:10px 12px; overflow:hidden; }
+        .dashboard-detail-card[data-detail-type="meses"] .point-value { font-size:12px !important; }
+        .dashboard-detail-card[data-detail-type="meses"] .month-label,
+        .dashboard-detail-card[data-detail-type="meses"] .axis-label { font-size:11px !important; }
+        .dashboard-detail-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .dashboard-detail-table th, .dashboard-detail-table td { padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:left; }
+        .dashboard-detail-table th { background:#f1f5f9 !important; color:#334155 !important; font-weight:900; }
+        .dashboard-detail-table td.valor, .dashboard-detail-table th.valor { text-align:right; white-space:nowrap; }
+        .dashboard-detail-group { background:#E8F7EE !important; font-weight:900; }
+
+
+/* ===== PLENNATEC DASHBOARD PREMIUM - LAYOUT APROVADO ===== */
+body {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(232,247,238,.78) 0%, transparent 30%),
+    linear-gradient(135deg, #f7faf9 0%, #ffffff 46%, #f3f7f6 100%) !important;
+  animation: premiumPageIn .35s ease both;
+}
+
+@keyframes premiumPageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-shell {
+  width: min(1720px, calc(100% - 32px)) !important;
+  margin: 0 auto !important;
+  min-height: 100vh;
+  display: grid !important;
+  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar stats"
+    "sidebar filter"
+    "sidebar charts"
+    "sidebar footer";
+  gap: 18px 24px;
+  padding: 22px 0 18px;
+}
+
+.premium-sidebar {
+  grid-area: sidebar;
+  position: sticky;
+  top: 18px;
+  height: calc(100vh - 36px);
+  overflow: hidden;
+  border-radius: 0 28px 28px 0;
+  padding: 26px 18px 18px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 40% 20%, rgba(32,201,112,.30), transparent 28%),
+    linear-gradient(180deg, #063d31 0%, #075236 46%, #043324 100%);
+  box-shadow: 0 28px 80px rgba(4,51,36,.24);
+  display: flex;
+  flex-direction: column;
+}
+
+.premium-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.10), transparent 32%),
+    radial-gradient(circle at 20% 80%, rgba(0,176,80,.22), transparent 30%);
+  pointer-events: none;
+}
+
+.premium-sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-sidebar-logo {
+  width: 100%;
+  height: 68px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 18px 36px rgba(0,0,0,.18);
+}
+
+.premium-sidebar-logo img {
+  width: 100%;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.premium-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.premium-side-link {
+  height: 48px;
+  padding: 0 15px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 14px;
+  font-weight: 850;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.premium-side-link span {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #dcffe9;
+}
+
+.premium-side-link:hover {
+  transform: translateX(4px);
+  background: rgba(255,255,255,.10);
+}
+
+.premium-side-link.active {
+  background: linear-gradient(135deg, #13bd58, #079241);
+  box-shadow: 0 15px 32px rgba(19,189,88,.33), inset 0 1px 0 rgba(255,255,255,.24);
+  color: #fff !important;
+}
+
+.premium-upgrade {
+  margin-top: auto;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(29,185,84,.22), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+.premium-upgrade strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.premium-upgrade small {
+  display: block;
+  color: rgba(255,255,255,.75);
+  font-size: 11px;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.premium-upgrade a {
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-decoration: none;
+  color: #06412d !important;
+  background: #d8ffe4;
+  font-weight: 900;
+  transition: transform .16s ease, filter .16s ease;
+}
+
+.premium-upgrade a:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.premium-sidebar-user {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.16);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.premium-sidebar-user img {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  object-fit: contain;
+  background: #fff;
+  padding: 4px;
+}
+
+.premium-sidebar-user strong,
+.premium-sidebar-user small {
+  display: block;
+}
+
+.premium-sidebar-user strong {
+  font-size: 12px;
+  color: #fff;
+}
+
+.premium-sidebar-user small {
+  color: rgba(255,255,255,.70);
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.topbar {
+  grid-area: topbar;
+  min-height: 74px !important;
+  border-radius: 24px !important;
+  padding: 18px 24px !important;
+  background: rgba(255,255,255,.86) !important;
+  box-shadow: 0 18px 46px rgba(15,23,42,.07) !important;
+  overflow: hidden;
+  animation: premiumSlideUp .42s ease both;
+}
+
+.topbar .app-mark.app-mark-logo {
+  display: none !important;
+}
+
+.brand-title h1 {
+  font-size: 26px !important;
+  letter-spacing: -.65px !important;
+}
+
+.brand-title p {
+  font-size: 13px !important;
+  color: #52627a !important;
+  font-weight: 700 !important;
+}
+
+.nav-panel {
+  display: none !important;
+}
+
+.stats-grid {
+  grid-area: stats;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+.stat-card {
+  min-height: 150px !important;
+  align-items: flex-start !important;
+  flex-direction: column;
+  gap: 12px !important;
+  padding: 22px !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 42px rgba(15,23,42,.08) !important;
+  position: relative;
+  overflow: hidden;
+  animation: premiumCardIn .44s ease both;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 18px;
+  height: 32px;
+  opacity: .74;
+  background:
+    linear-gradient(135deg, transparent 0 8%, rgba(0,176,80,.12) 8% 12%, transparent 12% 22%, rgba(0,176,80,.18) 22% 29%, transparent 29% 40%, rgba(0,176,80,.13) 40% 46%, transparent 46% 62%, rgba(0,176,80,.20) 62% 69%, transparent 69% 100%);
+  clip-path: polygon(0 70%, 12% 56%, 22% 66%, 34% 40%, 48% 54%, 62% 34%, 78% 56%, 100% 24%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 28px 70px rgba(15,23,42,.13) !important;
+}
+
+.stat-icon-box {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 15px !important;
+  box-shadow: 0 13px 24px rgba(0,176,80,.16);
+}
+
+.stat-content small {
+  font-size: 12px !important;
+  color: #334155 !important;
+  margin-bottom: 6px !important;
+}
+
+.stat-content strong {
+  font-size: 25px !important;
+  color: #0f172a !important;
+  letter-spacing: -.6px !important;
+}
+
+.stat-content span {
+  font-size: 12px !important;
+  color: #078a3d !important;
+  font-weight: 800 !important;
+}
+
+.filter-panel {
+  grid-area: filter;
+  margin: 0 !important;
+  min-height: 62px !important;
+  justify-content: flex-end;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.filter-panel label {
+  display: none;
+}
+
+.filter-panel select {
+  width: 260px !important;
+  height: 48px !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  box-shadow: 0 12px 26px rgba(15,23,42,.07);
+}
+
+.btn-filter-apply {
+  height: 48px !important;
+  border-radius: 15px !important;
+  background: linear-gradient(135deg,#047b3a,#009640) !important;
+  box-shadow: 0 16px 28px rgba(0,128,64,.18) !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.btn-filter-clear {
+  height: 48px !important;
+  border-radius: 15px !important;
+}
+
+.btn-filter-apply:hover,
+.btn-filter-clear:hover,
+.logout-btn:hover {
+  transform: translateY(-2px);
+}
+
+.charts-grid {
+  grid-area: charts;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 18px !important;
+  margin: 0 !important;
+}
+
+.chart-card {
+  min-height: 330px !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 42px rgba(15,23,42,.08) !important;
+  border: 1px solid #eef2f4 !important;
+  padding: 24px !important;
+  transition: transform .18s ease, box-shadow .18s ease;
+  animation: premiumCardIn .5s ease both;
+}
+
+.chart-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 28px 70px rgba(15,23,42,.13) !important;
+}
+
+.chart-card:nth-child(1) {
+  order: 3;
+  grid-column: 1 / span 2;
+  min-height: 390px !important;
+}
+
+.chart-card:nth-child(2) {
+  order: 1;
+}
+
+.chart-card:nth-child(3) {
+  order: 2;
+}
+
+.chart-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-left: 0 !important;
+}
+
+.chart-heading::before {
+  display: none !important;
+}
+
+.chart-heading h2 {
+  font-size: 20px !important;
+}
+
+.chart-heading p {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+.chart-heading::after {
+  content: 'Ver detalhes ↗';
+  color: #008f45;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: .95;
+}
+
+.hbar-list {
+  gap: 17px !important;
+  padding-top: 10px !important;
+}
+
+.hbar-header {
+  font-size: 13px !important;
+}
+
+.hbar-track {
+  height: 9px !important;
+}
+
+.line-chart {
+  height: 295px !important;
+}
+
+.trend-line {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: premiumDrawLine 1s ease .12s forwards;
+}
+
+.hbar-fill {
+  transform-origin: left center;
+  animation: premiumBarGrow .75s cubic-bezier(.2,.85,.2,1) both;
+}
+
+.line-dot {
+  animation: premiumDotPop .35s ease both;
+}
+
+.dashboard-detail-modal {
+  backdrop-filter: blur(7px);
+}
+
+.dashboard-detail-modal.is-open .dashboard-detail-card {
+  animation: premiumModalIn .22s ease both;
+}
+
+.dashboard-detail-card {
+  border-radius: 22px !important;
+  box-shadow: 0 34px 92px rgba(15,23,42,.28) !important;
+}
+
+.dashboard-detail-controls {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  background:linear-gradient(180deg,#ffffff,#f7fafc) !important;
+  border:1px solid #dbe4ef !important;
+  border-radius:18px !important;
+  padding:14px 16px !important;
+  margin:0 0 16px !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06) !important;
+}
+
+.dashboard-filter-box {
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+.dashboard-filter-box label {
+  display:inline-flex !important;
+  align-items:center !important;
+  margin:0 !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  color:#172033 !important;
+  white-space:nowrap !important;
+}
+
+.dashboard-filter-box select {
+  min-width:230px !important;
+  height:44px !important;
+  border-radius:13px !important;
+  border:1px solid #cfd9e6 !important;
+  padding:0 14px !important;
+  font-weight:900 !important;
+  background:#fff !important;
+  color:#172033 !important;
+  box-shadow:0 6px 14px rgba(15,23,42,.05) !important;
+}
+
+.dashboard-filter-btn {
+  height:44px !important;
+  padding:0 18px !important;
+  border-radius:13px !important;
+  border:1px solid rgba(0,176,80,.88) !important;
+  background:linear-gradient(135deg,#00B050,#009640) !important;
+  color:#fff !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+  box-shadow:0 10px 20px rgba(0,176,80,.16) !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.dashboard-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(0,176,80,.22) !important;
+}
+
+.dashboard-detail-total {
+  min-width:240px !important;
+  text-align:right !important;
+  color:#101828 !important;
+  font-weight:900 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:flex-end !important;
+  padding-left:16px !important;
+  border-left:1px solid #e2e8f0 !important;
+}
+
+.dashboard-detail-total small {
+  display:block !important;
+  color:#64748b !important;
+  font-size:11px !important;
+  margin-bottom:5px !important;
+  font-weight:900 !important;
+}
+
+.dashboard-detail-total strong {
+  font-size:23px !important;
+  color:#00B050 !important;
+  line-height:1 !important;
+  letter-spacing:-.5px !important;
+}
+
+.footer-note {
+  grid-area: footer;
+}
+
+@keyframes premiumCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes premiumSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes premiumDrawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes premiumBarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes premiumDotPop {
+  from { opacity: 0; transform: scale(.25); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes premiumModalIn {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "topbar"
+      "filter"
+      "stats"
+      "charts"
+      "footer" !important;
+    width: min(100% - 24px, 1180px) !important;
+  }
+
+  .premium-sidebar {
+    display: none !important;
+  }
+
+  .nav-panel {
+    display: grid !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .stats-grid,
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chart-card:nth-child(1) {
+    grid-column: auto !important;
+  }
+
+  .filter-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-panel select,
+  .btn-filter-apply,
+  .btn-filter-clear {
+    width: 100% !important;
+  }
+}
+/* ===== FIM PLENNATEC DASHBOARD PREMIUM - LAYOUT APROVADO ===== */
+
+
+        .footer-note {
+          margin-top: 14px;
+          text-align: center;
+          color: #69778d;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        /* Mantém o Dashboard estável em monitores Windows com escala 125%/150%.
+           Antes, abaixo de 1300px o painel quebrava para 1 coluna e ficava gigante. */
+        @media (max-width: 980px) {
+          .page-shell { width: min(100% - 28px, 1200px); }
+          .topbar { padding: 14px 18px; }
+          .nav-panel { grid-template-columns: repeat(3, 1fr); padding: 10px 18px; gap: 12px; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+          .page-shell { width: min(100% - 22px, 680px); margin-top: 16px; }
+          .topbar, .profile-area, .filter-panel { flex-direction: column; align-items: flex-start; }
+          .profile-copy { text-align: left; }
+          .nav-panel, .stats-grid { grid-template-columns: 1fr; padding: 12px; gap: 8px; }
+          .brand-title h1 { font-size: 25px; }
+          .filter-panel select, .filter-panel input[type="date"] { width: 100%; }
+          .stat-card { min-height: auto; }
+        }
+      
+
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(232, 247, 238, 0.55) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
+
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+/* ===== PLENNATEC VERSÃO FINAL PREMIUM COMPACTA ===== */
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 98% 0%, rgba(232,247,238,.78) 0%, transparent 28%),
+    linear-gradient(135deg, #f7faf9 0%, #ffffff 48%, #f3f7f6 100%) !important;
+}
+
+.page-shell {
+  width: min(1740px, calc(100% - 20px)) !important;
+  height: 100vh !important;
+  min-height: 680px !important;
+  margin: 0 auto !important;
+  padding: 14px 0 10px !important;
+  display: grid !important;
+  grid-template-columns: 250px minmax(0, 1fr) !important;
+  grid-template-rows: 64px 86px minmax(0, 1fr) 16px !important;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar stats"
+    "sidebar charts"
+    "sidebar footer" !important;
+  gap: 10px 18px !important;
+}
+
+.premium-sidebar {
+  grid-area: sidebar !important;
+  top: 14px !important;
+  height: calc(100vh - 28px) !important;
+  min-height: 650px !important;
+  border-radius: 0 26px 26px 0 !important;
+  padding: 20px 17px 16px !important;
+}
+
+.premium-sidebar-logo {
+  height: 63px !important;
+  margin-bottom: 17px !important;
+  border-radius: 17px !important;
+}
+
+.premium-sidebar-logo img {
+  max-height: 44px !important;
+}
+
+.premium-side-nav {
+  gap: 7px !important;
+}
+
+.premium-side-link {
+  height: 40px !important;
+  font-size: 13px !important;
+  border-radius: 13px !important;
+  padding: 0 13px !important;
+}
+
+.premium-side-link span {
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 11px !important;
+}
+
+.premium-upgrade {
+  padding: 12px 14px !important;
+  border-radius: 17px !important;
+}
+
+.premium-upgrade strong {
+  font-size: 12px !important;
+}
+
+.premium-upgrade small {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+  margin-bottom: 9px !important;
+}
+
+.premium-upgrade a {
+  height: 36px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
+.premium-sidebar-user {
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+}
+
+.premium-sidebar-user img {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.premium-sidebar-user strong {
+  font-size: 11px !important;
+}
+
+.premium-sidebar-user small {
+  font-size: 9px !important;
+}
+
+.topbar {
+  grid-area: topbar !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  margin: 0 !important;
+  padding: 9px 14px 9px 20px !important;
+  display: grid !important;
+  grid-template-columns: minmax(230px, 1fr) auto auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 14px 34px rgba(15,23,42,.07) !important;
+  overflow: visible !important;
+}
+
+.topbar .app-mark.app-mark-logo {
+  display: none !important;
+}
+
+.brand-title h1 {
+  font-size: clamp(20px, 1.45vw, 26px) !important;
+  margin: 0 0 2px !important;
+  letter-spacing: -.65px !important;
+}
+
+.brand-title p {
+  font-size: 10.5px !important;
+  line-height: 1.15 !important;
+  max-width: 500px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: #52627a !important;
+}
+
+.topbar-filter {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  width: auto !important;
+}
+
+.topbar-filter select {
+  width: 175px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  font-weight: 850 !important;
+  background: #fff !important;
+  border: 1px solid #dfe7ef !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.06) !important;
+}
+
+.topbar-filter-apply {
+  height: 36px !important;
+  min-width: 126px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 12px 22px rgba(0,128,64,.18) !important;
+}
+
+.topbar-filter-apply::before {
+  margin-right: 6px !important;
+  font-size: 10px !important;
+}
+
+.topbar-filter-clear {
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+}
+
+.profile-area {
+  gap: 7px !important;
+}
+
+.profile-copy strong {
+  font-size: 12px !important;
+  margin-bottom: 2px !important;
+}
+
+.profile-copy span {
+  font-size: 9px !important;
+}
+
+.avatar-wrap {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.avatar-img {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.online-dot {
+  width: 10px !important;
+  height: 10px !important;
+  bottom: 5px !important;
+}
+
+.logout-btn {
+  height: 36px !important;
+  min-width: 78px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  gap: 6px !important;
+}
+
+.logout-icon {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.page-shell > .filter-panel {
+  display: none !important;
+}
+
+.nav-panel {
+  display: none !important;
+}
+
+.stats-grid {
+  grid-area: stats !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+
+.stat-card {
+  height: 86px !important;
+  min-height: 86px !important;
+  padding: 12px 14px !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  border: 1px solid #eef2f4 !important;
+  box-shadow: 0 13px 30px rgba(15,23,42,.07) !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 22px 52px rgba(15,23,42,.12) !important;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  left: 66px;
+  right: 14px;
+  bottom: 9px;
+  height: 18px;
+  opacity: .58;
+  background: linear-gradient(90deg, rgba(0,176,80,.05), rgba(0,176,80,.16));
+  clip-path: polygon(0 70%, 12% 58%, 22% 66%, 34% 42%, 48% 56%, 62% 34%, 78% 57%, 100% 24%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.stat-icon-box {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 20px rgba(0,176,80,.12) !important;
+}
+
+.stat-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.stat-content {
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.stat-content small {
+  font-size: 10px !important;
+  margin: 0 0 3px !important;
+  color: #334155 !important;
+  font-weight: 850 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stat-content strong {
+  font-size: clamp(17px, 1.25vw, 22px) !important;
+  line-height: 1.05 !important;
+  margin: 0 0 3px !important;
+  color: #0f172a !important;
+  letter-spacing: -.5px !important;
+}
+
+.stat-content span {
+  font-size: 9.5px !important;
+  color: #078a3d !important;
+  font-weight: 850 !important;
+  line-height: 1.15 !important;
+}
+
+.charts-grid {
+  grid-area: charts !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 12px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.chart-card,
+.chart-card:nth-child(1),
+.chart-card:nth-child(2),
+.chart-card:nth-child(3) {
+  grid-row: 1 !important;
+  grid-column: auto !important;
+  order: initial !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.chart-card {
+  border-radius: 19px !important;
+  background: #fff !important;
+  border: 1px solid #eef2f4 !important;
+  box-shadow: 0 14px 34px rgba(15,23,42,.075) !important;
+  padding: 14px 15px 12px !important;
+  overflow: hidden !important;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease !important;
+}
+
+.chart-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 24px 58px rgba(15,23,42,.13) !important;
+}
+
+.chart-heading {
+  padding-left: 0 !important;
+  margin-bottom: 9px !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  align-items: start !important;
+  gap: 8px !important;
+}
+
+.chart-heading::before {
+  display: none !important;
+}
+
+.chart-heading h2 {
+  margin: 0 !important;
+  font-size: clamp(15px, 1vw, 18px) !important;
+  line-height: 1.05 !important;
+  color: #0f172a !important;
+  letter-spacing: -.35px !important;
+}
+
+.chart-heading p {
+  margin: 1px 0 0 !important;
+  font-size: 9px !important;
+  line-height: 1.12 !important;
+  color: #64748b !important;
+  font-weight: 750 !important;
+}
+
+.chart-heading::after {
+  content: 'Detalhes ↗';
+  color: #008f45;
+  font-weight: 900;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: .95;
+}
+
+.chart-card:nth-child(1) .chart-heading {
+  grid-template-columns: auto 1fr auto !important;
+}
+
+.hbar-list {
+  gap: 8px !important;
+  padding: 4px 4px 0 0 !important;
+  max-height: calc(100% - 38px) !important;
+  overflow: hidden !important;
+}
+
+.hbar-row {
+  gap: 5px !important;
+}
+
+.hbar-header {
+  font-size: 10.5px !important;
+  gap: 8px !important;
+  line-height: 1.08 !important;
+}
+
+.hbar-header span {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.hbar-header strong {
+  font-size: 10.5px !important;
+}
+
+.hbar-track {
+  height: 6px !important;
+}
+
+.line-chart {
+  width: 100% !important;
+  height: calc(100% - 38px) !important;
+  min-height: 160px !important;
+  max-height: 520px !important;
+}
+
+.chart-card:nth-child(1) .line-chart {
+  height: calc(100% - 38px) !important;
+  min-height: 160px !important;
+  max-height: 520px !important;
+}
+
+.axis-label,
+.month-label,
+.point-value {
+  font-size: 7.5px !important;
+}
+
+.trend-line {
+  stroke-width: 2.6px !important;
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: premiumFinalDrawLine 1s ease .1s forwards;
+}
+
+.line-dot {
+  r: 4;
+  animation: premiumFinalDotPop .35s ease both;
+}
+
+.hbar-fill {
+  transform-origin: left center;
+  animation: premiumFinalBarGrow .75s cubic-bezier(.2,.85,.2,1) both;
+}
+
+.chart-soft-icon {
+  display: none !important;
+}
+
+.footer-note {
+  grid-area: footer !important;
+  margin: 0 !important;
+  font-size: 9px !important;
+  opacity: .55 !important;
+}
+
+.dashboard-detail-modal {
+  backdrop-filter: blur(7px) !important;
+}
+
+.dashboard-detail-modal.is-open .dashboard-detail-card {
+  animation: premiumFinalModalIn .22s ease both !important;
+}
+
+.dashboard-detail-card {
+  border-radius: 22px !important;
+  box-shadow: 0 34px 92px rgba(15,23,42,.28) !important;
+}
+
+.dashboard-detail-controls {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:18px !important;
+  background:linear-gradient(180deg,#ffffff,#f7fafc) !important;
+  border:1px solid #dbe4ef !important;
+  border-radius:18px !important;
+  padding:14px 16px !important;
+  margin:0 0 16px !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06) !important;
+}
+
+.dashboard-filter-box {
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+.dashboard-filter-box label {
+  display:inline-flex !important;
+  align-items:center !important;
+  margin:0 !important;
+  font-size:13px !important;
+  font-weight:900 !important;
+  color:#172033 !important;
+  white-space:nowrap !important;
+}
+
+.dashboard-filter-box select {
+  min-width:230px !important;
+  height:44px !important;
+  border-radius:13px !important;
+  border:1px solid #cfd9e6 !important;
+  padding:0 14px !important;
+  font-weight:900 !important;
+  background:#fff !important;
+  color:#172033 !important;
+  box-shadow:0 6px 14px rgba(15,23,42,.05) !important;
+}
+
+.dashboard-filter-btn {
+  height:44px !important;
+  padding:0 18px !important;
+  border-radius:13px !important;
+  border:1px solid rgba(0,176,80,.88) !important;
+  background:linear-gradient(135deg,#00B050,#009640) !important;
+  color:#fff !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+  box-shadow:0 10px 20px rgba(0,176,80,.16) !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.dashboard-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:0 14px 28px rgba(0,176,80,.22) !important;
+}
+
+.dashboard-detail-total {
+  min-width:240px !important;
+  text-align:right !important;
+  color:#101828 !important;
+  font-weight:900 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:flex-end !important;
+  padding-left:16px !important;
+  border-left:1px solid #e2e8f0 !important;
+}
+
+.dashboard-detail-total small {
+  display:block !important;
+  color:#64748b !important;
+  font-size:11px !important;
+  margin-bottom:5px !important;
+  font-weight:900 !important;
+}
+
+.dashboard-detail-total strong {
+  font-size:23px !important;
+  color:#00B050 !important;
+  line-height:1 !important;
+  letter-spacing:-.5px !important;
+}
+
+.btn-filter-apply,
+.topbar-filter-apply,
+.topbar-filter-clear,
+.logout-btn,
+.premium-side-link,
+.premium-upgrade a,
+.chart-card,
+.stat-card {
+  will-change: transform;
+}
+
+@keyframes premiumFinalDrawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes premiumFinalBarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes premiumFinalDotPop {
+  from { opacity: 0; transform: scale(.25); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes premiumFinalModalIn {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-height: 760px) {
+  .page-shell {
+    grid-template-rows: 58px 76px minmax(0, 1fr) 14px !important;
+    gap: 8px 15px !important;
+    padding-top: 10px !important;
+  }
+
+  .topbar {
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 7px 12px 7px 18px !important;
+  }
+
+  .brand-title h1 {
+    font-size: 21px !important;
+  }
+
+  .brand-title p {
+    font-size: 9.5px !important;
+  }
+
+  .premium-sidebar {
+    top: 10px !important;
+    height: calc(100vh - 20px) !important;
+    padding-top: 16px !important;
+  }
+
+  .premium-sidebar-logo {
+    height: 56px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .premium-side-link {
+    height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  .premium-upgrade {
+    padding: 10px 12px !important;
+  }
+
+  .premium-upgrade small {
+    display: none !important;
+  }
+
+  .stat-card {
+    height: 76px !important;
+    min-height: 76px !important;
+    padding: 10px 12px !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+  }
+
+  .stat-icon-box {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .stat-content small {
+    font-size: 9px !important;
+  }
+
+  .stat-content strong {
+    font-size: 18px !important;
+  }
+
+  .stat-content span {
+    font-size: 8.5px !important;
+  }
+
+  .chart-card {
+    padding: 12px 13px !important;
+  }
+
+  .chart-heading h2 {
+    font-size: 15px !important;
+  }
+
+  .chart-heading p {
+    font-size: 8px !important;
+  }
+
+  .hbar-list {
+    gap: 6px !important;
+  }
+
+  .hbar-header {
+    font-size: 9.5px !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  .topbar {
+    grid-template-columns: 1fr auto !important;
+  }
+
+  .profile-area {
+    display: none !important;
+  }
+
+  .topbar-filter select {
+    width: 160px !important;
+  }
+
+  .topbar-filter-apply {
+    min-width: 118px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    height: auto !important;
+    min-height: 100vh !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto auto !important;
+    grid-template-areas:
+      "topbar"
+      "stats"
+      "charts"
+      "footer" !important;
+    width: min(100% - 24px, 1180px) !important;
+    overflow: visible !important;
+  }
+
+  .premium-sidebar {
+    display: none !important;
+  }
+
+  .topbar {
+    height: auto !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .topbar-filter {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+    overflow: visible !important;
+  }
+
+  .chart-card,
+  .chart-card:nth-child(1),
+  .chart-card:nth-child(2),
+  .chart-card:nth-child(3) {
+    height: auto !important;
+    min-height: 300px !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .nav-panel {
+    display: grid !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .topbar-filter select,
+  .topbar-filter-apply,
+  .topbar-filter-clear {
+    width: 100% !important;
+  }
+
+  .dashboard-detail-controls {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .dashboard-filter-box {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .dashboard-filter-box select,
+  .dashboard-filter-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-detail-total {
+    align-items:flex-start !important;
+    text-align:left !important;
+    min-width:0 !important;
+    border-left:0 !important;
+    border-top:1px solid #e2e8f0 !important;
+    padding-left:0 !important;
+    padding-top:12px !important;
+  }
+}
+/* ===== FIM PLENNATEC VERSÃO FINAL PREMIUM COMPACTA ===== */
+
+
+/* ===== AJUSTE FINAL: FILTRO ABAIXO DOS TOTALIZADORES + TOTALIZADORES MAIS CHEIOS ===== */
+.topbar-filter {
+  display: none !important;
+}
+
+.page-shell {
+  grid-template-rows: 64px 88px 54px minmax(0, 1fr) 16px !important;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar stats"
+    "sidebar filter"
+    "sidebar charts"
+    "sidebar footer" !important;
+  gap: 10px 18px !important;
+}
+
+.page-shell > .filter-panel {
+  grid-area: filter !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-height: 54px !important;
+  height: 54px !important;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 18px !important;
+  background: rgba(255,255,255,.94) !important;
+  border: 1px solid #eef2f4 !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.06) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.page-shell > .filter-panel label {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 4px 0 2px !important;
+  color: #172033 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.page-shell > .filter-panel select {
+  width: 230px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  border: 1px solid #dfe7ef !important;
+  background: #fff !important;
+  color: #172033 !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  outline: none !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-apply {
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg,#047b3a,#009640) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: 0 11px 21px rgba(0,128,64,.18) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-clear {
+  height: 38px !important;
+  padding: 0 15px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  color: #172033 !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.page-shell > .filter-panel .btn-filter-apply:hover,
+.page-shell > .filter-panel .btn-filter-clear:hover {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.03) !important;
+}
+
+/* Totalizadores mais preenchidos, mantendo a mesma quantidade de linhas */
+.stat-card {
+  height: 88px !important;
+  min-height: 88px !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  gap: 13px !important;
+  padding: 12px 16px !important;
+}
+
+.stat-icon-box {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.stat-content small {
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+}
+
+.stat-content strong {
+  font-size: clamp(21px, 1.55vw, 27px) !important;
+  line-height: 1.02 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+}
+
+.stat-content span {
+  font-size: 10.5px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stat-card::after {
+  left: 72px !important;
+  right: 14px !important;
+  bottom: 9px !important;
+  height: 20px !important;
+  opacity: .55 !important;
+}
+
+.charts-grid {
+  min-height: 0 !important;
+}
+
+@media (max-height: 760px) {
+  .page-shell {
+    grid-template-rows: 58px 78px 48px minmax(0, 1fr) 14px !important;
+  }
+
+  .page-shell > .filter-panel {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 6px 10px !important;
+  }
+
+  .page-shell > .filter-panel select,
+  .page-shell > .filter-panel .btn-filter-apply,
+  .page-shell > .filter-panel .btn-filter-clear {
+    height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .stat-card {
+    height: 78px !important;
+    min-height: 78px !important;
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .stat-icon-box {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .stat-content small {
+    font-size: 9.5px !important;
+  }
+
+  .stat-content strong {
+    font-size: 19px !important;
+  }
+
+  .stat-content span {
+    font-size: 8.8px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    grid-template-areas:
+      "topbar"
+      "stats"
+      "filter"
+      "charts"
+      "footer" !important;
+    grid-template-rows: auto auto auto auto auto !important;
+  }
+
+  .page-shell > .filter-panel {
+    height: auto !important;
+    min-height: 54px !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-shell > .filter-panel {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .page-shell > .filter-panel label,
+  .page-shell > .filter-panel select,
+  .page-shell > .filter-panel .btn-filter-apply,
+  .page-shell > .filter-panel .btn-filter-clear {
+    width: 100% !important;
+  }
+}
+/* ===== FIM AJUSTE FINAL ===== */
+
+
+/* ===== AJUSTE TOTALIZADORES 60% MAIORES ===== */
+.stats-grid .stat-card {
+  height: 96px !important;
+  min-height: 96px !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  gap: 15px !important;
+  padding: 13px 17px !important;
+}
+
+.stats-grid .stat-icon-box {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.stats-grid .stat-icon {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.stats-grid .stat-content small {
+  font-size: 17.5px !important;
+  line-height: 1.04 !important;
+  margin-bottom: 4px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.25px !important;
+  white-space: nowrap !important;
+}
+
+.stats-grid .stat-content strong {
+  font-size: clamp(30px, 2vw, 37px) !important;
+  line-height: 0.98 !important;
+  margin-bottom: 4px !important;
+  font-weight: 950 !important;
+  letter-spacing: -1px !important;
+  white-space: nowrap !important;
+}
+
+.stats-grid .stat-content span {
+  font-size: 16px !important;
+  line-height: 1.02 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.25px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ajuste para caber melhor em telas com altura menor */
+@media (max-height: 760px) {
+  .stats-grid .stat-card {
+    height: 88px !important;
+    min-height: 88px !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    padding: 11px 14px !important;
+  }
+
+  .stats-grid .stat-icon-box {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .stats-grid .stat-content small {
+    font-size: 15px !important;
+  }
+
+  .stats-grid .stat-content strong {
+    font-size: clamp(26px, 1.8vw, 32px) !important;
+  }
+
+  .stats-grid .stat-content span {
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 1450px) {
+  .stats-grid .stat-content small {
+    font-size: 15px !important;
+  }
+
+  .stats-grid .stat-content strong {
+    font-size: clamp(25px, 1.8vw, 32px) !important;
+  }
+
+  .stats-grid .stat-content span {
+    font-size: 13px !important;
+  }
+}
+/* ===== FIM AJUSTE TOTALIZADORES 60% MAIORES ===== */
+
+
+
+/* ===== FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+.month-smart-form {
+  overflow: visible !important;
+}
+
+.month-compact-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.month-current-display {
+  min-width: 120px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #dce3ec !important;
+  color: #172033 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+}
+
+.btn-month-open {
+  min-width: 118px !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+}
+
+.month-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.16);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 18px 18px;
+}
+
+.month-picker-overlay.open {
+  display: flex;
+}
+
+.month-picker-popover {
+  width: 338px;
+  max-width: calc(100vw - 28px);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid #dce3ec;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 14px;
+}
+
+.month-picker-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.month-nav-btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border: 0 !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.month-year-select {
+  height: 38px !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: #fff !important;
+}
+
+.month-grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.month-cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  background: #E8F7EE !important;
+  color: #14532d !important;
+  border: 1px solid #c8ecd4 !important;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
+  transition: all .16s ease !important;
+  cursor: pointer !important;
+}
+
+.month-cell:hover,
+.month-cell.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  color: #fff !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
+  transform: translateY(-1px);
+}
+
+.month-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.month-selected-preview {
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.month-picker-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+
+</style>
+    </head>
+    <body>
+      ${renderMonthPickerAssets()}
+      <main class="page-shell">
+        <aside class="premium-sidebar" aria-label="Menu lateral PlennaTec">
+          <div class="premium-sidebar-logo">
+            <img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" />
+          </div>
+
+          <nav class="premium-side-nav">
+            <a class="premium-side-link active" href="/dashboard"><span>⌂</span>Dashboard</a>
+            <a class="premium-side-link" href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
+            <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
+            <a class="premium-side-link" href="/documentos"><span>▣</span>Arquivo</a>
+            <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
+            <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
+            <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
+          </nav>
+
+          <div class="premium-upgrade">
+            <strong>Gestão Premium</strong>
+            <small>Controle fiscal, financeiro e documentos em um painel executivo.</small>
+            <a href="/novo">Novo lançamento</a>
+          </div>
+
+          <div class="premium-sidebar-user">
+            <img src="/assets/logo-plennatec-perfil.png" onerror="this.style.display='none'" alt="Perfil" />
+            <div><strong>${escapeHtml(usuario.nome || 'Genivaldo Sestari')}</strong><small>${escapeHtml(usuario.perfil || 'Administrador')}</small></div>
+          </div>
+        </aside>
+
+        <header class="topbar">
+          <div class="brand-left">
+            <div class="app-mark app-mark-logo" aria-hidden="true"><img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/logo-plennatec-perfil.png'" alt="PlennaTec" /></div>
+            <div class="brand-title">
+              <h1>Olá, ${escapeHtml((usuario.nome || 'Genivaldo').split(' ')[0] || 'Usuário')}! 👋</h1>
+              <p>${subtituloFiltro}</p>
+            </div>
+          </div>
+
+          <div class="profile-area">
+            <div class="profile-copy">
+              <strong>${escapeHtml(usuario.nome || usuario.email || 'Usuário')}</strong>
+              <span>${escapeHtml(usuario.perfil || 'Dashboard gerencial interno')}</span>
+            </div>
+            <div class="avatar-wrap"><img src="/assets/logo-plennatec-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-plennatec.png'" /><span class="online-dot"></span></div>
+            <a class="logout-btn" href="/logout" title="Sair">
+              <span class="logout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
+              Sair
+            </a>
+          </div>
+        </header>
+
+        <nav class="nav-panel" aria-label="Menu principal">
+          <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
+          <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
+          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
+          <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
+          <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
+          <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
+        </nav>
+
+        <section class="stats-grid" aria-label="Indicadores principais">
+          <div class="stat-card">
+            <div class="stat-icon-box orange"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></span></div>
+            <div class="stat-content"><small>Lançamentos cadastrados</small><strong>${totalLancamentos}</strong><span>Total de registros</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box green"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
+            <div class="stat-content"><small>Valor total lançado</small><strong>${formatMoney(valorTotal)}</strong><span>Soma geral das despesas</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box purple"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3H4a1 1 0 0 0-1 1v5.59A2 2 0 0 0 3.59 11l9.59 9.59a2 2 0 0 0 2.82 0l4.59-4.59a2 2 0 0 0 0-2.59z"/><circle cx="7.5" cy="7.5" r="1"/></svg></span></div>
+            <div class="stat-content"><small>Categorias utilizadas</small><strong>${totalCategorias}</strong><span>Categorias com movimentação</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon-box orange"><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span></div>
+            <div class="stat-content"><small>Fornecedores lançados</small><strong>${totalFornecedores}</strong><span>Fornecedores com despesas</span></div>
+          </div>
+        </section>
+
+        <form method="GET" action="/dashboard" class="filter-panel month-smart-form" id="dashboardMonthForm">
+          <label>Filtrar mês</label>
+          ${renderMonthPickerComponent({
+            prefix: 'dashboard',
+            selectedValue: mesDashboardSelecionado,
+            fieldName: 'mes',
+            allowAll: true,
+            allLabel: 'Todos os meses',
+            openButtonLabel: 'Escolher mês',
+            applyLabel: 'Filtrar mês',
+            compact: true
+          })}
+          <button type="button" class="btn-filter-apply" onclick="aplicarMesGlobal('dashboard')">Aplicar filtro&nbsp;⌁</button>
+          <a href="/dashboard" class="btn-filter-clear">Limpar</a>
+        </form>
+        </div>
+
+        <section class="charts-grid">
+          <article class="chart-card chart-clickable" onclick="abrirDetalheDashboard('meses')">
+            <div class="chart-heading"><h2>Despesas por mês</h2><p>Últimos 6 meses · clique para detalhes</p></div>
+            <div id="chartBodyMeses">${mesesHtml}</div>
+          </article>
+
+          <article class="chart-card chart-clickable" onclick="abrirDetalheDashboard('categorias')">
+            <div class="chart-heading"><h2>Despesas por categoria</h2><p>Top categorias · clique para detalhes</p></div>
+            <div id="chartBodyCategorias"><div class="hbar-list">${categoriasHtml}</div></div>
+            <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></div>
+          </article>
+
+          <article class="chart-card chart-clickable" onclick="abrirDetalheDashboard('fornecedores')">
+            <div class="chart-heading"><h2>Despesas por fornecedor</h2><p>Top fornecedores · clique para detalhes</p></div>
+            <div id="chartBodyFornecedores"><div class="hbar-list">${fornecedoresHtml}</div></div>
+            <div class="chart-soft-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          </article>
+        </section>
+
+
+        <div id="dashboardDetailModal" class="dashboard-detail-modal" onclick="fecharDetalheDashboard(event)">
+          <div class="dashboard-detail-card" onclick="event.stopPropagation()">
+            <div class="dashboard-detail-head">
+              <h2 id="dashboardDetailTitle">Detalhes</h2>
+              <button type="button" class="dashboard-detail-close" onclick="fecharDetalheDashboard()">×</button>
+            </div>
+            <div id="dashboardDetailChart" class="dashboard-detail-chart"></div>
+            <div id="dashboardDetailControls"></div>
+            <div id="dashboardDetailTable"></div>
+          </div>
+        </div>
+
+        <script>
+  
+        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
+
+        function getMonthPickerPrefixConfig(prefix) {
+          return {
+            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
+            hidden: document.getElementById(prefix + '_mes_picker_value'),
+            label: document.getElementById(prefix + 'MesAtualLabel'),
+            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
+            year: document.getElementById(prefix + 'MonthPickerYear'),
+            grid: document.getElementById(prefix + 'MonthGridPicker'),
+            preview: document.getElementById(prefix + 'MonthSelectedPreview')
+          };
+        }
+
+        function iniciarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const valor = cfg.hidden?.value || '';
+          const hoje = new Date();
+          monthPickerState[prefix] = {
+            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
+            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
+          };
+          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
+          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function abrirSeletorMesGenerico(prefix) {
+          iniciarMesGenerico(prefix);
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.add('open');
+        }
+
+        function fecharSeletorMesGenerico(prefix, event) {
+          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.remove('open');
+        }
+
+        function selecionarMesGenerico(prefix, mes, atualizar = true) {
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.grid) {
+            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
+            });
+          }
+          if (atualizar) atualizarPreviewMesGenerico(prefix);
+        }
+
+        function mudarAnoPickerGenerico(prefix, delta) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
+          const novo = atual + Number(delta || 0);
+          if (cfg.year) {
+            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
+            if (!existeOpcao) {
+              const opt = document.createElement('option');
+              opt.value = String(novo);
+              opt.textContent = String(novo);
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = String(novo);
+          }
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].ano = String(novo);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function atualizarPreviewMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
+          monthPickerState[prefix].ano = String(ano);
+          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
+        }
+
+        function aplicarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
+          if (cfg.form) cfg.form.submit();
+        }
+
+        function limparMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.hidden) cfg.hidden.value = '';
+          if (cfg.form) cfg.form.submit();
+        }
 
         const detalhesMeses = ${detalhesMesesJson};
           const detalhesCategorias = ${detalhesCategoriasJson};
@@ -14928,97 +18386,146 @@ body.contador-premium-page {
 
 
 
-
-
-
-
-/* ===== AJUSTE FINAL COMPONENTE GLOBAL DE MÊS NAS TELAS DASHBOARD E CONTADOR ===== */
-.filter-panel.month-smart-form {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
+/* ===== FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+.month-smart-form {
   overflow: visible !important;
 }
 
-.filter-panel.month-smart-form .global-month-picker {
-  flex: 0 0 auto !important;
+.month-compact-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
-.filter-panel.month-smart-form .month-current-display {
+.month-current-display {
   min-width: 120px !important;
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  border: 1px solid #dce3ec !important;
+  color: #172033 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
 }
 
-.filter-panel.month-smart-form .btn-filter-apply,
-.filter-panel.month-smart-form .btn-filter-clear {
+.btn-month-open {
+  min-width: 118px !important;
   height: 38px !important;
-  min-height: 38px !important;
   padding: 0 14px !important;
 }
 
-.contador-premium-page .filter-box.month-smart-form {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  flex-wrap: nowrap !important;
-  overflow: visible !important;
+.month-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.16);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 88px 18px 18px;
 }
 
-.contador-premium-page .filter-box .filter-group {
-  width: auto !important;
-  min-width: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  margin: 0 !important;
+.month-picker-overlay.open {
+  display: flex;
 }
 
-.contador-premium-page .filter-box .filter-group label {
-  width: 92px !important;
-  min-width: 92px !important;
-  margin: 0 !important;
-  line-height: 1.1 !important;
+.month-picker-popover {
+  width: 338px;
+  max-width: calc(100vw - 28px);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid #dce3ec;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  padding: 14px;
 }
 
-.contador-premium-page .filter-box .global-month-picker {
-  flex: 0 0 auto !important;
+.month-picker-head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.contador-premium-page .contador-apply-month-btn,
-.contador-premium-page .filter-box .btn-green {
+.month-nav-btn {
   height: 38px !important;
-  align-self: center !important;
-  margin: 0 !important;
+  min-height: 38px !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border: 0 !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
 }
 
-.contador-premium-page .btn-add-file-top {
-  align-self: center !important;
-  margin-left: auto !important;
+.month-year-select {
+  height: 38px !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: #fff !important;
 }
 
-.contador-premium-page .contador-filter-spacer {
-  flex: 1 1 auto !important;
+.month-grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-.contador-premium-page .contador-kpi-card strong,
-.contador-kpi-card strong {
-  white-space: nowrap !important;
+.month-cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  background: #E8F7EE !important;
+  color: #14532d !important;
+  border: 1px solid #c8ecd4 !important;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
+  transition: all .16s ease !important;
+  cursor: pointer !important;
 }
 
-@media(max-width: 980px) {
-  .filter-panel.month-smart-form,
-  .contador-premium-page .filter-box.month-smart-form {
-    flex-wrap: wrap !important;
-  }
-
-  .contador-premium-page .contador-filter-spacer {
-    display: none !important;
-  }
-
-  .contador-premium-page .btn-add-file-top {
-    margin-left: 0 !important;
-  }
+.month-cell:hover,
+.month-cell.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  color: #fff !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
+  transform: translateY(-1px);
 }
-/* ===== FIM AJUSTE FINAL COMPONENTE GLOBAL DE MÊS ===== */
+
+.month-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.month-selected-preview {
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.month-picker-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
 
 </style>
       </head>
@@ -15163,6 +18670,102 @@ body.contador-premium-page {
           </main>
         </div>
         <script>
+
+        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
+
+        function getMonthPickerPrefixConfig(prefix) {
+          return {
+            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
+            hidden: document.getElementById(prefix + '_mes_picker_value'),
+            label: document.getElementById(prefix + 'MesAtualLabel'),
+            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
+            year: document.getElementById(prefix + 'MonthPickerYear'),
+            grid: document.getElementById(prefix + 'MonthGridPicker'),
+            preview: document.getElementById(prefix + 'MonthSelectedPreview')
+          };
+        }
+
+        function iniciarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const valor = cfg.hidden?.value || '';
+          const hoje = new Date();
+          monthPickerState[prefix] = {
+            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
+            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
+          };
+          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
+          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function abrirSeletorMesGenerico(prefix) {
+          iniciarMesGenerico(prefix);
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.add('open');
+        }
+
+        function fecharSeletorMesGenerico(prefix, event) {
+          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.remove('open');
+        }
+
+        function selecionarMesGenerico(prefix, mes, atualizar = true) {
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.grid) {
+            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
+            });
+          }
+          if (atualizar) atualizarPreviewMesGenerico(prefix);
+        }
+
+        function mudarAnoPickerGenerico(prefix, delta) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
+          const novo = atual + Number(delta || 0);
+          if (cfg.year) {
+            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
+            if (!existeOpcao) {
+              const opt = document.createElement('option');
+              opt.value = String(novo);
+              opt.textContent = String(novo);
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = String(novo);
+          }
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          monthPickerState[prefix].ano = String(novo);
+          atualizarPreviewMesGenerico(prefix);
+        }
+
+        function atualizarPreviewMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
+          monthPickerState[prefix].ano = String(ano);
+          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
+        }
+
+        function aplicarMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          monthPickerState[prefix] = monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
+          if (cfg.form) cfg.form.submit();
+        }
+
+        function limparMesGenerico(prefix) {
+          const cfg = getMonthPickerPrefixConfig(prefix);
+          if (cfg.hidden) cfg.hidden.value = '';
+          if (cfg.form) cfg.form.submit();
+        }
 
           function abrirModalUpload(id) {
             const modal = document.getElementById(id);
