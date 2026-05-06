@@ -16571,7 +16571,20 @@ function getContadorArquivoConfig() {
 
 async function getContadorArquivoConfigCompleta() {
   await ensureContadorTables();
-  const fixos = getContadorArquivoConfig();
+
+  const ocultosResult = await pool.query(`
+    SELECT chave
+    FROM painel_configuracoes
+    WHERE chave LIKE 'contador_tipo_oculto_%'
+      AND valor = 'true'
+  `);
+
+  const ocultos = new Set(
+    (ocultosResult.rows || []).map(row => String(row.chave || '').replace('contador_tipo_oculto_', ''))
+  );
+
+  const fixos = getContadorArquivoConfig().filter(item => !ocultos.has(item.key));
+
   const result = await pool.query(`
     SELECT id, label, titulo
     FROM contador_arquivo_tipos
@@ -16911,6 +16924,14 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
       return `
         <tr>
           <td class="tipo-cell"><strong>${escapeHtml(config.label)}</strong></td>
+          <td class="center-cell">
+            ${isAdmin ? `
+              <form method="POST" action="/espaco-contador/excluir-tipo/${escapeHtml(config.key)}" class="inline-delete-row-form" onsubmit="return confirm('Excluir esta linha do Espaço do Contador?')">
+                <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+                <button type="submit" class="row-delete-btn" title="Excluir linha">🗑</button>
+              </form>
+            ` : ''}
+          </td>
           <td class="center-cell"><span class="qtd-pill">${quantidade}</span></td>
           <td class="center-cell">${envio}</td>
           <td class="center-cell">${statusPronto}</td>
@@ -17774,6 +17795,141 @@ body.contador-premium-page {
 }
 /* ===== FIM AJUSTES FINAIS CONTADOR ===== */
 
+
+
+/* ===== AJUSTE FINAL CONTADOR SOLICITADO: BOTÃO À DIREITA + EXCLUIR LINHA ===== */
+.contador-premium-page .filter-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.contador-premium-page .contador-filter-spacer {
+  flex: 1 1 auto !important;
+}
+
+.contador-premium-page .btn-add-file-top {
+  margin-left: auto !important;
+  min-width: 190px !important;
+  height: 38px !important;
+  border-radius: 13px !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  background: linear-gradient(135deg,#00B050,#009640) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 22px rgba(0,176,80,.18) !important;
+}
+
+.contador-premium-page .contador-table {
+  min-width: 1120px !important;
+}
+
+.contador-premium-page .contador-table col:nth-child(1) { width: 24% !important; }
+.contador-premium-page .contador-table col:nth-child(2) { width: 5% !important; }
+.contador-premium-page .contador-table col:nth-child(3) { width: 6% !important; }
+.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+.contador-premium-page .contador-table col:nth-child(5) { width: 14% !important; }
+.contador-premium-page .contador-table col:nth-child(6) { width: 12% !important; }
+.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
+.contador-premium-page .contador-table col:nth-child(8) { width: 14% !important; }
+
+.contador-premium-page .contador-table .responsibility-head th:nth-child(4),
+.contador-premium-page .contador-table th:nth-child(6),
+.contador-premium-page .contador-table td:nth-child(6) {
+  border-left: 2px solid #d2dbe7 !important;
+  box-shadow: inset 10px 0 16px -18px rgba(15,23,42,.35) !important;
+}
+
+/* Remove completamente os ícones/antes do nome do arquivo */
+.contador-premium-page .tipo-cell::before {
+  display: none !important;
+  content: none !important;
+}
+
+.contador-premium-page .tipo-cell {
+  padding-left: 14px !important;
+}
+
+.contador-premium-page .tipo-cell strong {
+  padding-left: 0 !important;
+}
+
+/* Botão excluir linha */
+.contador-premium-page .inline-delete-row-form {
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.contador-premium-page .row-delete-btn {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  border-radius: 9px !important;
+  border: 1px solid #fecaca !important;
+  background: #fff5f5 !important;
+  color: #b42318 !important;
+  cursor: pointer !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease !important;
+}
+
+.contador-premium-page .row-delete-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 16px rgba(180,35,24,.12) !important;
+  filter: brightness(1.02) !important;
+}
+
+/* Botões baixar compactos */
+.contador-premium-page .btn-download {
+  width: 86px !important;
+  min-width: 86px !important;
+  height: 30px !important;
+}
+
+/* Coluna de data com folga para lixeira/histórico */
+.contador-premium-page .contador-table td:nth-child(8),
+.contador-premium-page .contador-table th:nth-child(8) {
+  padding-left: 10px !important;
+  padding-right: 12px !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+.contador-premium-page .download-date-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .contador-premium-page .filter-box {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .contador-premium-page .contador-filter-spacer {
+    display: none !important;
+  }
+
+  .contador-premium-page .btn-add-file-top {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+/* ===== FIM AJUSTE FINAL CONTADOR SOLICITADO ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -17837,8 +17993,8 @@ body.contador-premium-page {
                 <select id="mes" name="mes">${optionsMes}</select>
               </div>
               <button type="submit" class="btn btn-green">Aplicar mês</button>
-              <a href="/dashboard" class="btn btn-dark">Voltar ao Painel</a>
-              ${isAdmin ? `<button type="button" class="btn btn-add-file-row btn-add-file-top" onclick="abrirModalUpload('modal-add-file-row')">+ Novo arquivo</button>` : ''}
+              <span class="contador-filter-spacer"></span>
+              ${isAdmin ? `<button type="button" class="btn btn-add-file-row btn-add-file-top" onclick="abrirModalUpload('modal-add-file-row')">Adicionar tipo de arquivo</button>` : ''}
             </form>
           </section>
 
@@ -17846,28 +18002,31 @@ body.contador-premium-page {
             <div class="table-wrap">
               <table class="contador-table">
                 <colgroup>
-                  <col style="width:28%;">
+                  <col style="width:25%;">
+                  <col style="width:5%;">
                   <col style="width:6%;">
-                  <col style="width:16%;">
-                  <col style="width:13%;">
                   <col style="width:15%;">
-                  <col style="width:10%;">
+                  <col style="width:14%;">
                   <col style="width:12%;">
+                  <col style="width:10%;">
+                  <col style="width:13%;">
                 </colgroup>
                 <thead>
                   ${isAdmin ? `
                   ` : ''}
                   <tr class="responsibility-head">
                     <th></th>
+                    <th></th>
                     <th colspan="3" class="empresa">Responsabilidade da empresa</th>
                     <th colspan="3">Responsabilidade do Contador</th>
                   </tr>
                   <tr>
                     <th>Tipo de arquivo</th>
+                    <th></th>
                     <th>Qtde</th>
                     <th>Enviar Arquivo</th>
                     <th>Arquivos prontos</th>
-                    <th>Baixar em massa</th>
+                    <th>Baixar</th>
                     <th>Status Download</th>
                     <th>Data Download Contador</th>
                   </tr>
@@ -17978,6 +18137,53 @@ body.contador-premium-page {
     `);
   } catch (error) {
     res.send(`<pre>Erro ao abrir Espaço do Contador:\n${error.message}</pre>`);
+  }
+});
+
+
+
+router.post('/espaco-contador/excluir-tipo/:tipo', protegerRota, permitirPerfis('ADMIN'), async (req, res) => {
+  try {
+    await ensureContadorTables();
+
+    const mesRef = req.body.mes_ref || getMesAtualRef();
+    const tipo = String(req.params.tipo || '').trim();
+
+    if (!tipo) {
+      return res.send('<pre>Tipo de arquivo inválido para exclusão.</pre>');
+    }
+
+    if (tipo.startsWith('custom_')) {
+      const id = Number.parseInt(tipo.replace('custom_', ''), 10);
+
+      if (!Number.isFinite(id)) {
+        return res.send('<pre>Tipo personalizado inválido.</pre>');
+      }
+
+      await pool.query(`
+        UPDATE contador_arquivo_tipos
+        SET ativo = false
+        WHERE id = $1
+      `, [id]);
+
+      await pool.query(`
+        DELETE FROM contador_status_custom_mensal
+        WHERE tipo_key = $1
+      `, [tipo]);
+    } else {
+      const config = getContadorArquivoConfig().find(item => item.key === tipo);
+
+      if (!config) {
+        return res.send('<pre>Tipo de arquivo não encontrado.</pre>');
+      }
+
+      await setPainelConfig(`contador_tipo_oculto_${tipo}`, 'true');
+    }
+
+    return res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
+  } catch (error) {
+    return res.send(`<pre>Erro ao excluir linha do Espaço do Contador:
+${error.message}</pre>`);
   }
 });
 
