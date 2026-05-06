@@ -4310,6 +4310,47 @@ body {
     </head>
     <body>
       ${renderMonthPickerAssets()}
+      <style>
+        #dashboardMonthPickerOverlay.open {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+
+        #dashboardMonthForm .month-open-btn,
+        #dashboardMonthForm .btn-month-open {
+          pointer-events: auto !important;
+          position: relative !important;
+          z-index: 5 !important;
+        }
+      </style>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const dashboardForm = document.getElementById('dashboardMonthForm');
+          const dashboardOverlay = document.getElementById('dashboardMonthPickerOverlay');
+
+          if (dashboardForm && dashboardOverlay) {
+            const botoesAbrir = dashboardForm.querySelectorAll('.month-open-btn, .btn-month-open');
+
+            botoesAbrir.forEach(function(btn) {
+              btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (typeof window.abrirSeletorMesGlobal === 'function') {
+                  window.abrirSeletorMesGlobal('dashboard');
+                } else {
+                  dashboardOverlay.classList.add('open');
+                  dashboardOverlay.style.display = 'flex';
+                }
+              });
+            });
+          }
+        });
+      </script>
+
       <main class="page-shell">
         <aside class="premium-sidebar" aria-label="Menu lateral PlennaTec">
           <div class="premium-sidebar-logo">
