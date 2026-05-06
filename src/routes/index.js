@@ -77,571 +77,272 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
 });
 
 // =====================================================
-// RESPONSIVIDADE GLOBAL CROSS-PLATFORM — PLENNATEC
-// Corrige diferenças de renderização entre Mac, Windows, zoom do navegador,
-// escala do Windows, largura de scrollbar, tabelas e filtros.
+// PATCH FINAL WINDOWS — LARGURA CABEÇALHO/TABELA + DASHBOARD FILTRO
 // =====================================================
-function renderPlennaTecResponsiveAssets() {
+function renderPlennaTecWindowsFinalFixAssets() {
   return `
-    <style id="plennatec-cross-platform-responsive">
-      /* ===== RESET GLOBAL SEGURO ===== */
-      *, *::before, *::after {
+    <style id="plennatec-windows-final-fix">
+      *, *::before, *::after { box-sizing: border-box !important; }
+      html, body { width:100% !important; max-width:100% !important; overflow-x:auto !important; }
+
+      /* ===== LARGURA ÚNICA PARA CABEÇALHO, BOTÕES, FILTROS E TABELA ===== */
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .container,
+      body.dm-global-page .page-shell {
+        width: min(1760px, calc(100vw - 48px)) !important;
+        max-width: none !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
         box-sizing: border-box !important;
       }
 
-      html, body {
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-nav,
+      body.dm-global-page .topbar,
+      body.dm-global-page .nav-panel,
+      body.dm-global-page .filter-panel,
+      body.dm-global-page .filters,
+      body.dm-global-page .card,
+      body.dm-global-page section,
+      body.dm-global-page .table-responsive,
+      body.dm-global-page .table-wrapper,
+      body.dm-global-page .table-scroll,
+      body.dm-global-page .lancamentos-table-wrap,
+      body.dm-global-page .rotina-table-wrap {
         width: 100% !important;
         max-width: 100% !important;
-        overflow-x: hidden !important;
-      }
-
-      body {
-        -webkit-text-size-adjust: 100% !important;
-        text-size-adjust: 100% !important;
-      }
-
-      img, svg, canvas, video {
-        max-width: 100% !important;
-      }
-
-      /* ===== CONTAINERS PRINCIPAIS ===== */
-      .page-shell,
-      .container,
-      .dm-global-header-shell,
-      .plennatec-app-shell,
-      .app-shell,
-      .main-shell,
-      .rotina-shell,
-      .contador-premium-page,
-      .contador-page-shell,
-      .documentos-shell {
-        max-width: 100vw !important;
         box-sizing: border-box !important;
       }
 
-      .page-shell,
-      .container,
-      .main-content,
-      .plennatec-main,
-      .content,
-      main {
-        min-width: 0 !important;
-      }
-
-      /* ===== CABEÇALHOS SEM ESTOURAR ===== */
-      .topbar,
-      .dm-global-top,
-      .plennatec-topbar,
-      .hero,
-      .hero-top,
-      .header-card,
-      .page-header {
+      /* ===== TABELAS NÃO DEVEM DIMINUIR O CABEÇALHO ===== */
+      .lancamentos-table,
+      .rotina-table,
+      table.lancamentos-table,
+      table.rotina-table {
         width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
+        min-width: 1180px !important;
+        table-layout: auto !important;
       }
 
-      .topbar *,
-      .dm-global-top *,
-      .plennatec-topbar *,
-      .hero *,
-      .hero-top *,
-      .page-header * {
-        min-width: 0 !important;
+      .table-responsive,
+      .table-wrapper,
+      .table-scroll,
+      .lancamentos-table-wrap,
+      .rotina-table-wrap {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
       }
 
-      /* ===== MENU LATERAL + ÁREA PRINCIPAL ===== */
-      .plennatec-app-shell {
-        width: 100% !important;
-        max-width: 100vw !important;
-        grid-template-columns: minmax(248px, 270px) minmax(0, 1fr) !important;
-        gap: clamp(12px, 1.2vw, 18px) !important;
-        overflow: hidden !important;
+      @media (min-width: 1450px) {
+        .lancamentos-table,
+        .rotina-table,
+        table.lancamentos-table,
+        table.rotina-table {
+          min-width: 100% !important;
+        }
       }
 
-      .plennatec-sidebar {
-        width: 100% !important;
-        max-width: 270px !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-      }
-
-      .plennatec-main {
-        min-width: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow: hidden !important;
-      }
-
-      .plennatec-side-logo {
-        overflow: hidden !important;
-      }
-
-      .plennatec-side-logo img {
-        width: auto !important;
-        height: auto !important;
-        max-width: 210px !important;
-        max-height: 46px !important;
-        object-fit: contain !important;
-      }
-
-      /* ===== CARDS / PAINÉIS ===== */
-      .card,
-      .stat-card,
-      .chart-card,
-      .filter-panel,
-      .nav-panel,
-      .filter-box,
-      .summary-card,
-      .upload-card,
-      .table-card,
-      .plennatec-card,
-      .plennatec-main .card {
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-      }
-
-      /* ===== GRIDS DO DASHBOARD ===== */
-      .stats-grid,
-      .dashboard-top-cards {
+      /* ===== COMPROVANTES: FILTROS CABEM NO WINDOWS ===== */
+      body.dm-global-page form[action="/lancamentos"] .filters {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
-        gap: clamp(10px, 1vw, 16px) !important;
+        grid-template-columns:
+          minmax(150px, 1.15fr)
+          minmax(135px, 1fr)
+          minmax(130px, 1fr)
+          minmax(145px, 1fr)
+          minmax(145px, 1fr)
+          minmax(120px, .85fr)
+          minmax(120px, .85fr)
+          minmax(120px, .85fr)
+          max-content !important;
+        gap: 8px !important;
+        align-items: end !important;
+        width: 100% !important;
+      }
+      body.dm-global-page form[action="/lancamentos"] .filters > div { min-width: 0 !important; }
+      body.dm-global-page form[action="/lancamentos"] .filters label {
+        font-size: 10px !important; line-height: 1.05 !important; margin-bottom: 4px !important; white-space: nowrap !important;
+      }
+      body.dm-global-page form[action="/lancamentos"] .filters input,
+      body.dm-global-page form[action="/lancamentos"] .filters select {
+        width: 100% !important; min-width: 0 !important; height: 32px !important; min-height: 32px !important; font-size: 11px !important; padding: 0 8px !important;
+      }
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+        display: inline-flex !important; align-items: end !important; gap: 6px !important; min-width: 130px !important;
+      }
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+        height: 32px !important; min-height: 32px !important; padding: 0 11px !important; font-size: 10.5px !important;
+      }
+
+      @media (max-width: 1350px) {
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+        }
+      }
+
+      /* ===== CONTAS A PAGAR ===== */
+      body.dm-global-page .rotina-filters,
+      body.dm-global-page .rotina-filter-row,
+      body.dm-global-page form[action="/rotina-despesas"] .filters {
         width: 100% !important;
         max-width: 100% !important;
-      }
-
-      .charts-grid,
-      .dashboard-charts,
-      .charts-section {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
-        gap: clamp(10px, 1vw, 16px) !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-
-      .charts-grid > *,
-      .dashboard-charts > *,
-      .charts-section > * {
-        min-width: 0 !important;
-      }
-
-      /* ===== FILTROS: NÃO ENCALAR NO WINDOWS ===== */
-      .filter-panel,
-      .filter-box,
-      .filters,
-      .filter-row,
-      .month-smart-form,
-      #dashboardMonthForm,
-      form[action="/lancamentos"] .filters,
-      form[action="/rotina-despesas"] .filters {
-        max-width: 100% !important;
-        min-width: 0 !important;
         display: flex !important;
         flex-wrap: wrap !important;
         align-items: end !important;
         gap: 8px !important;
-        overflow: visible !important;
+      }
+      body.dm-global-page form[action="/rotina-despesas"] input,
+      body.dm-global-page form[action="/rotina-despesas"] select,
+      body.dm-global-page .rotina-filters input,
+      body.dm-global-page .rotina-filters select {
+        height: 32px !important; min-height: 32px !important; font-size: 11px !important;
       }
 
-      .filter-panel > *,
-      .filter-box > *,
-      .filters > *,
-      .filter-row > *,
-      .month-smart-form > * {
-        min-width: 0 !important;
-        flex-shrink: 1 !important;
+      /* ===== DASHBOARD: FILTRO SEM SOBREPOSIÇÃO ===== */
+      body:has(#dashboardMonthForm) .page-shell {
+        width: min(1680px, calc(100vw - 64px)) !important;
+        max-width: none !important;
       }
 
-      .filter-panel label,
-      .filter-box label,
-      .filters label,
-      .filter-row label {
-        white-space: nowrap !important;
-        font-size: clamp(10px, .75vw, 12px) !important;
-        line-height: 1.1 !important;
-      }
-
-      .filter-panel input,
-      .filter-panel select,
-      .filter-box input,
-      .filter-box select,
-      .filters input,
-      .filters select,
-      .filter-row input,
-      .filter-row select {
-        min-width: 120px !important;
-        max-width: 100% !important;
-        height: 34px !important;
-        min-height: 34px !important;
-        font-size: clamp(10.5px, .78vw, 12px) !important;
-      }
-
-      .filter-panel button,
-      .filter-panel a,
-      .filter-box button,
-      .filter-box a,
-      .filters button,
-      .filters a,
-      .filter-row button,
-      .filter-row a,
-      .btn,
-      button {
-        white-space: nowrap !important;
-      }
-
-      #dashboardMonthForm {
+      #dashboardMonthForm,
+      .filter-panel.month-smart-form#dashboardMonthForm,
+      form#dashboardMonthForm.filter-panel {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         align-items: center !important;
-        margin-bottom: 14px !important;
+        justify-content: flex-start !important;
+        gap: 22px !important;
+        column-gap: 22px !important;
+        row-gap: 10px !important;
+        overflow: visible !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        padding: 12px 22px !important;
+      }
+
+      #dashboardMonthForm > * {
+        flex: 0 0 auto !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+
+      #dashboardMonthForm label {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
+        min-width: 80px !important;
+      }
+
+      #dashboardMonthForm .global-month-picker {
+        flex: 0 0 auto !important;
+        min-width: 245px !important;
+      }
+
+      #dashboardMonthForm .month-compact-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        flex-wrap: nowrap !important;
       }
 
       #dashboardMonthForm .month-current-display {
-        min-width: 90px !important;
-        max-width: 112px !important;
-        font-size: 11px !important;
+        min-width: 112px !important;
+        max-width: 132px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
       }
 
       #dashboardMonthForm .month-open-btn,
       #dashboardMonthForm .btn-filter-apply,
       #dashboardMonthForm .btn-filter-clear {
-        height: 32px !important;
-        min-height: 32px !important;
-        padding-left: 11px !important;
-        padding-right: 11px !important;
-        font-size: 11px !important;
-      }
-
-      /* ===== COMPROVANTES: FILTROS EM WINDOWS ===== */
-      body.dm-global-page form[action="/lancamentos"] .filters,
-      form[action="/lancamentos"] .filters {
-        display: grid !important;
-        grid-template-columns: repeat(8, minmax(92px, 1fr)) auto !important;
-        align-items: end !important;
-        gap: 7px !important;
-        overflow: visible !important;
-      }
-
-      body.dm-global-page form[action="/lancamentos"] .filters input,
-      body.dm-global-page form[action="/lancamentos"] .filters select,
-      form[action="/lancamentos"] .filters input,
-      form[action="/lancamentos"] .filters select {
-        width: 100% !important;
-        min-width: 0 !important;
-        height: 32px !important;
-        min-height: 32px !important;
-        font-size: 11px !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-      }
-
-      body.dm-global-page form[action="/lancamentos"] .filters label,
-      form[action="/lancamentos"] .filters label {
-        font-size: 9.8px !important;
-        margin-bottom: 4px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 18px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
         white-space: nowrap !important;
       }
 
-      body.dm-global-page form[action="/lancamentos"] .filter-buttons,
-      form[action="/lancamentos"] .filter-buttons {
-        display: inline-flex !important;
-        gap: 6px !important;
-        min-width: 132px !important;
-      }
-
-      body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
-      body.dm-global-page form[action="/lancamentos"] .filter-buttons a,
-      form[action="/lancamentos"] .filter-buttons button,
-      form[action="/lancamentos"] .filter-buttons a {
-        height: 32px !important;
-        min-height: 32px !important;
-        padding: 0 11px !important;
-        font-size: 10.5px !important;
-      }
-
-      /* ===== TABELAS: CABEÇALHO E TABELA NA MESMA LARGURA ===== */
-      .table-responsive,
-      .table-scroll,
-      .table-wrapper,
-      .lancamentos-table-wrap,
-      .rotina-table-wrap,
-      .contador-table-wrap,
-      .documentos-table-wrap {
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        overflow-y: visible !important;
-        -webkit-overflow-scrolling: touch !important;
-        box-sizing: border-box !important;
-      }
-
-      table {
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-        max-width: 100% !important;
-      }
-
-      .table-responsive table,
-      .table-scroll table,
-      .table-wrapper table,
-      .lancamentos-table-wrap table,
-      .rotina-table-wrap table,
-      .contador-table-wrap table,
-      .documentos-table-wrap table {
-        width: 100% !important;
-      }
-
-      th, td {
-        vertical-align: middle !important;
-      }
-
-      /* Tabelas muito largas ficam com rolagem interna, sem quebrar o layout */
-      .lancamentos-table,
-      .rotina-table,
-      .contador-table,
-      .documentos-table {
-        min-width: 980px !important;
-      }
-
-      .rotina-table {
-        min-width: 1080px !important;
-      }
-
-      /* ===== ROTINA / CONTAS A PAGAR ===== */
-      .rotina-page,
-      .rotina-container,
-      .rotina-content {
-        max-width: 100% !important;
-        min-width: 0 !important;
-        overflow-x: hidden !important;
-      }
-
-      .rotina-filters,
-      .rotina-filter-row {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        align-items: end !important;
-        gap: 8px !important;
-        max-width: 100% !important;
-      }
-
-      .rotina-filters select,
-      .rotina-filter-row select,
-      .rotina-filters input,
-      .rotina-filter-row input {
-        min-width: 120px !important;
-        max-width: 190px !important;
-      }
-
-      /* ===== ARQUIVO / DOCUMENTOS ===== */
-      .documentos-upload-grid,
-      .upload-grid {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
-        gap: 12px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-
-      input[type="file"] {
-        max-width: 100% !important;
-        min-width: 0 !important;
-      }
-
-      /* ===== CATEGORIAS / USUÁRIOS ===== */
-      .plennatec-main .grid {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) !important;
-        gap: 14px !important;
-      }
-
-      .plennatec-main .grid > * {
-        min-width: 0 !important;
-        max-width: 100% !important;
-      }
-
-      .plennatec-main table {
-        width: 100% !important;
-        table-layout: fixed !important;
-      }
-
-      .plennatec-main th,
-      .plennatec-main td {
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        font-size: clamp(10px, .72vw, 12px) !important;
-        padding: 7px 8px !important;
-      }
-
-      .plennatec-main .acoes-user,
-      .plennatec-main td:last-child {
-        white-space: nowrap !important;
-      }
-
-      /* ===== NOTEBOOKS WINDOWS / ESCALA 125% ===== */
-      @media (max-width: 1500px) {
-        .page-shell {
-          width: min(100% - 24px, 1500px) !important;
-        }
-
-        .dm-global-header-shell {
-          width: min(100% - 24px, 1500px) !important;
-        }
-
-        .stats-grid,
-        .dashboard-top-cards {
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
-        }
-
-        .charts-grid,
-        .dashboard-charts,
-        .charts-section {
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
-        }
-
-        body.dm-global-page form[action="/lancamentos"] .filters,
-        form[action="/lancamentos"] .filters {
-          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+      @media (max-width: 1200px) {
+        #dashboardMonthForm,
+        .filter-panel.month-smart-form#dashboardMonthForm,
+        form#dashboardMonthForm.filter-panel {
+          flex-wrap: wrap !important;
+          gap: 14px !important;
         }
       }
 
-      @media (max-width: 1280px) {
-        .plennatec-app-shell {
-          grid-template-columns: 240px minmax(0, 1fr) !important;
-          gap: 12px !important;
-          padding: 12px !important;
-        }
-
-        .plennatec-sidebar {
-          max-width: 240px !important;
-        }
-
-        .plennatec-side-nav a {
-          font-size: 12px !important;
-          padding-left: 12px !important;
-          padding-right: 12px !important;
-        }
-
-        .plennatec-main .grid {
-          grid-template-columns: 1fr !important;
-        }
+      /* ===== DASHBOARD: TIRAR NEGRITO EXCESSIVO ===== */
+      body:has(#dashboardMonthForm) * { font-weight: 400 !important; }
+      body:has(#dashboardMonthForm) h1,
+      body:has(#dashboardMonthForm) h2,
+      body:has(#dashboardMonthForm) h3,
+      body:has(#dashboardMonthForm) .brand-title h1,
+      body:has(#dashboardMonthForm) .stat-value,
+      body:has(#dashboardMonthForm) .stat-number,
+      body:has(#dashboardMonthForm) button,
+      body:has(#dashboardMonthForm) .btn,
+      body:has(#dashboardMonthForm) .dm-menu-btn {
+        font-weight: 650 !important;
       }
-
-      @media (max-width: 1100px) {
-        .plennatec-app-shell {
-          grid-template-columns: 1fr !important;
-        }
-
-        .plennatec-sidebar {
-          position: relative !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          height: auto !important;
-          border-radius: 22px !important;
-        }
-
-        .charts-grid,
-        .dashboard-charts,
-        .charts-section {
-          grid-template-columns: 1fr !important;
-        }
-
-        .lancamentos-table,
-        .rotina-table,
-        .contador-table,
-        .documentos-table {
-          min-width: 920px !important;
-        }
-      }
-
-      @media (max-width: 760px) {
-        .filter-panel,
-        .filter-box,
-        .filters,
-        .filter-row,
-        .month-smart-form {
-          flex-direction: column !important;
-          align-items: stretch !important;
-        }
-
-        .filter-panel input,
-        .filter-panel select,
-        .filter-panel button,
-        .filter-box input,
-        .filter-box select,
-        .filter-box button,
-        .filters input,
-        .filters select,
-        .filters button,
-        .filter-row input,
-        .filter-row select,
-        .filter-row button {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-
-        body.dm-global-page form[action="/lancamentos"] .filters,
-        form[action="/lancamentos"] .filters {
-          grid-template-columns: 1fr !important;
-        }
+      body:has(#dashboardMonthForm) .stat-label,
+      body:has(#dashboardMonthForm) .stat-subtitle,
+      body:has(#dashboardMonthForm) .hbar-header span,
+      body:has(#dashboardMonthForm) .month-label,
+      body:has(#dashboardMonthForm) .axis-label,
+      body:has(#dashboardMonthForm) .point-value,
+      body:has(#dashboardMonthForm) p,
+      body:has(#dashboardMonthForm) span {
+        font-weight: 400 !important;
       }
     </style>
     <script>
-      (function () {
-        if (window.__plennatecResponsiveTablesReady) return;
-        window.__plennatecResponsiveTablesReady = true;
+      (function(){
+        if (window.__plennatecWindowsFinalFixReady) return;
+        window.__plennatecWindowsFinalFixReady = true;
 
-        function wrapWideTables() {
-          const selectors = [
-            '.lancamentos-table',
-            '.rotina-table',
-            '.contador-table',
-            '.documentos-table',
-            '.plennatec-main table'
-          ];
+        function normalizeWidePages(){
+          var isWidePage = document.querySelector('form[action="/lancamentos"], .lancamentos-table, .rotina-table, form[action="/rotina-despesas"]');
+          if (!isWidePage) return;
 
-          document.querySelectorAll(selectors.join(',')).forEach(function(table) {
-            if (!table || table.closest('.table-responsive')) return;
+          document.body.classList.add('plennatec-wide-data-page');
 
-            const wrapper = document.createElement('div');
-            wrapper.className = 'table-responsive';
-            table.parentNode.insertBefore(wrapper, table);
-            wrapper.appendChild(table);
+          document.querySelectorAll('.lancamentos-table, .rotina-table').forEach(function(table){
+            if (!table.closest('.table-responsive')) {
+              var wrap = document.createElement('div');
+              wrap.className = 'table-responsive';
+              table.parentNode.insertBefore(wrap, table);
+              wrap.appendChild(table);
+            }
           });
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', wrapWideTables);
+          document.addEventListener('DOMContentLoaded', normalizeWidePages);
         } else {
-          wrapWideTables();
+          normalizeWidePages();
         }
       })();
     </script>
   `;
 }
 
-// Injeta a responsividade em todo HTML gerado por este router.
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
-
-  res.send = function plennatecResponsiveSend(body) {
+  res.send = function plennatecWindowsFinalSend(body) {
     try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-cross-platform-responsive')) {
-        body = body.replace('</head>', `${renderPlennaTecResponsiveAssets()}</head>`);
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-windows-final-fix')) {
+        body = body.replace('</head>', `${renderPlennaTecWindowsFinalFixAssets()}</head>`);
       }
-    } catch (error) {
-      // Mantém o HTML original em caso de qualquer incompatibilidade.
-    }
-
+    } catch (error) {}
     return originalSend(body);
   };
-
   next();
 });
 
