@@ -656,7 +656,7 @@ function renderMonthPickerAssets() {
 
       /* Dashboard: respiro entre totalizadores e filtro */
       .stats-grid {
-        margin-bottom: 26px !important;
+        margin-bottom: 18px !important;
       }
 
       .filter-panel.month-smart-form {
@@ -4416,6 +4416,67 @@ body {
           pointer-events: auto !important;
           position: relative !important;
           z-index: 5 !important;
+        }
+
+        /* ===== AJUSTE DEFINITIVO DE ESPAÇAMENTO DO DASHBOARD =====
+           Cria uma linha própria para o filtro e abre respiro visual
+           entre totalizadores, filtro e gráficos. */
+        main.page-shell {
+          grid-template-rows: 64px 86px 68px minmax(0, 1fr) 16px !important;
+          grid-template-areas:
+            "sidebar topbar"
+            "sidebar stats"
+            "sidebar filter"
+            "sidebar charts"
+            "sidebar footer" !important;
+          row-gap: 16px !important;
+          column-gap: 18px !important;
+        }
+
+        main.page-shell > .stats-grid {
+          grid-area: stats !important;
+          margin: 0 0 0 0 !important;
+        }
+
+        main.page-shell > #dashboardMonthForm.filter-panel,
+        main.page-shell > form#dashboardMonthForm.month-smart-form {
+          grid-area: filter !important;
+          display: flex !important;
+          align-items: center !important;
+          align-self: center !important;
+          min-height: 60px !important;
+          height: 60px !important;
+          margin: 0 !important;
+          padding: 10px 18px !important;
+          border-radius: 20px !important;
+          background: rgba(255,255,255,.94) !important;
+          border: 1px solid #eef2f4 !important;
+          box-shadow: 0 14px 34px rgba(15,23,42,.06) !important;
+        }
+
+        main.page-shell > .charts-grid {
+          grid-area: charts !important;
+          margin: 0 !important;
+        }
+
+        @media (max-width: 1180px) {
+          main.page-shell {
+            grid-template-rows: auto auto auto auto auto !important;
+            grid-template-areas:
+              "topbar"
+              "stats"
+              "filter"
+              "charts"
+              "footer" !important;
+            row-gap: 16px !important;
+          }
+
+          main.page-shell > #dashboardMonthForm.filter-panel,
+          main.page-shell > form#dashboardMonthForm.month-smart-form {
+            height: auto !important;
+            min-height: 60px !important;
+            flex-wrap: wrap !important;
+          }
         }
       </style>
 
