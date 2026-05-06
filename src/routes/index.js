@@ -17926,9 +17926,11 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .extra-title { font-weight:900; color:#0f172a; margin-bottom:2px; font-size:12px; }
           .extra-sub { color:#64748b; font-size:11px; font-weight:700; }
           .empty-state { color:#94a3b8; font-size:13px; padding:14px 0; font-weight:800; }
-          .upload-cell-compact { display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; text-align:left; }
-          .contador-table td:nth-child(3) { text-align:left !important; }
-          .btn-upload-open { min-width:118px; background:#f8fafc !important; color:#334155 !important; border:1px dashed #94a3b8 !important; box-shadow:none !important; }
+          .upload-cell-compact { display:flex; align-items:center; justify-content:flex-start; gap:7px; width:100%; text-align:left; }
+          .contador-table td:nth-child(4) { text-align:left !important; padding-left:14px !important; }
+          .contador-table th:nth-child(4) { text-align:center !important; }
+          .contador-table td:nth-child(4).center-cell { text-align:left !important; }
+          .btn-upload-open { min-width:106px; height:30px !important; min-height:30px !important; padding:0 9px !important; border-radius:10px !important; font-size:10.5px !important; background:#f8fafc !important; color:#334155 !important; border:1px dashed #94a3b8 !important; box-shadow:none !important; }
           .empty-inline { color:#94a3b8; font-size:10px; font-weight:900; }
           .clip-indicator { display:inline-flex; align-items:center; justify-content:center; min-width:52px; height:28px; padding:0 8px; border-radius:999px; background:#ecfdf5; color:#047857; border:1px solid #86efac; font-size:11px; font-weight:900; }
           .upload-modal-overlay { position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(15,23,42,.42); backdrop-filter:blur(5px); }
@@ -17960,7 +17962,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
           .trash-history { border:0 !important; background:transparent !important; padding:0 !important; margin:0 !important; color:#be123c !important; cursor:pointer; box-shadow:none !important; font-size:14px; line-height:1; }
           .add-row-modal-form { display:flex; flex-direction:column; gap:12px; margin:0 !important; padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
           .add-row-modal-form input { width:100%; min-height:46px; border-radius:12px; border:1px solid #dbe3ee; padding:0 14px; font-size:14px; font-weight:700; }
-          @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
+          @media (max-width:1250px) { .container{width:min(100% - 24px,1250px);} .contador-table th{font-size:12px;padding:8px 5px;} .contador-table td{font-size:10.5px;padding:8px 5px;} .tipo-cell strong{font-size:14px;} .btn-mini{font-size:10px;min-width:72px;padding:0 7px;} .btn-upload-open{min-width:100px !important;font-size:10px !important;} .btn-download{min-width:124px;} .upload-chip{width:112px;} .status-select{max-width:150px;font-size:10px;} }
           @media (max-width:980px) { .table-wrap{overflow-x:auto;} .contador-table{min-width:1080px;} .hero-top{flex-direction:column;} .hero-badge{display:none;} .filter-group{min-width:100%;} }
         
 
