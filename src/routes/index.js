@@ -24922,3 +24922,151 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 });
 
 module.exports = router;
+
+// =====================================================
+// PATCH ULTRA DEFINITIVO — ESPAÇO CONTADOR MAC/WINDOWS
+// Corrige estouro horizontal e desalinhamento visual
+// =====================================================
+function renderPlennaTecUltraFixAssets() {
+  return `
+  <style id="plennatec-ultra-fix-assets">
+
+    *, *::before, *::after{
+      box-sizing:border-box !important;
+    }
+
+    html, body{
+      width:100% !important;
+      max-width:100% !important;
+      overflow-x:hidden !important;
+    }
+
+    body.contador-premium-page{
+      overflow-x:hidden !important;
+    }
+
+    body.contador-premium-page .contador-premium-shell{
+      width:min(1440px, calc(100vw - 32px)) !important;
+      max-width:calc(100vw - 32px) !important;
+      margin:0 auto !important;
+
+      display:grid !important;
+      grid-template-columns:250px minmax(0,1fr) !important;
+
+      gap:18px !important;
+
+      overflow:hidden !important;
+    }
+
+    body.contador-premium-page .contador-premium-sidebar{
+      width:250px !important;
+      min-width:250px !important;
+      max-width:250px !important;
+
+      overflow:hidden !important;
+    }
+
+    body.contador-premium-page .contador-premium-main{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+
+      overflow:hidden !important;
+    }
+
+    body.contador-premium-page .contador-topbar,
+    body.contador-premium-page .contador-actions,
+    body.contador-premium-page .contador-metrics,
+    body.contador-premium-page .filter-box,
+    body.contador-premium-page .contador-board{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+
+      overflow:hidden !important;
+    }
+
+    body.contador-premium-page .contador-metrics{
+      display:grid !important;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr)) !important;
+      gap:12px !important;
+    }
+
+    body.contador-premium-page .table-wrap{
+      width:100% !important;
+      max-width:100% !important;
+
+      overflow-x:auto !important;
+      overflow-y:visible !important;
+
+      -webkit-overflow-scrolling:touch !important;
+    }
+
+    body.contador-premium-page .contador-table{
+      width:100% !important;
+      min-width:980px !important;
+      table-layout:fixed !important;
+      border-collapse:collapse !important;
+    }
+
+    body.contador-premium-page .contador-table th,
+    body.contador-premium-page .contador-table td{
+      font-size:10.5px !important;
+      padding:7px 6px !important;
+
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      white-space:nowrap !important;
+    }
+
+    body.contador-premium-page .contador-table select,
+    body.contador-premium-page .contador-table button{
+      max-width:100% !important;
+      font-size:10px !important;
+    }
+
+    @media (max-width:1280px){
+
+      body.contador-premium-page .contador-premium-shell{
+        grid-template-columns:230px minmax(0,1fr) !important;
+      }
+
+      body.contador-premium-page .contador-premium-sidebar{
+        width:230px !important;
+        min-width:230px !important;
+        max-width:230px !important;
+      }
+
+      body.contador-premium-page .contador-table{
+        min-width:920px !important;
+      }
+
+    }
+
+  </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function ultraFixSend(body){
+    try{
+      if(
+        typeof body === 'string' &&
+        body.includes('</head>') &&
+        !body.includes('plennatec-ultra-fix-assets')
+      ){
+        body = body.replace(
+          '</head>',
+          renderPlennaTecUltraFixAssets() + '</head>'
+        );
+      }
+    }catch(err){}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
