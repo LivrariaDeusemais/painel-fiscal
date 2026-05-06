@@ -16569,7 +16569,7 @@ function getContadorArquivoConfig() {
 }
 
 
-async function getContadorArquivoConfigCompleta() {
+async function getContadorArquivoConfigCompleta(mesRef = null) {
   await ensureContadorTables();
 
   const ocultosResult = await pool.query(`
@@ -16583,14 +16583,20 @@ async function getContadorArquivoConfigCompleta() {
     (ocultosResult.rows || []).map(row => String(row.chave || '').replace('contador_tipo_oculto_', ''))
   );
 
-  const fixos = getContadorArquivoConfig().filter(item => !ocultos.has(item.key));
+  const ocultoParaMes = (key) => {
+    if (!mesRef) return false;
+    return ocultos.has(`${mesRef}_${key}`);
+  };
+
+  const fixos = getContadorArquivoConfig().filter(item => !ocultoParaMes(item.key));
 
   const result = await pool.query(`
     SELECT id, label, titulo
     FROM contador_arquivo_tipos
     WHERE ativo = true
+      AND (mes_ref = $1 OR mes_ref IS NULL)
     ORDER BY id ASC
-  `);
+  `, [mesRef]);
 
   const personalizados = result.rows.map(row => ({
     key: `custom_${row.id}`,
@@ -16606,6 +16612,7 @@ async function getContadorArquivoConfigCompleta() {
 
   return [...fixos, ...personalizados];
 }
+
 
 async function ensureContadorTables() {
   await pool.query(`
@@ -16637,8 +16644,14 @@ async function ensureContadorTables() {
       label TEXT NOT NULL,
       titulo TEXT NOT NULL,
       ativo BOOLEAN DEFAULT true,
+      mes_ref VARCHAR(7),
       created_at TIMESTAMP DEFAULT NOW()
     )
+  `);
+
+  await pool.query(`
+    ALTER TABLE contador_arquivo_tipos
+    ADD COLUMN IF NOT EXISTS mes_ref VARCHAR(7)
   `);
 
   await pool.query(`
@@ -16694,7 +16707,7 @@ function formatDateTimeBR(value) {
 }
 
 async function marcarDownloadContador(mesRef, key) {
-  const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === key);
+  const config = (await getContadorArquivoConfigCompleta(mesRef)).find(item => item.key === key);
   if (!config) return;
   await ensureContadorTables();
 
@@ -16909,7 +16922,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         </span>`;
     };
 
-    const configs = await getContadorArquivoConfigCompleta();
+    const configs = await getContadorArquivoConfigCompleta(mes);
     const linhasTabelaHtml = configs.map((config) => {
       const quantidade = config.countKey === 'xml' ? totalXml : config.countKey === 'pdf' ? totalPdf : countExtrasByTitle(config.titulo);
       const envio = config.auto ? 'Automático' : uploadForm(config);
@@ -17930,6 +17943,70 @@ body.contador-premium-page {
 }
 /* ===== FIM AJUSTE FINAL CONTADOR SOLICITADO ===== */
 
+
+
+/* ===== AJUSTE CONTADOR: LARGURA ENVIAR ARQUIVO + TIPOS POR COMPETÊNCIA ===== */
+.contador-premium-page .contador-table {
+  min-width: 1120px !important;
+}
+
+.contador-premium-page .contador-table col:nth-child(1) { width: 21% !important; }
+.contador-premium-page .contador-table col:nth-child(2) { width: 5% !important; }
+.contador-premium-page .contador-table col:nth-child(3) { width: 6% !important; }
+.contador-premium-page .contador-table col:nth-child(4) { width: 18% !important; }
+.contador-premium-page .contador-table col:nth-child(5) { width: 15% !important; }
+.contador-premium-page .contador-table col:nth-child(6) { width: 11% !important; }
+.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
+.contador-premium-page .contador-table col:nth-child(8) { width: 14% !important; }
+
+/* Evita estouro visual na coluna Enviar Arquivo */
+.contador-premium-page .contador-table td:nth-child(4),
+.contador-premium-page .contador-table th:nth-child(4) {
+  overflow: visible !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+}
+
+.contador-premium-page .upload-chip {
+  width: 118px !important;
+  min-width: 118px !important;
+  height: 30px !important;
+  padding: 0 8px !important;
+  font-size: 9.8px !important;
+}
+
+.contador-premium-page .attached-badge {
+  min-width: 42px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+}
+
+.contador-premium-page .empty-inline,
+.contador-premium-page .attached-empty {
+  white-space: nowrap !important;
+  font-size: 9.5px !important;
+}
+
+.contador-premium-page .tipo-cell strong {
+  line-height: 1.12 !important;
+}
+
+/* Divisor correto depois da inclusão da coluna lixeira */
+.contador-premium-page .contador-table th:nth-child(6),
+.contador-premium-page .contador-table td:nth-child(6) {
+  border-left: 2px solid #d2dbe7 !important;
+  box-shadow: inset 10px 0 16px -18px rgba(15,23,42,.35) !important;
+}
+/* ===== FIM AJUSTE CONTADOR COMPETÊNCIA ===== */
+
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -18177,7 +18254,7 @@ router.post('/espaco-contador/excluir-tipo/:tipo', protegerRota, permitirPerfis(
         return res.send('<pre>Tipo de arquivo não encontrado.</pre>');
       }
 
-      await setPainelConfig(`contador_tipo_oculto_${tipo}`, 'true');
+      await setPainelConfig(`contador_tipo_oculto_${mesRef}_${tipo}`, 'true');
     }
 
     return res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
@@ -18199,9 +18276,9 @@ router.post('/espaco-contador/adicionar-tipo', protegerRota, permitirPerfis('ADM
     }
 
     await pool.query(`
-      INSERT INTO contador_arquivo_tipos (label, titulo, ativo, created_at)
-      VALUES ($1, $1, true, NOW())
-    `, [label]);
+      INSERT INTO contador_arquivo_tipos (label, titulo, ativo, mes_ref, created_at)
+      VALUES ($1, $1, true, $2, NOW())
+    `, [label, mesRef]);
 
     res.redirect('/espaco-contador?mes=' + encodeURIComponent(mesRef));
   } catch (error) {
@@ -18215,7 +18292,7 @@ router.post('/espaco-contador/limpar-download/:tipo', protegerRota, permitirPerf
     await ensureContadorTables();
     const mesRef = req.body.mes_ref || getMesAtualRef();
     const tipo = String(req.params.tipo || '').trim();
-    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === tipo);
+    const config = (await getContadorArquivoConfigCompleta(mesRef)).find(item => item.key === tipo);
 
     if (!config) {
       return res.send('<pre>Tipo de download inválido para limpeza.</pre>');
@@ -18325,7 +18402,7 @@ router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMI
       ON CONFLICT (mes_ref) DO NOTHING
     `, [mes_ref]);
 
-    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === tipo_status);
+    const config = (await getContadorArquivoConfigCompleta(mes_ref)).find(item => item.key === tipo_status);
 
     if (!config) {
       return res.send('<pre>Tipo de status inválido.</pre>');
@@ -18381,7 +18458,7 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
 
     if (!mes) return res.send('<pre>Mês não informado.</pre>');
 
-    const config = (await getContadorArquivoConfigCompleta()).find(item => item.key === grupo && !item.auto);
+    const config = (await getContadorArquivoConfigCompleta(mes)).find(item => item.key === grupo && !item.auto);
     if (!config) return res.send('<pre>Grupo de arquivo inválido.</pre>');
 
     const result = await pool.query(`
