@@ -858,7 +858,106 @@ function renderMonthPickerAssets() {
       }
 
       /* ===== FIM COMPONENTE GLOBAL DE MÊS — PLENNATEC DEFINITIVO ===== */
-    </style>
+    
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
+</style>
     <script>
       (function(){
         window.MESES_PICKER_PT = window.MESES_PICKER_PT || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -1415,7 +1514,106 @@ function renderGlobalHeader(req, config = {}) {
       body.dm-global-page .container > .card > h1:first-child{display:none !important;}
       body.dm-global-page .container > .hero > .hero-top:first-child{display:none !important;}
       @media(max-width:900px){.dm-global-header-shell{width:min(100% - 24px,900px);}.dm-global-top{align-items:flex-start;flex-direction:column;}.dm-global-user{width:100%;justify-content:space-between;}.dm-global-user-copy{text-align:left;}.dm-global-nav{overflow-x:auto;flex-wrap:nowrap;}.dm-menu-btn{flex:0 0 auto;}}
-    </style>
+    
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
+</style>
     <header class="dm-global-header-shell">
       <div class="dm-global-top">
         <div class="dm-global-brand">
@@ -4399,6 +4597,105 @@ body {
 }
 /* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
     </head>
     <body>
@@ -4478,7 +4775,106 @@ body {
             flex-wrap: wrap !important;
           }
         }
-      </style>
+      
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
+</style>
 
       <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -5410,6 +5806,105 @@ body .login-page .footer {
   margin-top: 14px !important;
   font-size: 12px !important;
 }
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
 </head>
 
@@ -6244,6 +6739,105 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
       </head>
 
@@ -6846,6 +7440,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
@@ -7477,6 +8170,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
@@ -8373,6 +9165,105 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
       </head>
       <body class="dm-global-page">
@@ -9088,6 +9979,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
@@ -10030,6 +11020,105 @@ body {
             .pdf-copy-panel { top: 58px; left: 14px; right: auto; width: calc(100vw - 28px); }
             .pdf-copy-grid { grid-template-columns: 1fr; }
           }
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
@@ -11146,6 +12235,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
@@ -12366,6 +13554,105 @@ body {
 
 /* ===== FIM TABELA NÍVEL MERCADO LIVRE ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
       </head>
       <body class="dm-global-page">
@@ -13381,6 +14668,105 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
     </head>
     <body class="dm-global-page">
@@ -13887,6 +15273,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
     </head>
@@ -14426,6 +15911,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
     </head>
@@ -15657,6 +17241,105 @@ tbody td {
   }
 }
 /* ===== FIM AJUSTE SENIOR ROTINA ===== */
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
     </head>
     <body class="dm-global-page">
@@ -16529,6 +18212,105 @@ body {
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
 
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
 </style>
     </head>
     <body class="dm-global-page">
@@ -17200,6 +18982,105 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
     </head>
@@ -19045,6 +20926,105 @@ body.contador-premium-page {
   gap: 8px;
 }
 /* ===== FIM FILTRO DE COMPETÊNCIA PADRÃO PLENNATEC ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
 </style>
       </head>
