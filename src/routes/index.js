@@ -76,6 +76,488 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
   }
 });
 
+
+// =====================================================
+// DIAGNÓSTICO E CORREÇÃO DEFINITIVA DE LARGURA — PLENNATEC
+// Causa corrigida: as telas usam wrappers diferentes.
+// Cabeçalho/menu usam uma largura, enquanto a tabela fica dentro de cards
+// com padding interno e classes específicas: .ml-table e .contador-table.
+// Os patches anteriores atingiam classes genéricas e algumas classes que
+// não existem nessas telas, por isso o problema permanecia.
+// =====================================================
+function renderPlennaTecWidthDiagnosisFinalAssets() {
+  return `
+    <style id="plennatec-width-diagnosis-final">
+      *, *::before, *::after {
+        box-sizing: border-box !important;
+      }
+
+      html,
+      body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      :root {
+        --plenna-page-max: 1500px;
+        --plenna-page-gap: 48px;
+        --plenna-content-radius: 22px;
+      }
+
+      /* =====================================================
+         1) TELAS COM CABEÇALHO HORIZONTAL
+         Comprovantes Fiscais / Lista de Contas a Pagar / Arquivo
+         Agora o cabeçalho, o menu de botões, os filtros, os resumos
+         e a tabela usam exatamente a mesma largura visual.
+      ===================================================== */
+
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .container {
+        width: min(var(--plenna-page-max), calc(100vw - var(--plenna-page-gap))) !important;
+        max-width: min(var(--plenna-page-max), calc(100vw - var(--plenna-page-gap))) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-nav,
+      body.dm-global-page .container > .card,
+      body.dm-global-page .container > .hero,
+      body.dm-global-page .container > section,
+      body.dm-global-page .container > .panel,
+      body.dm-global-page .container > .table-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* O card era a principal causa do desalinhamento:
+         ele tinha padding lateral, fazendo a tabela ficar visualmente menor
+         que o cabeçalho e os botões. */
+      body.dm-global-page .container > .card {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow: hidden !important;
+        border-radius: var(--plenna-content-radius) !important;
+      }
+
+      body.dm-global-page .container > .card > h1,
+      body.dm-global-page .container > .card > .actions,
+      body.dm-global-page .container > .card > form,
+      body.dm-global-page .container > .card > .filters,
+      body.dm-global-page .container > .card > .summary,
+      body.dm-global-page .container > .card > .ml-table-toolbar,
+      body.dm-global-page .container > .card > .painel-colunas {
+        margin-left: 24px !important;
+        margin-right: 24px !important;
+        width: calc(100% - 48px) !important;
+        max-width: calc(100% - 48px) !important;
+      }
+
+      body.dm-global-page .dm-global-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-menu-btn,
+      body.dm-global-page .dm-global-nav button {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+      }
+
+      /* =====================================================
+         2) COMPROVANTES FISCAIS
+         A tabela real desta tela é .ml-table, não .lancamentos-table.
+      ===================================================== */
+
+      body.dm-global-page .ml-table-toolbar,
+      body.dm-global-page .ml-table-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+
+      body.dm-global-page .ml-table-toolbar {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+
+      body.dm-global-page .ml-table-shell {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        border-radius: 0 0 var(--plenna-content-radius) var(--plenna-content-radius) !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+      }
+
+      body.dm-global-page .ml-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .ml-table th,
+      body.dm-global-page .ml-table td {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        font-size: 12px !important;
+        padding: 9px 8px !important;
+      }
+
+      body.dm-global-page .ml-table th:nth-child(1),
+      body.dm-global-page .ml-table td:nth-child(1) { width: 4.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(2),
+      body.dm-global-page .ml-table td:nth-child(2) { width: 8.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(3),
+      body.dm-global-page .ml-table td:nth-child(3) { width: 11% !important; }
+      body.dm-global-page .ml-table th:nth-child(4),
+      body.dm-global-page .ml-table td:nth-child(4) { width: 7% !important; }
+      body.dm-global-page .ml-table th:nth-child(5),
+      body.dm-global-page .ml-table td:nth-child(5) { width: 23% !important; }
+      body.dm-global-page .ml-table th:nth-child(6),
+      body.dm-global-page .ml-table td:nth-child(6) { width: 10% !important; }
+      body.dm-global-page .ml-table th:nth-child(7),
+      body.dm-global-page .ml-table td:nth-child(7) { width: 10% !important; }
+      body.dm-global-page .ml-table th:nth-child(8),
+      body.dm-global-page .ml-table td:nth-child(8) { width: 7.5% !important; text-align:right !important; }
+      body.dm-global-page .ml-table th:nth-child(9),
+      body.dm-global-page .ml-table td:nth-child(9) { width: 7.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(10),
+      body.dm-global-page .ml-table td:nth-child(10) { width: 12% !important; }
+      body.dm-global-page .ml-table th:nth-child(11),
+      body.dm-global-page .ml-table td:nth-child(11) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .ml-table th:nth-child(12),
+      body.dm-global-page .ml-table td:nth-child(12) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .ml-table th:nth-child(13),
+      body.dm-global-page .ml-table td:nth-child(13) { width: 6% !important; text-align:center !important; }
+
+      /* Colunas ocultas continuam ocultas quando o usuário desmarca */
+      body.dm-global-page .ml-table .col-cnpj[style*="none"],
+      body.dm-global-page .ml-table .col-codpag[style*="none"],
+      body.dm-global-page .ml-table .col-pagamento[style*="none"],
+      body.dm-global-page .ml-table .col-categoria[style*="none"],
+      body.dm-global-page .ml-table .col-pdf[style*="none"],
+      body.dm-global-page .ml-table .col-xml[style*="none"] {
+        display: none !important;
+      }
+
+      /* Filtros dos comprovantes compactos dentro do mesmo card */
+      body.dm-global-page form[action="/lancamentos"] .filters {
+        display: grid !important;
+        grid-template-columns:
+          minmax(130px, 1fr)
+          minmax(125px, .9fr)
+          minmax(125px, .9fr)
+          minmax(135px, .95fr)
+          minmax(140px, 1fr)
+          minmax(120px, .85fr)
+          minmax(115px, .75fr)
+          minmax(115px, .75fr)
+          max-content !important;
+        gap: 8px !important;
+        align-items: end !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters > div {
+        min-width: 0 !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters label {
+        font-size: 10px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters input,
+      body.dm-global-page form[action="/lancamentos"] .filters select {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+        display: inline-flex !important;
+        gap: 6px !important;
+        min-width: 126px !important;
+      }
+
+      /* =====================================================
+         3) LISTA DE CONTAS A PAGAR
+         O problema é o mesmo: card com padding + tabela interna.
+      ===================================================== */
+
+      body.dm-global-page .rotina-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .rotina-table th,
+      body.dm-global-page .rotina-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+        line-height: 1.12 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: normal !important;
+      }
+
+      body.dm-global-page .rotina-table th:nth-child(1),
+      body.dm-global-page .rotina-table td:nth-child(1) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(2),
+      body.dm-global-page .rotina-table td:nth-child(2) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(3),
+      body.dm-global-page .rotina-table td:nth-child(3) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(4),
+      body.dm-global-page .rotina-table td:nth-child(4) { width: 12% !important; }
+      body.dm-global-page .rotina-table th:nth-child(5),
+      body.dm-global-page .rotina-table td:nth-child(5) { width: 7% !important; }
+      body.dm-global-page .rotina-table th:nth-child(6),
+      body.dm-global-page .rotina-table td:nth-child(6) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(7),
+      body.dm-global-page .rotina-table td:nth-child(7) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(8),
+      body.dm-global-page .rotina-table td:nth-child(8) { width: 7% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(9),
+      body.dm-global-page .rotina-table td:nth-child(9) { width: 10% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(10),
+      body.dm-global-page .rotina-table td:nth-child(10) { width: 9% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(11),
+      body.dm-global-page .rotina-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(12),
+      body.dm-global-page .rotina-table td:nth-child(12) { width: 6% !important; text-align:center !important; }
+
+      /* =====================================================
+         4) ESPAÇO DO CONTADOR
+         A tabela do contador é muito larga. A solução correta é:
+         área principal sem overflow + rolagem interna somente na tabela.
+      ===================================================== */
+
+      body.contador-premium-page {
+        overflow-x: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-shell {
+        width: min(1500px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        margin: 0 auto !important;
+        display: grid !important;
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+        gap: 18px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-sidebar {
+        width: 250px !important;
+        max-width: 250px !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-premium-main {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-metrics,
+      .contador-premium-page .filter-box,
+      .contador-premium-page .contador-board {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(165px, 1fr)) !important;
+        gap: 14px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+      }
+
+      .contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 1120px !important;
+        table-layout: fixed !important;
+      }
+
+      .contador-premium-page .contador-table th,
+      .contador-premium-page .contador-table td {
+        font-size: 10.8px !important;
+        padding: 7px 6px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+
+      /* =====================================================
+         5) DASHBOARD
+         Botões do filtro separados e negrito normalizado.
+      ===================================================== */
+
+      body:has(#dashboardMonthForm) .page-shell {
+        width: min(1500px, calc(100vw - 56px)) !important;
+        max-width: calc(100vw - 56px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
+      #dashboardMonthForm,
+      .filter-panel.month-smart-form#dashboardMonthForm,
+      form#dashboardMonthForm.filter-panel {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 18px 24px !important;
+        overflow: visible !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        padding: 12px 22px !important;
+      }
+
+      #dashboardMonthForm > * {
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+      }
+
+      #dashboardMonthForm label {
+        min-width: 82px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
+      }
+
+      #dashboardMonthForm .global-month-picker {
+        min-width: 255px !important;
+        flex: 0 0 auto !important;
+      }
+
+      #dashboardMonthForm .month-compact-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        flex-wrap: nowrap !important;
+      }
+
+      #dashboardMonthForm .month-current-display {
+        min-width: 112px !important;
+        max-width: 132px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 500 !important;
+      }
+
+      #dashboardMonthForm .month-open-btn,
+      #dashboardMonthForm .btn-filter-apply,
+      #dashboardMonthForm .btn-filter-clear {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 18px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+      }
+
+      body:has(#dashboardMonthForm) * {
+        font-weight: 400 !important;
+      }
+
+      body:has(#dashboardMonthForm) h1,
+      body:has(#dashboardMonthForm) h2,
+      body:has(#dashboardMonthForm) h3,
+      body:has(#dashboardMonthForm) .stat-value,
+      body:has(#dashboardMonthForm) .stat-number,
+      body:has(#dashboardMonthForm) button,
+      body:has(#dashboardMonthForm) .btn,
+      body:has(#dashboardMonthForm) .dm-menu-btn {
+        font-weight: 650 !important;
+      }
+
+      @media (max-width: 1350px) {
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+        }
+
+        .contador-premium-page .contador-metrics {
+          grid-template-columns: repeat(2, minmax(165px, 1fr)) !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body.dm-global-page .dm-global-header-shell,
+        body.dm-global-page .container,
+        body:has(#dashboardMonthForm) .page-shell {
+          width: calc(100vw - 24px) !important;
+          max-width: calc(100vw - 24px) !important;
+        }
+
+        body.dm-global-page .container > .card > h1,
+        body.dm-global-page .container > .card > .actions,
+        body.dm-global-page .container > .card > form,
+        body.dm-global-page .container > .card > .filters,
+        body.dm-global-page .container > .card > .summary,
+        body.dm-global-page .container > .card > .ml-table-toolbar,
+        body.dm-global-page .container > .card > .painel-colunas {
+          margin-left: 14px !important;
+          margin-right: 14px !important;
+          width: calc(100% - 28px) !important;
+          max-width: calc(100% - 28px) !important;
+        }
+
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: 1fr !important;
+        }
+      }
+    </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecWidthDiagnosisFinalSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-width-diagnosis-final')) {
+        body = body.replace('</head>', `${renderPlennaTecWidthDiagnosisFinalAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
 // =====================================================
 // PATCH DEFINITIVO CROSS-PLATFORM — NÃO ESTOURAR MAC/WINDOWS
 // Este middleware precisa ficar antes dos outros patches para que seu CSS seja aplicado por último.
