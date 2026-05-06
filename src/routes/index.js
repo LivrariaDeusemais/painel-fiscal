@@ -466,57 +466,449 @@ function renderMonthPickerComponent({
   `;
 }
 
+
 function renderMonthPickerAssets() {
   return `
     <style>
-      .global-month-picker,.month-smart-form{overflow:visible!important;}
-      .month-compact-row{display:flex!important;align-items:center!important;gap:8px!important;min-width:0!important;}
-      .month-current-display{min-width:118px!important;height:38px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 14px!important;border-radius:12px!important;background:#fff!important;border:1px solid #dce3ec!important;color:#172033!important;font-weight:950!important;white-space:nowrap!important;box-shadow:0 8px 18px rgba(15,23,42,.05)!important;}
-      .month-open-btn,.btn-month-open{min-width:116px!important;height:38px!important;padding:0 13px!important;border-radius:12px!important;border:1px solid #dce3ec!important;background:linear-gradient(180deg,#f8fafc,#eef2f7)!important;color:#172033!important;font-size:12px!important;font-weight:950!important;cursor:pointer!important;box-shadow:0 8px 18px rgba(15,23,42,.05)!important;white-space:nowrap!important;}
-      .month-picker-overlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.16);align-items:flex-start;justify-content:center;padding:88px 18px 18px;}
-      .month-picker-overlay.open{display:flex;}
-      .month-picker-popover{width:372px;max-width:calc(100vw - 28px);border-radius:18px;background:rgba(255,255,255,.98);border:1px solid #dce3ec;box-shadow:0 24px 70px rgba(15,23,42,.22);padding:14px;}
-      .month-picker-head{display:grid;grid-template-columns:42px 1fr 42px;gap:8px;align-items:center;margin-bottom:14px;}
-      .month-nav-btn{height:36px!important;min-height:36px!important;border-radius:12px!important;padding:0!important;font-size:18px!important;line-height:1!important;border:0!important;background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;font-weight:900!important;cursor:pointer!important;}
-      .month-year-select{height:36px!important;text-align:center!important;font-weight:950!important;border-radius:12px!important;border:1px solid #dce3ec!important;background:#fff!important;}
-      .month-grid-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-      .month-cell{height:36px!important;min-height:36px!important;padding:0!important;border-radius:11px!important;font-size:12.5px!important;font-weight:950!important;background:#E8F7EE!important;color:#14532d!important;border:1px solid #c8ecd4!important;box-shadow:0 8px 16px rgba(15,23,42,.04)!important;transition:all .16s ease!important;cursor:pointer!important;}
-      .month-cell:hover,.month-cell.active{background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;border-color:rgba(0,176,80,.9)!important;box-shadow:0 10px 18px rgba(0,176,80,.22)!important;transform:translateY(-1px);}
-      .month-picker-footer{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;margin-top:14px;}
-      .month-selected-preview{color:#14532d;font-size:12px;font-weight:950;white-space:nowrap;}
-      .month-picker-footer-actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(74px,auto);gap:7px;align-items:center;}
-      .month-footer-btn{height:36px!important;min-width:74px!important;padding:0 10px!important;border-radius:12px!important;border:0!important;font-size:11.5px!important;font-weight:950!important;cursor:pointer!important;white-space:nowrap!important;}
-      .month-footer-btn.primary{background:linear-gradient(135deg,#00B050,#009640)!important;color:#fff!important;box-shadow:0 10px 20px rgba(0,176,80,.16)!important;}
-      .month-footer-btn.soft{background:#eef2f7!important;color:#172033!important;border:1px solid #dce3ec!important;}
-      .filter-panel.month-smart-form{display:flex!important;align-items:center!important;gap:10px!important;overflow:visible!important;}
-      .filter-panel.month-smart-form .global-month-picker{flex:0 0 auto!important;}
-      .filter-panel.month-smart-form .btn-filter-apply,.filter-panel.month-smart-form .btn-filter-clear{height:38px!important;min-height:38px!important;padding:0 14px!important;}
-      .contador-premium-page .filter-box.month-smart-form{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:nowrap!important;overflow:visible!important;}
-      .contador-premium-page .filter-box .filter-group{width:auto!important;min-width:0!important;display:flex!important;align-items:center!important;gap:10px!important;margin:0!important;}
-      .contador-premium-page .filter-box .filter-group label{width:92px!important;min-width:92px!important;margin:0!important;line-height:1.1!important;}
-      .contador-premium-page .contador-apply-month-btn,.contador-premium-page .filter-box .btn-green{height:38px!important;align-self:center!important;margin:0!important;}
-      .contador-premium-page .btn-add-file-top{align-self:center!important;margin-left:auto!important;}
-      .contador-premium-page .contador-filter-spacer{flex:1 1 auto!important;}
-      @media(max-width:980px){.filter-panel.month-smart-form,.contador-premium-page .filter-box.month-smart-form{flex-wrap:wrap!important}.contador-premium-page .contador-filter-spacer{display:none!important}.contador-premium-page .btn-add-file-top{margin-left:0!important}}
-      @media(max-width:520px){.month-picker-popover{width:min(360px,calc(100vw - 28px));}.month-picker-footer{grid-template-columns:1fr;}.month-picker-footer-actions{grid-auto-flow:row;grid-template-columns:1fr;}.month-footer-btn{width:100%!important;}}
+      /* ===== COMPONENTE GLOBAL DE MÊS — PLENNATEC ESTÁVEL ===== */
+      .global-month-picker,
+      .month-smart-form {
+        overflow: visible !important;
+      }
+
+      .month-compact-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        min-width: 0 !important;
+      }
+
+      .month-current-display {
+        min-width: 104px !important;
+        height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 12px !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        border: 1px solid #dce3ec !important;
+        color: #172033 !important;
+        font-size: 14px !important;
+        font-weight: 950 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+      }
+
+      .month-open-btn {
+        min-width: 108px !important;
+        height: 36px !important;
+        padding: 0 12px !important;
+        border-radius: 12px !important;
+        border: 1px solid #dce3ec !important;
+        background: linear-gradient(180deg,#f8fafc,#eef2f7) !important;
+        color: #172033 !important;
+        font-size: 11.5px !important;
+        font-weight: 950 !important;
+        cursor: pointer !important;
+        box-shadow: 0 8px 18px rgba(15,23,42,.05) !important;
+        white-space: nowrap !important;
+      }
+
+      .month-open-btn:hover,
+      .month-footer-btn:hover,
+      .month-nav-btn:hover,
+      .month-cell:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.02);
+      }
+
+      .month-picker-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: rgba(15, 23, 42, 0.18);
+        align-items: flex-start;
+        justify-content: center;
+        padding: 92px 18px 18px;
+      }
+
+      .month-picker-overlay.open {
+        display: flex !important;
+      }
+
+      .month-picker-popover {
+        width: 384px;
+        max-width: calc(100vw - 28px);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.99);
+        border: 1px solid #dce3ec;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+        padding: 14px;
+      }
+
+      .month-picker-head {
+        display: grid;
+        grid-template-columns: 42px 1fr 42px;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .month-nav-btn {
+        height: 36px !important;
+        min-height: 36px !important;
+        border-radius: 12px !important;
+        padding: 0 !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        border: 0 !important;
+        background: linear-gradient(135deg,#00B050,#009640) !important;
+        color: #fff !important;
+        font-weight: 900 !important;
+        cursor: pointer !important;
+      }
+
+      .month-year-select {
+        height: 36px !important;
+        text-align: center !important;
+        font-weight: 950 !important;
+        border-radius: 12px !important;
+        border: 1px solid #dce3ec !important;
+        background: #fff !important;
+      }
+
+      .month-grid-picker {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .month-cell {
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        border-radius: 11px !important;
+        font-size: 12.5px !important;
+        font-weight: 950 !important;
+        background: #E8F7EE !important;
+        color: #14532d !important;
+        border: 1px solid #c8ecd4 !important;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, .04) !important;
+        transition: all .16s ease !important;
+        cursor: pointer !important;
+      }
+
+      .month-cell.active {
+        background: linear-gradient(135deg, #00B050, #009640) !important;
+        color: #fff !important;
+        border-color: rgba(0, 176, 80, .9) !important;
+        box-shadow: 0 10px 18px rgba(0, 176, 80, .22) !important;
+      }
+
+      .month-picker-footer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .month-selected-preview {
+        color: #14532d;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+
+      .month-picker-footer-actions {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(72px, auto);
+        gap: 7px;
+        align-items: center;
+      }
+
+      .month-footer-btn {
+        height: 34px !important;
+        min-width: 72px !important;
+        padding: 0 10px !important;
+        border-radius: 12px !important;
+        border: 0 !important;
+        font-size: 11px !important;
+        font-weight: 950 !important;
+        cursor: pointer !important;
+        white-space: nowrap !important;
+      }
+
+      .month-footer-btn.primary {
+        background: linear-gradient(135deg,#00B050,#009640) !important;
+        color: #fff !important;
+        box-shadow: 0 10px 20px rgba(0,176,80,.16) !important;
+      }
+
+      .month-footer-btn.soft {
+        background: #eef2f7 !important;
+        color: #172033 !important;
+        border: 1px solid #dce3ec !important;
+      }
+
+      /* Dashboard: separa filtro dos totalizadores e reduz texto selecionado */
+      .filter-panel.month-smart-form {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        overflow: visible !important;
+        margin-top: 8px !important;
+        margin-bottom: 14px !important;
+        min-height: 58px !important;
+      }
+
+      .filter-panel.month-smart-form .global-month-picker {
+        flex: 0 0 auto !important;
+      }
+
+      .filter-panel.month-smart-form .month-current-display {
+        min-width: 116px !important;
+        height: 34px !important;
+        font-size: 13px !important;
+        padding: 0 10px !important;
+      }
+
+      .filter-panel.month-smart-form .month-open-btn,
+      .filter-panel.month-smart-form .btn-filter-apply,
+      .filter-panel.month-smart-form .btn-filter-clear {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 13px !important;
+        font-size: 11.5px !important;
+      }
+
+      /* Contador: tudo na mesma linha desde o label */
+      .contador-premium-page .filter-box.month-smart-form {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        flex-wrap: nowrap !important;
+        overflow: visible !important;
+        min-height: 54px !important;
+      }
+
+      .contador-premium-page .filter-box .filter-group {
+        width: auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin: 0 !important;
+      }
+
+      .contador-premium-page .filter-box .filter-group label {
+        width: 92px !important;
+        min-width: 92px !important;
+        margin: 0 !important;
+        line-height: 1.08 !important;
+        font-size: 11px !important;
+        font-weight: 950 !important;
+      }
+
+      .contador-premium-page .filter-box .global-month-picker {
+        flex: 0 0 auto !important;
+      }
+
+      .contador-premium-page .filter-box .month-current-display {
+        height: 34px !important;
+        min-width: 104px !important;
+        font-size: 13px !important;
+      }
+
+      .contador-premium-page .filter-box .month-open-btn {
+        height: 34px !important;
+        min-width: 108px !important;
+        font-size: 11.5px !important;
+      }
+
+      .contador-premium-page .contador-apply-month-btn,
+      .contador-premium-page .filter-box .btn-green {
+        height: 34px !important;
+        min-height: 34px !important;
+        align-self: center !important;
+        margin: 0 !important;
+        padding: 0 14px !important;
+        font-size: 11.5px !important;
+      }
+
+      .contador-premium-page .btn-add-file-top {
+        align-self: center !important;
+        margin-left: auto !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 16px !important;
+        font-size: 11.5px !important;
+      }
+
+      .contador-premium-page .contador-filter-spacer {
+        flex: 1 1 auto !important;
+      }
+
+      @media(max-width: 980px) {
+        .filter-panel.month-smart-form,
+        .contador-premium-page .filter-box.month-smart-form {
+          flex-wrap: wrap !important;
+        }
+        .contador-premium-page .contador-filter-spacer {
+          display: none !important;
+        }
+        .contador-premium-page .btn-add-file-top {
+          margin-left: 0 !important;
+        }
+      }
+
+      @media(max-width: 520px) {
+        .month-picker-popover { width: min(360px, calc(100vw - 28px)); }
+        .month-picker-footer { grid-template-columns: 1fr; }
+        .month-picker-footer-actions { grid-auto-flow: row; grid-template-columns: 1fr; }
+        .month-footer-btn { width: 100% !important; }
+      }
+      /* ===== FIM COMPONENTE GLOBAL DE MÊS — PLENNATEC ESTÁVEL ===== */
     </style>
     <script>
-      const MESES_PICKER_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
-      function formatMesAnoCurtoJS(valor){const match=String(valor||'').match(/^(\\d{4})-(\\d{2})$/);if(!match)return valor||'Selecione';const nomeMes=MESES_PICKER_PT[Number(match[2])-1]||match[2];return nomeMes+'-'+String(match[1]).slice(-2);}
-      function getMonthPickerPrefixConfig(prefix){return{root:document.querySelector('[data-month-prefix="'+prefix+'"]'),hidden:document.getElementById(prefix+'_mes_picker_value'),label:document.getElementById(prefix+'MesAtualLabel'),overlay:document.getElementById(prefix+'MonthPickerOverlay'),year:document.getElementById(prefix+'MonthPickerYear'),grid:document.getElementById(prefix+'MonthGridPicker'),preview:document.getElementById(prefix+'MonthSelectedPreview')};}
-      function getMonthPickerForm(prefix){const cfg=getMonthPickerPrefixConfig(prefix);return cfg.root?cfg.root.closest('form'):null;}
-      function iniciarMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);const valor=cfg.hidden?.value||'';const hoje=new Date();monthPickerState[prefix]={ano:/^\\d{4}-\\d{2}$/.test(valor)?valor.slice(0,4):String(hoje.getFullYear()),mes:/^\\d{4}-\\d{2}$/.test(valor)?valor.slice(5,7):String(hoje.getMonth()+1).padStart(2,'0')};if(cfg.year){const anoAtual=monthPickerState[prefix].ano;const existe=Array.from(cfg.year.options).some(opt=>String(opt.value)===String(anoAtual));if(!existe){const opt=document.createElement('option');opt.value=anoAtual;opt.textContent=anoAtual;cfg.year.appendChild(opt);}cfg.year.value=anoAtual;}selecionarMesGlobal(prefix,monthPickerState[prefix].mes,false);atualizarPreviewMesGlobal(prefix);}
-      function abrirSeletorMesGlobal(prefix){iniciarMesGlobal(prefix);const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.overlay)cfg.overlay.classList.add('open');}
-      function fecharSeletorMesGlobal(prefix,event){if(event&&event.target&&event.target.id!==prefix+'MonthPickerOverlay')return;const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.overlay)cfg.overlay.classList.remove('open');}
-      function selecionarMesGlobal(prefix,mes,atualizar=true){monthPickerState[prefix]=monthPickerState[prefix]||{};monthPickerState[prefix].mes=String(mes).padStart(2,'0');const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.grid){cfg.grid.querySelectorAll('.month-cell').forEach(btn=>{btn.classList.toggle('active',btn.dataset.month===monthPickerState[prefix].mes);});}if(atualizar)atualizarPreviewMesGlobal(prefix);}
-      function mudarAnoPickerGlobal(prefix,delta){const cfg=getMonthPickerPrefixConfig(prefix);const atual=parseInt(cfg.year?.value||monthPickerState[prefix]?.ano||String(new Date().getFullYear()),10);const novo=atual+Number(delta||0);if(cfg.year){const existe=Array.from(cfg.year.options).some(opt=>String(opt.value)===String(novo));if(!existe){const opt=document.createElement('option');opt.value=String(novo);opt.textContent=String(novo);cfg.year.appendChild(opt);}cfg.year.value=String(novo);}monthPickerState[prefix]=monthPickerState[prefix]||{};monthPickerState[prefix].ano=String(novo);atualizarPreviewMesGlobal(prefix);}
-      function atualizarPreviewMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);monthPickerState[prefix]=monthPickerState[prefix]||{};const ano=cfg.year?.value||monthPickerState[prefix].ano||String(new Date().getFullYear());const mes=monthPickerState[prefix].mes||String(new Date().getMonth()+1).padStart(2,'0');const label=formatMesAnoCurtoJS(ano+'-'+mes);monthPickerState[prefix].ano=String(ano);if(cfg.preview)cfg.preview.textContent='Selecionado: '+label;}
-      function aplicarMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);monthPickerState[prefix]=monthPickerState[prefix]||{};const ano=cfg.year?.value||monthPickerState[prefix].ano||String(new Date().getFullYear());const mes=monthPickerState[prefix].mes||String(new Date().getMonth()+1).padStart(2,'0');if(cfg.hidden)cfg.hidden.value=ano+'-'+mes;const form=getMonthPickerForm(prefix);if(form)form.submit();}
-      function limparMesGlobal(prefix){const cfg=getMonthPickerPrefixConfig(prefix);if(cfg.hidden)cfg.hidden.value='';const form=getMonthPickerForm(prefix);if(form)form.submit();}
+      (function(){
+        window.MESES_PICKER_PT = window.MESES_PICKER_PT || ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        window.monthPickerState = window.monthPickerState || {};
+
+        window.formatMesAnoCurtoJS = function(valor){
+          const match = String(valor || '').match(/^(\\d{4})-(\\d{2})$/);
+          if (!match) return valor || 'Selecione';
+          const nomeMes = window.MESES_PICKER_PT[Number(match[2]) - 1] || match[2];
+          return nomeMes + '-' + String(match[1]).slice(-2);
+        };
+
+        window.getMonthPickerPrefixConfig = function(prefix){
+          return {
+            root: document.querySelector('[data-month-prefix="' + prefix + '"]'),
+            hidden: document.getElementById(prefix + '_mes_picker_value'),
+            label: document.getElementById(prefix + 'MesAtualLabel'),
+            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
+            year: document.getElementById(prefix + 'MonthPickerYear'),
+            grid: document.getElementById(prefix + 'MonthGridPicker'),
+            preview: document.getElementById(prefix + 'MonthSelectedPreview')
+          };
+        };
+
+        window.getMonthPickerForm = function(prefix){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          return cfg.root ? cfg.root.closest('form') : null;
+        };
+
+        window.iniciarMesGlobal = function(prefix){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          const valor = cfg.hidden?.value || '';
+          const hoje = new Date();
+
+          window.monthPickerState[prefix] = {
+            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
+            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
+          };
+
+          if (cfg.year) {
+            const anoAtual = window.monthPickerState[prefix].ano;
+            const existe = Array.from(cfg.year.options).some(opt => String(opt.value) === String(anoAtual));
+            if (!existe) {
+              const opt = document.createElement('option');
+              opt.value = anoAtual;
+              opt.textContent = anoAtual;
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = anoAtual;
+          }
+
+          window.selecionarMesGlobal(prefix, window.monthPickerState[prefix].mes, false);
+          window.atualizarPreviewMesGlobal(prefix);
+        };
+
+        window.abrirSeletorMesGlobal = function(prefix){
+          window.iniciarMesGlobal(prefix);
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.add('open');
+        };
+
+        window.fecharSeletorMesGlobal = function(prefix, event){
+          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          if (cfg.overlay) cfg.overlay.classList.remove('open');
+        };
+
+        window.selecionarMesGlobal = function(prefix, mes, atualizar = true){
+          window.monthPickerState[prefix] = window.monthPickerState[prefix] || {};
+          window.monthPickerState[prefix].mes = String(mes).padStart(2, '0');
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+
+          if (cfg.grid) {
+            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.month === window.monthPickerState[prefix].mes);
+            });
+          }
+
+          if (atualizar) window.atualizarPreviewMesGlobal(prefix);
+        };
+
+        window.mudarAnoPickerGlobal = function(prefix, delta){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          const atual = parseInt(cfg.year?.value || window.monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
+          const novo = atual + Number(delta || 0);
+
+          if (cfg.year) {
+            const existe = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
+            if (!existe) {
+              const opt = document.createElement('option');
+              opt.value = String(novo);
+              opt.textContent = String(novo);
+              cfg.year.appendChild(opt);
+            }
+            cfg.year.value = String(novo);
+          }
+
+          window.monthPickerState[prefix] = window.monthPickerState[prefix] || {};
+          window.monthPickerState[prefix].ano = String(novo);
+          window.atualizarPreviewMesGlobal(prefix);
+        };
+
+        window.atualizarPreviewMesGlobal = function(prefix){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          window.monthPickerState[prefix] = window.monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || window.monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = window.monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+          const label = window.formatMesAnoCurtoJS(ano + '-' + mes);
+          window.monthPickerState[prefix].ano = String(ano);
+          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
+        };
+
+        window.aplicarMesGlobal = function(prefix){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          window.monthPickerState[prefix] = window.monthPickerState[prefix] || {};
+          const ano = cfg.year?.value || window.monthPickerState[prefix].ano || String(new Date().getFullYear());
+          const mes = window.monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
+
+          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
+
+          const form = window.getMonthPickerForm(prefix);
+          if (form) form.submit();
+        };
+
+        window.limparMesGlobal = function(prefix){
+          const cfg = window.getMonthPickerPrefixConfig(prefix);
+          if (cfg.hidden) cfg.hidden.value = '';
+
+          const form = window.getMonthPickerForm(prefix);
+          if (form) form.submit();
+        };
+      })();
     </script>
   `;
 }
+
 
 function normalizarDiaVencimento(value) {
   if (value === undefined || value === null) return '';
@@ -4019,102 +4411,6 @@ body {
         </div>
 
         <script>
-  
-        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
-
-        function getMonthPickerPrefixConfig(prefix) {
-          return {
-            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
-            hidden: document.getElementById(prefix + '_mes_picker_value'),
-            label: document.getElementById(prefix + 'MesAtualLabel'),
-            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
-            year: document.getElementById(prefix + 'MonthPickerYear'),
-            grid: document.getElementById(prefix + 'MonthGridPicker'),
-            preview: document.getElementById(prefix + 'MonthSelectedPreview')
-          };
-        }
-
-        function iniciarMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          const valor = cfg.hidden?.value || '';
-          const hoje = new Date();
-          monthPickerState[prefix] = {
-            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
-            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
-          };
-          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
-          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
-          atualizarPreviewMesGenerico(prefix);
-        }
-
-        function abrirSeletorMesGenerico(prefix) {
-          iniciarMesGenerico(prefix);
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.add('open');
-        }
-
-        function fecharSeletorMesGenerico(prefix, event) {
-          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.remove('open');
-        }
-
-        function selecionarMesGenerico(prefix, mes, atualizar = true) {
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.grid) {
-            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
-              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
-            });
-          }
-          if (atualizar) atualizarPreviewMesGenerico(prefix);
-        }
-
-        function mudarAnoPickerGenerico(prefix, delta) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
-          const novo = atual + Number(delta || 0);
-          if (cfg.year) {
-            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
-            if (!existeOpcao) {
-              const opt = document.createElement('option');
-              opt.value = String(novo);
-              opt.textContent = String(novo);
-              cfg.year.appendChild(opt);
-            }
-            cfg.year.value = String(novo);
-          }
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          monthPickerState[prefix].ano = String(novo);
-          atualizarPreviewMesGenerico(prefix);
-        }
-
-        function atualizarPreviewMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
-          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
-          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
-          monthPickerState[prefix].ano = String(ano);
-          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
-        }
-
-        function aplicarMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
-          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
-          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
-          if (cfg.form) cfg.form.submit();
-        }
-
-        function limparMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.hidden) cfg.hidden.value = '';
-          if (cfg.form) cfg.form.submit();
-        }
 
         const detalhesMeses = ${detalhesMesesJson};
           const detalhesCategorias = ${detalhesCategoriasJson};
@@ -18670,102 +18966,6 @@ body.contador-premium-page {
           </main>
         </div>
         <script>
-
-        const MESES_PICKER_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const monthPickerState = window.monthPickerState || (window.monthPickerState = {});
-
-        function getMonthPickerPrefixConfig(prefix) {
-          return {
-            form: document.getElementById(prefix === 'dashboard' ? 'dashboardMonthForm' : 'contadorMonthForm'),
-            hidden: document.getElementById(prefix + '_mes_picker_value'),
-            label: document.getElementById(prefix + 'MesAtualLabel'),
-            overlay: document.getElementById(prefix + 'MonthPickerOverlay'),
-            year: document.getElementById(prefix + 'MonthPickerYear'),
-            grid: document.getElementById(prefix + 'MonthGridPicker'),
-            preview: document.getElementById(prefix + 'MonthSelectedPreview')
-          };
-        }
-
-        function iniciarMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          const valor = cfg.hidden?.value || '';
-          const hoje = new Date();
-          monthPickerState[prefix] = {
-            ano: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(0, 4) : String(hoje.getFullYear()),
-            mes: /^\\d{4}-\\d{2}$/.test(valor) ? valor.slice(5, 7) : String(hoje.getMonth() + 1).padStart(2, '0')
-          };
-          if (cfg.year) cfg.year.value = monthPickerState[prefix].ano;
-          selecionarMesGenerico(prefix, monthPickerState[prefix].mes, false);
-          atualizarPreviewMesGenerico(prefix);
-        }
-
-        function abrirSeletorMesGenerico(prefix) {
-          iniciarMesGenerico(prefix);
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.add('open');
-        }
-
-        function fecharSeletorMesGenerico(prefix, event) {
-          if (event && event.target && event.target.id !== prefix + 'MonthPickerOverlay') return;
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.overlay) cfg.overlay.classList.remove('open');
-        }
-
-        function selecionarMesGenerico(prefix, mes, atualizar = true) {
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          monthPickerState[prefix].mes = String(mes).padStart(2, '0');
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.grid) {
-            cfg.grid.querySelectorAll('.month-cell').forEach(btn => {
-              btn.classList.toggle('active', btn.dataset.month === monthPickerState[prefix].mes);
-            });
-          }
-          if (atualizar) atualizarPreviewMesGenerico(prefix);
-        }
-
-        function mudarAnoPickerGenerico(prefix, delta) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          const atual = parseInt(cfg.year?.value || monthPickerState[prefix]?.ano || String(new Date().getFullYear()), 10);
-          const novo = atual + Number(delta || 0);
-          if (cfg.year) {
-            const existeOpcao = Array.from(cfg.year.options).some(opt => String(opt.value) === String(novo));
-            if (!existeOpcao) {
-              const opt = document.createElement('option');
-              opt.value = String(novo);
-              opt.textContent = String(novo);
-              cfg.year.appendChild(opt);
-            }
-            cfg.year.value = String(novo);
-          }
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          monthPickerState[prefix].ano = String(novo);
-          atualizarPreviewMesGenerico(prefix);
-        }
-
-        function atualizarPreviewMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
-          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
-          const label = MESES_PICKER_PT[Number(mes) - 1] + '-' + String(ano).slice(-2);
-          monthPickerState[prefix].ano = String(ano);
-          if (cfg.preview) cfg.preview.textContent = 'Selecionado: ' + label;
-        }
-
-        function aplicarMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          monthPickerState[prefix] = monthPickerState[prefix] || {};
-          const ano = cfg.year?.value || monthPickerState[prefix].ano || String(new Date().getFullYear());
-          const mes = monthPickerState[prefix].mes || String(new Date().getMonth() + 1).padStart(2, '0');
-          if (cfg.hidden) cfg.hidden.value = ano + '-' + mes;
-          if (cfg.form) cfg.form.submit();
-        }
-
-        function limparMesGenerico(prefix) {
-          const cfg = getMonthPickerPrefixConfig(prefix);
-          if (cfg.hidden) cfg.hidden.value = '';
-          if (cfg.form) cfg.form.submit();
-        }
 
           function abrirModalUpload(id) {
             const modal = document.getElementById(id);
