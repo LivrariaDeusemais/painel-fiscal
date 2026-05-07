@@ -78,575 +78,280 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
 
 
 
-
-
 // =====================================================
-// PLENNATEC UI CORE CLEAN — CONTADOR + ROTINA + PADRÃO VISUAL
-// Objetivo: CSS único e validado, sem nested template literals e sem patches conflitantes.
-// Não altera regras de negócio, rotas, banco, upload ou funcionalidades.
+// PATCH FOCO FINAL — ESPAÇO DO CONTADOR + BOTÕES CONTAS A PAGAR WINDOWS
+// Diagnóstico:
+// 1) Espaço do Contador usa tabela larga com min-width e cards métricos fixos.
+//    O conteúdo principal estava maior que a área útil ao lado do menu.
+//    Solução: main com overflow controlado, cards auto-fit, tabela com rolagem interna.
+// 2) Lista de Contas à Pagar no Windows quebra os botões porque o botão grande
+//    "Mudar todos..." e o botão "Colunas" não cabem com os tamanhos atuais.
+//    Solução: nav em uma linha, botões compactos e gap menor apenas nessa tela.
 // =====================================================
-function renderPlennaTecUiCoreCleanAssets() {
+function renderPlennaTecFocoContadorRotinaAssets() {
   return `
-    <style id="plennatec-ui-core-clean">
-      :root {
-        --plenna-font: Inter, Arial, Helvetica, sans-serif;
-        --plenna-green: #00B050;
-        --plenna-green-dark: #007A3D;
-        --plenna-green-soft: #E8F7EE;
-        --plenna-bg: #F4F8F6;
-        --plenna-card: #FFFFFF;
-        --plenna-text: #172033;
-        --plenna-muted: #5B6B84;
-        --plenna-border: #DCE6EF;
-        --plenna-radius-lg: 20px;
-        --plenna-radius-md: 14px;
-        --plenna-font-page: 13px;
-        --plenna-font-table: 12px;
-        --plenna-font-button: 12px;
-        --plenna-font-totalizer: 24px;
+    <style id="plennatec-foco-contador-rotina">
+      *, *::before, *::after {
+        box-sizing: border-box !important;
       }
 
-      *, *::before, *::after { box-sizing: border-box !important; }
-      html, body { width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; }
-
-      body.dm-global-page,
-      body.contador-premium-page {
-        font-family: var(--plenna-font) !important;
-        font-size: var(--plenna-font-page) !important;
-        color: var(--plenna-text) !important;
-      }
-
-      body.dm-global-page button,
-      body.dm-global-page .btn,
-      body.dm-global-page .dm-menu-btn,
-      body.contador-premium-page button,
-      body.contador-premium-page .btn,
-      body.contador-premium-page a,
-      body.contador-premium-page select,
-      body.contador-premium-page input {
-        font-family: var(--plenna-font) !important;
-      }
-
-      /* =====================================================
-         PADRÃO DE FONTES E COMPONENTES
-      ===================================================== */
-      body.dm-global-page .dm-menu-btn,
-      body.dm-global-page .dm-global-nav button,
-      body.dm-global-page .dm-global-nav a,
-      body.contador-premium-page .contador-actions a,
-      body.contador-premium-page .contador-actions button,
-      body.contador-premium-page .btn-green,
-      body.contador-premium-page .btn-download,
-      body.contador-premium-page .btn-upload-open,
-      body.contador-premium-page .upload-chip,
-      body.contador-premium-page .month-open-btn,
-      body.contador-premium-page .contador-apply-month-btn {
-        font-size: var(--plenna-font-button) !important;
-        font-weight: 800 !important;
-        line-height: 1 !important;
-        white-space: nowrap !important;
-      }
-
-      body.dm-global-page table th,
-      body.dm-global-page table td,
-      body.contador-premium-page table th,
-      body.contador-premium-page table td {
-        font-size: var(--plenna-font-table) !important;
-        line-height: 1.18 !important;
-      }
-
-      body.dm-global-page .stat-value,
-      body.dm-global-page .stat-number,
-      body.dm-global-page .total-value,
-      body.dm-global-page .summary-value,
-      body.contador-premium-page .contador-metric-value,
-      body.contador-premium-page .metric-value,
-      body.contador-premium-page .kpi-value,
-      body.contador-premium-page .contador-kpi-value {
-        font-size: var(--plenna-font-totalizer) !important;
-        font-weight: 900 !important;
-        line-height: 1.05 !important;
-      }
-
-      /* =====================================================
-         ESPAÇO DO CONTADOR — LAYOUT LIMPO E SEM CORTE
-      ===================================================== */
-      body.plennatec-contador-fit.contador-premium-page,
-      body.plennatec-contador-fit {
+      html, body {
+        max-width: 100% !important;
         overflow-x: hidden !important;
       }
 
-      body.plennatec-contador-fit .contador-premium-shell {
-        width: min(100%, calc(100vw - 18px)) !important;
-        max-width: calc(100vw - 18px) !important;
+      /* =====================================================
+         ESPAÇO DO CONTADOR — CORREÇÃO PRINCIPAL
+      ===================================================== */
+
+      body.contador-premium-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      body.contador-premium-page .contador-premium-shell {
+        width: calc(100vw - 20px) !important;
+        max-width: calc(100vw - 20px) !important;
+        min-width: 0 !important;
         margin: 0 auto !important;
+        padding: 16px 0 14px !important;
         display: grid !important;
         grid-template-columns: 250px minmax(0, 1fr) !important;
         gap: 16px !important;
         overflow: hidden !important;
       }
 
-      body.plennatec-contador-fit .contador-premium-sidebar {
+      body.contador-premium-page .contador-premium-sidebar {
         width: 250px !important;
         min-width: 250px !important;
         max-width: 250px !important;
+        flex: 0 0 250px !important;
         overflow: hidden !important;
       }
 
-      body.plennatec-contador-fit .contador-premium-main,
-      body.plennatec-contador-fit .contador-topbar,
-      body.plennatec-contador-fit .contador-actions,
-      body.plennatec-contador-fit .contador-metrics,
-      body.plennatec-contador-fit .contador-kpi-grid,
-      body.plennatec-contador-fit .filter-box,
-      body.plennatec-contador-fit .contador-board,
-      body.plennatec-contador-fit .table-wrap {
+      body.contador-premium-page .contador-premium-main {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
         overflow: hidden !important;
       }
 
-      body.plennatec-contador-fit .contador-metrics,
-      body.plennatec-contador-fit .contador-kpi-grid {
+      body.contador-premium-page .contador-topbar,
+      body.contador-premium-page .contador-actions,
+      body.contador-premium-page .contador-metrics,
+      body.contador-premium-page .filter-box,
+      body.contador-premium-page .contador-board {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Métricas: não podem empurrar a página para a direita */
+      body.contador-premium-page .contador-metrics {
         display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
         gap: 12px !important;
       }
 
-      body.plennatec-contador-fit .contador-board {
-        padding: 14px !important;
-      }
-
-      body.plennatec-contador-fit .table-wrap {
-        overflow-x: hidden !important;
-      }
-
-      body.plennatec-contador-fit .contador-table {
-        width: 100% !important;
+      body.contador-premium-page .contador-metric-card {
         min-width: 0 !important;
         max-width: 100% !important;
-        table-layout: fixed !important;
-        border-collapse: separate !important;
-      }
-
-      body.plennatec-contador-fit .contador-table col:nth-child(1) { width: 30% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(2) { width: 5.5% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(3) { width: 14.5% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(4) { width: 15.5% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(5) { width: 9.5% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(6) { width: 11% !important; }
-      body.plennatec-contador-fit .contador-table col:nth-child(7) { width: 14% !important; }
-
-      body.plennatec-contador-fit .contador-table th,
-      body.plennatec-contador-fit .contador-table td {
-        padding: 7px 6px !important;
-        font-size: 10.4px !important;
-        line-height: 1.12 !important;
         overflow: hidden !important;
-        text-overflow: clip !important;
-        white-space: nowrap !important;
-        vertical-align: middle !important;
       }
 
-      body.plennatec-contador-fit .contador-table thead th {
-        font-size: 9.6px !important;
-        white-space: normal !important;
-        overflow: visible !important;
-        text-align: center !important;
-        padding: 6px 4px !important;
-      }
-
-      body.plennatec-contador-fit .contador-table .responsibility-head th {
-        font-size: 12.2px !important;
-        font-weight: 900 !important;
-        white-space: nowrap !important;
-        padding: 8px 5px !important;
-      }
-
-      body.plennatec-contador-fit .tipo-cell {
-        padding-left: 10px !important;
-        padding-right: 8px !important;
-      }
-
-      body.plennatec-contador-fit .tipo-cell::before {
-        display: none !important;
-        content: none !important;
-      }
-
-      body.plennatec-contador-fit .tipo-cell strong {
-        font-size: 11.1px !important;
-        line-height: 1.13 !important;
-        white-space: normal !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-      }
-
-      body.plennatec-contador-fit .qtd-pill {
-        min-width: 28px !important;
-        width: 28px !important;
-        height: 25px !important;
-        font-size: 11px !important;
-      }
-
-      body.plennatec-contador-fit .status-select {
-        width: 100% !important;
-        max-width: 128px !important;
-        height: 30px !important;
-        min-height: 30px !important;
-        font-size: 9.4px !important;
-        padding-left: 6px !important;
-        padding-right: 18px !important;
-      }
-
-      body.plennatec-contador-fit .btn-download {
-        width: 82px !important;
-        min-width: 82px !important;
-        max-width: 82px !important;
-        height: 29px !important;
-        min-height: 29px !important;
-        padding: 0 8px !important;
-        font-size: 9.8px !important;
-        border-radius: 10px !important;
-      }
-
-      body.plennatec-contador-fit .download-status-text {
-        min-width: 70px !important;
-        max-width: 78px !important;
-        height: 24px !important;
-        font-size: 8.8px !important;
-        padding: 0 5px !important;
-      }
-
-      body.plennatec-contador-fit .upload-cell-compact {
+      /* Barra de filtro do contador */
+      body.contador-premium-page .filter-box.month-smart-form,
+      body.contador-premium-page #contadorMonthForm {
         display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        gap: 5px !important;
-        flex-wrap: nowrap !important;
-      }
-
-      body.plennatec-contador-fit .btn-upload-open,
-      body.plennatec-contador-fit .upload-chip {
-        width: 94px !important;
-        min-width: 94px !important;
-        max-width: 94px !important;
-        height: 28px !important;
-        min-height: 28px !important;
-        padding: 0 5px !important;
-        font-size: 9.2px !important;
-      }
-
-      body.plennatec-contador-fit .attached-badge,
-      body.plennatec-contador-fit .empty-inline,
-      body.plennatec-contador-fit .attached-empty {
-        font-size: 8.8px !important;
-        max-width: 42px !important;
-        overflow: hidden !important;
-        white-space: nowrap !important;
-      }
-
-      body.plennatec-contador-fit .filter-box.month-smart-form,
-      body.plennatec-contador-fit #contadorMonthForm {
-        display: flex !important;
-        flex-direction: row !important;
+        flex-wrap: wrap !important;
         align-items: center !important;
         gap: 10px !important;
-        flex-wrap: nowrap !important;
         overflow: visible !important;
       }
 
-      body.plennatec-contador-fit .btn-add-file-top {
+      body.contador-premium-page .btn-add-file-top {
         margin-left: auto !important;
+        max-width: 260px !important;
+        white-space: nowrap !important;
       }
 
-      /* =====================================================
-         CONTAS A PAGAR — MENU EM LINHA NO WINDOWS
-      ===================================================== */
-      body.plennatec-rotina-fit.dm-global-page .dm-global-header-shell,
-      body.plennatec-rotina-fit.dm-global-page .container {
-        width: calc(100vw - 28px) !important;
-        max-width: calc(100vw - 28px) !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+      /* Tabela: rolagem interna dentro do card, não na página inteira */
+      body.contador-premium-page .contador-board {
+        overflow: hidden !important;
       }
 
-      body.plennatec-rotina-fit .dm-global-nav {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        gap: 6px !important;
+      body.contador-premium-page .contador-board .table-wrap,
+      body.contador-premium-page .table-wrap {
         width: 100% !important;
         max-width: 100% !important;
-        overflow: hidden !important;
-        padding: 10px 12px !important;
-      }
-
-      body.plennatec-rotina-fit .dm-global-nav .dm-menu-btn,
-      body.plennatec-rotina-fit .dm-global-nav a,
-      body.plennatec-rotina-fit .dm-global-nav button {
-        flex: 0 1 auto !important;
         min-width: 0 !important;
-        height: 34px !important;
-        min-height: 34px !important;
-        padding-left: 9px !important;
-        padding-right: 9px !important;
-        font-size: 10.2px !important;
-        line-height: 1 !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      body.contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 980px !important;
+        max-width: none !important;
+        table-layout: fixed !important;
+      }
+
+      body.contador-premium-page .contador-table th,
+      body.contador-premium-page .contador-table td {
+        font-size: 10.4px !important;
+        padding: 6px 5px !important;
+        line-height: 1.12 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
         white-space: nowrap !important;
-        border-radius: 12px !important;
       }
 
-      body.plennatec-rotina-fit .dm-global-nav button {
-        max-width: 188px !important;
+      body.contador-premium-page .contador-table col:nth-child(1) { width: 25% !important; }
+      body.contador-premium-page .contador-table col:nth-child(2) { width: 5% !important; }
+      body.contador-premium-page .contador-table col:nth-child(3) { width: 6% !important; }
+      body.contador-premium-page .contador-table col:nth-child(4) { width: 15% !important; }
+      body.contador-premium-page .contador-table col:nth-child(5) { width: 14% !important; }
+      body.contador-premium-page .contador-table col:nth-child(6) { width: 12% !important; }
+      body.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
+      body.contador-premium-page .contador-table col:nth-child(8) { width: 13% !important; }
+
+      body.contador-premium-page .contador-table .btn,
+      body.contador-premium-page .contador-table button,
+      body.contador-premium-page .contador-table select {
+        max-width: 100% !important;
+        font-size: 10px !important;
       }
 
-      body.plennatec-rotina-fit .dm-global-nav button:last-child,
-      body.plennatec-rotina-fit .dm-global-nav .btn-colunas,
-      body.plennatec-rotina-fit .dm-global-nav [onclick*="coluna" i] {
-        max-width: 84px !important;
+      body.contador-premium-page .contador-table .btn-upload-open,
+      body.contador-premium-page .contador-table .upload-chip {
+        min-width: 96px !important;
+        width: 96px !important;
+        height: 28px !important;
+        padding: 0 6px !important;
+        font-size: 9.6px !important;
       }
 
-      @media (max-width: 1380px) {
-        body.plennatec-contador-fit .contador-premium-shell {
-          grid-template-columns: 232px minmax(0, 1fr) !important;
+      body.contador-premium-page .contador-table .btn-download {
+        min-width: 80px !important;
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 9.8px !important;
+      }
+
+      body.contador-premium-page .contador-table select {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding-left: 7px !important;
+        padding-right: 22px !important;
+      }
+
+      body.contador-premium-page .contador-table .status-pill,
+      body.contador-premium-page .contador-table .download-status {
+        min-width: 78px !important;
+        max-width: 100% !important;
+        font-size: 9.6px !important;
+        padding: 6px 7px !important;
+      }
+
+      /* Em telas menores, mantém a página parada e a rolagem só na tabela */
+      @media (max-width: 1300px) {
+        body.contador-premium-page .contador-premium-shell {
+          grid-template-columns: 238px minmax(0, 1fr) !important;
           gap: 12px !important;
         }
 
-        body.plennatec-contador-fit .contador-premium-sidebar {
-          width: 232px !important;
-          min-width: 232px !important;
-          max-width: 232px !important;
+        body.contador-premium-page .contador-premium-sidebar {
+          width: 238px !important;
+          min-width: 238px !important;
+          max-width: 238px !important;
         }
 
-        body.plennatec-contador-fit .contador-table th,
-        body.plennatec-contador-fit .contador-table td {
-          font-size: 9.7px !important;
-          padding-left: 5px !important;
-          padding-right: 5px !important;
+        body.contador-premium-page .contador-table {
+          min-width: 960px !important;
+        }
+      }
+
+      /* =====================================================
+         LISTA DE CONTAS A PAGAR — BOTÕES NA MESMA LINHA NO WINDOWS
+      ===================================================== */
+
+      body.dm-global-page:has(.rotina-table) .dm-global-nav,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important;
+        overflow: hidden !important;
+        width: 100% !important;
+      }
+
+      body.dm-global-page:has(.rotina-table) .dm-menu-btn,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-menu-btn,
+      body.dm-global-page:has(.rotina-table) .dm-global-nav a,
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav a,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page:has(.rotina-table) .dm-global-nav .btn,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav .btn {
+        font-size: 12px !important;
+      }
+
+      /* Botão grande “Mudar todos...” mais compacto */
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+        padding-left: 13px !important;
+        padding-right: 13px !important;
+        max-width: 250px !important;
+      }
+
+      /* Botão Colunas não quebra para baixo */
+      body.dm-global-page:has(.rotina-table) .dm-global-nav button:last-child,
+      body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button:last-child {
+        max-width: 100px !important;
+      }
+
+      @media (max-width: 1280px) {
+        body.dm-global-page:has(.rotina-table) .dm-global-nav,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav {
+          gap: 6px !important;
         }
 
-        body.plennatec-contador-fit .contador-table .responsibility-head th {
-          font-size: 12px !important;
+        body.dm-global-page:has(.rotina-table) .dm-menu-btn,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-menu-btn,
+        body.dm-global-page:has(.rotina-table) .dm-global-nav a,
+        body.dm-global-page:has(.rotina-table) .dm-global-nav button,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav a,
+        body.dm-global-page:has(form[action="/rotina-despesas"]) .dm-global-nav button {
+          padding-left: 9px !important;
+          padding-right: 9px !important;
+          font-size: 11px !important;
         }
       }
     </style>
-    <script id="plennatec-ui-core-clean-script">
-      (function(){
-        if (window.__plennatecUiCoreCleanReady) return;
-        window.__plennatecUiCoreCleanReady = true;
-
-        function aplicarClasses(){
-          try {
-            var path = window.location.pathname || '';
-            if (path.indexOf('/espaco-contador') >= 0) document.body.classList.add('plennatec-contador-fit');
-            if (path.indexOf('/rotina-despesas') >= 0) document.body.classList.add('plennatec-rotina-fit');
-            if (path.indexOf('/categorias') >= 0) document.body.classList.add('plennatec-categorias-fit');
-            if (path.indexOf('/dashboard') >= 0 || path === '/' || path === '') document.body.classList.add('plennatec-dashboard-fit');
-          } catch(e) {}
-        }
-
-        function ajustarCabecalhosContador(){
-          try {
-            if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
-            document.querySelectorAll('th').forEach(function(th){
-              var t = (th.textContent || '').trim();
-              if (t === 'Data Download Contador') th.textContent = 'Data';
-              if (t === 'Data Download') th.textContent = 'Data';
-              if (t === 'Status Download') th.textContent = 'Status';
-              if (t === 'Baixar') th.textContent = 'Arquivo';
-            });
-          } catch(e) {}
-        }
-
-
-        function inserirAjustesFinaisSolicitados(){
-          try {
-            if (document.getElementById('plennatec-ajustes-finais-v2')) return;
-            var css = [
-              '/* PLENNATEC AJUSTES FINAIS V2 - layout cross-platform */',
-              ':root{--plenna-page-safe:calc(100vw - 32px);--plenna-font-ui:Inter,Arial,Helvetica,sans-serif;}',
-              'body.dm-global-page .dm-global-header-shell,body.dm-global-page .container,body.dm-global-page .page-shell{width:min(1660px,var(--plenna-page-safe))!important;max-width:var(--plenna-page-safe)!important;margin-left:auto!important;margin-right:auto!important;}',
-              'body.dm-global-page,body.contador-premium-page{font-family:var(--plenna-font-ui)!important;}',
-
-              '/* Comprovantes Fiscais - todas as colunas cabendo */',
-              'body.dm-global-page .ml-table-shell{width:100%!important;max-width:100%!important;overflow-x:hidden!important;}',
-              'body.dm-global-page .ml-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
-              'body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{font-size:10.4px!important;padding:8px 6px!important;line-height:1.14!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}',
-              'body.dm-global-page .ml-table .sticky-id{width:4%!important;min-width:4%!important;max-width:4%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(2),body.dm-global-page .ml-table td:nth-child(2){width:8%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(3),body.dm-global-page .ml-table td:nth-child(3){width:7%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(4),body.dm-global-page .ml-table td:nth-child(4){width:7%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(5),body.dm-global-page .ml-table td:nth-child(5){width:18%!important;}',
-              'body.dm-global-page .ml-table .col-cnpj{width:11%!important;}',
-              'body.dm-global-page .ml-table .col-codpag{width:8%!important;}',
-              'body.dm-global-page .ml-table .col-valor{width:7%!important;text-align:right!important;}',
-              'body.dm-global-page .ml-table .col-pagamento{width:7%!important;}',
-              'body.dm-global-page .ml-table .col-categoria{width:10%!important;}',
-              'body.dm-global-page .ml-table .col-pdf,body.dm-global-page .ml-table .col-xml{width:3.4%!important;text-align:center!important;}',
-              'body.dm-global-page .ml-table .sticky-actions{width:4.8%!important;min-width:4.8%!important;max-width:4.8%!important;right:0!important;}',
-              'body.dm-global-page .ml-table-fixed-head th{font-size:9.7px!important;padding:7px 6px!important;}',
-              'body.dm-global-page #mlSkeletonOverlay{display:none;}',
-
-              '/* Espaço do Contador - colunas rebalanceadas */',
-              'body.plennatec-contador-fit .contador-premium-shell{width:min(1660px,calc(100vw - 18px))!important;max-width:calc(100vw - 18px)!important;grid-template-columns:250px minmax(0,1fr)!important;}',
-              'body.plennatec-contador-fit .contador-sidebar-nav a{font-size:13px!important;font-weight:700!important;line-height:1!important;}',
-              'body.plennatec-contador-fit .contador-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(1){width:24%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(2){width:4%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(3){width:5%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(4){width:15%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(5){width:14%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(6){width:8%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(7){width:10%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(8){width:20%!important;}',
-              'body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:10.2px!important;padding:7px 5px!important;line-height:1.12!important;}',
-              'body.plennatec-contador-fit .contador-table thead th{font-size:9.5px!important;}',
-              'body.plennatec-contador-fit .tipo-cell strong{font-size:10.8px!important;}',
-              'body.plennatec-contador-fit .row-delete-btn{width:22px!important;height:22px!important;min-width:22px!important;font-size:11px!important;}',
-              'body.plennatec-contador-fit .status-select{max-width:100%!important;width:100%!important;font-size:9.2px!important;padding-left:5px!important;padding-right:18px!important;}',
-              'body.plennatec-contador-fit .contador-table td:nth-child(5){overflow:visible!important;}',
-              'body.plennatec-contador-fit .btn-download{width:78px!important;min-width:78px!important;max-width:78px!important;font-size:9.6px!important;}',
-              'body.plennatec-contador-fit .download-status-text{min-width:74px!important;max-width:84px!important;font-size:8.8px!important;}',
-              'body.plennatec-contador-fit .contador-table td:last-child,body.plennatec-contador-fit .contador-table th:last-child{overflow:visible!important;white-space:normal!important;word-break:normal!important;}',
-
-              '/* Categorias - leitura ampliada */',
-              'body.plennatec-categorias-fit table th{font-size:14px!important;font-weight:800!important;padding:10px 12px!important;}',
-              'body.plennatec-categorias-fit table td{font-size:15px!important;line-height:1.25!important;padding:9px 12px!important;}',
-
-              '/* Lista de Contas a pagar - menu legível em uma linha */',
-              'body.plennatec-rotina-fit .dm-global-nav{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:7px!important;overflow:hidden!important;}',
-              'body.plennatec-rotina-fit .dm-global-nav .dm-menu-btn,body.plennatec-rotina-fit .dm-global-nav a,body.plennatec-rotina-fit .dm-global-nav button{height:38px!important;min-height:38px!important;padding-left:12px!important;padding-right:12px!important;font-size:12px!important;font-weight:800!important;white-space:nowrap!important;}',
-              'body.plennatec-rotina-fit .dm-global-nav button{max-width:170px!important;}',
-              'body.plennatec-rotina-fit .dm-global-nav button:last-child,body.plennatec-rotina-fit .dm-global-nav .btn-colunas,body.plennatec-rotina-fit .dm-global-nav [onclick*="coluna" i]{max-width:92px!important;}',
-              '@media(max-width:1366px){body.plennatec-rotina-fit .dm-global-nav{gap:5px!important;}body.plennatec-rotina-fit .dm-global-nav .dm-menu-btn,body.plennatec-rotina-fit .dm-global-nav a,body.plennatec-rotina-fit .dm-global-nav button{font-size:11.2px!important;padding-left:9px!important;padding-right:9px!important;}body.plennatec-rotina-fit .dm-global-nav button{max-width:150px!important;}}',
-
-              '/* Dashboard - menos negrito, mantendo totalizadores destacados */',
-              'body.plennatec-dashboard-fit *{font-weight:500!important;}',
-              'body.plennatec-dashboard-fit h1,body.plennatec-dashboard-fit h2,body.plennatec-dashboard-fit h3{font-weight:700!important;}',
-              'body.plennatec-dashboard-fit .stat-content strong,body.plennatec-dashboard-fit .stat-value,body.plennatec-dashboard-fit .stat-number{font-size:24px!important;font-weight:750!important;}',
-              'body.plennatec-dashboard-fit .stat-content span,body.plennatec-dashboard-fit .stat-content small,body.plennatec-dashboard-fit .hbar-header,body.plennatec-dashboard-fit .chart-heading p{font-weight:500!important;}',
-              'body.plennatec-dashboard-fit .nav-btn,body.plennatec-dashboard-fit button,body.plennatec-dashboard-fit .btn{font-weight:700!important;}',
-
-              '@media(max-width:1280px){body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{font-size:9.7px!important;padding-left:4px!important;padding-right:4px!important;}body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:9.5px!important;padding-left:4px!important;padding-right:4px!important;}}'
-            ].join('\n');
-            var style = document.createElement('style');
-            style.id = 'plennatec-ajustes-finais-v2';
-            style.appendChild(document.createTextNode(css));
-            document.body.appendChild(style);
-          } catch(e) {}
-        }
-
-
-        function inserirAjustesPrecisosV3(){
-          try {
-            if (document.getElementById('plennatec-ajustes-precisos-v3')) return;
-            var css = [
-              '/* PLENNATEC AJUSTES PRECISOS V3 - pontos não concluídos */',
-              ':root{--plenna-safe-page:calc(100vw - 32px);}',
-
-              '/* 1) Comprovantes: caber PDF/XML/Ações sem estourar */',
-              'body.dm-global-page:has(.ml-table) .dm-global-header-shell,body.dm-global-page:has(.ml-table) .container,body.dm-global-page:has(.ml-table) .page-shell{width:min(1680px,var(--plenna-safe-page))!important;max-width:var(--plenna-safe-page)!important;overflow:hidden!important;}',
-              'body.dm-global-page .ml-table-shell{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;}',
-              'body.dm-global-page .ml-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;border-collapse:separate!important;}',
-              'body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{min-width:0!important;max-width:none!important;box-sizing:border-box!important;font-size:9.8px!important;line-height:1.12!important;padding:7px 4px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}',
-              'body.dm-global-page .ml-table .sticky-id,body.dm-global-page .ml-table .sticky-actions{position:static!important;left:auto!important;right:auto!important;box-shadow:none!important;}',
-              'body.dm-global-page .ml-table th:nth-child(1),body.dm-global-page .ml-table td:nth-child(1){width:3.5%!important;text-align:center!important;}',
-              'body.dm-global-page .ml-table th:nth-child(2),body.dm-global-page .ml-table td:nth-child(2){width:7.4%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(3),body.dm-global-page .ml-table td:nth-child(3){width:7%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(4),body.dm-global-page .ml-table td:nth-child(4){width:6.4%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(5),body.dm-global-page .ml-table td:nth-child(5){width:17.5%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(6),body.dm-global-page .ml-table td:nth-child(6){width:10.2%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(7),body.dm-global-page .ml-table td:nth-child(7){width:8.4%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(8),body.dm-global-page .ml-table td:nth-child(8){width:6.2%!important;text-align:right!important;}',
-              'body.dm-global-page .ml-table th:nth-child(9),body.dm-global-page .ml-table td:nth-child(9){width:6.2%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(10),body.dm-global-page .ml-table td:nth-child(10){width:12%!important;}',
-              'body.dm-global-page .ml-table th:nth-child(11),body.dm-global-page .ml-table td:nth-child(11){width:3.6%!important;text-align:center!important;}',
-              'body.dm-global-page .ml-table th:nth-child(12),body.dm-global-page .ml-table td:nth-child(12){width:3.6%!important;text-align:center!important;}',
-              'body.dm-global-page .ml-table th:nth-child(13),body.dm-global-page .ml-table td:nth-child(13){width:7.9%!important;text-align:center!important;}',
-              'body.dm-global-page .ml-table .icon-btn{width:22px!important;height:22px!important;min-width:22px!important;font-size:11px!important;margin:0 1px!important;}',
-              'body.dm-global-page .ml-table-fixed-head{display:none!important;}',
-
-              '/* 2) Contador: colunas com data sem corte e título Arquivo */',
-              'body.plennatec-contador-fit .contador-premium-shell{width:min(1680px,calc(100vw - 18px))!important;max-width:calc(100vw - 18px)!important;}',
-              'body.plennatec-contador-fit .contador-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(1){width:26%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(2){width:4%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(3){width:5%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(4){width:15%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(5){width:16%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(6){width:8%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(7){width:10%!important;}',
-              'body.plennatec-contador-fit .contador-table col:nth-child(8){width:16%!important;}',
-              'body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:9.8px!important;padding:7px 4px!important;line-height:1.12!important;}',
-              'body.plennatec-contador-fit .contador-table th:nth-child(8),body.plennatec-contador-fit .contador-table td:nth-child(8){white-space:normal!important;overflow:visible!important;word-break:normal!important;}',
-              'body.plennatec-contador-fit .contador-table th:nth-child(5),body.plennatec-contador-fit .contador-table td:nth-child(5){overflow:visible!important;}',
-              'body.plennatec-contador-fit .status-select{max-width:100%!important;width:100%!important;font-size:9.2px!important;}',
-              'body.plennatec-contador-fit .btn-download{width:74px!important;min-width:74px!important;max-width:74px!important;font-size:9.4px!important;padding-left:5px!important;padding-right:5px!important;}',
-              'body.plennatec-contador-fit .tipo-cell strong{font-size:10.5px!important;}',
-
-              '/* 3) Dashboard: suavizar negrito de verdade */',
-              'body.plennatec-dashboard-fit,body.plennatec-dashboard-fit *{font-weight:400!important;}',
-              'body.plennatec-dashboard-fit h1{font-weight:650!important;}',
-              'body.plennatec-dashboard-fit h2,body.plennatec-dashboard-fit h3,.plennatec-dashboard-fit .chart-card h3{font-weight:600!important;}',
-              'body.plennatec-dashboard-fit .nav-btn,body.plennatec-dashboard-fit button,body.plennatec-dashboard-fit .btn{font-weight:600!important;}',
-              'body.plennatec-dashboard-fit .stat-value,body.plennatec-dashboard-fit .stat-number,body.plennatec-dashboard-fit .stat-content strong{font-weight:700!important;font-size:24px!important;}',
-              'body.plennatec-dashboard-fit .stat-label,body.plennatec-dashboard-fit .stat-subtitle,body.plennatec-dashboard-fit p,body.plennatec-dashboard-fit span,body.plennatec-dashboard-fit small{font-weight:400!important;}',
-              'body.plennatec-dashboard-fit .hbar-header strong,body.plennatec-dashboard-fit .bar-value,body.plennatec-dashboard-fit .point-value{font-weight:600!important;}'
-            ].join('\n');
-            var style = document.createElement('style');
-            style.id = 'plennatec-ajustes-precisos-v3';
-            style.appendChild(document.createTextNode(css));
-            document.body.appendChild(style);
-          } catch(e) {}
-        }
-
-        function ajustarCabecalhosContadorV3(){
-          try {
-            if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
-            document.querySelectorAll('.contador-table th').forEach(function(th){
-              var t = (th.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
-              if (t === 'baixar') th.textContent = 'Arquivo';
-              if (t === 'status download') th.textContent = 'Status';
-              if (t === 'data download contador' || t === 'data download') th.textContent = 'Data';
-            });
-          } catch(e) {}
-        }
-
-        function ocultarSkeletonExportacao(){
-          try {
-            var overlay = document.getElementById('mlSkeletonOverlay');
-            if (overlay) overlay.style.display = 'none';
-          } catch(e) {}
-        }
-
-        function aplicar(){
-          aplicarClasses();
-          ajustarCabecalhosContador();
-          inserirAjustesFinaisSolicitados();
-          inserirAjustesPrecisosV3();
-          ajustarCabecalhosContadorV3();
-          ocultarSkeletonExportacao();
-        }
-
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar);
-        else aplicar();
-        window.addEventListener('pageshow', ocultarSkeletonExportacao);
-        window.addEventListener('focus', function(){ setTimeout(ocultarSkeletonExportacao, 250); });
-      })();
-    </script>
   `;
 }
 
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
 
-  res.send = function plennatecUiCoreCleanSend(body) {
+  res.send = function plennatecFocoContadorRotinaSend(body) {
     try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-ui-core-clean')) {
-        body = body.replace('</head>', `${renderPlennaTecUiCoreCleanAssets()}</head>`);
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-foco-contador-rotina')) {
+        body = body.replace('</head>', `${renderPlennaTecFocoContadorRotinaAssets()}</head>`);
       }
     } catch (error) {}
 
@@ -655,6 +360,1378 @@ router.use((req, res, next) => {
 
   next();
 });
+
+
+// =====================================================
+// DIAGNÓSTICO E CORREÇÃO DEFINITIVA DE LARGURA — PLENNATEC
+// Causa corrigida: as telas usam wrappers diferentes.
+// Cabeçalho/menu usam uma largura, enquanto a tabela fica dentro de cards
+// com padding interno e classes específicas: .ml-table e .contador-table.
+// Os patches anteriores atingiam classes genéricas e algumas classes que
+// não existem nessas telas, por isso o problema permanecia.
+// =====================================================
+function renderPlennaTecWidthDiagnosisFinalAssets() {
+  return `
+    <style id="plennatec-width-diagnosis-final">
+      *, *::before, *::after {
+        box-sizing: border-box !important;
+      }
+
+      html,
+      body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      :root {
+        --plenna-page-max: 1500px;
+        --plenna-page-gap: 48px;
+        --plenna-content-radius: 22px;
+      }
+
+      /* =====================================================
+         1) TELAS COM CABEÇALHO HORIZONTAL
+         Comprovantes Fiscais / Lista de Contas a Pagar / Arquivo
+         Agora o cabeçalho, o menu de botões, os filtros, os resumos
+         e a tabela usam exatamente a mesma largura visual.
+      ===================================================== */
+
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .container {
+        width: min(var(--plenna-page-max), calc(100vw - var(--plenna-page-gap))) !important;
+        max-width: min(var(--plenna-page-max), calc(100vw - var(--plenna-page-gap))) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-nav,
+      body.dm-global-page .container > .card,
+      body.dm-global-page .container > .hero,
+      body.dm-global-page .container > section,
+      body.dm-global-page .container > .panel,
+      body.dm-global-page .container > .table-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* O card era a principal causa do desalinhamento:
+         ele tinha padding lateral, fazendo a tabela ficar visualmente menor
+         que o cabeçalho e os botões. */
+      body.dm-global-page .container > .card {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow: hidden !important;
+        border-radius: var(--plenna-content-radius) !important;
+      }
+
+      body.dm-global-page .container > .card > h1,
+      body.dm-global-page .container > .card > .actions,
+      body.dm-global-page .container > .card > form,
+      body.dm-global-page .container > .card > .filters,
+      body.dm-global-page .container > .card > .summary,
+      body.dm-global-page .container > .card > .ml-table-toolbar,
+      body.dm-global-page .container > .card > .painel-colunas {
+        margin-left: 24px !important;
+        margin-right: 24px !important;
+        width: calc(100% - 48px) !important;
+        max-width: calc(100% - 48px) !important;
+      }
+
+      body.dm-global-page .dm-global-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-menu-btn,
+      body.dm-global-page .dm-global-nav button {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+      }
+
+      /* =====================================================
+         2) COMPROVANTES FISCAIS
+         A tabela real desta tela é .ml-table, não .lancamentos-table.
+      ===================================================== */
+
+      body.dm-global-page .ml-table-toolbar,
+      body.dm-global-page .ml-table-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+
+      body.dm-global-page .ml-table-toolbar {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+
+      body.dm-global-page .ml-table-shell {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        border-radius: 0 0 var(--plenna-content-radius) var(--plenna-content-radius) !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+      }
+
+      body.dm-global-page .ml-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .ml-table th,
+      body.dm-global-page .ml-table td {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        font-size: 12px !important;
+        padding: 9px 8px !important;
+      }
+
+      body.dm-global-page .ml-table th:nth-child(1),
+      body.dm-global-page .ml-table td:nth-child(1) { width: 4.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(2),
+      body.dm-global-page .ml-table td:nth-child(2) { width: 8.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(3),
+      body.dm-global-page .ml-table td:nth-child(3) { width: 11% !important; }
+      body.dm-global-page .ml-table th:nth-child(4),
+      body.dm-global-page .ml-table td:nth-child(4) { width: 7% !important; }
+      body.dm-global-page .ml-table th:nth-child(5),
+      body.dm-global-page .ml-table td:nth-child(5) { width: 23% !important; }
+      body.dm-global-page .ml-table th:nth-child(6),
+      body.dm-global-page .ml-table td:nth-child(6) { width: 10% !important; }
+      body.dm-global-page .ml-table th:nth-child(7),
+      body.dm-global-page .ml-table td:nth-child(7) { width: 10% !important; }
+      body.dm-global-page .ml-table th:nth-child(8),
+      body.dm-global-page .ml-table td:nth-child(8) { width: 7.5% !important; text-align:right !important; }
+      body.dm-global-page .ml-table th:nth-child(9),
+      body.dm-global-page .ml-table td:nth-child(9) { width: 7.5% !important; }
+      body.dm-global-page .ml-table th:nth-child(10),
+      body.dm-global-page .ml-table td:nth-child(10) { width: 12% !important; }
+      body.dm-global-page .ml-table th:nth-child(11),
+      body.dm-global-page .ml-table td:nth-child(11) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .ml-table th:nth-child(12),
+      body.dm-global-page .ml-table td:nth-child(12) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .ml-table th:nth-child(13),
+      body.dm-global-page .ml-table td:nth-child(13) { width: 6% !important; text-align:center !important; }
+
+      /* Colunas ocultas continuam ocultas quando o usuário desmarca */
+      body.dm-global-page .ml-table .col-cnpj[style*="none"],
+      body.dm-global-page .ml-table .col-codpag[style*="none"],
+      body.dm-global-page .ml-table .col-pagamento[style*="none"],
+      body.dm-global-page .ml-table .col-categoria[style*="none"],
+      body.dm-global-page .ml-table .col-pdf[style*="none"],
+      body.dm-global-page .ml-table .col-xml[style*="none"] {
+        display: none !important;
+      }
+
+      /* Filtros dos comprovantes compactos dentro do mesmo card */
+      body.dm-global-page form[action="/lancamentos"] .filters {
+        display: grid !important;
+        grid-template-columns:
+          minmax(130px, 1fr)
+          minmax(125px, .9fr)
+          minmax(125px, .9fr)
+          minmax(135px, .95fr)
+          minmax(140px, 1fr)
+          minmax(120px, .85fr)
+          minmax(115px, .75fr)
+          minmax(115px, .75fr)
+          max-content !important;
+        gap: 8px !important;
+        align-items: end !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters > div {
+        min-width: 0 !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters label {
+        font-size: 10px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters input,
+      body.dm-global-page form[action="/lancamentos"] .filters select {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+        display: inline-flex !important;
+        gap: 6px !important;
+        min-width: 126px !important;
+      }
+
+      /* =====================================================
+         3) LISTA DE CONTAS A PAGAR
+         O problema é o mesmo: card com padding + tabela interna.
+      ===================================================== */
+
+      body.dm-global-page .rotina-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .rotina-table th,
+      body.dm-global-page .rotina-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+        line-height: 1.12 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: normal !important;
+      }
+
+      body.dm-global-page .rotina-table th:nth-child(1),
+      body.dm-global-page .rotina-table td:nth-child(1) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(2),
+      body.dm-global-page .rotina-table td:nth-child(2) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(3),
+      body.dm-global-page .rotina-table td:nth-child(3) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(4),
+      body.dm-global-page .rotina-table td:nth-child(4) { width: 12% !important; }
+      body.dm-global-page .rotina-table th:nth-child(5),
+      body.dm-global-page .rotina-table td:nth-child(5) { width: 7% !important; }
+      body.dm-global-page .rotina-table th:nth-child(6),
+      body.dm-global-page .rotina-table td:nth-child(6) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(7),
+      body.dm-global-page .rotina-table td:nth-child(7) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(8),
+      body.dm-global-page .rotina-table td:nth-child(8) { width: 7% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(9),
+      body.dm-global-page .rotina-table td:nth-child(9) { width: 10% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(10),
+      body.dm-global-page .rotina-table td:nth-child(10) { width: 9% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(11),
+      body.dm-global-page .rotina-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(12),
+      body.dm-global-page .rotina-table td:nth-child(12) { width: 6% !important; text-align:center !important; }
+
+      /* =====================================================
+         4) ESPAÇO DO CONTADOR
+         A tabela do contador é muito larga. A solução correta é:
+         área principal sem overflow + rolagem interna somente na tabela.
+      ===================================================== */
+
+      body.contador-premium-page {
+        overflow-x: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-shell {
+        width: min(1500px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        margin: 0 auto !important;
+        display: grid !important;
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+        gap: 18px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-sidebar {
+        width: 250px !important;
+        max-width: 250px !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-premium-main {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-metrics,
+      .contador-premium-page .filter-box,
+      .contador-premium-page .contador-board {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(165px, 1fr)) !important;
+        gap: 14px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+      }
+
+      .contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 1120px !important;
+        table-layout: fixed !important;
+      }
+
+      .contador-premium-page .contador-table th,
+      .contador-premium-page .contador-table td {
+        font-size: 10.8px !important;
+        padding: 7px 6px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+
+      /* =====================================================
+         5) DASHBOARD
+         Botões do filtro separados e negrito normalizado.
+      ===================================================== */
+
+      body:has(#dashboardMonthForm) .page-shell {
+        width: min(1500px, calc(100vw - 56px)) !important;
+        max-width: calc(100vw - 56px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
+      #dashboardMonthForm,
+      .filter-panel.month-smart-form#dashboardMonthForm,
+      form#dashboardMonthForm.filter-panel {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 18px 24px !important;
+        overflow: visible !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        padding: 12px 22px !important;
+      }
+
+      #dashboardMonthForm > * {
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+      }
+
+      #dashboardMonthForm label {
+        min-width: 82px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
+      }
+
+      #dashboardMonthForm .global-month-picker {
+        min-width: 255px !important;
+        flex: 0 0 auto !important;
+      }
+
+      #dashboardMonthForm .month-compact-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        flex-wrap: nowrap !important;
+      }
+
+      #dashboardMonthForm .month-current-display {
+        min-width: 112px !important;
+        max-width: 132px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 500 !important;
+      }
+
+      #dashboardMonthForm .month-open-btn,
+      #dashboardMonthForm .btn-filter-apply,
+      #dashboardMonthForm .btn-filter-clear {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 18px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+      }
+
+      body:has(#dashboardMonthForm) * {
+        font-weight: 400 !important;
+      }
+
+      body:has(#dashboardMonthForm) h1,
+      body:has(#dashboardMonthForm) h2,
+      body:has(#dashboardMonthForm) h3,
+      body:has(#dashboardMonthForm) .stat-value,
+      body:has(#dashboardMonthForm) .stat-number,
+      body:has(#dashboardMonthForm) button,
+      body:has(#dashboardMonthForm) .btn,
+      body:has(#dashboardMonthForm) .dm-menu-btn {
+        font-weight: 650 !important;
+      }
+
+      @media (max-width: 1350px) {
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+        }
+
+        .contador-premium-page .contador-metrics {
+          grid-template-columns: repeat(2, minmax(165px, 1fr)) !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body.dm-global-page .dm-global-header-shell,
+        body.dm-global-page .container,
+        body:has(#dashboardMonthForm) .page-shell {
+          width: calc(100vw - 24px) !important;
+          max-width: calc(100vw - 24px) !important;
+        }
+
+        body.dm-global-page .container > .card > h1,
+        body.dm-global-page .container > .card > .actions,
+        body.dm-global-page .container > .card > form,
+        body.dm-global-page .container > .card > .filters,
+        body.dm-global-page .container > .card > .summary,
+        body.dm-global-page .container > .card > .ml-table-toolbar,
+        body.dm-global-page .container > .card > .painel-colunas {
+          margin-left: 14px !important;
+          margin-right: 14px !important;
+          width: calc(100% - 28px) !important;
+          max-width: calc(100% - 28px) !important;
+        }
+
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: 1fr !important;
+        }
+      }
+    </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecWidthDiagnosisFinalSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-width-diagnosis-final')) {
+        body = body.replace('</head>', `${renderPlennaTecWidthDiagnosisFinalAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
+// =====================================================
+// PATCH DEFINITIVO CROSS-PLATFORM — NÃO ESTOURAR MAC/WINDOWS
+// Este middleware precisa ficar antes dos outros patches para que seu CSS seja aplicado por último.
+// =====================================================
+function renderPlennaTecNoOverflowFinalAssets() {
+  return `
+    <style id="plennatec-no-overflow-final">
+      /* ===== BASE: nada deve empurrar a página para fora da viewport ===== */
+      *, *::before, *::after { box-sizing: border-box !important; }
+      html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      /* =====================================================
+         PÁGINAS COM CABEÇALHO HORIZONTAL: COMPROVANTES / CONTAS / ARQUIVO
+      ===================================================== */
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .container,
+      body.dm-global-page .page-shell {
+        width: min(1500px, calc(100vw - 48px)) !important;
+        max-width: calc(100vw - 48px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-nav,
+      body.dm-global-page .topbar,
+      body.dm-global-page .nav-panel,
+      body.dm-global-page .filter-panel,
+      body.dm-global-page .filters,
+      body.dm-global-page .card,
+      body.dm-global-page section,
+      body.dm-global-page .summary-grid {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      body.dm-global-page .dm-global-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+      }
+
+      /* Tabelas devem ficar dentro da mesma largura do cabeçalho */
+      body.dm-global-page .table-responsive,
+      body.dm-global-page .table-wrapper,
+      body.dm-global-page .table-scroll,
+      body.dm-global-page .lancamentos-table-wrap,
+      body.dm-global-page .rotina-table-wrap,
+      body.dm-global-page .documentos-table-wrap,
+      body.dm-global-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        box-sizing: border-box !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      body.dm-global-page table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page th,
+      body.dm-global-page td {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        vertical-align: middle !important;
+      }
+
+      /* Comprovantes Fiscais: cabe dentro da largura útil */
+      body.dm-global-page .lancamentos-table,
+      body.dm-global-page table.lancamentos-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .lancamentos-table th,
+      body.dm-global-page .lancamentos-table td {
+        font-size: 12px !important;
+        padding: 9px 8px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page .lancamentos-table th:nth-child(1),
+      body.dm-global-page .lancamentos-table td:nth-child(1) { width: 4.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(2),
+      body.dm-global-page .lancamentos-table td:nth-child(2) { width: 8.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(3),
+      body.dm-global-page .lancamentos-table td:nth-child(3) { width: 11.5% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(4),
+      body.dm-global-page .lancamentos-table td:nth-child(4) { width: 7% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(5),
+      body.dm-global-page .lancamentos-table td:nth-child(5) { width: 24% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(6),
+      body.dm-global-page .lancamentos-table td:nth-child(6) { width: 7.5% !important; text-align:right !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(7),
+      body.dm-global-page .lancamentos-table td:nth-child(7) { width: 8% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(8),
+      body.dm-global-page .lancamentos-table td:nth-child(8) { width: 14% !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(9),
+      body.dm-global-page .lancamentos-table td:nth-child(9) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(10),
+      body.dm-global-page .lancamentos-table td:nth-child(10) { width: 4.5% !important; text-align:center !important; }
+      body.dm-global-page .lancamentos-table th:nth-child(11),
+      body.dm-global-page .lancamentos-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+
+      /* Contas a Pagar: reduz para caber sem vazar */
+      body.dm-global-page .rotina-table,
+      body.dm-global-page table.rotina-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+
+      body.dm-global-page .rotina-table th,
+      body.dm-global-page .rotina-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+        white-space: normal !important;
+        line-height: 1.12 !important;
+      }
+
+      body.dm-global-page .rotina-table th:nth-child(1),
+      body.dm-global-page .rotina-table td:nth-child(1) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(2),
+      body.dm-global-page .rotina-table td:nth-child(2) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(3),
+      body.dm-global-page .rotina-table td:nth-child(3) { width: 10% !important; }
+      body.dm-global-page .rotina-table th:nth-child(4),
+      body.dm-global-page .rotina-table td:nth-child(4) { width: 12% !important; }
+      body.dm-global-page .rotina-table th:nth-child(5),
+      body.dm-global-page .rotina-table td:nth-child(5) { width: 7% !important; }
+      body.dm-global-page .rotina-table th:nth-child(6),
+      body.dm-global-page .rotina-table td:nth-child(6) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(7),
+      body.dm-global-page .rotina-table td:nth-child(7) { width: 11% !important; }
+      body.dm-global-page .rotina-table th:nth-child(8),
+      body.dm-global-page .rotina-table td:nth-child(8) { width: 7% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(9),
+      body.dm-global-page .rotina-table td:nth-child(9) { width: 10% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(10),
+      body.dm-global-page .rotina-table td:nth-child(10) { width: 9% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(11),
+      body.dm-global-page .rotina-table td:nth-child(11) { width: 6% !important; text-align:center !important; }
+      body.dm-global-page .rotina-table th:nth-child(12),
+      body.dm-global-page .rotina-table td:nth-child(12) { width: 6% !important; text-align:center !important; }
+
+      /* Filtros de comprovantes com largura segura */
+      body.dm-global-page form[action="/lancamentos"] .filters {
+        display: grid !important;
+        grid-template-columns:
+          minmax(130px, 1fr)
+          minmax(125px, .9fr)
+          minmax(125px, .9fr)
+          minmax(135px, .95fr)
+          minmax(140px, 1fr)
+          minmax(120px, .85fr)
+          minmax(115px, .75fr)
+          minmax(115px, .75fr)
+          max-content !important;
+        gap: 8px !important;
+        align-items: end !important;
+        width: 100% !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters > div { min-width: 0 !important; }
+
+      body.dm-global-page form[action="/lancamentos"] .filters label {
+        font-size: 10px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filters input,
+      body.dm-global-page form[action="/lancamentos"] .filters select {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+        display: inline-flex !important;
+        align-items: end !important;
+        gap: 6px !important;
+        min-width: 128px !important;
+      }
+
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+      body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 11px !important;
+        font-size: 10.5px !important;
+      }
+
+      /* =====================================================
+         ESPAÇO DO CONTADOR: sidebar + conteúdo sem vazar
+      ===================================================== */
+      body.contador-premium-page {
+        overflow-x: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-shell {
+        width: min(1540px, calc(100vw - 20px)) !important;
+        max-width: calc(100vw - 20px) !important;
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+        gap: 18px !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-premium-sidebar {
+        width: 250px !important;
+        max-width: 250px !important;
+        min-width: 0 !important;
+      }
+
+      .contador-premium-page .contador-premium-main {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+      }
+
+      .contador-premium-page .contador-metrics,
+      .contador-premium-page .filter-box,
+      .contador-premium-page .contador-board {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      .contador-premium-page .contador-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(170px, 1fr)) !important;
+        gap: 14px !important;
+      }
+
+      .contador-premium-page .table-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+      }
+
+      .contador-premium-page .contador-table {
+        width: 100% !important;
+        min-width: 1040px !important;
+        table-layout: fixed !important;
+      }
+
+      .contador-premium-page .contador-table th,
+      .contador-premium-page .contador-table td {
+        font-size: 11px !important;
+        padding: 8px 7px !important;
+      }
+
+      /* =====================================================
+         DASHBOARD: filtros separados e sem negrito pesado
+      ===================================================== */
+      body:has(#dashboardMonthForm) .page-shell {
+        width: min(1500px, calc(100vw - 56px)) !important;
+        max-width: calc(100vw - 56px) !important;
+      }
+
+      #dashboardMonthForm,
+      .filter-panel.month-smart-form#dashboardMonthForm,
+      form#dashboardMonthForm.filter-panel {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 24px !important;
+        column-gap: 24px !important;
+        row-gap: 10px !important;
+        overflow: visible !important;
+        width: 100% !important;
+        min-height: 58px !important;
+        padding: 12px 22px !important;
+      }
+
+      #dashboardMonthForm > * {
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+      }
+
+      #dashboardMonthForm label {
+        min-width: 82px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        white-space: nowrap !important;
+      }
+
+      #dashboardMonthForm .global-month-picker {
+        min-width: 255px !important;
+        flex: 0 0 auto !important;
+      }
+
+      #dashboardMonthForm .month-compact-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        flex-wrap: nowrap !important;
+      }
+
+      #dashboardMonthForm .month-current-display {
+        min-width: 112px !important;
+        max-width: 132px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        font-weight: 500 !important;
+      }
+
+      #dashboardMonthForm .month-open-btn,
+      #dashboardMonthForm .btn-filter-apply,
+      #dashboardMonthForm .btn-filter-clear {
+        height: 34px !important;
+        min-height: 34px !important;
+        padding: 0 18px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+      }
+
+      body:has(#dashboardMonthForm) * { font-weight: 400 !important; }
+
+      body:has(#dashboardMonthForm) h1,
+      body:has(#dashboardMonthForm) h2,
+      body:has(#dashboardMonthForm) h3,
+      body:has(#dashboardMonthForm) .stat-value,
+      body:has(#dashboardMonthForm) .stat-number,
+      body:has(#dashboardMonthForm) button,
+      body:has(#dashboardMonthForm) .btn,
+      body:has(#dashboardMonthForm) .dm-menu-btn {
+        font-weight: 650 !important;
+      }
+
+      body:has(#dashboardMonthForm) .stat-label,
+      body:has(#dashboardMonthForm) .stat-subtitle,
+      body:has(#dashboardMonthForm) .hbar-header span,
+      body:has(#dashboardMonthForm) .month-label,
+      body:has(#dashboardMonthForm) .axis-label,
+      body:has(#dashboardMonthForm) .point-value,
+      body:has(#dashboardMonthForm) p,
+      body:has(#dashboardMonthForm) span {
+        font-weight: 400 !important;
+      }
+
+      @media (max-width: 1350px) {
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: repeat(4, minmax(130px, 1fr)) !important;
+        }
+
+        #dashboardMonthForm,
+        .filter-panel.month-smart-form#dashboardMonthForm,
+        form#dashboardMonthForm.filter-panel {
+          flex-wrap: wrap !important;
+          gap: 14px !important;
+        }
+
+        .contador-premium-page .contador-metrics {
+          grid-template-columns: repeat(2, minmax(170px, 1fr)) !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body.dm-global-page .dm-global-header-shell,
+        body.dm-global-page .container,
+        body.dm-global-page .page-shell,
+        body:has(#dashboardMonthForm) .page-shell {
+          width: calc(100vw - 24px) !important;
+          max-width: calc(100vw - 24px) !important;
+        }
+
+        #dashboardMonthForm {
+          flex-direction: column !important;
+          align-items: stretch !important;
+        }
+
+        body.dm-global-page form[action="/lancamentos"] .filters {
+          grid-template-columns: 1fr !important;
+        }
+      }
+    
+/* =====================================================
+   PATCH DEFINITIVO ALINHAMENTO VISUAL MAC + WINDOWS
+===================================================== */
+
+/* Todas as áreas centrais com mesma largura */
+body.dm-global-page .dm-global-header-shell,
+body.dm-global-page .dm-global-top,
+body.dm-global-page .dm-global-nav,
+body.dm-global-page .filters-card,
+body.dm-global-page .summary-card,
+body.dm-global-page .summary-grid,
+body.dm-global-page .table-responsive,
+body.dm-global-page .table-wrap,
+body.dm-global-page .lancamentos-table-wrap,
+body.dm-global-page .rotina-table-wrap,
+body.dm-global-page .documentos-table-wrap,
+body.dm-global-page .content-card,
+body.dm-global-page .table-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Limita toda a página horizontal */
+body.dm-global-page .page-shell,
+body.dm-global-page .container,
+body.dm-global-page .dm-global-page-shell {
+  width: min(1450px, calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Cabeçalhos nunca maiores que tabela */
+body.dm-global-page .dm-global-top,
+body.dm-global-page .dm-global-nav {
+  overflow: hidden !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+/* Área das tabelas centralizadas */
+body.dm-global-page .table-responsive,
+body.dm-global-page .table-wrap {
+  display: block !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+/* Tabela comprovantes */
+body.dm-global-page .lancamentos-table,
+body.dm-global-page table.lancamentos-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Tabela contas a pagar */
+body.dm-global-page .rotina-table,
+body.dm-global-page table.rotina-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Espaço contador */
+.contador-premium-page .contador-premium-shell {
+  width: min(1450px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  margin: 0 auto !important;
+  overflow-x: hidden !important;
+  grid-template-columns: 250px minmax(0,1fr) !important;
+}
+
+.contador-premium-page .contador-premium-main {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.contador-premium-page .contador-board,
+.contador-premium-page .contador-metrics,
+.contador-premium-page .filter-box,
+.contador-premium-page .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+}
+
+/* Corrige estouro da tabela do contador */
+.contador-premium-page .contador-table {
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.contador-premium-page .contador-table th,
+.contador-premium-page .contador-table td {
+  font-size: 10.8px !important;
+  padding: 7px 6px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Dashboard filtros */
+#dashboardMonthForm {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 18px !important;
+}
+
+/* Evita elementos maiores que tela */
+img, table, iframe, canvas, svg {
+  max-width: 100% !important;
+}
+
+
+</style>
+    <script>
+      (function(){
+        if (window.__plennatecNoOverflowFinalReady) return;
+        window.__plennatecNoOverflowFinalReady = true;
+
+        function wrapSafeTables(){
+          document.querySelectorAll('.lancamentos-table, .rotina-table, .contador-table').forEach(function(table){
+            if (!table.closest('.table-responsive') && !table.closest('.table-wrap')) {
+              var wrap = document.createElement('div');
+              wrap.className = 'table-responsive';
+              table.parentNode.insertBefore(wrap, table);
+              wrap.appendChild(table);
+            }
+          });
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', wrapSafeTables);
+        } else {
+          wrapSafeTables();
+        }
+      })();
+    </script>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+  res.send = function plennatecNoOverflowFinalSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-no-overflow-final')) {
+        body = body.replace('</head>', `${renderPlennaTecNoOverflowFinalAssets()}</head>`);
+      }
+    } catch (error) {}
+    return originalSend(body);
+  };
+  next();
+});
+
+
+
+
+// =====================================================
+// PATCH PONTUAL CONTADOR V4 — COLUNAS EM LINHA ÚNICA
+// Ajuste restrito à rota /espaco-contador.
+// =====================================================
+function renderPlennaTecContadorV4Assets() {
+  return `
+    <script id="plennatec-contador-v4-script">
+      (function(){
+        if (window.__plennatecContadorV4Ready) return;
+        window.__plennatecContadorV4Ready = true;
+
+        function aplicarContadorV4(){
+          try {
+            if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
+
+            document.body.classList.add('plennatec-contador-v4');
+
+            document.querySelectorAll('th').forEach(function(th){
+              var texto = (th.textContent || '').trim();
+
+              if (
+                texto === 'Data' ||
+                texto === 'Data Download Conta' ||
+                texto === 'Data Download Contador'
+              ) {
+                th.textContent = 'Data Download';
+              }
+
+              if (texto === 'Baixar') {
+                th.textContent = 'Arquivo';
+              }
+            });
+          } catch(e) {}
+        }
+
+        function inserirCssContadorV4(){
+          if (document.getElementById('plennatec-contador-v4-style')) return;
+
+          var css = \`
+            body.plennatec-contador-v4,
+            body.plennatec-contador-v4.contador-premium-page {
+              overflow-x: hidden !important;
+            }
+
+            body.plennatec-contador-v4 .contador-premium-shell {
+              width: min(100%, calc(100vw - 18px)) !important;
+              max-width: calc(100vw - 18px) !important;
+              grid-template-columns: 250px minmax(0, 1fr) !important;
+              gap: 16px !important;
+              overflow: hidden !important;
+            }
+
+            body.plennatec-contador-v4 .contador-premium-main,
+            body.plennatec-contador-v4 .contador-board,
+            body.plennatec-contador-v4 .table-wrap {
+              min-width: 0 !important;
+              max-width: 100% !important;
+              overflow: hidden !important;
+            }
+
+            body.plennatec-contador-v4 .contador-board {
+              padding: 14px !important;
+            }
+
+            body.plennatec-contador-v4 .contador-table {
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+              table-layout: fixed !important;
+              border-collapse: separate !important;
+            }
+
+            body.plennatec-contador-v4 .contador-table col:nth-child(1) { width: 26% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(2) { width: 5% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(3) { width: 5% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(4) { width: 14% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(5) { width: 17% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(6) { width: 9% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(7) { width: 9% !important; }
+            body.plennatec-contador-v4 .contador-table col:nth-child(8) { width: 15% !important; }
+
+            body.plennatec-contador-v4 .contador-table th,
+            body.plennatec-contador-v4 .contador-table td {
+              padding: 7px 4px !important;
+              font-size: 10px !important;
+              line-height: 1.05 !important;
+              overflow: hidden !important;
+              text-overflow: clip !important;
+              white-space: nowrap !important;
+              vertical-align: middle !important;
+            }
+
+            body.plennatec-contador-v4 .contador-table thead th {
+              font-size: 9.4px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+              word-break: normal !important;
+              overflow: hidden !important;
+              text-overflow: clip !important;
+              padding-left: 3px !important;
+              padding-right: 3px !important;
+              text-align: center !important;
+            }
+
+            body.plennatec-contador-v4 .contador-table .responsibility-head th {
+              font-size: 12px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+              padding: 8px 4px !important;
+            }
+
+            body.plennatec-contador-v4 .tipo-cell {
+              padding-left: 8px !important;
+              padding-right: 5px !important;
+            }
+
+            body.plennatec-contador-v4 .tipo-cell::before {
+              display: none !important;
+              content: none !important;
+            }
+
+            body.plennatec-contador-v4 .tipo-cell strong {
+              display: block !important;
+              font-size: 10.6px !important;
+              line-height: 1.05 !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            body.plennatec-contador-v4 .qtd-pill {
+              min-width: 27px !important;
+              width: 27px !important;
+              height: 24px !important;
+              font-size: 10.5px !important;
+            }
+
+            body.plennatec-contador-v4 .upload-cell-compact {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              gap: 3px !important;
+              flex-wrap: nowrap !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: hidden !important;
+              white-space: nowrap !important;
+            }
+
+            body.plennatec-contador-v4 .btn-upload-open,
+            body.plennatec-contador-v4 .upload-chip {
+              width: 88px !important;
+              min-width: 88px !important;
+              max-width: 88px !important;
+              height: 28px !important;
+              min-height: 28px !important;
+              padding: 0 5px !important;
+              font-size: 9px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+            }
+
+            body.plennatec-contador-v4 .attached-badge,
+            body.plennatec-contador-v4 .attached-empty,
+            body.plennatec-contador-v4 .empty-inline {
+              flex: 0 0 auto !important;
+              max-width: 32px !important;
+              font-size: 8.2px !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+            }
+
+            body.plennatec-contador-v4 .status-select {
+              width: 100% !important;
+              max-width: 132px !important;
+              min-width: 0 !important;
+              height: 29px !important;
+              min-height: 29px !important;
+              padding-left: 6px !important;
+              padding-right: 18px !important;
+              font-size: 9.1px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+            }
+
+            body.plennatec-contador-v4 .btn-download {
+              width: 78px !important;
+              min-width: 78px !important;
+              max-width: 78px !important;
+              height: 28px !important;
+              min-height: 28px !important;
+              padding: 0 7px !important;
+              font-size: 9.2px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+              border-radius: 10px !important;
+            }
+
+            body.plennatec-contador-v4 .download-status-text,
+            body.plennatec-contador-v4 .download-status,
+            body.plennatec-contador-v4 .status-pill {
+              min-width: 64px !important;
+              max-width: 74px !important;
+              height: 23px !important;
+              padding: 0 5px !important;
+              font-size: 8.4px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+
+            body.plennatec-contador-v4 .contador-table th:nth-child(8),
+            body.plennatec-contador-v4 .contador-table td:nth-child(8) {
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: clip !important;
+              padding-left: 3px !important;
+              padding-right: 3px !important;
+              font-size: 9px !important;
+              line-height: 1.05 !important;
+              text-align: center !important;
+            }
+
+            body.plennatec-contador-v4 .download-date-wrap,
+            body.plennatec-contador-v4 .download-history-wrap,
+            body.plennatec-contador-v4 .contador-table td:nth-child(8) span {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              gap: 3px !important;
+              max-width: 100% !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+            }
+
+            body.plennatec-contador-v4 .trash-history,
+            body.plennatec-contador-v4 .row-delete-btn,
+            body.plennatec-contador-v4 .inline-delete-row-form button {
+              width: 20px !important;
+              min-width: 20px !important;
+              height: 20px !important;
+              min-height: 20px !important;
+              font-size: 10px !important;
+            }
+
+            @media (max-width: 1380px) {
+              body.plennatec-contador-v4 .contador-premium-shell {
+                grid-template-columns: 232px minmax(0, 1fr) !important;
+                gap: 12px !important;
+              }
+
+              body.plennatec-contador-v4 .contador-premium-sidebar {
+                width: 232px !important;
+                min-width: 232px !important;
+                max-width: 232px !important;
+              }
+
+              body.plennatec-contador-v4 .contador-table th,
+              body.plennatec-contador-v4 .contador-table td {
+                font-size: 9.2px !important;
+                padding-left: 3px !important;
+                padding-right: 3px !important;
+              }
+
+              body.plennatec-contador-v4 .contador-table .responsibility-head th {
+                font-size: 11.2px !important;
+              }
+
+              body.plennatec-contador-v4 .btn-upload-open,
+              body.plennatec-contador-v4 .upload-chip {
+                width: 82px !important;
+                min-width: 82px !important;
+                max-width: 82px !important;
+                font-size: 8.7px !important;
+              }
+            }
+          \`;
+
+          var style = document.createElement('style');
+          style.id = 'plennatec-contador-v4-style';
+          style.appendChild(document.createTextNode(css));
+          document.body.appendChild(style);
+        }
+
+        function executar(){
+          aplicarContadorV4();
+          inserirCssContadorV4();
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', executar);
+        } else {
+          executar();
+        }
+      })();
+    </script>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecContadorV4Send(body) {
+    try {
+      if (
+        typeof body === 'string' &&
+        body.includes('</head>') &&
+        !body.includes('plennatec-contador-v4-script')
+      ) {
+        body = body.replace('</head>', `${renderPlennaTecContadorV4Assets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
 
 
 // HELPERS
@@ -16491,33 +17568,10 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           function inicializarLoadingSkeleton() {
             const overlay = document.getElementById('mlSkeletonOverlay');
             const mostrar = function () { if (overlay) overlay.style.display = 'flex'; };
-            const ocultar = function () { if (overlay) overlay.style.display = 'none'; };
-
-            document.querySelectorAll('form').forEach(function (form) {
-              form.addEventListener('submit', function () {
-                var action = String(form.getAttribute('action') || '');
-                if (action.indexOf('/exportar-excel') >= 0) {
-                  setTimeout(ocultar, 350);
-                  return;
-                }
-                mostrar();
-              });
-            });
-
-            document.querySelectorAll('a[href^="/lancamentos"], a[href^="/editar/"], a[href="/novo"]').forEach(function (link) {
+            document.querySelectorAll('form').forEach(function (form) { form.addEventListener('submit', mostrar); });
+            document.querySelectorAll('a[href^="/lancamentos"], a[href^="/exportar-excel"], a[href^="/editar/"], a[href="/novo"]').forEach(function (link) {
               link.addEventListener('click', function () { if (!link.target || link.target === '_self') mostrar(); });
             });
-
-            document.querySelectorAll('a[href^="/exportar-excel"]').forEach(function (link) {
-              link.addEventListener('click', function () {
-                ocultar();
-                setTimeout(ocultar, 350);
-                setTimeout(ocultar, 1200);
-              });
-            });
-
-            window.addEventListener('pageshow', ocultar);
-            window.addEventListener('focus', function(){ setTimeout(ocultar, 250); });
           }
           document.addEventListener('DOMContentLoaded', function () {
             carregarPreferenciasColunas();
@@ -19924,7 +20978,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         primaryLabel: '+ Novo item',
         extraActions: `
           <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
-            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja zerar o status geral para PENDENTE?');">Zerar Status Geral</button>
+            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Mudar todos para PENDENTE</button>
           </form>
           <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
         `
@@ -23599,334 +24653,6 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 }
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
-
-
-/* =====================================================
-   CORREÇÃO RAIZ — ESPAÇO DO CONTADOR SEM ESTOURO
-   Estratégia: um único layout manda na página.
-   Remove efeito dos patches antigos e força tudo a caber na área útil.
-===================================================== */
-html,
-body.contador-premium-page {
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-}
-
-body.contador-premium-page * {
-  box-sizing: border-box !important;
-}
-
-body.contador-premium-page .contador-premium-shell {
-  width: 100% !important;
-  max-width: 100vw !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  padding: 16px 10px 14px !important;
-  display: flex !important;
-  align-items: stretch !important;
-  gap: 16px !important;
-  overflow: hidden !important;
-}
-
-body.contador-premium-page .contador-premium-sidebar {
-  flex: 0 0 260px !important;
-  width: 260px !important;
-  min-width: 260px !important;
-  max-width: 260px !important;
-  overflow: hidden !important;
-}
-
-body.contador-premium-page .contador-premium-main {
-  flex: 1 1 auto !important;
-  width: auto !important;
-  max-width: calc(100vw - 286px) !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
-
-body.contador-premium-page .contador-premium-main > .container,
-body.contador-premium-page .container,
-body.contador-premium-page .dm-global-header-shell,
-body.contador-premium-page .dm-global-top,
-body.contador-premium-page .dm-global-nav,
-body.contador-premium-page .hero,
-body.contador-premium-page .filter-box,
-body.contador-premium-page .contador-kpi-grid,
-body.contador-premium-page .contador-board,
-body.contador-premium-page .table-wrap {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  overflow-x: hidden !important;
-}
-
-body.contador-premium-page .container {
-  margin-top: 14px !important;
-  margin-bottom: 18px !important;
-}
-
-body.contador-premium-page .contador-kpi-grid {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-}
-
-body.contador-premium-page .contador-kpi-card,
-body.contador-premium-page .contador-kpi-card > div,
-body.contador-premium-page .contador-kpi-card small,
-body.contador-premium-page .contador-kpi-card strong,
-body.contador-premium-page .contador-kpi-card span {
-  min-width: 0 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-body.contador-premium-page .filter-box.month-smart-form,
-body.contador-premium-page #contadorMonthForm {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 14px 16px !important;
-}
-
-body.contador-premium-page #contadorMonthForm .filter-group {
-  min-width: 0 !important;
-  width: auto !important;
-  flex: 0 1 auto !important;
-}
-
-body.contador-premium-page #contadorMonthForm .global-month-picker {
-  width: auto !important;
-  min-width: 0 !important;
-}
-
-body.contador-premium-page #contadorMonthForm .contador-filter-spacer {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-}
-
-body.contador-premium-page .table-wrap {
-  display: block !important;
-  overflow-x: hidden !important;
-  overflow-y: visible !important;
-  border-radius: 18px !important;
-}
-
-body.contador-premium-page .contador-table {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  table-layout: fixed !important;
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-body.contador-premium-page .contador-table col:nth-child(1) { width: 31% !important; }
-body.contador-premium-page .contador-table col:nth-child(2) { width: 4% !important; }
-body.contador-premium-page .contador-table col:nth-child(3) { width: 5% !important; }
-body.contador-premium-page .contador-table col:nth-child(4) { width: 14% !important; }
-body.contador-premium-page .contador-table col:nth-child(5) { width: 16% !important; }
-body.contador-premium-page .contador-table col:nth-child(6) { width: 10% !important; }
-body.contador-premium-page .contador-table col:nth-child(7) { width: 10% !important; }
-body.contador-premium-page .contador-table col:nth-child(8) { width: 10% !important; }
-
-body.contador-premium-page .contador-table th,
-body.contador-premium-page .contador-table td {
-  font-size: 10px !important;
-  line-height: 1.12 !important;
-  padding: 6px 5px !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: normal !important;
-  word-break: normal !important;
-}
-
-body.contador-premium-page .contador-table .responsibility-head th {
-  font-size: 13px !important;
-  padding: 7px 5px !important;
-  white-space: nowrap !important;
-}
-
-body.contador-premium-page .tipo-cell {
-  padding-left: 8px !important;
-  padding-right: 6px !important;
-  overflow: hidden !important;
-}
-
-body.contador-premium-page .tipo-cell::before {
-  display: none !important;
-  content: none !important;
-}
-
-body.contador-premium-page .tipo-cell strong {
-  display: block !important;
-  font-size: 11px !important;
-  line-height: 1.14 !important;
-  white-space: normal !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-body.contador-premium-page .qtd-pill {
-  width: 28px !important;
-  min-width: 28px !important;
-  height: 24px !important;
-  font-size: 11px !important;
-}
-
-body.contador-premium-page .upload-cell-compact {
-  width: 100% !important;
-  max-width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 4px !important;
-  flex-wrap: wrap !important;
-  overflow: hidden !important;
-}
-
-body.contador-premium-page .btn-upload-open,
-body.contador-premium-page .upload-chip {
-  width: auto !important;
-  min-width: 86px !important;
-  max-width: 100% !important;
-  height: 27px !important;
-  min-height: 27px !important;
-  padding: 0 6px !important;
-  font-size: 9px !important;
-  border-radius: 9px !important;
-}
-
-body.contador-premium-page .attached-badge,
-body.contador-premium-page .clip-indicator,
-body.contador-premium-page .empty-inline,
-body.contador-premium-page .attached-empty {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  font-size: 9px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-body.contador-premium-page .status-select {
-  width: 100% !important;
-  max-width: 128px !important;
-  height: 28px !important;
-  min-height: 28px !important;
-  padding: 0 6px !important;
-  font-size: 9px !important;
-}
-
-body.contador-premium-page .btn-download,
-body.contador-premium-page .contador-table .btn-download {
-  width: 78px !important;
-  min-width: 78px !important;
-  max-width: 100% !important;
-  height: 28px !important;
-  min-height: 28px !important;
-  padding: 0 6px !important;
-  font-size: 9px !important;
-}
-
-body.contador-premium-page .download-status-text,
-body.contador-premium-page .download-status,
-body.contador-premium-page .status-pill {
-  display: inline-block !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  padding: 5px 6px !important;
-  font-size: 8.6px !important;
-  line-height: 1.08 !important;
-  white-space: normal !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-body.contador-premium-page .download-date-wrap {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-  max-width: 100% !important;
-  flex-wrap: wrap !important;
-  white-space: normal !important;
-}
-
-body.contador-premium-page .trash-history,
-body.contador-premium-page .row-delete-btn {
-  width: 21px !important;
-  min-width: 21px !important;
-  height: 21px !important;
-  font-size: 11px !important;
-}
-
-@media (max-width: 1320px) {
-  body.contador-premium-page .contador-premium-shell {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-    gap: 12px !important;
-  }
-
-  body.contador-premium-page .contador-premium-sidebar {
-    flex-basis: 238px !important;
-    width: 238px !important;
-    min-width: 238px !important;
-    max-width: 238px !important;
-  }
-
-  body.contador-premium-page .contador-premium-main {
-    max-width: calc(100vw - 258px) !important;
-  }
-
-  body.contador-premium-page .contador-kpi-grid {
-    gap: 10px !important;
-  }
-
-  body.contador-premium-page .contador-table th,
-  body.contador-premium-page .contador-table td {
-    font-size: 9.4px !important;
-    padding: 5px 4px !important;
-  }
-}
-
-@media (max-width: 980px) {
-  body.contador-premium-page .contador-premium-shell {
-    display: block !important;
-    padding: 10px !important;
-  }
-
-  body.contador-premium-page .contador-premium-sidebar,
-  body.contador-premium-page .contador-premium-main {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  body.contador-premium-page .contador-premium-sidebar {
-    margin-bottom: 12px !important;
-  }
-
-  body.contador-premium-page .contador-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  body.contador-premium-page .table-wrap {
-    overflow-x: auto !important;
-  }
-
-  body.contador-premium-page .contador-table {
-    min-width: 900px !important;
-  }
-}
 </style>
       </head>
       <body class="dm-global-page contador-premium-page">
@@ -24008,14 +24734,14 @@ body.contador-premium-page .row-delete-btn {
             <div class="table-wrap">
               <table class="contador-table">
                 <colgroup>
-                  <col style="width:26%;">
-                  <col style="width:4%;">
+                  <col style="width:25%;">
                   <col style="width:5%;">
+                  <col style="width:6%;">
                   <col style="width:15%;">
-                  <col style="width:16%;">
-                  <col style="width:8%;">
+                  <col style="width:14%;">
+                  <col style="width:12%;">
                   <col style="width:10%;">
-                  <col style="width:16%;">
+                  <col style="width:13%;">
                 </colgroup>
                 <thead>
                   ${isAdmin ? `
@@ -24032,9 +24758,9 @@ body.contador-premium-page .row-delete-btn {
                     <th>Qtde</th>
                     <th>Enviar Arquivo</th>
                     <th>Arquivos prontos</th>
-                    <th>Arquivo</th>
-                    <th>Status</th>
-                    <th>Data</th>
+                    <th>Baixar</th>
+                    <th>Status Download</th>
+                    <th>Data Download Contador</th>
                   </tr>
                 </thead>
                 <tbody>${linhasTabelaHtml}</tbody>
