@@ -1,4 +1,4 @@
-const express = require('express');
+Fvoltar para o const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const bcrypt = require('bcrypt');
@@ -2841,7 +2841,7 @@ function renderGlobalHeader(req, config = {}) {
   const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
   const menuBase = [
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
-    { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
+    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
     { key: 'documentos', href: '/documentos', label: 'Arquivo' },
@@ -19322,7 +19322,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         primaryLabel: '+ Novo item',
         extraActions: `
           <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
-            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Mudar todos para PENDENTE</button>
+            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Zerar Status</button>
           </form>
           <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
         `
