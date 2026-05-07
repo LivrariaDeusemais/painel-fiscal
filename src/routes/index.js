@@ -443,6 +443,8 @@ function renderPlennaTecUiCoreCleanAssets() {
             var path = window.location.pathname || '';
             if (path.indexOf('/espaco-contador') >= 0) document.body.classList.add('plennatec-contador-fit');
             if (path.indexOf('/rotina-despesas') >= 0) document.body.classList.add('plennatec-rotina-fit');
+            if (path.indexOf('/categorias') >= 0) document.body.classList.add('plennatec-categorias-fit');
+            if (path.indexOf('/dashboard') >= 0 || path === '/' || path === '') document.body.classList.add('plennatec-dashboard-fit');
           } catch(e) {}
         }
 
@@ -451,19 +453,110 @@ function renderPlennaTecUiCoreCleanAssets() {
             if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
             document.querySelectorAll('th').forEach(function(th){
               var t = (th.textContent || '').trim();
-              if (t === 'Data Download Contador') th.textContent = 'Data Download';
+              if (t === 'Data Download Contador') th.textContent = 'Data';
+              if (t === 'Data Download') th.textContent = 'Data';
               if (t === 'Status Download') th.textContent = 'Status';
+              if (t === 'Baixar') th.textContent = 'Arquivo';
             });
+          } catch(e) {}
+        }
+
+
+        function inserirAjustesFinaisSolicitados(){
+          try {
+            if (document.getElementById('plennatec-ajustes-finais-v2')) return;
+            var css = [
+              '/* PLENNATEC AJUSTES FINAIS V2 - layout cross-platform */',
+              ':root{--plenna-page-safe:calc(100vw - 32px);--plenna-font-ui:Inter,Arial,Helvetica,sans-serif;}',
+              'body.dm-global-page .dm-global-header-shell,body.dm-global-page .container,body.dm-global-page .page-shell{width:min(1660px,var(--plenna-page-safe))!important;max-width:var(--plenna-page-safe)!important;margin-left:auto!important;margin-right:auto!important;}',
+              'body.dm-global-page,body.contador-premium-page{font-family:var(--plenna-font-ui)!important;}',
+
+              '/* Comprovantes Fiscais - todas as colunas cabendo */',
+              'body.dm-global-page .ml-table-shell{width:100%!important;max-width:100%!important;overflow-x:hidden!important;}',
+              'body.dm-global-page .ml-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
+              'body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{font-size:10.4px!important;padding:8px 6px!important;line-height:1.14!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}',
+              'body.dm-global-page .ml-table .sticky-id{width:4%!important;min-width:4%!important;max-width:4%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(2),body.dm-global-page .ml-table td:nth-child(2){width:8%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(3),body.dm-global-page .ml-table td:nth-child(3){width:7%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(4),body.dm-global-page .ml-table td:nth-child(4){width:7%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(5),body.dm-global-page .ml-table td:nth-child(5){width:18%!important;}',
+              'body.dm-global-page .ml-table .col-cnpj{width:11%!important;}',
+              'body.dm-global-page .ml-table .col-codpag{width:8%!important;}',
+              'body.dm-global-page .ml-table .col-valor{width:7%!important;text-align:right!important;}',
+              'body.dm-global-page .ml-table .col-pagamento{width:7%!important;}',
+              'body.dm-global-page .ml-table .col-categoria{width:10%!important;}',
+              'body.dm-global-page .ml-table .col-pdf,body.dm-global-page .ml-table .col-xml{width:3.4%!important;text-align:center!important;}',
+              'body.dm-global-page .ml-table .sticky-actions{width:4.8%!important;min-width:4.8%!important;max-width:4.8%!important;right:0!important;}',
+              'body.dm-global-page .ml-table-fixed-head th{font-size:9.7px!important;padding:7px 6px!important;}',
+              'body.dm-global-page #mlSkeletonOverlay{display:none;}',
+
+              '/* Espaço do Contador - colunas rebalanceadas */',
+              'body.plennatec-contador-fit .contador-premium-shell{width:min(1660px,calc(100vw - 18px))!important;max-width:calc(100vw - 18px)!important;grid-template-columns:250px minmax(0,1fr)!important;}',
+              'body.plennatec-contador-fit .contador-sidebar-nav a{font-size:13px!important;font-weight:700!important;line-height:1!important;}',
+              'body.plennatec-contador-fit .contador-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(1){width:24%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(2){width:4%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(3){width:5%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(4){width:15%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(5){width:14%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(6){width:8%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(7){width:10%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(8){width:20%!important;}',
+              'body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:10.2px!important;padding:7px 5px!important;line-height:1.12!important;}',
+              'body.plennatec-contador-fit .contador-table thead th{font-size:9.5px!important;}',
+              'body.plennatec-contador-fit .tipo-cell strong{font-size:10.8px!important;}',
+              'body.plennatec-contador-fit .row-delete-btn{width:22px!important;height:22px!important;min-width:22px!important;font-size:11px!important;}',
+              'body.plennatec-contador-fit .status-select{max-width:100%!important;width:100%!important;font-size:9.2px!important;padding-left:5px!important;padding-right:18px!important;}',
+              'body.plennatec-contador-fit .contador-table td:nth-child(5){overflow:visible!important;}',
+              'body.plennatec-contador-fit .btn-download{width:78px!important;min-width:78px!important;max-width:78px!important;font-size:9.6px!important;}',
+              'body.plennatec-contador-fit .download-status-text{min-width:74px!important;max-width:84px!important;font-size:8.8px!important;}',
+              'body.plennatec-contador-fit .contador-table td:last-child,body.plennatec-contador-fit .contador-table th:last-child{overflow:visible!important;white-space:normal!important;word-break:normal!important;}',
+
+              '/* Categorias - leitura ampliada */',
+              'body.plennatec-categorias-fit table th{font-size:14px!important;font-weight:800!important;padding:10px 12px!important;}',
+              'body.plennatec-categorias-fit table td{font-size:15px!important;line-height:1.25!important;padding:9px 12px!important;}',
+
+              '/* Lista de Contas a pagar - menu legível em uma linha */',
+              'body.plennatec-rotina-fit .dm-global-nav{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:7px!important;overflow:hidden!important;}',
+              'body.plennatec-rotina-fit .dm-global-nav .dm-menu-btn,body.plennatec-rotina-fit .dm-global-nav a,body.plennatec-rotina-fit .dm-global-nav button{height:38px!important;min-height:38px!important;padding-left:12px!important;padding-right:12px!important;font-size:12px!important;font-weight:800!important;white-space:nowrap!important;}',
+              'body.plennatec-rotina-fit .dm-global-nav button{max-width:170px!important;}',
+              'body.plennatec-rotina-fit .dm-global-nav button:last-child,body.plennatec-rotina-fit .dm-global-nav .btn-colunas,body.plennatec-rotina-fit .dm-global-nav [onclick*="coluna" i]{max-width:92px!important;}',
+              '@media(max-width:1366px){body.plennatec-rotina-fit .dm-global-nav{gap:5px!important;}body.plennatec-rotina-fit .dm-global-nav .dm-menu-btn,body.plennatec-rotina-fit .dm-global-nav a,body.plennatec-rotina-fit .dm-global-nav button{font-size:11.2px!important;padding-left:9px!important;padding-right:9px!important;}body.plennatec-rotina-fit .dm-global-nav button{max-width:150px!important;}}',
+
+              '/* Dashboard - menos negrito, mantendo totalizadores destacados */',
+              'body.plennatec-dashboard-fit *{font-weight:500!important;}',
+              'body.plennatec-dashboard-fit h1,body.plennatec-dashboard-fit h2,body.plennatec-dashboard-fit h3{font-weight:700!important;}',
+              'body.plennatec-dashboard-fit .stat-content strong,body.plennatec-dashboard-fit .stat-value,body.plennatec-dashboard-fit .stat-number{font-size:24px!important;font-weight:750!important;}',
+              'body.plennatec-dashboard-fit .stat-content span,body.plennatec-dashboard-fit .stat-content small,body.plennatec-dashboard-fit .hbar-header,body.plennatec-dashboard-fit .chart-heading p{font-weight:500!important;}',
+              'body.plennatec-dashboard-fit .nav-btn,body.plennatec-dashboard-fit button,body.plennatec-dashboard-fit .btn{font-weight:700!important;}',
+
+              '@media(max-width:1280px){body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{font-size:9.7px!important;padding-left:4px!important;padding-right:4px!important;}body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:9.5px!important;padding-left:4px!important;padding-right:4px!important;}}'
+            ].join('\n');
+            var style = document.createElement('style');
+            style.id = 'plennatec-ajustes-finais-v2';
+            style.appendChild(document.createTextNode(css));
+            document.body.appendChild(style);
+          } catch(e) {}
+        }
+
+        function ocultarSkeletonExportacao(){
+          try {
+            var overlay = document.getElementById('mlSkeletonOverlay');
+            if (overlay) overlay.style.display = 'none';
           } catch(e) {}
         }
 
         function aplicar(){
           aplicarClasses();
           ajustarCabecalhosContador();
+          inserirAjustesFinaisSolicitados();
+          ocultarSkeletonExportacao();
         }
 
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar);
         else aplicar();
+        window.addEventListener('pageshow', ocultarSkeletonExportacao);
+        window.addEventListener('focus', function(){ setTimeout(ocultarSkeletonExportacao, 250); });
       })();
     </script>
   `;
@@ -16320,10 +16413,33 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           function inicializarLoadingSkeleton() {
             const overlay = document.getElementById('mlSkeletonOverlay');
             const mostrar = function () { if (overlay) overlay.style.display = 'flex'; };
-            document.querySelectorAll('form').forEach(function (form) { form.addEventListener('submit', mostrar); });
-            document.querySelectorAll('a[href^="/lancamentos"], a[href^="/exportar-excel"], a[href^="/editar/"], a[href="/novo"]').forEach(function (link) {
+            const ocultar = function () { if (overlay) overlay.style.display = 'none'; };
+
+            document.querySelectorAll('form').forEach(function (form) {
+              form.addEventListener('submit', function () {
+                var action = String(form.getAttribute('action') || '');
+                if (action.indexOf('/exportar-excel') >= 0) {
+                  setTimeout(ocultar, 350);
+                  return;
+                }
+                mostrar();
+              });
+            });
+
+            document.querySelectorAll('a[href^="/lancamentos"], a[href^="/editar/"], a[href="/novo"]').forEach(function (link) {
               link.addEventListener('click', function () { if (!link.target || link.target === '_self') mostrar(); });
             });
+
+            document.querySelectorAll('a[href^="/exportar-excel"]').forEach(function (link) {
+              link.addEventListener('click', function () {
+                ocultar();
+                setTimeout(ocultar, 350);
+                setTimeout(ocultar, 1200);
+              });
+            });
+
+            window.addEventListener('pageshow', ocultar);
+            window.addEventListener('focus', function(){ setTimeout(ocultar, 250); });
           }
           document.addEventListener('DOMContentLoaded', function () {
             carregarPreferenciasColunas();
@@ -19730,7 +19846,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         primaryLabel: '+ Novo item',
         extraActions: `
           <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
-            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Mudar todos para PENDENTE</button>
+            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja zerar o status geral para PENDENTE?');">Zerar Status Geral</button>
           </form>
           <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
         `
