@@ -1411,71 +1411,68 @@ router.use((req, res, next) => {
 
 
 
-// =====================================================
-// PATCH PONTUAL CONTADOR V4 — COLUNAS EM LINHA ÚNICA
-// Ajuste restrito à rota /espaco-contador.
-// =====================================================
-function renderPlennaTecContadorV4Assets() {
-  return `
-    <script id="plennatec-contador-v4-script">
-      (function(){
-        if (window.__plennatecContadorV4Ready) return;
-        window.__plennatecContadorV4Ready = true;
 
-        function aplicarContadorV4(){
+
+
+
+
+// =====================================================
+// PATCH CONTADOR V5 — TIPO DE ARQUIVO FIXO E COLUNAS À ESQUERDA
+// Foco: impedir que as últimas colunas estourem para fora da tela.
+// =====================================================
+function renderPlennaTecContadorV5Assets() {
+  return `
+    <script id="plennatec-contador-v5-script">
+      (function(){
+        if (window.__plennatecContadorV5Ready) return;
+        window.__plennatecContadorV5Ready = true;
+
+        function aplicarContadorV5(){
           try {
             if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
-
-            document.body.classList.add('plennatec-contador-v4');
+            document.body.classList.add('plennatec-contador-v5');
 
             document.querySelectorAll('th').forEach(function(th){
               var texto = (th.textContent || '').trim();
-
-              if (
-                texto === 'Data' ||
-                texto === 'Data Download Conta' ||
-                texto === 'Data Download Contador'
-              ) {
+              if (texto === 'Baixar') th.textContent = 'Arquivo';
+              if (texto === 'Data' || texto === 'Data Download Conta' || texto === 'Data Download Contador') {
                 th.textContent = 'Data Download';
-              }
-
-              if (texto === 'Baixar') {
-                th.textContent = 'Arquivo';
               }
             });
           } catch(e) {}
         }
 
-        function inserirCssContadorV4(){
-          if (document.getElementById('plennatec-contador-v4-style')) return;
+        function inserirCssContadorV5(){
+          if (document.getElementById('plennatec-contador-v5-style')) return;
 
           var css = \`
-            body.plennatec-contador-v4,
-            body.plennatec-contador-v4.contador-premium-page {
+            body.plennatec-contador-v5 {
               overflow-x: hidden !important;
             }
 
-            body.plennatec-contador-v4 .contador-premium-shell {
-              width: min(100%, calc(100vw - 18px)) !important;
-              max-width: calc(100vw - 18px) !important;
+            body.plennatec-contador-v5 .contador-premium-shell {
+              width: calc(100vw - 16px) !important;
+              max-width: calc(100vw - 16px) !important;
+              margin: 0 auto !important;
               grid-template-columns: 250px minmax(0, 1fr) !important;
               gap: 16px !important;
               overflow: hidden !important;
             }
 
-            body.plennatec-contador-v4 .contador-premium-main,
-            body.plennatec-contador-v4 .contador-board,
-            body.plennatec-contador-v4 .table-wrap {
-              min-width: 0 !important;
+            body.plennatec-contador-v5 .contador-premium-main,
+            body.plennatec-contador-v5 .contador-board,
+            body.plennatec-contador-v5 .table-wrap {
+              width: 100% !important;
               max-width: 100% !important;
+              min-width: 0 !important;
               overflow: hidden !important;
             }
 
-            body.plennatec-contador-v4 .contador-board {
+            body.plennatec-contador-v5 .contador-board {
               padding: 14px !important;
             }
 
-            body.plennatec-contador-v4 .contador-table {
+            body.plennatec-contador-v5 .contador-table {
               width: 100% !important;
               max-width: 100% !important;
               min-width: 0 !important;
@@ -1483,72 +1480,82 @@ function renderPlennaTecContadorV4Assets() {
               border-collapse: separate !important;
             }
 
-            body.plennatec-contador-v4 .contador-table col:nth-child(1) { width: 26% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(2) { width: 5% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(3) { width: 5% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(4) { width: 14% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(5) { width: 17% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(6) { width: 9% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(7) { width: 9% !important; }
-            body.plennatec-contador-v4 .contador-table col:nth-child(8) { width: 15% !important; }
+            /* Distribuição real da largura.
+               A primeira coluna foi reduzida e travada visualmente.
+               As últimas colunas ganharam espaço sem criar overflow. */
+            body.plennatec-contador-v5 .contador-table col:nth-child(1) { width: 22% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(2) { width: 4.5% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(3) { width: 5% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(4) { width: 13.5% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(5) { width: 17% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(6) { width: 9.5% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(7) { width: 11% !important; }
+            body.plennatec-contador-v5 .contador-table col:nth-child(8) { width: 17.5% !important; }
 
-            body.plennatec-contador-v4 .contador-table th,
-            body.plennatec-contador-v4 .contador-table td {
+            body.plennatec-contador-v5 .contador-table th,
+            body.plennatec-contador-v5 .contador-table td {
+              box-sizing: border-box !important;
               padding: 7px 4px !important;
-              font-size: 10px !important;
+              font-size: 9.7px !important;
               line-height: 1.05 !important;
+              white-space: nowrap !important;
               overflow: hidden !important;
               text-overflow: clip !important;
-              white-space: nowrap !important;
               vertical-align: middle !important;
             }
 
-            body.plennatec-contador-v4 .contador-table thead th {
-              font-size: 9.4px !important;
+            body.plennatec-contador-v5 .contador-table thead th {
+              font-size: 9.2px !important;
               line-height: 1 !important;
-              white-space: nowrap !important;
-              word-break: normal !important;
-              overflow: hidden !important;
-              text-overflow: clip !important;
-              padding-left: 3px !important;
-              padding-right: 3px !important;
+              padding: 6px 3px !important;
               text-align: center !important;
-            }
-
-            body.plennatec-contador-v4 .contador-table .responsibility-head th {
-              font-size: 12px !important;
-              line-height: 1 !important;
               white-space: nowrap !important;
-              padding: 8px 4px !important;
             }
 
-            body.plennatec-contador-v4 .tipo-cell {
+            body.plennatec-contador-v5 .contador-table .responsibility-head th {
+              font-size: 11.5px !important;
+              padding: 8px 3px !important;
+              white-space: nowrap !important;
+            }
+
+            /* Coluna Tipo de arquivo fixa/compacta */
+            body.plennatec-contador-v5 .contador-table th:nth-child(1),
+            body.plennatec-contador-v5 .contador-table td:nth-child(1) {
+              width: 22% !important;
+              max-width: 22% !important;
               padding-left: 8px !important;
-              padding-right: 5px !important;
+              padding-right: 4px !important;
             }
 
-            body.plennatec-contador-v4 .tipo-cell::before {
+            body.plennatec-contador-v5 .tipo-cell {
+              padding-left: 8px !important;
+              padding-right: 4px !important;
+              max-width: 100% !important;
+            }
+
+            body.plennatec-contador-v5 .tipo-cell::before {
               display: none !important;
               content: none !important;
             }
 
-            body.plennatec-contador-v4 .tipo-cell strong {
+            body.plennatec-contador-v5 .tipo-cell strong {
               display: block !important;
-              font-size: 10.6px !important;
+              max-width: 100% !important;
+              font-size: 10.4px !important;
               line-height: 1.05 !important;
               white-space: nowrap !important;
               overflow: hidden !important;
               text-overflow: ellipsis !important;
             }
 
-            body.plennatec-contador-v4 .qtd-pill {
-              min-width: 27px !important;
-              width: 27px !important;
-              height: 24px !important;
-              font-size: 10.5px !important;
+            body.plennatec-contador-v5 .qtd-pill {
+              width: 26px !important;
+              min-width: 26px !important;
+              height: 23px !important;
+              font-size: 10px !important;
             }
 
-            body.plennatec-contador-v4 .upload-cell-compact {
+            body.plennatec-contador-v5 .upload-cell-compact {
               display: inline-flex !important;
               align-items: center !important;
               justify-content: center !important;
@@ -1560,63 +1567,60 @@ function renderPlennaTecContadorV4Assets() {
               white-space: nowrap !important;
             }
 
-            body.plennatec-contador-v4 .btn-upload-open,
-            body.plennatec-contador-v4 .upload-chip {
-              width: 88px !important;
-              min-width: 88px !important;
-              max-width: 88px !important;
-              height: 28px !important;
-              min-height: 28px !important;
-              padding: 0 5px !important;
-              font-size: 9px !important;
-              line-height: 1 !important;
+            body.plennatec-contador-v5 .btn-upload-open,
+            body.plennatec-contador-v5 .upload-chip {
+              width: 84px !important;
+              min-width: 84px !important;
+              max-width: 84px !important;
+              height: 27px !important;
+              min-height: 27px !important;
+              padding: 0 4px !important;
+              font-size: 8.7px !important;
               white-space: nowrap !important;
             }
 
-            body.plennatec-contador-v4 .attached-badge,
-            body.plennatec-contador-v4 .attached-empty,
-            body.plennatec-contador-v4 .empty-inline {
+            body.plennatec-contador-v5 .attached-badge,
+            body.plennatec-contador-v5 .attached-empty,
+            body.plennatec-contador-v5 .empty-inline {
               flex: 0 0 auto !important;
-              max-width: 32px !important;
-              font-size: 8.2px !important;
+              max-width: 30px !important;
+              font-size: 8px !important;
               white-space: nowrap !important;
               overflow: hidden !important;
             }
 
-            body.plennatec-contador-v4 .status-select {
+            body.plennatec-contador-v5 .status-select {
               width: 100% !important;
-              max-width: 132px !important;
+              max-width: 136px !important;
               min-width: 0 !important;
-              height: 29px !important;
-              min-height: 29px !important;
-              padding-left: 6px !important;
-              padding-right: 18px !important;
-              font-size: 9.1px !important;
-              line-height: 1 !important;
-              white-space: nowrap !important;
-            }
-
-            body.plennatec-contador-v4 .btn-download {
-              width: 78px !important;
-              min-width: 78px !important;
-              max-width: 78px !important;
               height: 28px !important;
               min-height: 28px !important;
-              padding: 0 7px !important;
-              font-size: 9.2px !important;
-              line-height: 1 !important;
+              padding-left: 6px !important;
+              padding-right: 18px !important;
+              font-size: 8.9px !important;
               white-space: nowrap !important;
-              border-radius: 10px !important;
             }
 
-            body.plennatec-contador-v4 .download-status-text,
-            body.plennatec-contador-v4 .download-status,
-            body.plennatec-contador-v4 .status-pill {
-              min-width: 64px !important;
-              max-width: 74px !important;
-              height: 23px !important;
+            body.plennatec-contador-v5 .btn-download {
+              width: 76px !important;
+              min-width: 76px !important;
+              max-width: 76px !important;
+              height: 27px !important;
+              min-height: 27px !important;
+              padding: 0 6px !important;
+              font-size: 8.9px !important;
+              white-space: nowrap !important;
+              border-radius: 9px !important;
+            }
+
+            body.plennatec-contador-v5 .download-status-text,
+            body.plennatec-contador-v5 .download-status,
+            body.plennatec-contador-v5 .status-pill {
+              min-width: 68px !important;
+              max-width: 82px !important;
+              height: 22px !important;
               padding: 0 5px !important;
-              font-size: 8.4px !important;
+              font-size: 8.2px !important;
               line-height: 1 !important;
               white-space: nowrap !important;
               display: inline-flex !important;
@@ -1624,21 +1628,22 @@ function renderPlennaTecContadorV4Assets() {
               justify-content: center !important;
             }
 
-            body.plennatec-contador-v4 .contador-table th:nth-child(8),
-            body.plennatec-contador-v4 .contador-table td:nth-child(8) {
+            /* Última coluna: mais larga, sem quebrar data e hora */
+            body.plennatec-contador-v5 .contador-table th:nth-child(8),
+            body.plennatec-contador-v5 .contador-table td:nth-child(8) {
+              width: 17.5% !important;
+              max-width: 17.5% !important;
               white-space: nowrap !important;
               overflow: hidden !important;
-              text-overflow: clip !important;
               padding-left: 3px !important;
               padding-right: 3px !important;
-              font-size: 9px !important;
-              line-height: 1.05 !important;
+              font-size: 8.7px !important;
+              line-height: 1 !important;
               text-align: center !important;
             }
 
-            body.plennatec-contador-v4 .download-date-wrap,
-            body.plennatec-contador-v4 .download-history-wrap,
-            body.plennatec-contador-v4 .contador-table td:nth-child(8) span {
+            body.plennatec-contador-v5 .download-date-wrap,
+            body.plennatec-contador-v5 .download-history-wrap {
               display: inline-flex !important;
               align-items: center !important;
               justify-content: center !important;
@@ -1648,58 +1653,58 @@ function renderPlennaTecContadorV4Assets() {
               overflow: hidden !important;
             }
 
-            body.plennatec-contador-v4 .trash-history,
-            body.plennatec-contador-v4 .row-delete-btn,
-            body.plennatec-contador-v4 .inline-delete-row-form button {
-              width: 20px !important;
-              min-width: 20px !important;
-              height: 20px !important;
-              min-height: 20px !important;
-              font-size: 10px !important;
+            body.plennatec-contador-v5 .trash-history,
+            body.plennatec-contador-v5 .row-delete-btn,
+            body.plennatec-contador-v5 .inline-delete-row-form button {
+              width: 19px !important;
+              min-width: 19px !important;
+              height: 19px !important;
+              min-height: 19px !important;
+              font-size: 9px !important;
             }
 
             @media (max-width: 1380px) {
-              body.plennatec-contador-v4 .contador-premium-shell {
+              body.plennatec-contador-v5 .contador-premium-shell {
                 grid-template-columns: 232px minmax(0, 1fr) !important;
                 gap: 12px !important;
               }
 
-              body.plennatec-contador-v4 .contador-premium-sidebar {
+              body.plennatec-contador-v5 .contador-premium-sidebar {
                 width: 232px !important;
                 min-width: 232px !important;
                 max-width: 232px !important;
               }
 
-              body.plennatec-contador-v4 .contador-table th,
-              body.plennatec-contador-v4 .contador-table td {
-                font-size: 9.2px !important;
+              body.plennatec-contador-v5 .contador-table col:nth-child(1) { width: 21% !important; }
+              body.plennatec-contador-v5 .contador-table col:nth-child(5) { width: 17.5% !important; }
+              body.plennatec-contador-v5 .contador-table col:nth-child(8) { width: 18% !important; }
+
+              body.plennatec-contador-v5 .contador-table th,
+              body.plennatec-contador-v5 .contador-table td {
+                font-size: 9px !important;
                 padding-left: 3px !important;
                 padding-right: 3px !important;
               }
 
-              body.plennatec-contador-v4 .contador-table .responsibility-head th {
-                font-size: 11.2px !important;
+              body.plennatec-contador-v5 .tipo-cell strong {
+                font-size: 9.8px !important;
               }
 
-              body.plennatec-contador-v4 .btn-upload-open,
-              body.plennatec-contador-v4 .upload-chip {
-                width: 82px !important;
-                min-width: 82px !important;
-                max-width: 82px !important;
-                font-size: 8.7px !important;
+              body.plennatec-contador-v5 .contador-table .responsibility-head th {
+                font-size: 10.8px !important;
               }
             }
           \`;
 
           var style = document.createElement('style');
-          style.id = 'plennatec-contador-v4-style';
+          style.id = 'plennatec-contador-v5-style';
           style.appendChild(document.createTextNode(css));
           document.body.appendChild(style);
         }
 
         function executar(){
-          aplicarContadorV4();
-          inserirCssContadorV4();
+          aplicarContadorV5();
+          inserirCssContadorV5();
         }
 
         if (document.readyState === 'loading') {
@@ -1715,14 +1720,14 @@ function renderPlennaTecContadorV4Assets() {
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
 
-  res.send = function plennatecContadorV4Send(body) {
+  res.send = function plennatecContadorV5Send(body) {
     try {
       if (
         typeof body === 'string' &&
         body.includes('</head>') &&
-        !body.includes('plennatec-contador-v4-script')
+        !body.includes('plennatec-contador-v5-script')
       ) {
-        body = body.replace('</head>', `${renderPlennaTecContadorV4Assets()}</head>`);
+        body = body.replace('</head>', `${renderPlennaTecContadorV5Assets()}</head>`);
       }
     } catch (error) {}
 
