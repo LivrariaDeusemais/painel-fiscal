@@ -539,6 +539,82 @@ function renderPlennaTecUiCoreCleanAssets() {
           } catch(e) {}
         }
 
+
+        function inserirAjustesPrecisosV3(){
+          try {
+            if (document.getElementById('plennatec-ajustes-precisos-v3')) return;
+            var css = [
+              '/* PLENNATEC AJUSTES PRECISOS V3 - pontos não concluídos */',
+              ':root{--plenna-safe-page:calc(100vw - 32px);}',
+
+              '/* 1) Comprovantes: caber PDF/XML/Ações sem estourar */',
+              'body.dm-global-page:has(.ml-table) .dm-global-header-shell,body.dm-global-page:has(.ml-table) .container,body.dm-global-page:has(.ml-table) .page-shell{width:min(1680px,var(--plenna-safe-page))!important;max-width:var(--plenna-safe-page)!important;overflow:hidden!important;}',
+              'body.dm-global-page .ml-table-shell{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;}',
+              'body.dm-global-page .ml-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;border-collapse:separate!important;}',
+              'body.dm-global-page .ml-table th,body.dm-global-page .ml-table td{min-width:0!important;max-width:none!important;box-sizing:border-box!important;font-size:9.8px!important;line-height:1.12!important;padding:7px 4px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}',
+              'body.dm-global-page .ml-table .sticky-id,body.dm-global-page .ml-table .sticky-actions{position:static!important;left:auto!important;right:auto!important;box-shadow:none!important;}',
+              'body.dm-global-page .ml-table th:nth-child(1),body.dm-global-page .ml-table td:nth-child(1){width:3.5%!important;text-align:center!important;}',
+              'body.dm-global-page .ml-table th:nth-child(2),body.dm-global-page .ml-table td:nth-child(2){width:7.4%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(3),body.dm-global-page .ml-table td:nth-child(3){width:7%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(4),body.dm-global-page .ml-table td:nth-child(4){width:6.4%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(5),body.dm-global-page .ml-table td:nth-child(5){width:17.5%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(6),body.dm-global-page .ml-table td:nth-child(6){width:10.2%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(7),body.dm-global-page .ml-table td:nth-child(7){width:8.4%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(8),body.dm-global-page .ml-table td:nth-child(8){width:6.2%!important;text-align:right!important;}',
+              'body.dm-global-page .ml-table th:nth-child(9),body.dm-global-page .ml-table td:nth-child(9){width:6.2%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(10),body.dm-global-page .ml-table td:nth-child(10){width:12%!important;}',
+              'body.dm-global-page .ml-table th:nth-child(11),body.dm-global-page .ml-table td:nth-child(11){width:3.6%!important;text-align:center!important;}',
+              'body.dm-global-page .ml-table th:nth-child(12),body.dm-global-page .ml-table td:nth-child(12){width:3.6%!important;text-align:center!important;}',
+              'body.dm-global-page .ml-table th:nth-child(13),body.dm-global-page .ml-table td:nth-child(13){width:7.9%!important;text-align:center!important;}',
+              'body.dm-global-page .ml-table .icon-btn{width:22px!important;height:22px!important;min-width:22px!important;font-size:11px!important;margin:0 1px!important;}',
+              'body.dm-global-page .ml-table-fixed-head{display:none!important;}',
+
+              '/* 2) Contador: colunas com data sem corte e título Arquivo */',
+              'body.plennatec-contador-fit .contador-premium-shell{width:min(1680px,calc(100vw - 18px))!important;max-width:calc(100vw - 18px)!important;}',
+              'body.plennatec-contador-fit .contador-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(1){width:26%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(2){width:4%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(3){width:5%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(4){width:15%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(5){width:16%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(6){width:8%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(7){width:10%!important;}',
+              'body.plennatec-contador-fit .contador-table col:nth-child(8){width:16%!important;}',
+              'body.plennatec-contador-fit .contador-table th,body.plennatec-contador-fit .contador-table td{font-size:9.8px!important;padding:7px 4px!important;line-height:1.12!important;}',
+              'body.plennatec-contador-fit .contador-table th:nth-child(8),body.plennatec-contador-fit .contador-table td:nth-child(8){white-space:normal!important;overflow:visible!important;word-break:normal!important;}',
+              'body.plennatec-contador-fit .contador-table th:nth-child(5),body.plennatec-contador-fit .contador-table td:nth-child(5){overflow:visible!important;}',
+              'body.plennatec-contador-fit .status-select{max-width:100%!important;width:100%!important;font-size:9.2px!important;}',
+              'body.plennatec-contador-fit .btn-download{width:74px!important;min-width:74px!important;max-width:74px!important;font-size:9.4px!important;padding-left:5px!important;padding-right:5px!important;}',
+              'body.plennatec-contador-fit .tipo-cell strong{font-size:10.5px!important;}',
+
+              '/* 3) Dashboard: suavizar negrito de verdade */',
+              'body.plennatec-dashboard-fit,body.plennatec-dashboard-fit *{font-weight:400!important;}',
+              'body.plennatec-dashboard-fit h1{font-weight:650!important;}',
+              'body.plennatec-dashboard-fit h2,body.plennatec-dashboard-fit h3,.plennatec-dashboard-fit .chart-card h3{font-weight:600!important;}',
+              'body.plennatec-dashboard-fit .nav-btn,body.plennatec-dashboard-fit button,body.plennatec-dashboard-fit .btn{font-weight:600!important;}',
+              'body.plennatec-dashboard-fit .stat-value,body.plennatec-dashboard-fit .stat-number,body.plennatec-dashboard-fit .stat-content strong{font-weight:700!important;font-size:24px!important;}',
+              'body.plennatec-dashboard-fit .stat-label,body.plennatec-dashboard-fit .stat-subtitle,body.plennatec-dashboard-fit p,body.plennatec-dashboard-fit span,body.plennatec-dashboard-fit small{font-weight:400!important;}',
+              'body.plennatec-dashboard-fit .hbar-header strong,body.plennatec-dashboard-fit .bar-value,body.plennatec-dashboard-fit .point-value{font-weight:600!important;}'
+            ].join('\n');
+            var style = document.createElement('style');
+            style.id = 'plennatec-ajustes-precisos-v3';
+            style.appendChild(document.createTextNode(css));
+            document.body.appendChild(style);
+          } catch(e) {}
+        }
+
+        function ajustarCabecalhosContadorV3(){
+          try {
+            if ((window.location.pathname || '').indexOf('/espaco-contador') < 0) return;
+            document.querySelectorAll('.contador-table th').forEach(function(th){
+              var t = (th.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
+              if (t === 'baixar') th.textContent = 'Arquivo';
+              if (t === 'status download') th.textContent = 'Status';
+              if (t === 'data download contador' || t === 'data download') th.textContent = 'Data';
+            });
+          } catch(e) {}
+        }
+
         function ocultarSkeletonExportacao(){
           try {
             var overlay = document.getElementById('mlSkeletonOverlay');
@@ -550,6 +626,8 @@ function renderPlennaTecUiCoreCleanAssets() {
           aplicarClasses();
           ajustarCabecalhosContador();
           inserirAjustesFinaisSolicitados();
+          inserirAjustesPrecisosV3();
+          ajustarCabecalhosContadorV3();
           ocultarSkeletonExportacao();
         }
 
@@ -23930,14 +24008,14 @@ body.contador-premium-page .row-delete-btn {
             <div class="table-wrap">
               <table class="contador-table">
                 <colgroup>
-                  <col style="width:31%;">
+                  <col style="width:26%;">
                   <col style="width:4%;">
                   <col style="width:5%;">
-                  <col style="width:14%;">
+                  <col style="width:15%;">
                   <col style="width:16%;">
+                  <col style="width:8%;">
                   <col style="width:10%;">
-                  <col style="width:10%;">
-                  <col style="width:10%;">
+                  <col style="width:16%;">
                 </colgroup>
                 <thead>
                   ${isAdmin ? `
@@ -23954,9 +24032,9 @@ body.contador-premium-page .row-delete-btn {
                     <th>Qtde</th>
                     <th>Enviar Arquivo</th>
                     <th>Arquivos prontos</th>
-                    <th>Baixar</th>
-                    <th>Status Download</th>
-                    <th>Data Download Contador</th>
+                    <th>Arquivo</th>
+                    <th>Status</th>
+                    <th>Data</th>
                   </tr>
                 </thead>
                 <tbody>${linhasTabelaHtml}</tbody>
