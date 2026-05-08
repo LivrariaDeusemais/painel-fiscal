@@ -1675,6 +1675,7 @@ function normalizarStatusPagto(value) {
   if (texto === 'PAGO') return 'PAGO';
   if (texto === 'VENCIDO') return 'VENCIDO';
   if (texto === 'Não tem') return 'Não tem';
+
   return 'A_PAGAR';
 }
 
@@ -1688,7 +1689,7 @@ function renderStatusPagtoOptions(selectedValue = '') {
   return `
     <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
     <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
-    <option value="NÃO TEM" ${selected === 'NÃO TEM' ? 'selected' : ''}>NÃO TEM</option>
+    <option value="NÃO TEM" ${selected === 'NÃO TEM' ? 'selected' : ''}>Não tem</option>
     <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
   `;
 }
@@ -20677,7 +20678,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         primaryLabel: '+ Novo item',
         extraActions: `
           <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
-            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Zerar Status Geral</button>
+            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Zerar Status</button>
           </form>
           <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
         `
