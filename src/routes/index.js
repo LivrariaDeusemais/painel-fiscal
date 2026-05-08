@@ -1676,6 +1676,8 @@ function normalizarStatusPagto(value) {
   if (texto === 'VENCIDO') return 'VENCIDO';
   if (texto === 'Não tem') return 'Não tem';
 
+ return 'A_PAGAR';
+
 }
 
 function normalizarAtivoMensal(value) {
