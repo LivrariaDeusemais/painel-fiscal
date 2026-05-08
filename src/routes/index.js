@@ -1674,6 +1674,7 @@ function normalizarStatusPagto(value) {
   const texto = String(value || '').trim().toUpperCase();
   if (texto === 'PAGO') return 'PAGO';
   if (texto === 'VENCIDO') return 'VENCIDO';
+  if (texto === 'Não tem') return 'Não tem';
   return 'A_PAGAR';
 }
 
@@ -1687,6 +1688,7 @@ function renderStatusPagtoOptions(selectedValue = '') {
   return `
     <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
     <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
+    <option value="Não tem" ${selected === 'Não tem' ? 'selected' : ''}>Não tem</option>
     <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
   `;
 }
@@ -19820,6 +19822,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           border: 1px solid #fca5a5 !important;
         }
 
+        .status-pagto-Não tem {
+          background-color: #e5e7eb !important;
+          color: #991b1b !important;
+          border: 1px solid #cbd5e1 !important;
+        }
+
         .status-ativo-SIM {
           background-color: #dcfce7 !important;
           color: #166534 !important;
@@ -20914,7 +20922,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
-            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-VENCIDO');
+            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-NÃO TEM', 'status-pagto-VENCIDO');
             if (this.name === 'status_pagto') {
               this.classList.add('status-pagto-' + this.value);
             } else {
