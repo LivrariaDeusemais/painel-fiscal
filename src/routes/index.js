@@ -20715,8 +20715,8 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 <label for="status">Filtrar por status</label>
                 <select id="status" name="status">
                   <option value="" ${statusFiltro === '' ? 'selected' : ''}>Todos</option>
-                  <option value="PENDENTE" ${statusFiltro === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
-                  <option value="FEITO" ${statusFiltro === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                  <option value="PENDENTE" ${statusFiltro === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
+                  <option value="FEITO" ${statusFiltro === 'FEITO' ? 'selected' : ''}>Feito</option>
                   <option value="N/A" ${statusFiltro === 'N/A' ? 'selected' : ''}>Não tem</option>
                 </select>
               </div>
