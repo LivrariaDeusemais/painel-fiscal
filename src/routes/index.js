@@ -17371,35 +17371,35 @@ router.get('/exportar-excel', async (req, res) => {
 
     if (fornecedor) {
       values.push(`%${fornecedor}%`);
-      where.push(`l.fornecedor ILIKE ${values.length}`);
+      where.push(`l.fornecedor ILIKE $${values.length}`);
     }
     if (categoria_id) {
       values.push(categoria_id);
-      where.push(`l.categoria_id = ${values.length}`);
+      where.push(`l.categoria_id = $${values.length}`);
     }
     if (tipo_pagamento) {
       values.push(tipo_pagamento);
-      where.push(`l.tipo_pagamento = ${values.length}`);
+      where.push(`l.tipo_pagamento = $${values.length}`);
     }
     if (cnpj_cpf) {
       values.push(`%${cnpj_cpf}%`);
-      where.push(`l.cnpj_cpf ILIKE ${values.length}`);
+      where.push(`l.cnpj_cpf ILIKE $${values.length}`);
     }
     if (codigo_pagamento) {
       values.push(`%${codigo_pagamento}%`);
-      where.push(`l.codigo_pagamento ILIKE ${values.length}`);
+      where.push(`l.codigo_pagamento ILIKE $${values.length}`);
     }
     if (numero_documento) {
       values.push(`%${numero_documento}%`);
-      where.push(`l.numero_documento ILIKE ${values.length}`);
+      where.push(`l.numero_documento ILIKE $${values.length}`);
     }
     if (data_inicio) {
       values.push(data_inicio);
-      where.push(`l.data_despesa >= ${values.length}`);
+      where.push(`l.data_despesa >= $${values.length}::date`);
     }
     if (data_fim) {
       values.push(data_fim);
-      where.push(`l.data_despesa <= ${values.length}`);
+      where.push(`l.data_despesa <= $${values.length}::date`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
