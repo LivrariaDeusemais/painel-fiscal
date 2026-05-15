@@ -1424,6 +1424,46 @@ router.use((req, res, next) => {
 
 
 
+
+
+// =====================================================
+// PATCH ROTINA OPERACIONAL — STATUS NAO TEM / ANCORAGEM
+// =====================================================
+function renderPlennaTecRotinaOperacionalAssets() {
+  return `
+    <style id="plennatec-rotina-operacional-assets">
+      .status-pagto-NAO_TEM {
+        background: #e5e7eb !important;
+        color: #374151 !important;
+        border-color: #cbd5e1 !important;
+      }
+      tr:target {
+        outline: 2px solid rgba(0,176,80,.35);
+        outline-offset: -2px;
+        background: rgba(0,176,80,.045) !important;
+      }
+    </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecRotinaOperacionalSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-rotina-operacional-assets')) {
+        body = body.replace('</head>', `${renderPlennaTecRotinaOperacionalAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
+
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
@@ -1671,13 +1711,17 @@ function normalizarStatusLinha(value) {
 }
 
 function normalizarStatusPagto(value) {
-  const texto = String(value || '').trim().toUpperCase();
+  const texto = String(value || '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_');
+
   if (texto === 'PAGO') return 'PAGO';
   if (texto === 'VENCIDO') return 'VENCIDO';
-  if (texto === 'Não tem') return 'Não tem';
-
- return 'A_PAGAR';
-
+  if (texto === 'NAO_TEM' || texto === 'NAO-TEM' || texto === 'NAOTEM') return 'NAO_TEM';
+  return 'A_PAGAR';
 }
 
 function normalizarAtivoMensal(value) {
@@ -1690,7 +1734,7 @@ function renderStatusPagtoOptions(selectedValue = '') {
   return `
     <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
     <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
-    <option value="NÃO TEM" ${selected === 'NÃO TEM' ? 'selected' : ''}>Não tem</option>
+    <option value="NAO_TEM" ${selected === 'NAO_TEM' ? 'selected' : ''}>Não tem</option>
     <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
   `;
 }
@@ -14942,7 +14986,8 @@ router.post(
         codigo_pagamento,
         valor,
         tipo_pagamento,
-        categoria_id
+        categoria_id,
+        rotina_id
       } = req.body;
 
       const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
@@ -14966,6 +15011,11 @@ router.post(
           anexoXml
         ]
       );
+
+      const rotinaOrigem = String(rotina_id || '').trim();
+      if (rotinaOrigem) {
+        return res.redirect(`/rotina-despesas#rotina-${rotinaOrigem}`);
+      }
 
       res.redirect('/lancamentos');
     } catch (error) {
@@ -17371,35 +17421,35 @@ router.get('/exportar-excel', async (req, res) => {
 
     if (fornecedor) {
       values.push(`%${fornecedor}%`);
-      where.push(`l.fornecedor ILIKE $${values.length}`);
+      where.push(`l.fornecedor ILIKE ${values.length}`);
     }
     if (categoria_id) {
       values.push(categoria_id);
-      where.push(`l.categoria_id = $${values.length}`);
+      where.push(`l.categoria_id = ${values.length}`);
     }
     if (tipo_pagamento) {
       values.push(tipo_pagamento);
-      where.push(`l.tipo_pagamento = $${values.length}`);
+      where.push(`l.tipo_pagamento = ${values.length}`);
     }
     if (cnpj_cpf) {
       values.push(`%${cnpj_cpf}%`);
-      where.push(`l.cnpj_cpf ILIKE $${values.length}`);
+      where.push(`l.cnpj_cpf ILIKE ${values.length}`);
     }
     if (codigo_pagamento) {
       values.push(`%${codigo_pagamento}%`);
-      where.push(`l.codigo_pagamento ILIKE $${values.length}`);
+      where.push(`l.codigo_pagamento ILIKE ${values.length}`);
     }
     if (numero_documento) {
       values.push(`%${numero_documento}%`);
-      where.push(`l.numero_documento ILIKE $${values.length}`);
+      where.push(`l.numero_documento ILIKE ${values.length}`);
     }
     if (data_inicio) {
       values.push(data_inicio);
-      where.push(`l.data_despesa >= $${values.length}::date`);
+      where.push(`l.data_despesa >= ${values.length}`);
     }
     if (data_fim) {
       values.push(data_fim);
-      where.push(`l.data_despesa <= $${values.length}::date`);
+      where.push(`l.data_despesa <= ${values.length}`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -19477,7 +19527,24 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         ON sm.rotina_id = r.id
        AND sm.mes_ano = $1
       ${whereSql}
-      ORDER BY r.ordem, r.fornecedor
+      ORDER BY
+        CASE
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('VENCIDO') THEN 1
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('A_PAGAR') THEN 2
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('PAGO') THEN 3
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('NAO_TEM', 'NAO_TEM') THEN 4
+          ELSE 5
+        END,
+        CASE
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('VENCIDO', 'A_PAGAR')
+          THEN COALESCE(
+            NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int,
+            EXTRACT(DAY FROM r.data_vencimento)::int,
+            99
+          )
+          ELSE 99
+        END ASC,
+        r.fornecedor ASC
     `, [mesAnoEdicao, ...values]);
 
     let linhas = '';
@@ -19489,7 +19556,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           : (r.onde_encontrar_comprovante || '');
 
       linhas += `
-        <tr>
+        <tr id="rotina-${r.id}" data-vencimento="${formatDiaVencimento(r.dia_vencimento) || formatDateBR(r.data_vencimento) || ''}" data-status-pagto="${normalizarStatusPagto(r.status_pagto_mes)}">
           <td class="col-rot-fornecedor">${r.fornecedor || ''}</td>
           <td class="col-rot-cnpj">${r.cnpj_cpf || ''}</td>
           <td class="col-rot-fato">${r.fato_gerador || ''}</td>
@@ -19711,6 +19778,16 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         .btn-warning {
           background: #dc2626;
           color: white;
+        }
+
+        .sortable-head {
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .sortable-head:hover {
+          color: #009640;
+          text-decoration: underline;
         }
 
         table {
@@ -20783,20 +20860,20 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           </div>
 
 
-          <table>
+          <table id="rotinaTable">
             <thead>
               <tr>
-                <th class="col-rot-fornecedor">Fornecedor</th>
-                <th class="col-rot-cnpj">CNPJ/CPF</th>
-                <th class="col-rot-fato">Fato Gerador</th>
-                <th class="col-rot-onde">Onde encontrar</th>
-                <th class="col-rot-pagamento">Pagamento</th>
-                <th class="col-rot-cat-principal">Categoria Principal</th>
-                <th class="col-rot-subcategoria">Subcategoria</th>
-                <th class="col-vencimento col-rot-vencimento">Vencimento</th>
-                <th class="col-status-pagto col-rot-status-pagto">Status Pagto</th>
-                <th class="col-status col-rot-status">Status</th>
-                <th class="col-ativo col-rot-ativo">Ativo</th>
+                <th class="col-rot-fornecedor sortable-head" onclick="ordenarRotinaTabela(0, 'text')">Fornecedor</th>
+                <th class="col-rot-cnpj sortable-head" onclick="ordenarRotinaTabela(1, 'text')">CNPJ/CPF</th>
+                <th class="col-rot-fato sortable-head" onclick="ordenarRotinaTabela(2, 'text')">Fato Gerador</th>
+                <th class="col-rot-onde sortable-head" onclick="ordenarRotinaTabela(3, 'text')">Onde encontrar</th>
+                <th class="col-rot-pagamento sortable-head" onclick="ordenarRotinaTabela(4, 'text')">Pagamento</th>
+                <th class="col-rot-cat-principal sortable-head" onclick="ordenarRotinaTabela(5, 'text')">Categoria Principal</th>
+                <th class="col-rot-subcategoria sortable-head" onclick="ordenarRotinaTabela(6, 'text')">Subcategoria</th>
+                <th class="col-vencimento col-rot-vencimento sortable-head" onclick="ordenarRotinaTabela(7, 'number')">Vencimento</th>
+                <th class="col-status-pagto col-rot-status-pagto sortable-head" onclick="ordenarRotinaTabela(8, 'statusPagto')">Status Pagto</th>
+                <th class="col-status col-rot-status sortable-head" onclick="ordenarRotinaTabela(9, 'text')">Status</th>
+                <th class="col-ativo col-rot-ativo sortable-head" onclick="ordenarRotinaTabela(10, 'text')">Ativo</th>
                 <th class="col-acoes col-rot-acoes">Ações</th>
               </tr>
             </thead>
@@ -20922,9 +20999,66 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
         document.addEventListener('DOMContentLoaded', atualizarPreviewMesPicker);
 
+
+        let rotinaSortState = { col: null, asc: true };
+
+        function obterValorOrdenacaoRotina(row, colIndex, tipo) {
+          const cell = row.children[colIndex];
+          const texto = (cell ? cell.innerText : '').trim();
+
+          if (tipo === 'number') {
+            const n = parseInt(texto.replace(/\D/g, ''), 10);
+            return Number.isFinite(n) ? n : 999;
+          }
+
+          if (tipo === 'statusPagto') {
+            const normal = texto
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toUpperCase()
+              .trim();
+
+            if (normal.includes('VENCIDO')) return 1;
+            if (normal.includes('A PAGAR')) return 2;
+            if (normal.includes('PAGO')) return 3;
+            if (normal.includes('NAO TEM')) return 4;
+            return 9;
+          }
+
+          return texto.toLowerCase();
+        }
+
+        function ordenarRotinaTabela(colIndex, tipo) {
+          const table = document.getElementById('rotinaTable');
+          if (!table || !table.tBodies.length) return;
+
+          const tbody = table.tBodies[0];
+          const rows = Array.from(tbody.rows);
+
+          const mesmaColuna = rotinaSortState.col === colIndex;
+          rotinaSortState.asc = mesmaColuna ? !rotinaSortState.asc : true;
+          rotinaSortState.col = colIndex;
+
+          rows.sort((a, b) => {
+            const va = obterValorOrdenacaoRotina(a, colIndex, tipo);
+            const vb = obterValorOrdenacaoRotina(b, colIndex, tipo);
+
+            let resultado = 0;
+            if (typeof va === 'number' && typeof vb === 'number') {
+              resultado = va - vb;
+            } else {
+              resultado = String(va).localeCompare(String(vb), 'pt-BR', { numeric: true, sensitivity: 'base' });
+            }
+
+            return rotinaSortState.asc ? resultado : -resultado;
+          });
+
+          rows.forEach(row => tbody.appendChild(row));
+        }
+
         document.querySelectorAll('.status-select').forEach(select => {
           select.addEventListener('change', function () {
-            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-NÃO TEM', 'status-pagto-VENCIDO');
+            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-NAO_TEM', 'status-pagto-VENCIDO');
             if (this.name === 'status_pagto') {
               this.classList.add('status-pagto-' + this.value);
             } else {
@@ -20975,7 +21109,7 @@ router.post('/rotina-despesas/status/:id', async (req, res) => {
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
-    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
+    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
 
     res.redirect(destino);
   } catch (error) {
@@ -20994,11 +21128,12 @@ router.post('/rotina-despesas/status-pagto/:id', async (req, res) => {
     await upsertStatusMensal(id, mesCompetencia, null, normalizarStatusPagto(status_pagto));
 
     const redirectParams = new URLSearchParams();
+    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
     if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
-    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
+    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
 
     res.redirect(destino);
   } catch (error) {
@@ -21017,11 +21152,12 @@ router.post('/rotina-despesas/ativo/:id', protegerRota, permitirPerfis('ADMIN', 
     await upsertStatusMensal(id, mesCompetencia, null, null, normalizarAtivoMensal(ativo));
 
     const redirectParams = new URLSearchParams();
+    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
     if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
     if (status_filtro) redirectParams.set('status', status_filtro);
     if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
     const redirectQuery = redirectParams.toString();
-    const destino = redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas';
+    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
 
     res.redirect(destino);
   } catch (error) {
