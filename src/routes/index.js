@@ -6608,7 +6608,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -8936,7 +8936,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link active" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="premium-side-link" href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
             <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
-            <a class="premium-side-link" href="/documentos"><span>▣</span>Arquivo</a>
+            <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
@@ -8979,7 +8979,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         <nav class="nav-panel" aria-label="Menu principal">
           <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
-          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
+          <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -9557,7 +9557,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -10564,7 +10564,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -11266,7 +11266,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -12642,782 +12642,6 @@ router.get('/dashboard', protegerRota, async (req, res) => {
 // =============================
 // ARQUIVO
 // =============================
-router.get('/documentos', protegerRota, async (req, res) => {
-  try {
-    const docs = await pool.query(`
-      SELECT
-        d.*,
-        l.id AS lancamento_relacionado
-      FROM documentos_fiscais d
-      LEFT JOIN lancamentos l ON l.id = d.lancamento_id
-      ORDER BY d.id DESC
-    `);
-
-    let linhas = '';
-    docs.rows.forEach(d => {
-      const dataFormatada = d.data_documento
-        ? new Date(d.data_documento).toISOString().split('T')[0]
-        : '';
-
-      const pdfHtml = d.anexo_pdf
-  ? `
-    <a class="icon-btn" href="/uploads/${d.anexo_pdf}" target="_blank" title="Ver PDF">👁</a>
-    <a class="icon-btn" href="/uploads/${d.anexo_pdf}" download title="Baixar PDF">⬇</a>
-  `
-  : '<span style="color:#6b7280;">—</span>';
-
-      const xmlHtml = d.anexo_xml
-  ? `
-    <a class="icon-btn" href="/uploads/${d.anexo_xml}" target="_blank" title="Ver XML">👁</a>
-    <a class="icon-btn" href="/uploads/${d.anexo_xml}" download title="Baixar XML">⬇</a>
-  `
-  : '<span style="color:#6b7280;">—</span>';
-      const acaoLancamento = d.lancamento_id
-  ? `<span style="color:#166534; font-weight:bold;">Lançado #${d.lancamento_id}</span>`
-  : `<a class="icon-btn" href="/documentos/gerar-lancamento/${d.id}" title="Gerar lançamento">🧾</a>`;
-
-      linhas += `
-        <tr>
-          <td>${d.id}</td>
-          <td>${d.tipo_documento || ''}</td>
-          <td>${d.numero_documento || ''}</td>
-          <td>${dataFormatada}</td>
-          <td>${d.fornecedor || ''}</td>
-          <td>${d.cnpj_cpf || ''}</td>
-          <td style="text-align:right;">${formatMoneyBR(d.valor || 0)}</td>
-          <td>${d.status}</td>
-          <td>${d.origem_layout || ''}</td>
-          <td>${pdfHtml}</td>
-          <td>${xmlHtml}</td>
-          <td>${acaoLancamento}</td>
-        </tr>
-      `;
-    });
-
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Arquivo</title>
-        <style>
-          * { box-sizing: border-box; }
-          body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  font-size: 13px;
-  background: #f4f6f8;
-  color: #111827;
-}
-          .container { max-width: 1800px; margin: 40px auto; padding: 0 20px; }
-          .card { background: white; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
-          h1 { margin-top: 0; }
-          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-          .full { grid-column: 1 / -1; }
-          label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; }
-          input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; }
-          .actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-          button, a {
-            text-decoration: none;
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            display: inline-block;
-          }
-          button { background: #2563eb; color: white; }
-          .btn-primary { background: #2563eb; color: white; }
-          .btn-secondary { background: #e5e7eb; color: #111827; }
-          table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; }
-          th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-          th { background: #2563eb; color: white; }
-         tr:nth-child(even) td {
-  background: #fbfcfe;
-}
-
-tr:hover td {
-  background: #f3f7ff;
-}
-          .icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-right: 4px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 10px;
-  background: transparent;
-  color: #334155;
-  border: none;
-}
-
-.icon-btn:hover {
-  background: #eef2ff;
-}
-          .hint { font-size: 13px; color: #6b7280; margin-top: 6px; }
-/* ===== REFINO VISUAL DOCUMENTOS ===== */
-
-/* fundo mais suave */
-body {
-  background: #f8fafc;
-}
-
-/* tabela mais leve */
-th {
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-/* linhas mais suaves */
-td {
-  border-bottom: 1px solid #f1f5f9;
-}
-
-/* hover mais elegante */
-tr:hover td {
-  background: #f9fafb;
-}
-
-/* remover peso dos ícones */
-.icon-btn {
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-  padding: 0 !important;
-  width: 18px;
-  height: 18px;
-  color: #64748b;
-}
-
-.icon-btn:hover {
-  background: transparent !important;
-  color: #1d4ed8;
-  transform: scale(1.08);
-}
-        
-
-/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
-:root {
-  --dm-orange: #00B050;
-  --dm-orange-dark: #009640;
-  --dm-orange-soft: #E8F7EE;
-  --dm-text: #172033;
-  --dm-muted: #64748b;
-  --dm-border: rgba(226, 232, 240, 0.82);
-  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-  --dm-card: rgba(255, 255, 255, 0.84);
-}
-
-body {
-  color: var(--dm-text) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
-    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
-    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
-}
-
-.container,
-.login-page,
-.page-shell {
-  position: relative;
-}
-
-.hero,
-.card,
-.panel,
-.table-card,
-.form-card,
-.filter-box,
-.filter-panel,
-.nav-panel,
-.topbar,
-.stat-card,
-.chart-card,
-.login-page .card,
-form:not(.inline-form):not(.delete-form) {
-  border-radius: 18px !important;
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
-  background: var(--dm-card) !important;
-  box-shadow: var(--dm-shadow) !important;
-  backdrop-filter: blur(14px);
-}
-
-h1, h2, h3,
-.page-title,
-.title {
-  color: #101828 !important;
-  letter-spacing: -0.35px;
-}
-
-.subtitle,
-.hint,
-p,
-small,
-td,
-th,
-label {
-  color: inherit;
-}
-
-.btn,
-button,
-input[type="submit"],
-.btn-blue,
-.btn-green,
-.btn-primary,
-.btn-purple,
-.btn-orange,
-.btn-red,
-.btn-filter-apply,
-.login-page button {
-  border-radius: 12px !important;
-  font-weight: 800 !important;
-}
-
-.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
-button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
-input[type="submit"],
-.btn-blue,
-.btn-green,
-.btn-primary,
-.btn-purple,
-.btn-orange,
-.btn-red,
-.btn-filter-apply,
-.login-page button {
-  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
-}
-
-.btn-dark,
-.btn-filter-clear,
-a[href="/dashboard"].btn,
-a[href="/logout"].btn,
-.logout-btn {
-  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
-  color: #222b3b !important;
-  border: 1px solid #e0e6ef !important;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
-}
-
-.btn:hover,
-button:hover,
-.logout-btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-}
-
-a {
-  color: var(--dm-orange-dark);
-}
-
-input,
-select,
-textarea {
-  border-radius: 12px !important;
-  border: 1px solid #dce3ec !important;
-  background: rgba(255,255,255,0.92) !important;
-  color: #172033 !important;
-  outline: none !important;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--dm-orange) !important;
-  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
-}
-
-table {
-  background: rgba(255,255,255,0.78) !important;
-  border-radius: 16px !important;
-  overflow: hidden;
-}
-
-th {
-  background: rgba(248, 250, 252, 0.92) !important;
-  color: #334155 !important;
-}
-
-tr:hover {
-  background: rgba(232, 247, 238, 0.55) !important;
-}
-
-.icon-btn,
-.btn-icon-edit,
-.btn-icon-key {
-  color: var(--dm-orange-dark) !important;
-}
-
-@media (max-width: 760px) {
-  .container { margin-top: 16px !important; }
-}
-
-
-/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
-.actions .btn,
-.actions a,
-.actions button,
-.filter-buttons button,
-.filter-buttons a,
-.top-bar .filters button,
-.top-bar .filters a {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  vertical-align: middle !important;
-  line-height: 1.15 !important;
-  min-height: 44px !important;
-  padding: 0 18px !important;
-  border-radius: 12px !important;
-  text-decoration: none !important;
-  font-weight: 800 !important;
-  white-space: nowrap !important;
-}
-
-.actions .btn-secondary,
-.actions .btn-success,
-.actions .btn-warning,
-.actions a[href="/dashboard"],
-.actions a[href="/documentos"],
-.actions a[href="/rotina-despesas"],
-.actions a[href="/lancamentos"],
-.actions button.btn-secondary,
-.actions button.btn-warning,
-.filter-buttons a,
-.top-bar .filters a.btn-secondary {
-  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
-  color: #222b3b !important;
-  border: 1px solid #e0e6ef !important;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
-}
-
-.actions .btn-primary,
-.filter-buttons button[type="submit"],
-.top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
-}
-
-.actions form {
-  display: inline-flex !important;
-  align-items: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
-
-/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
-
-      
-
-/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
-.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
-.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
-.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
-.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
-.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
-.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
-/* ===== FIM AJUSTE FINAL UX ===== */
-
-
-
-/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-:root {
-  --dm-green: #00B050;
-  --dm-green-dark: #009640;
-  --dm-green-soft: #E8F7EE;
-  --dm-orange: #00B050;
-  --dm-orange-dark: #009640;
-  --orange: #00B050;
-  --orange-dark: #009640;
-}
-
-body {
-  overflow-x: hidden !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
-    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
-    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
-}
-
-.nav-panel {
-  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-  padding: 8px 24px !important;
-}
-
-.nav-btn,
-.logout-btn,
-.btn,
-.actions .btn,
-.actions a.btn,
-.actions button.btn,
-.filter-panel button,
-.filter-panel a,
-.filter-buttons button,
-.filter-buttons a {
-  white-space: nowrap !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  text-align: center !important;
-}
-
-.nav-btn {
-  min-width: 0 !important;
-  height: 50px !important;
-  padding: 0 10px !important;
-  font-size: clamp(11px, 0.82vw, 14px) !important;
-  line-height: 1.05 !important;
-}
-
-.nav-btn .nav-icon {
-  width: 19px !important;
-  height: 19px !important;
-}
-
-.stats-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 14px !important;
-}
-
-.stat-card {
-  min-width: 0 !important;
-  min-height: 104px !important;
-  padding: 14px 18px !important;
-  gap: 14px !important;
-}
-
-.stat-icon-box {
-  width: 52px !important;
-  height: 52px !important;
-}
-
-.stat-content strong {
-  font-size: clamp(20px, 1.45vw, 25px) !important;
-}
-
-.filter-panel {
-  min-height: 62px !important;
-  padding: 10px 20px !important;
-}
-
-.filter-panel select,
-.filter-panel input[type="date"] {
-  width: min(310px, 31vw) !important;
-  height: 42px !important;
-}
-
-.btn-filter-apply,
-.filter-panel button[type="submit"],
-.actions .btn-primary,
-.actions a.btn-primary,
-.actions button.btn-primary,
-.filters .btn-primary,
-.filter-buttons button[type="submit"].btn-primary,
-.top-bar .filters button[type="submit"].btn-primary {
-  background: linear-gradient(135deg, #00B050, #009640) !important;
-  border-color: rgba(0, 176, 80, 0.88) !important;
-  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
-  color: #ffffff !important;
-}
-
-.nav-btn.active,
-.hbar-orange,
-.trend-line,
-.line-dot {
-  color: #00B050 !important;
-  stroke: #00B050 !important;
-}
-
-.nav-btn.active {
-  background: linear-gradient(135deg, #00B050, #009640) !important;
-  border-color: rgba(0, 176, 80, .9) !important;
-  color: #ffffff !important;
-  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
-}
-
-.hbar-orange,
-.hbar-green {
-  background: linear-gradient(90deg, #00B050, #009640) !important;
-}
-
-.line-dot { fill: #00B050 !important; }
-.trend-line { stroke: #00B050 !important; }
-.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
-.app-mark span:nth-child(2) { background: #00B050 !important; }
-.profile-copy strong, a { color: #00B050 !important; }
-
-@media (min-width: 1101px) {
-  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
-  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
-  .line-chart { height: 195px !important; }
-}
-
-@media (max-width: 1300px) and (min-width: 1101px) {
-  .page-shell { width: min(100% - 24px, 1680px) !important; }
-  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
-  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
-  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-  .stat-card { padding: 12px 14px !important; }
-  .stat-content small, .stat-content span { font-size: 9px !important; }
-  .stat-content strong { font-size: 20px !important; }
-  .chart-heading h2 { font-size: 16px !important; }
-  .hbar-header { font-size: 11px !important; }
-}
-
-@media (max-width: 1100px) {
-  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .charts-grid { grid-template-columns: 1fr !important; }
-}
-/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-
-
-
-/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
-/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
-body.dm-global-page form[action="/lancamentos"] .filters {
-  display: grid !important;
-  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
-  align-items: end !important;
-  gap: 8px !important;
-  padding: 12px 14px !important;
-}
-
-body.dm-global-page form[action="/lancamentos"] .filters > div {
-  min-width: 0 !important;
-}
-
-body.dm-global-page form[action="/lancamentos"] .filters label {
-  display: block !important;
-  margin: 0 0 5px !important;
-  font-size: 10px !important;
-  line-height: 1.05 !important;
-  font-weight: 900 !important;
-  white-space: nowrap !important;
-}
-
-body.dm-global-page form[action="/lancamentos"] .filters input,
-body.dm-global-page form[action="/lancamentos"] .filters select {
-  width: 100% !important;
-  min-width: 0 !important;
-  height: 36px !important;
-  min-height: 36px !important;
-  padding: 0 10px !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-}
-
-body.dm-global-page form[action="/lancamentos"] .filter-buttons {
-  display: inline-flex !important;
-  align-items: end !important;
-  justify-content: flex-start !important;
-  gap: 7px !important;
-  min-width: 142px !important;
-}
-
-body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
-body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
-  height: 36px !important;
-  min-height: 36px !important;
-  padding: 0 13px !important;
-  font-size: 11px !important;
-  border-radius: 11px !important;
-}
-
-@media (max-width: 1280px) {
-  body.dm-global-page form[action="/lancamentos"] .filters {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
-}
-
-/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
-.contador-premium-page .contador-table th:nth-child(4) {
-  text-align: center !important;
-}
-
-.contador-premium-page .contador-table td:nth-child(4) {
-  text-align: left !important;
-  padding-left: 10px !important;
-  padding-right: 8px !important;
-}
-
-.contador-premium-page .upload-cell-compact {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 6px !important;
-  flex-wrap: nowrap !important;
-  max-width: 100% !important;
-  margin-left: 0 !important;
-}
-
-.contador-premium-page .btn-upload-open {
-  width: auto !important;
-  min-width: 112px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  padding: 0 12px !important;
-  font-size: 10.8px !important;
-  line-height: 1 !important;
-  border-radius: 11px !important;
-}
-
-.contador-premium-page .upload-cell-compact .clip-indicator,
-.contador-premium-page .upload-cell-compact .empty-inline,
-.contador-premium-page .upload-cell-compact .attached-badge,
-.contador-premium-page .upload-cell-compact .attached-empty {
-  flex: 0 0 auto !important;
-}
-/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
-
-</style>
-      </head>
-      <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Arquivo de Comprovantes Fiscais', subtitulo: 'Importe, consulte e gere lançamentos a partir dos arquivos de comprovantes fiscais.', paginaAtual: 'documentos' })}
-        <div class="container">
-          <div class="card">
-            <h1>📁 Arquivo</h1>
-
-            <form method="POST" action="/documentos/importar" enctype="multipart/form-data">
-              <div class="grid">
-                <div>
-                  <label for="anexo_xml">XML</label>
-                  <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
-                </div>
-
-                <div>
-                  <label for="anexo_pdf">PDF</label>
-                  <input id="anexo_pdf" type="file" name="anexo_pdf" accept=".pdf" />
-                </div>
-
-                <div class="full">
-                  <div class="hint">Você pode subir só XML, só PDF, ou os dois. Mesmo quando o XML não for reconhecido, o documento será guardado.</div>
-                </div>
-              </div>
-
-              <div class="actions">
-                <button type="submit">Importar documento</button>
-                <a class="btn-secondary" href="/dashboard">Voltar ao Painel</a>
-              </div>
-            </form>
-          </div>
-
-          <div class="card">
-            <table>
-              <tr>
-                <th>ID</th>
-                <th>Tipo</th>
-                <th>Número</th>
-                <th>Data</th>
-                <th>Fornecedor</th>
-                <th>CNPJ/CPF</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Layout</th>
-                <th>PDF</th>
-                <th>XML</th>
-                <th>Ação</th>
-              </tr>
-              ${linhas || '<tr><td colspan="12">Nenhum documento importado.</td></tr>'}
-            </table>
-          </div>
-        </div>
-        <script>
-          function abrirModalUpload(id) {
-            const modal = document.getElementById(id);
-            if (modal) modal.classList.add('is-open');
-          }
-
-          function fecharModalUpload(id) {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            modal.classList.remove('is-open');
-            const input = modal.querySelector('input[type="file"]');
-            const preview = modal.querySelector('[data-preview-list]');
-            if (input) input.value = '';
-            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
-          }
-
-          function atualizarPreviewArquivos(input) {
-            const form = input.closest('form');
-            const list = form ? form.querySelector('[data-preview-list]') : null;
-            if (!list) return;
-
-            const dt = new DataTransfer();
-            Array.from(input.files || []).forEach(file => dt.items.add(file));
-            input.files = dt.files;
-
-            renderPreview(input, list);
-          }
-
-          function renderPreview(input, list) {
-            const files = Array.from(input.files || []);
-            if (!files.length) {
-              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
-              return;
-            }
-
-            list.innerHTML = '';
-            files.forEach((file, index) => {
-              const row = document.createElement('div');
-              row.className = 'modal-file-row';
-
-              const name = document.createElement('span');
-              name.textContent = file.name;
-              name.title = file.name;
-
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.className = 'modal-delete';
-              btn.title = 'Remover da seleção';
-              btn.textContent = '🗑';
-              btn.onclick = function () {
-                const novo = new DataTransfer();
-                Array.from(input.files || []).forEach((item, i) => {
-                  if (i !== index) novo.items.add(item);
-                });
-                input.files = novo.files;
-                renderPreview(input, list);
-              };
-
-              row.appendChild(name);
-              row.appendChild(btn);
-              list.appendChild(row);
-            });
-          }
-
-          document.addEventListener('click', function(event) {
-            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
-              event.target.classList.remove('is-open');
-            }
-          });
-        </script>
-      </body>
-      </html>
-    `);
-  } catch (error) {
-    res.send(`<pre>Erro ao carregar documentos:\n${error.message}</pre>`);
-  }
-});
 
 router.post(
   '/documentos/importar',
@@ -13805,7 +13029,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -14178,7 +13402,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               <div class="actions">
                 <button type="submit">Criar lançamento</button>
-                <a class="btn-secondary" href="/documentos">Cancelar</a>
+                <a class="btn-secondary" href="/arquivo">Cancelar</a>
               </div>
             </form>
           </div>
@@ -14672,7 +13896,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -16080,7 +15304,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -17293,7 +16517,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -18231,6 +17455,22 @@ anexo_xml: l.anexo_xml ? `${nomeBaseDownload}.xml` : ''  });
 
 
 
+
+
+// =====================================================
+// COMPATIBILIDADE — MENU ANTIGO ARQUIVO (/documentos)
+// Redireciona a tela antiga para o novo módulo Arquivo.
+// =====================================================
+router.get('/documentos', protegerRota, (req, res) => {
+  const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  res.redirect('/arquivo' + query);
+});
+
+router.post('/documentos', protegerRota, (req, res) => {
+  res.redirect('/arquivo');
+});
+
+
 // =====================================================
 // ROTAS — MÓDULO ARQUIVO OPERACIONAL V1
 // =====================================================
@@ -18638,7 +17878,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -19244,7 +18484,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -19882,7 +19122,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -20972,7 +20212,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -22274,7 +21514,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -23045,7 +22285,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -26005,7 +25245,7 @@ body.contador-premium-page .trash-history {
               <a href="/dashboard"><span>⌂</span>Dashboard</a>
               <a href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
               <a href="/lancamentos"><span>▤</span>Comprovantes</a>
-              <a href="/documentos"><span>▣</span>Arquivo</a>
+              <a href="/arquivo"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
