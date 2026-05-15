@@ -2240,6 +2240,168 @@ async function tentarRenomearXmlAutomaticamenteArquivoFila(id) {
 
 
 
+
+
+// =====================================================
+// PATCH AUTO-RENOMEAR ARQUIVO + XML COLORIDO
+// =====================================================
+function arquivoAutoNormText(v) {
+  return String(v || '')
+    .replace(/<!\[CDATA\[/g, '')
+    .replace(/\]\]>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function arquivoAutoSafeName(v) {
+  return String(v || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function arquivoAutoValorBR(v) {
+  const txt = String(v || '').replace(/[^\d,.-]/g, '').trim();
+  if (!txt) return '';
+  let n;
+  if (txt.includes(',') && txt.includes('.')) {
+    n = Number(txt.replace(/\./g, '').replace(',', '.'));
+  } else if (txt.includes(',')) {
+    n = Number(txt.replace(',', '.'));
+  } else {
+    n = Number(txt);
+  }
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return 'R$' + n.toFixed(2).replace('.', ',');
+}
+
+function arquivoAutoFindTag(xml, tags) {
+  const texto = String(xml || '');
+  for (const tag of tags) {
+    const re = new RegExp(`<(?:[A-Za-z0-9_]+:)?${tag}[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z0-9_]+:)?${tag}>`, 'i');
+    const m = texto.match(re);
+    if (m && m[1]) return arquivoAutoNormText(m[1]);
+  }
+  return '';
+}
+
+function arquivoAutoFindInBlock(xml, blockName, tags) {
+  const texto = String(xml || '');
+  const reBlock = new RegExp(`<(?:[A-Za-z0-9_]+:)?${blockName}[^>]*>([\\s\\S]*?)<\\/(?:[A-Za-z0-9_]+:)?${blockName}>`, 'i');
+  const block = texto.match(reBlock);
+  if (block && block[1]) return arquivoAutoFindTag(block[1], tags);
+  return '';
+}
+
+function arquivoAutoExtrairXml(xml) {
+  const prestador =
+    arquivoAutoFindInBlock(xml, 'emit', ['xNome', 'Nome', 'RazaoSocial']) ||
+    arquivoAutoFindInBlock(xml, 'Prestador', ['RazaoSocialPrestador', 'RazaoSocial', 'Nome']) ||
+    arquivoAutoFindInBlock(xml, 'CPFCNPJPrestador', ['RazaoSocialPrestador', 'RazaoSocial', 'Nome']) ||
+    arquivoAutoFindTag(xml, ['RazaoSocialPrestador', 'xNome', 'RazaoSocial']);
+
+  const numero =
+    arquivoAutoFindTag(xml, ['nNF', 'NumeroNFe', 'NumeroNfse', 'NumeroNFS-e', 'NumeroNFe', 'NumeroRPS', 'Numero', 'nRPS']);
+
+  const valor =
+    arquivoAutoFindTag(xml, ['vNF', 'ValorServicos', 'ValorTotal', 'Valor', 'ValorLiquidoNfse', 'ValorCredito', 'vLiq']);
+
+  return {
+    fornecedor: arquivoAutoSafeName(prestador),
+    numero: arquivoAutoSafeName(numero),
+    valor: arquivoAutoValorBR(valor)
+  };
+}
+
+function arquivoAutoExtrairPdfPorNome(nomeOriginal) {
+  const base = arquivoAutoSafeName(path.basename(String(nomeOriginal || ''), path.extname(String(nomeOriginal || ''))));
+  let valor = '';
+  const valorMatch = base.match(/(?:R\$|RS|R)?\s?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/i);
+  if (valorMatch) valor = arquivoAutoValorBR(valorMatch[1]);
+
+  let fornecedor = base
+    .replace(/(?:R\$|RS|R)?\s?\d{1,3}(?:\.\d{3})*,\d{2}/gi, '')
+    .replace(/(?:R\$|RS|R)?\s?\d+,\d{2}/gi, '')
+    .replace(/(?:R\$|RS|R)?\s?\d+\.\d{2}/gi, '')
+    .replace(/\b(PDF|XML|Comprovante|Recibo|Boleto|NF|NFe|Cupom|Fiscal)\b/gi, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!fornecedor) fornecedor = base || 'PDF';
+
+  return {
+    fornecedor: arquivoAutoSafeName(fornecedor),
+    numero: '',
+    valor
+  };
+}
+
+function arquivoAutoMontarNome(tipo, dados, id, ext) {
+  const fornecedor = arquivoAutoSafeName(dados.fornecedor || tipo || 'Arquivo');
+  const partes = [
+    tipo.toUpperCase(),
+    fornecedor,
+    dados.valor ? arquivoAutoSafeName(dados.valor) : '',
+    dados.numero ? arquivoAutoSafeName('Doc ' + dados.numero) : '',
+    id ? 'ID ' + id : ''
+  ].filter(Boolean);
+
+  return partes.join(' - ') + ext;
+}
+
+async function arquivoAutoRenomearDepoisUpload(id) {
+  await ensureArquivoFilaTable();
+
+  const r = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
+  const arquivo = r.rows[0];
+  if (!arquivo) return;
+
+  const tipo = String(arquivo.tipo || '').toUpperCase();
+  const ext = tipo === 'XML' ? '.xml' : '.pdf';
+
+  let dados = {};
+  const filePath = getUploadFilePath(arquivo.nome_arquivo);
+
+  if (tipo === 'XML' && filePath && fs.existsSync(filePath)) {
+    const xml = fs.readFileSync(filePath, 'utf8');
+    dados = arquivoAutoExtrairXml(xml);
+  } else {
+    // Sem OCR/biblioteca PDF confiável no index, usa o nome original como fallback inteligente.
+    dados = arquivoAutoExtrairPdfPorNome(arquivo.nome_original || arquivo.nome_arquivo);
+  }
+
+  if (!dados.fornecedor && !dados.valor && !dados.numero) return;
+
+  const novoNome = arquivoAutoMontarNome(tipo, dados, id, ext);
+  if (typeof renomearArquivoFilaFisicoERegistro === 'function') {
+    await renomearArquivoFilaFisicoERegistro(id, novoNome);
+  }
+}
+
+function arquivoAutoEscapeHtml(v) {
+  return String(v || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function arquivoAutoXmlColorido(xml) {
+  let escaped = arquivoAutoEscapeHtml(xml);
+  escaped = escaped
+    .replace(/(&lt;\/?)([A-Za-z0-9_:.-]+)([^&]*?)(\/?&gt;)/g, function(_, a, tag, attrs, b) {
+      return `<span class="xml-bracket">${a}</span><span class="xml-tag">${tag}</span><span class="xml-attrs">${attrs}</span><span class="xml-bracket">${b}</span>`;
+    });
+  return escaped;
+}
+
+
+
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
@@ -13689,8 +13851,8 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
         file.size || 0
       ]);
 
-      if (tipo === 'XML' && insertedArquivo.rows[0]) {
-        await tentarRenomearXmlAutomaticamenteArquivoFila(insertedArquivo.rows[0].id);
+      if (insertedArquivo.rows[0]) {
+        await arquivoAutoRenomearDepoisUpload(insertedArquivo.rows[0].id);
       }
     }
 
@@ -13746,8 +13908,28 @@ router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
       return res.status(404).send('<pre>Arquivo físico não encontrado.</pre>');
     }
 
-    const tipo = arquivo.tipo === 'XML' ? 'application/xml; charset=utf-8' : 'application/pdf';
-    res.setHeader('Content-Type', tipo);
+    if (arquivo.tipo === 'XML') {
+      const xmlRaw = fs.readFileSync(filePath, 'utf8');
+      return res.send(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <title>${arquivo.nome_arquivo}</title>
+          <style>
+            body { margin:0; padding:18px; background:#fff; color:#111827; font-family:Menlo, Monaco, Consolas, monospace; font-size:13px; line-height:1.45; }
+            pre { white-space:pre-wrap; word-break:break-word; margin:0; }
+            .xml-tag { color:#7c3aed; font-weight:700; }
+            .xml-bracket { color:#6b7280; }
+            .xml-attrs { color:#b45309; }
+          </style>
+        </head>
+        <body><pre>${arquivoAutoXmlColorido(xmlRaw)}</pre></body>
+        </html>
+      `);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(arquivo.nome_arquivo)}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -13932,6 +14114,33 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
               document.body.style.userSelect = '';
             });
           })();
+        </script>
+      <script>
+          function startDragRenamePopup() {
+            const box = document.querySelector('.floating');
+            const handle = box ? box.querySelector('h1') : null;
+            if (!box || !handle) return;
+            let dragging = false, startX = 0, startY = 0, left = 0, top = 0;
+            handle.addEventListener('mousedown', function(e) {
+              dragging = true;
+              const rect = box.getBoundingClientRect();
+              startX = e.clientX; startY = e.clientY; left = rect.left; top = rect.top;
+              box.style.left = left + 'px';
+              box.style.top = top + 'px';
+              box.style.right = 'auto';
+              document.body.style.userSelect = 'none';
+            });
+            window.addEventListener('mousemove', function(e) {
+              if (!dragging) return;
+              box.style.left = Math.max(8, left + (e.clientX - startX)) + 'px';
+              box.style.top = Math.max(8, top + (e.clientY - startY)) + 'px';
+            });
+            window.addEventListener('mouseup', function() {
+              dragging = false;
+              document.body.style.userSelect = '';
+            });
+          }
+          startDragRenamePopup();
         </script>
       </body>
       </html>
