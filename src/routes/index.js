@@ -1464,6 +1464,107 @@ router.use((req, res, next) => {
 
 
 
+
+
+// =====================================================
+// PATCH EXPORTAR EXCEL — DOWNLOAD SEM TRAVAR A TELA
+// Mantém os filtros atuais e dispara o download em iframe oculto.
+// =====================================================
+function renderPlennaTecExportarExcelAssets() {
+  return `
+    <script id="plennatec-exportar-excel-script">
+      (function(){
+        if (window.__plennatecExportarExcelReady) return;
+        window.__plennatecExportarExcelReady = true;
+
+        function esconderLoadersExportacao(){
+          try {
+            document.querySelectorAll('.loading-overlay, .modal-backdrop, .skeleton-modal, .page-loading, .export-loading, [data-loading], .loading').forEach(function(el){
+              el.style.display = 'none';
+              el.classList.remove('show', 'open', 'active');
+            });
+            document.body.classList.remove('modal-open', 'loading', 'is-loading');
+            document.documentElement.classList.remove('loading', 'is-loading');
+          } catch(e) {}
+        }
+
+        function prepararExportacaoExcel(){
+          try {
+            if ((window.location.pathname || '').indexOf('/lancamentos') < 0) return;
+
+            document.querySelectorAll('a[href*="/exportar-excel"], button[onclick*="exportar-excel"]').forEach(function(el){
+              if (el.dataset.plennaExportReady === '1') return;
+              el.dataset.plennaExportReady = '1';
+
+              el.addEventListener('click', function(event){
+                var url = '';
+
+                if (el.tagName === 'A') {
+                  url = el.getAttribute('href') || '';
+                } else {
+                  var onclick = el.getAttribute('onclick') || '';
+                  var match = onclick.match(/['"]([^'"]*exportar-excel[^'"]*)['"]/);
+                  if (match) url = match[1];
+                }
+
+                if (!url) return;
+                if (url.indexOf('/exportar-excel') < 0) return;
+
+                event.preventDefault();
+
+                var iframe = document.getElementById('plennatecExportExcelFrame');
+                if (!iframe) {
+                  iframe = document.createElement('iframe');
+                  iframe.id = 'plennatecExportExcelFrame';
+                  iframe.name = 'plennatecExportExcelFrame';
+                  iframe.style.display = 'none';
+                  iframe.style.width = '0';
+                  iframe.style.height = '0';
+                  iframe.style.border = '0';
+                  document.body.appendChild(iframe);
+                }
+
+                iframe.src = url;
+
+                setTimeout(esconderLoadersExportacao, 250);
+                setTimeout(esconderLoadersExportacao, 1000);
+                setTimeout(esconderLoadersExportacao, 2500);
+              }, true);
+            });
+          } catch(e) {}
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', prepararExportacaoExcel);
+        } else {
+          prepararExportacaoExcel();
+        }
+
+        window.addEventListener('focus', esconderLoadersExportacao);
+        window.addEventListener('pageshow', esconderLoadersExportacao);
+      })();
+    </script>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecExportarExcelSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-exportar-excel-script')) {
+        body = body.replace('</head>', `${renderPlennaTecExportarExcelAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
+
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
@@ -17421,35 +17522,35 @@ router.get('/exportar-excel', async (req, res) => {
 
     if (fornecedor) {
       values.push(`%${fornecedor}%`);
-      where.push(`l.fornecedor ILIKE ${values.length}`);
+      where.push(`l.fornecedor ILIKE $${values.length}`);
     }
     if (categoria_id) {
       values.push(categoria_id);
-      where.push(`l.categoria_id = ${values.length}`);
+      where.push(`l.categoria_id = $${values.length}`);
     }
     if (tipo_pagamento) {
       values.push(tipo_pagamento);
-      where.push(`l.tipo_pagamento = ${values.length}`);
+      where.push(`l.tipo_pagamento = $${values.length}`);
     }
     if (cnpj_cpf) {
       values.push(`%${cnpj_cpf}%`);
-      where.push(`l.cnpj_cpf ILIKE ${values.length}`);
+      where.push(`l.cnpj_cpf ILIKE $${values.length}`);
     }
     if (codigo_pagamento) {
       values.push(`%${codigo_pagamento}%`);
-      where.push(`l.codigo_pagamento ILIKE ${values.length}`);
+      where.push(`l.codigo_pagamento ILIKE $${values.length}`);
     }
     if (numero_documento) {
       values.push(`%${numero_documento}%`);
-      where.push(`l.numero_documento ILIKE ${values.length}`);
+      where.push(`l.numero_documento ILIKE $${values.length}`);
     }
     if (data_inicio) {
       values.push(data_inicio);
-      where.push(`l.data_despesa >= ${values.length}`);
+      where.push(`l.data_despesa >= $${values.length}::date`);
     }
     if (data_fim) {
       values.push(data_fim);
-      where.push(`l.data_despesa <= ${values.length}`);
+      where.push(`l.data_despesa <= $${values.length}::date`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
