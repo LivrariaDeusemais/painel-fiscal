@@ -13625,7 +13625,8 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
     if (destino === 'xml') {
       query.set('arquivo_xml_id', String(id));
       if (arquivoPdfIdAtual) query.set('arquivo_pdf_id', arquivoPdfIdAtual);
-      if (arquivoPdfIdAtual) query.set('abrir_pdf_arquivo', '1');
+      // Ao escolher XML, não reabre o pop-up de PDF.
+      // A etapa do XML é apenas anexar o XML ao lançamento.
     }
 
     res.redirect(`/novo?${query.toString()}`);
@@ -15510,6 +15511,42 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         <script>
           var pdfCopyObjectUrl = null;
 
+
+          function salvarRascunhoNovoLancamentoAntesArquivo() {
+            try {
+              const campos = {};
+              document.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (!el.name && !el.id) return;
+                if (el.type === 'file') return;
+                const key = el.name || el.id;
+                campos[key] = el.value;
+              });
+              sessionStorage.setItem('plennatec_novo_lancamento_rascunho', JSON.stringify(campos));
+            } catch (e) {}
+          }
+
+          function restaurarRascunhoNovoLancamentoDepoisArquivo() {
+            try {
+              const raw = sessionStorage.getItem('plennatec_novo_lancamento_rascunho');
+              if (!raw) return;
+              const campos = JSON.parse(raw);
+              Object.keys(campos || {}).forEach(function(key) {
+                const el = document.querySelector('[name="' + key + '"], #' + key);
+                if (!el || el.type === 'file') return;
+                if (el.value === '' || key === 'arquivo_xml_id' || key === 'arquivo_pdf_id') {
+                  el.value = campos[key] || '';
+                }
+              });
+              sessionStorage.removeItem('plennatec_novo_lancamento_rascunho');
+            } catch (e) {}
+          }
+
+          document.addEventListener('click', function(e) {
+            const alvo = e.target.closest('.btn-buscar-arquivo-xml, a[href*="selecionar=xml"]');
+            if (alvo) salvarRascunhoNovoLancamentoAntesArquivo();
+          }, true);
+
+
           async function buscarArquivoFilaInfo(id) {
             if (!id) return null;
             try {
@@ -15588,6 +15625,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           }
 
           document.addEventListener('DOMContentLoaded', function() {
+            restaurarRascunhoNovoLancamentoDepoisArquivo();
             carregarPdfDoArquivoFilaSeExistir();
             carregarXmlDoArquivoFilaSeExistir();
           });
@@ -15949,11 +15987,11 @@ router.post(
         ]
       );
 
-      if (arquivoPdfFilaSelecionado) {
+      if (typeof arquivoPdfFilaSelecionado !== 'undefined' && arquivoPdfFilaSelecionado) {
         await marcarArquivoFilaComoUsado(arquivoPdfFilaSelecionado.id);
       }
 
-      if (arquivoXmlFilaSelecionado) {
+      if (typeof arquivoXmlFilaSelecionado !== 'undefined' && arquivoXmlFilaSelecionado) {
         await marcarArquivoFilaComoUsado(arquivoXmlFilaSelecionado.id);
       }
 
