@@ -70,6 +70,15 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
       return res.status(404).send('<pre>Arquivo não encontrado no disco persistente.</pre>');
     }
 
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
+    } else if (ext === '.xml') {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
+    }
+
     return res.sendFile(filePath);
   } catch (error) {
     return res.status(500).send(`<pre>Erro ao abrir arquivo:\n${error.message}</pre>`);
@@ -1703,17 +1712,16 @@ async function ensureArquivoFilaTable() {
 
 function sanitizeArquivoFilaNome(texto) {
   return String(texto || '')
-    .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
-    .replace(/[\\\\/:*?"<>|]/g, '')
-    .replace(/\\s+/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 function gerarNomeArquivoFila(file) {
-  const ext = path.extname(file.originalname || '').toLowerCase();
+  const extOriginal = path.extname(file.originalname || '').toLowerCase();
+  const ext = extOriginal === '.xml' ? '.xml' : '.pdf';
   const tipo = ext === '.xml' ? 'XML' : 'PDF';
-  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'arquivo', ext));
+  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'Arquivo', extOriginal || ext));
 
   const agora = new Date();
   const data = [
@@ -1730,9 +1738,7 @@ function gerarNomeArquivoFila(file) {
 
   const random = String(Math.round(Math.random() * 1e6)).padStart(6, '0');
 
-  // Padrão legível: PDF - nome original - data - hora - random.pdf
-  const nomeLegivel = `${tipo} - ${baseOriginal || 'Arquivo'} - ${data} - ${hora}-${random}${ext}`;
-  return sanitizeArquivoFilaNome(nomeLegivel).replace(/\s+/g, ' ');
+  return `${tipo} - ${baseOriginal || 'Arquivo'} - ${data} - ${hora}-${random}${ext}`;
 }
 
 const uploadArquivoFila = multer({
@@ -2027,51 +2033,11 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', modoSe
 
 
 // =====================================================
-// PATCH ARQUIVO OPERACIONAL V4 — RENOMEAR RETROATIVO + CARREGAR PDF/XML REAL
+// PATCH ARQUIVO OPERACIONAL V5 — PDF INLINE + RENOMEAÇÃO CORRETA
 // =====================================================
-
-async function normalizarNomesArquivoFilaDisponiveis() {
-  await ensureArquivoFilaTable();
-
-  const result = await pool.query(`
-    SELECT id, nome_original, nome_arquivo, tipo, caminho
-    FROM arquivo_fila
-    WHERE status = 'DISPONIVEL'
-    ORDER BY id ASC
-  `);
-
-  for (const arq of result.rows) {
-    try {
-      const ext = path.extname(arq.nome_arquivo || arq.nome_original || '').toLowerCase() || (arq.tipo === 'XML' ? '.xml' : '.pdf');
-      const baseOriginal = sanitizeArquivoFilaNome(path.basename(arq.nome_original || arq.nome_arquivo || 'Arquivo', ext));
-      const tipo = arq.tipo === 'XML' ? 'XML' : 'PDF';
-
-      // Se já estiver no padrão novo, ignora.
-      if (String(arq.nome_arquivo || '').startsWith(`${tipo} - `)) continue;
-
-      const novoNome = sanitizeArquivoFilaNome(`${tipo} - ${baseOriginal || 'Arquivo'} - ID ${arq.id}${ext}`);
-      const novoCaminho = path.join(uploadsDir, novoNome);
-      const caminhoAtual = getUploadFilePath(arq.nome_arquivo);
-
-      if (caminhoAtual && fs.existsSync(caminhoAtual) && !fs.existsSync(novoCaminho)) {
-        fs.renameSync(caminhoAtual, novoCaminho);
-      }
-
-      await pool.query(`
-        UPDATE arquivo_fila
-        SET nome_arquivo = $1,
-            caminho = $2
-        WHERE id = $3
-      `, [novoNome, novoCaminho, arq.id]);
-    } catch (error) {
-      // Não interrompe a tela por causa de um arquivo problemático.
-    }
-  }
-}
-
-function renderPlennaTecNovoArquivoV4Assets() {
+function renderPlennaTecNovoArquivoV5Assets() {
   return `
-    <style id="plennatec-novo-arquivo-v4-style">
+    <style id="plennatec-novo-arquivo-v5-style">
       .arquivo-selecionado-chip {
         display:inline-flex !important;
         align-items:center !important;
@@ -2095,17 +2061,17 @@ function renderPlennaTecNovoArquivoV4Assets() {
       #plennatecPdfArquivoViewer {
         width:100% !important;
         height:78vh !important;
-        min-height:620px !important;
+        min-height:640px !important;
         border:0 !important;
         border-radius:14px !important;
         background:#fff !important;
       }
     </style>
 
-    <script id="plennatec-novo-arquivo-v4-script">
+    <script id="plennatec-novo-arquivo-v5-script">
       (function(){
-        if (window.__plennatecNovoArquivoV4Ready) return;
-        window.__plennatecNovoArquivoV4Ready = true;
+        if (window.__plennatecNovoArquivoV5Ready) return;
+        window.__plennatecNovoArquivoV5Ready = true;
 
         function params(){
           return new URLSearchParams(window.location.search || '');
@@ -2131,57 +2097,68 @@ function renderPlennaTecNovoArquivoV4Assets() {
           }
         }
 
-        function acharAreaPdf(){
-          var iframe = document.querySelector('iframe#pdfViewer, iframe[name*="pdf" i], iframe[src*=".pdf"]');
-          if (iframe) return iframe;
+        function encontrarAreaPdf(){
+          var existente = document.getElementById('plennatecPdfArquivoViewer');
+          if (existente) return existente;
 
-          var embed = document.querySelector('embed[type="application/pdf"], embed[src*=".pdf"]');
-          if (embed) return embed;
+          var el = document.querySelector('iframe#pdfViewer, iframe[name*="pdf" i], iframe[src*=".pdf"], embed[type="application/pdf"], object[type="application/pdf"]');
+          if (el) return el;
 
-          var obj = document.querySelector('object[type="application/pdf"], object[data*=".pdf"]');
-          if (obj) return obj;
+          var candidatos = Array.from(document.querySelectorAll('div, main, section'))
+            .filter(function(div){
+              var txt = (div.innerText || '').trim();
+              var rect = div.getBoundingClientRect();
+              var isPopup = txt.indexOf('Preencher') >= 0 && rect.width < 680;
+              return !isPopup && txt.indexOf('Selecione o PDF') >= 0 && rect.width > 500 && rect.height > 250;
+            })
+            .sort(function(a,b){
+              return (b.getBoundingClientRect().width * b.getBoundingClientRect().height) -
+                     (a.getBoundingClientRect().width * a.getBoundingClientRect().height);
+            });
 
-          // Área grande do fundo da tela, onde aparece "Selecione o PDF"
-          var candidatos = Array.from(document.querySelectorAll('div, main, section'));
-          var alvo = candidatos.find(function(el){
-            var txt = (el.innerText || '').trim();
-            return txt.indexOf('Selecione o PDF') >= 0 && el.offsetWidth > 300 && el.offsetHeight > 200;
-          });
+          var alvo = candidatos[0];
 
           if (!alvo) {
-            alvo = candidatos
-              .filter(function(el){ return el.offsetWidth > 500 && el.offsetHeight > 300; })
-              .sort(function(a,b){ return (b.offsetWidth*b.offsetHeight) - (a.offsetWidth*a.offsetHeight); })[0];
+            alvo = Array.from(document.querySelectorAll('main, section, div'))
+              .filter(function(div){
+                var rect = div.getBoundingClientRect();
+                var txt = (div.innerText || '');
+                return rect.width > 650 && rect.height > 350 && txt.indexOf('Preencher') < 0;
+              })
+              .sort(function(a,b){
+                return (b.getBoundingClientRect().width * b.getBoundingClientRect().height) -
+                       (a.getBoundingClientRect().width * a.getBoundingClientRect().height);
+              })[0];
           }
 
           if (!alvo) return null;
 
-          var viewer = document.getElementById('plennatecPdfArquivoViewer');
-          if (!viewer) {
-            viewer = document.createElement('iframe');
-            viewer.id = 'plennatecPdfArquivoViewer';
-          }
-
+          var iframe = document.createElement('iframe');
+          iframe.id = 'plennatecPdfArquivoViewer';
           alvo.innerHTML = '';
-          alvo.appendChild(viewer);
-          return viewer;
+          alvo.appendChild(iframe);
+          return iframe;
         }
 
-        function carregarPdfNaTela(arquivo){
-          if (!arquivo || !arquivo.url) return;
-          var alvo = acharAreaPdf();
+        function carregarPdfInline(arquivo){
+          if (!arquivo) return;
+          var alvo = encontrarAreaPdf();
           if (!alvo) return;
 
+          var url = arquivo.viewUrl || arquivo.url;
+          if (!url) return;
+
           if (alvo.tagName === 'OBJECT') {
-            alvo.data = arquivo.url;
+            alvo.data = url;
           } else {
-            alvo.src = arquivo.url;
+            alvo.src = url;
           }
         }
 
         function chipDepoisInput(input, texto){
           if (!input || !texto) return;
           if (input.parentElement && input.parentElement.querySelector('.arquivo-selecionado-chip')) return;
+
           var chip = document.createElement('span');
           chip.className = 'arquivo-selecionado-chip';
           chip.textContent = texto;
@@ -2237,12 +2214,14 @@ function renderPlennaTecNovoArquivoV4Assets() {
 
           var pdf = await buscarArquivo(pdfId);
           if (pdf) {
-            carregarPdfNaTela(pdf);
+            carregarPdfInline(pdf);
+
             var pdfInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(i){
               var a = (i.getAttribute('accept') || '').toLowerCase();
               var n = (i.getAttribute('name') || '').toLowerCase();
               return a.indexOf('pdf') >= 0 || n.indexOf('pdf') >= 0;
             });
+
             chipDepoisInput(pdfInput, 'PDF do Arquivo: ' + pdf.nome_arquivo);
           }
 
@@ -2253,6 +2232,7 @@ function renderPlennaTecNovoArquivoV4Assets() {
               var n = (i.getAttribute('name') || '').toLowerCase();
               return a.indexOf('xml') >= 0 || n.indexOf('xml') >= 0;
             });
+
             chipDepoisInput(xmlInput, 'XML do Arquivo: ' + xml.nome_arquivo);
           }
         }
@@ -2270,14 +2250,14 @@ function renderPlennaTecNovoArquivoV4Assets() {
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
 
-  res.send = function plennatecNovoArquivoV4Send(body) {
+  res.send = function plennatecNovoArquivoV5Send(body) {
     try {
       if (
         typeof body === 'string' &&
         body.includes('</head>') &&
-        !body.includes('plennatec-novo-arquivo-v4-script')
+        !body.includes('plennatec-novo-arquivo-v5-script')
       ) {
-        body = body.replace('</head>', `${renderPlennaTecNovoArquivoV4Assets()}</head>`);
+        body = body.replace('</head>', `${renderPlennaTecNovoArquivoV5Assets()}</head>`);
       }
     } catch (error) {}
 
@@ -17711,6 +17691,44 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
 // =====================================================
 // API — ARQUIVO FILA PARA NOVO LANÇAMENTO
 // =====================================================
+
+router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).send('<pre>ID inválido.</pre>');
+    }
+
+    const result = await pool.query(`
+      SELECT *
+      FROM arquivo_fila
+      WHERE id = $1 AND status = 'DISPONIVEL'
+      LIMIT 1
+    `, [id]);
+
+    const arquivo = result.rows[0];
+    if (!arquivo) {
+      return res.status(404).send('<pre>Arquivo não encontrado ou já utilizado.</pre>');
+    }
+
+    const filePath = getUploadFilePath(arquivo.nome_arquivo);
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).send('<pre>Arquivo físico não encontrado.</pre>');
+    }
+
+    const tipo = arquivo.tipo === 'XML' ? 'application/xml; charset=utf-8' : 'application/pdf';
+    res.setHeader('Content-Type', tipo);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(arquivo.nome_arquivo)}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    return res.sendFile(filePath);
+  } catch (error) {
+    return res.status(500).send(`<pre>Erro ao visualizar arquivo:\n${error.message}</pre>`);
+  }
+});
+
 router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
   try {
     await ensureArquivoFilaTable();
@@ -17739,7 +17757,9 @@ router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
         nome_original: arquivo.nome_original,
         nome_arquivo: arquivo.nome_arquivo,
         tipo: arquivo.tipo,
-        url: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
+        url: `/arquivo/ver/${arquivo.id}`,
+        viewUrl: `/arquivo/ver/${arquivo.id}`,
+        downloadUrl: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
         tamanho_bytes: arquivo.tamanho_bytes
       }
     });
