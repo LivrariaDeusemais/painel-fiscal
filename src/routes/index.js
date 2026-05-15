@@ -1837,6 +1837,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         <td>${formatDateBR(a.criado_em)}</td>
         <td class="arquivo-actions">
           <a class="btn-soft-mini" href="/arquivo/ver/${a.id}" target="_blank">Abrir</a>
+          <a class="btn-soft-mini" href="/arquivo/renomear/${a.id}">Renomear</a>
           ${usarBtn}
           <form method="POST" action="/arquivo/${a.id}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
             <button type="submit" class="btn-danger-mini">Excluir</button>
@@ -1993,7 +1994,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         th:nth-child(3), td:nth-child(3) { width:26%; }
         th:nth-child(4), td:nth-child(4) { width:120px; }
         th:nth-child(5), td:nth-child(5) { width:110px; }
-        th:nth-child(6), td:nth-child(6) { width:230px; }
+        th:nth-child(6), td:nth-child(6) { width:310px; }
         .arquivo-badge {
           display:inline-flex;
           align-items:center;
@@ -2078,6 +2079,142 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
     </body>
     </html>
   `;
+}
+
+
+
+
+
+function limparNomeArquivoOperacional(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function valorParaNomeArquivo(valor) {
+  const bruto = String(valor || '').replace(/[^\d,.-]/g, '').replace(',', '.');
+  const n = Number(bruto);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return 'R$' + n.toFixed(2).replace('.', ',');
+}
+
+function montarNomeArquivoOperacional({ tipo = '', fornecedor = '', valor = '', numero = '', ext = '.pdf', id = '' } = {}) {
+  const partes = [
+    limparNomeArquivoOperacional(fornecedor || tipo || 'Arquivo'),
+    limparNomeArquivoOperacional(valor || ''),
+    limparNomeArquivoOperacional(numero ? `Doc ${numero}` : ''),
+    id ? `ID ${id}` : ''
+  ].filter(Boolean);
+
+  return partes.join(' - ') + ext;
+}
+
+function extrairTagXmlSimples(xml, tag) {
+  const texto = String(xml || '');
+  const abre = `<${tag}>`;
+  const fecha = `</${tag}>`;
+  const i = texto.indexOf(abre);
+  if (i < 0) return '';
+  const j = texto.indexOf(fecha, i + abre.length);
+  if (j < 0) return '';
+  return texto.substring(i + abre.length, j).trim();
+}
+
+function extrairPrimeiroXNomeEmitente(xml) {
+  const texto = String(xml || '');
+  const inicioEmit = texto.search(/<emit[\s>]/i);
+  if (inicioEmit < 0) return extrairTagXmlSimples(texto, 'xNome');
+
+  const fimEmit = texto.indexOf('</emit>', inicioEmit);
+  const bloco = fimEmit >= 0 ? texto.substring(inicioEmit, fimEmit) : texto.substring(inicioEmit);
+  return extrairTagXmlSimples(bloco, 'xNome') || extrairTagXmlSimples(texto, 'xNome');
+}
+
+function extrairDadosBasicosXml(xml) {
+  const texto = String(xml || '');
+  const fornecedor = extrairPrimeiroXNomeEmitente(texto);
+
+  const numero = extrairTagXmlSimples(texto, 'nNF') ||
+    extrairTagXmlSimples(texto, 'Numero') ||
+    extrairTagXmlSimples(texto, 'NumeroNfe') ||
+    extrairTagXmlSimples(texto, 'nNFS-e');
+
+  const valor = extrairTagXmlSimples(texto, 'vNF') ||
+    extrairTagXmlSimples(texto, 'vLiq') ||
+    extrairTagXmlSimples(texto, 'ValorServicos') ||
+    extrairTagXmlSimples(texto, 'Valor') ||
+    extrairTagXmlSimples(texto, 'ValorTotal');
+
+  return {
+    fornecedor: limparNomeArquivoOperacional(fornecedor),
+    numero: limparNomeArquivoOperacional(numero),
+    valor: valorParaNomeArquivo(valor)
+  };
+}
+
+async function renomearArquivoFilaFisicoERegistro(id, novoNomeSemExt) {
+  await ensureArquivoFilaTable();
+
+  const result = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
+  const arquivo = result.rows[0];
+  if (!arquivo) throw new Error('Arquivo não encontrado.');
+
+  const extAtual = path.extname(arquivo.nome_arquivo || arquivo.nome_original || '').toLowerCase() || (arquivo.tipo === 'XML' ? '.xml' : '.pdf');
+
+  let novoNome = limparNomeArquivoOperacional(novoNomeSemExt || 'Arquivo');
+  if (!novoNome.toLowerCase().endsWith(extAtual)) novoNome += extAtual;
+
+  let nomeFinal = novoNome;
+  let contador = 2;
+  while (fs.existsSync(path.join(uploadsDir, nomeFinal)) && nomeFinal !== arquivo.nome_arquivo) {
+    const base = path.basename(novoNome, extAtual);
+    nomeFinal = `${base} - ${contador}${extAtual}`;
+    contador++;
+  }
+
+  const caminhoAtual = getUploadFilePath(arquivo.nome_arquivo);
+  const novoCaminho = path.join(uploadsDir, nomeFinal);
+
+  if (caminhoAtual && fs.existsSync(caminhoAtual) && caminhoAtual !== novoCaminho) {
+    fs.renameSync(caminhoAtual, novoCaminho);
+  }
+
+  await pool.query(`
+    UPDATE arquivo_fila
+    SET nome_arquivo = $1,
+        caminho = $2
+    WHERE id = $3
+  `, [nomeFinal, novoCaminho, id]);
+
+  return nomeFinal;
+}
+
+async function tentarRenomearXmlAutomaticamenteArquivoFila(id) {
+  const result = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 AND tipo = 'XML' LIMIT 1`, [id]);
+  const arquivo = result.rows[0];
+  if (!arquivo) return;
+
+  const filePath = getUploadFilePath(arquivo.nome_arquivo);
+  if (!filePath || !fs.existsSync(filePath)) return;
+
+  const xml = fs.readFileSync(filePath, 'utf8');
+  const dados = extrairDadosBasicosXml(xml);
+
+  if (!dados.fornecedor && !dados.numero && !dados.valor) return;
+
+  const nome = montarNomeArquivoOperacional({
+    tipo: 'XML',
+    fornecedor: dados.fornecedor || 'XML',
+    valor: dados.valor,
+    numero: dados.numero,
+    ext: '.xml',
+    id
+  });
+
+  await renomearArquivoFilaFisicoERegistro(id, nome);
 }
 
 
@@ -13519,9 +13656,10 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
       const ext = path.extname(file.filename || file.originalname || '').toLowerCase();
       const tipo = ext === '.xml' ? 'XML' : 'PDF';
 
-      await pool.query(`
+      const insertedArquivo = await pool.query(`
         INSERT INTO arquivo_fila (nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status, origem)
         VALUES ($1, $2, $3, $4, $5, 'DISPONIVEL', 'UPLOAD_MANUAL')
+        RETURNING id
       `, [
         file.originalname || '',
         file.filename,
@@ -13529,6 +13667,10 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
         file.path,
         file.size || 0
       ]);
+
+      if (tipo === 'XML' && insertedArquivo.rows[0]) {
+        await tentarRenomearXmlAutomaticamenteArquivoFila(insertedArquivo.rows[0].id);
+      }
     }
 
     res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e renomeado(s) com sucesso.`)}`);
@@ -13634,6 +13776,99 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
     res.status(500).send(`<pre>Erro ao usar arquivo:\n${error.message}</pre>`);
   }
 });
+
+
+
+router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.redirect('/arquivo?erro=ID inválido.');
+
+    const result = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 AND status = 'DISPONIVEL' LIMIT 1`, [id]);
+    const arquivo = result.rows[0];
+    if (!arquivo) return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
+
+    const previewUrl = `/arquivo/ver/${arquivo.id}`;
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Renomear Arquivo - PlennaTec</title>
+        <style>
+          body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#111827; color:#0f172a; }
+          .viewer { position:fixed; inset:0; background:#f8fafc; }
+          .viewer iframe { width:100%; height:100%; border:0; }
+          .floating {
+            position:fixed; right:48px; top:70px; width:420px; background:#fff;
+            border:3px solid #00a84f; border-radius:18px; padding:18px;
+            box-shadow:0 24px 80px rgba(15,23,42,.28); z-index:10;
+          }
+          h1 { margin:0 0 12px; color:#15803d; font-size:22px; }
+          label { display:block; font-size:13px; font-weight:800; margin:10px 0 5px; }
+          input { width:100%; height:42px; border:1px solid #d6e2ec; border-radius:10px; padding:0 12px; font-size:15px; }
+          .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+          .btn { border:0; border-radius:12px; padding:12px 16px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; }
+          .green { background:#00a84f; color:#fff; }
+          .soft { background:#f1f5f9; color:#0f172a; }
+          .hint { color:#64748b; font-size:12px; line-height:1.4; margin-top:8px; }
+        </style>
+      </head>
+      <body>
+        <div class="viewer"><iframe src="${previewUrl}"></iframe></div>
+
+        <form class="floating" method="POST" action="/arquivo/renomear/${arquivo.id}">
+          <h1>Renomear</h1>
+          <label>Fornecedor / Favorecido</label>
+          <input name="fornecedor" placeholder="Ex.: Bianca Macedo" required>
+
+          <label>Valor do documento</label>
+          <input name="valor" placeholder="Ex.: R$ 600,01">
+
+          <label>Nº do documento</label>
+          <input name="numero" placeholder="Ex.: NF 1234, PIX 0001, Boleto...">
+
+          <div class="hint">Padrão final: Fornecedor - Valor - Nº Documento</div>
+
+          <div class="actions">
+            <a class="btn soft" href="/arquivo">Voltar</a>
+            <button class="btn green" type="submit">Renomear</button>
+          </div>
+        </form>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao abrir renomeação:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/arquivo/renomear/:id', protegerRota, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.redirect('/arquivo?erro=ID inválido.');
+
+    const { fornecedor = '', valor = '', numero = '' } = req.body;
+
+    const result = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 AND status = 'DISPONIVEL' LIMIT 1`, [id]);
+    const arquivo = result.rows[0];
+    if (!arquivo) return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
+
+    const ext = arquivo.tipo === 'XML' ? '.xml' : '.pdf';
+    const novoNome = montarNomeArquivoOperacional({ fornecedor, valor, numero, ext });
+
+    await renomearArquivoFilaFisicoERegistro(id, novoNome);
+
+    res.redirect('/arquivo?ok=Arquivo renomeado com sucesso.');
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
 
 router.post('/arquivo/:id/excluir', protegerRota, async (req, res) => {
   try {
@@ -15986,16 +16221,7 @@ router.post(
           anexoXml
         ]
       );
-
-      if (typeof arquivoPdfFilaSelecionado !== 'undefined' && arquivoPdfFilaSelecionado) {
-        await marcarArquivoFilaComoUsado(arquivoPdfFilaSelecionado.id);
-      }
-
-      if (typeof arquivoXmlFilaSelecionado !== 'undefined' && arquivoXmlFilaSelecionado) {
-        await marcarArquivoFilaComoUsado(arquivoXmlFilaSelecionado.id);
-      }
-
-      const rotinaOrigem = String(rotina_id || '').trim();
+const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
         return res.redirect(`/rotina-despesas#rotina-${rotinaOrigem}`);
       }
