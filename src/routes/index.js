@@ -17617,6 +17617,53 @@ router.post('/documentos', protegerRota, (req, res) => {
 });
 
 
+
+
+// =====================================================
+// NORMALIZAÇÃO DE NOMES DA FILA DE ARQUIVOS
+// =====================================================
+async function normalizarNomesArquivoFilaDisponiveis() {
+  await ensureArquivoFilaTable();
+
+  const result = await pool.query(`
+    SELECT id, nome_original, nome_arquivo, tipo, caminho
+    FROM arquivo_fila
+    WHERE status = 'DISPONIVEL'
+    ORDER BY id ASC
+  `);
+
+  for (const arq of result.rows) {
+    try {
+      const tipo = arq.tipo === 'XML' ? 'XML' : 'PDF';
+      const ext = tipo === 'XML' ? '.xml' : '.pdf';
+
+      const baseFonte = arq.nome_original || arq.nome_arquivo || 'Arquivo';
+      const baseOriginal = sanitizeArquivoFilaNome(path.basename(baseFonte, path.extname(baseFonte) || ext));
+
+      const novoNome = `${tipo} - ${baseOriginal || 'Arquivo'} - ID ${arq.id}${ext}`;
+      const novoCaminho = path.join(uploadsDir, novoNome);
+
+      if (String(arq.nome_arquivo || '') === novoNome) continue;
+
+      const caminhoAtual = getUploadFilePath(arq.nome_arquivo);
+
+      if (caminhoAtual && fs.existsSync(caminhoAtual) && !fs.existsSync(novoCaminho)) {
+        fs.renameSync(caminhoAtual, novoCaminho);
+      }
+
+      await pool.query(`
+        UPDATE arquivo_fila
+        SET nome_arquivo = $1,
+            caminho = $2
+        WHERE id = $3
+      `, [novoNome, novoCaminho, arq.id]);
+    } catch (error) {
+      // não interrompe a tela se algum arquivo antigo estiver inconsistente
+    }
+  }
+}
+
+
 // =====================================================
 // ROTAS — MÓDULO ARQUIVO OPERACIONAL V1
 // =====================================================
@@ -17624,7 +17671,9 @@ router.post('/documentos', protegerRota, (req, res) => {
 router.get('/arquivo', protegerRota, async (req, res) => {
   try {
     await ensureArquivoFilaTable();
-    await normalizarNomesArquivoFilaDisponiveis();
+    if (typeof normalizarNomesArquivoFilaDisponiveis === 'function') {
+      await normalizarNomesArquivoFilaDisponiveis();
+    }
 
     const modoSelecao = String(req.query.selecionar || '').toLowerCase();
     const rotinaId = String(req.query.rotina_id || '').trim();
