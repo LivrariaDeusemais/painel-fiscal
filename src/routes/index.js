@@ -13389,15 +13389,23 @@ router.post(
       let anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
       let anexoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : null;
 
-      const arquivoPdfFila = arquivo_pdf_id ? await getArquivoFilaDisponivel(Number(arquivo_pdf_id), 'PDF') : null;
-      const arquivoXmlFila = arquivo_xml_id ? await getArquivoFilaDisponivel(Number(arquivo_xml_id), 'XML') : null;
+      const arquivoPdfIdFila = Number(arquivo_pdf_id || 0);
+      const arquivoXmlIdFila = Number(arquivo_xml_id || 0);
 
-      if (!anexoPdf && arquivoPdfFila) {
-        anexoPdf = arquivoPdfFila.nome_arquivo;
+      const arquivoPdfFilaSelecionado = Number.isFinite(arquivoPdfIdFila) && arquivoPdfIdFila > 0
+        ? await getArquivoFilaDisponivel(arquivoPdfIdFila, 'PDF')
+        : null;
+
+      const arquivoXmlFilaSelecionado = Number.isFinite(arquivoXmlIdFila) && arquivoXmlIdFila > 0
+        ? await getArquivoFilaDisponivel(arquivoXmlIdFila, 'XML')
+        : null;
+
+      if (!anexoPdf && arquivoPdfFilaSelecionado) {
+        anexoPdf = arquivoPdfFilaSelecionado.nome_arquivo;
       }
 
-      if (!anexoXml && arquivoXmlFila) {
-        anexoXml = arquivoXmlFila.nome_arquivo;
+      if (!anexoXml && arquivoXmlFilaSelecionado) {
+        anexoXml = arquivoXmlFilaSelecionado.nome_arquivo;
       }
 
       let dados = {
@@ -15550,6 +15558,16 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               msg.className = 'nf-paste-msg ok';
               msg.textContent = 'PDF carregado do Arquivo. Preencha os dados no pop-up e salve.';
             }
+
+            var pdfInputFinal = document.getElementById('anexo_pdf') || document.querySelector('input[name="anexo_pdf"]');
+            if (pdfInputFinal && !document.getElementById('pdfArquivoSelecionadoChipFinal')) {
+              var chipFinal = document.createElement('span');
+              chipFinal.id = 'pdfArquivoSelecionadoChipFinal';
+              chipFinal.className = 'arquivo-selecionado-chip';
+              chipFinal.textContent = 'PDF do Arquivo anexado: ' + arquivo.nome_arquivo;
+              pdfInputFinal.insertAdjacentElement('afterend', chipFinal);
+            }
+
           }
 
           async function carregarXmlDoArquivoFilaSeExistir() {
@@ -15931,12 +15949,12 @@ router.post(
         ]
       );
 
-      if (arquivoPdfFila) {
-        await marcarArquivoFilaComoUsado(arquivoPdfFila.id);
+      if (arquivoPdfFilaSelecionado) {
+        await marcarArquivoFilaComoUsado(arquivoPdfFilaSelecionado.id);
       }
 
-      if (arquivoXmlFila) {
-        await marcarArquivoFilaComoUsado(arquivoXmlFila.id);
+      if (arquivoXmlFilaSelecionado) {
+        await marcarArquivoFilaComoUsado(arquivoXmlFilaSelecionado.id);
       }
 
       const rotinaOrigem = String(rotina_id || '').trim();
