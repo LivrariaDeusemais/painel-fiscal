@@ -1992,7 +1992,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         table {
           width:100%;
           border-collapse:collapse;
-          table-layout:fixed;
+          table-layout:auto;
           background:#fff;
         }
         th, td {
@@ -2035,6 +2035,25 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           justify-content:flex-start;
         }
         .arquivo-actions form { margin:0; }
+
+        .table-wrap table { table-layout: auto !important; min-width: 1180px; }
+        th:nth-child(2), td:nth-child(2) {
+          width: auto !important;
+          min-width: 420px !important;
+          max-width: none !important;
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          word-break: break-word !important;
+        }
+        .arquivo-nome {
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          word-break: break-word !important;
+          line-height: 1.35 !important;
+        }
+
         .empty {
           padding:34px;
           text-align:center;
@@ -13994,6 +14013,10 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
     if (!arquivo) return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
 
     const previewUrl = `/arquivo/ver/${arquivo.id}`;
+    const isXmlRenomear = arquivo.tipo === 'XML';
+    const xmlColoridoRenomear = isXmlRenomear && getUploadFilePath(arquivo.nome_arquivo) && fs.existsSync(getUploadFilePath(arquivo.nome_arquivo))
+      ? arquivoAutoXmlColorido(fs.readFileSync(getUploadFilePath(arquivo.nome_arquivo), 'utf8'))
+      : '';
     const filePath = getUploadFilePath(arquivo.nome_arquivo);
     let viewerHtml = '';
 
