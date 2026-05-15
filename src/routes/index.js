@@ -1466,82 +1466,180 @@ router.use((req, res, next) => {
 
 
 
-// =====================================================
-// PATCH EXPORTAR EXCEL — DOWNLOAD SEM TRAVAR A TELA
-// Mantém os filtros atuais e dispara o download em iframe oculto.
-// =====================================================
-function renderPlennaTecExportarExcelAssets() {
-  return `
-    <script id="plennatec-exportar-excel-script">
-      (function(){
-        if (window.__plennatecExportarExcelReady) return;
-        window.__plennatecExportarExcelReady = true;
 
-        function esconderLoadersExportacao(){
+
+
+
+
+// =====================================================
+// PATCH EXPORTAR EXCEL V2 — DOWNLOAD SEM TRAVAR A TELA
+// Corrige overlay/skeleton que ficava preso após exportar.
+// =====================================================
+function renderPlennaTecExportarExcelV2Assets() {
+  return `
+    <style id="plennatec-exportar-excel-v2-style">
+      body.plennatec-export-cleaning::before,
+      body.plennatec-export-cleaning::after {
+        display: none !important;
+        content: none !important;
+      }
+    </style>
+
+    <script id="plennatec-exportar-excel-v2-script">
+      (function(){
+        if (window.__plennatecExportarExcelV2Ready) return;
+        window.__plennatecExportarExcelV2Ready = true;
+
+        function limparTravamentoExportacao(){
           try {
-            document.querySelectorAll('.loading-overlay, .modal-backdrop, .skeleton-modal, .page-loading, .export-loading, [data-loading], .loading').forEach(function(el){
-              el.style.display = 'none';
-              el.classList.remove('show', 'open', 'active');
+            document.body.classList.add('plennatec-export-cleaning');
+
+            var seletores = [
+              '.loading-overlay',
+              '.modal-backdrop',
+              '.skeleton-modal',
+              '.skeleton-loader',
+              '.page-loading',
+              '.export-loading',
+              '.loading',
+              '.loader',
+              '.spinner',
+              '.backdrop',
+              '.overlay',
+              '[data-loading]',
+              '[aria-busy="true"]'
+            ];
+
+            seletores.forEach(function(sel){
+              document.querySelectorAll(sel).forEach(function(el){
+                try {
+                  var txt = (el.innerText || '').toLowerCase();
+                  var cls = (el.className || '').toString().toLowerCase();
+
+                  if (
+                    cls.indexOf('month-picker') >= 0 ||
+                    cls.indexOf('dropdown') >= 0 ||
+                    cls.indexOf('select') >= 0
+                  ) {
+                    return;
+                  }
+
+                  el.style.setProperty('display', 'none', 'important');
+                  el.style.setProperty('visibility', 'hidden', 'important');
+                  el.style.setProperty('opacity', '0', 'important');
+                  el.style.setProperty('pointer-events', 'none', 'important');
+                  el.classList.remove('show', 'open', 'active', 'visible', 'loading', 'is-loading');
+                  el.removeAttribute('aria-busy');
+                } catch(e) {}
+              });
             });
-            document.body.classList.remove('modal-open', 'loading', 'is-loading');
-            document.documentElement.classList.remove('loading', 'is-loading');
+
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('pointer-events');
+            document.documentElement.style.removeProperty('overflow');
+
+            [
+              'modal-open',
+              'loading',
+              'is-loading',
+              'export-loading',
+              'blur',
+              'is-blurred'
+            ].forEach(function(c){
+              document.body.classList.remove(c);
+              document.documentElement.classList.remove(c);
+            });
+
+            // Remove blur aplicado diretamente em cards/containers.
+            document.querySelectorAll('body *').forEach(function(el){
+              try {
+                var filter = (el.style && el.style.filter) || '';
+                if (filter.indexOf('blur') >= 0) el.style.filter = '';
+                if (el.style && el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+              } catch(e) {}
+            });
+
           } catch(e) {}
         }
 
-        function prepararExportacaoExcel(){
+        function getExportUrl(el){
+          if (!el) return '';
+
+          if (el.tagName === 'A') {
+            return el.getAttribute('href') || '';
+          }
+
+          var hrefChild = el.querySelector && el.querySelector('a[href*="/exportar-excel"]');
+          if (hrefChild) return hrefChild.getAttribute('href') || '';
+
+          var onclick = el.getAttribute('onclick') || '';
+          var match = onclick.match(/['"]([^'"]*exportar-excel[^'"]*)['"]/);
+          if (match) return match[1];
+
+          return '';
+        }
+
+        function prepararExportacaoExcelV2(){
           try {
             if ((window.location.pathname || '').indexOf('/lancamentos') < 0) return;
 
-            document.querySelectorAll('a[href*="/exportar-excel"], button[onclick*="exportar-excel"]').forEach(function(el){
-              if (el.dataset.plennaExportReady === '1') return;
-              el.dataset.plennaExportReady = '1';
+            document.addEventListener('click', function(event){
+              var el = event.target.closest('a[href*="/exportar-excel"], button, .btn, [onclick*="exportar-excel"]');
+              if (!el) return;
 
-              el.addEventListener('click', function(event){
-                var url = '';
+              var url = getExportUrl(el);
 
-                if (el.tagName === 'A') {
-                  url = el.getAttribute('href') || '';
-                } else {
-                  var onclick = el.getAttribute('onclick') || '';
-                  var match = onclick.match(/['"]([^'"]*exportar-excel[^'"]*)['"]/);
-                  if (match) url = match[1];
-                }
+              // fallback: botão com texto Exportar Excel, sem href direto
+              if (!url && ((el.innerText || '').toLowerCase().indexOf('exportar excel') >= 0)) {
+                var link = document.querySelector('a[href*="/exportar-excel"]');
+                if (link) url = link.getAttribute('href') || '';
+              }
 
-                if (!url) return;
-                if (url.indexOf('/exportar-excel') < 0) return;
+              if (!url || url.indexOf('/exportar-excel') < 0) return;
 
-                event.preventDefault();
+              event.preventDefault();
+              event.stopPropagation();
 
-                var iframe = document.getElementById('plennatecExportExcelFrame');
-                if (!iframe) {
-                  iframe = document.createElement('iframe');
-                  iframe.id = 'plennatecExportExcelFrame';
-                  iframe.name = 'plennatecExportExcelFrame';
-                  iframe.style.display = 'none';
-                  iframe.style.width = '0';
-                  iframe.style.height = '0';
-                  iframe.style.border = '0';
-                  document.body.appendChild(iframe);
-                }
+              var iframe = document.getElementById('plennatecExportExcelFrame');
+              if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'plennatecExportExcelFrame';
+                iframe.name = 'plennatecExportExcelFrame';
+                iframe.style.setProperty('display', 'none', 'important');
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+              }
 
-                iframe.src = url;
+              iframe.onload = function(){
+                setTimeout(limparTravamentoExportacao, 100);
+              };
 
-                setTimeout(esconderLoadersExportacao, 250);
-                setTimeout(esconderLoadersExportacao, 1000);
-                setTimeout(esconderLoadersExportacao, 2500);
-              }, true);
-            });
+              iframe.src = url;
+
+              // Limpeza em várias janelas de tempo, pois o browser pode abrir o download depois.
+              setTimeout(limparTravamentoExportacao, 50);
+              setTimeout(limparTravamentoExportacao, 200);
+              setTimeout(limparTravamentoExportacao, 600);
+              setTimeout(limparTravamentoExportacao, 1200);
+              setTimeout(limparTravamentoExportacao, 2500);
+              setTimeout(limparTravamentoExportacao, 5000);
+            }, true);
           } catch(e) {}
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', prepararExportacaoExcel);
+          document.addEventListener('DOMContentLoaded', prepararExportacaoExcelV2);
         } else {
-          prepararExportacaoExcel();
+          prepararExportacaoExcelV2();
         }
 
-        window.addEventListener('focus', esconderLoadersExportacao);
-        window.addEventListener('pageshow', esconderLoadersExportacao);
+        window.addEventListener('focus', limparTravamentoExportacao);
+        window.addEventListener('pageshow', limparTravamentoExportacao);
+        document.addEventListener('visibilitychange', function(){
+          if (!document.hidden) limparTravamentoExportacao();
+        });
       })();
     </script>
   `;
@@ -1550,10 +1648,10 @@ function renderPlennaTecExportarExcelAssets() {
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
 
-  res.send = function plennatecExportarExcelSend(body) {
+  res.send = function plennatecExportarExcelV2Send(body) {
     try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-exportar-excel-script')) {
-        body = body.replace('</head>', `${renderPlennaTecExportarExcelAssets()}</head>`);
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-exportar-excel-v2-script')) {
+        body = body.replace('</head>', `${renderPlennaTecExportarExcelV2Assets()}</head>`);
       }
     } catch (error) {}
 
