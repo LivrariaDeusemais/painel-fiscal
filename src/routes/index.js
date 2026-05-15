@@ -1663,6 +1663,466 @@ router.use((req, res, next) => {
 
 
 
+
+
+// =====================================================
+// MÓDULO ARQUIVO OPERACIONAL V1 — FILA PDF/XML
+// =====================================================
+
+async function ensureArquivoFilaTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS arquivo_fila (
+      id SERIAL PRIMARY KEY,
+      nome_original TEXT,
+      nome_arquivo TEXT NOT NULL,
+      tipo VARCHAR(10) NOT NULL,
+      caminho TEXT NOT NULL,
+      tamanho_bytes BIGINT DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'DISPONIVEL',
+      criado_em TIMESTAMP DEFAULT NOW(),
+      usado_em TIMESTAMP,
+      origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
+    )
+  `);
+
+  await pool.query(`
+    ALTER TABLE arquivo_fila
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DISPONIVEL'
+  `);
+
+  await pool.query(`
+    ALTER TABLE arquivo_fila
+    ADD COLUMN IF NOT EXISTS usado_em TIMESTAMP
+  `);
+
+  await pool.query(`
+    ALTER TABLE arquivo_fila
+    ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
+  `);
+}
+
+function sanitizeArquivoFilaNome(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\\\\/:*?"<>|]/g, '')
+    .replace(/\\s+/g, ' ')
+    .trim();
+}
+
+function gerarNomeArquivoFila(file) {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'arquivo', ext));
+  const tipo = ext === '.xml' ? 'XML' : 'PDF';
+  const agora = new Date();
+  const stamp = [
+    agora.getFullYear(),
+    String(agora.getMonth() + 1).padStart(2, '0'),
+    String(agora.getDate()).padStart(2, '0'),
+    String(agora.getHours()).padStart(2, '0'),
+    String(agora.getMinutes()).padStart(2, '0'),
+    String(agora.getSeconds()).padStart(2, '0')
+  ].join('');
+  const random = Math.round(Math.random() * 1e6);
+  const baseFinal = `${tipo} ${baseOriginal || 'Arquivo'} ${stamp}-${random}`;
+  return sanitizeArquivoFilaNome(baseFinal).replace(/\\s+/g, '-') + ext;
+}
+
+const uploadArquivoFila = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      cb(null, gerarNomeArquivoFila(file));
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext === '.pdf' || ext === '.xml') return cb(null, true);
+    return cb(new Error('Tipo de arquivo não permitido. Envie somente PDF ou XML.'));
+  }
+});
+
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', modoSelecao = '', rotinaId = '', origem = '' } = {}) {
+  const tituloAcao = modoSelecao
+    ? `Escolha um arquivo ${modoSelecao === 'xml' ? 'XML' : 'PDF'} para o lançamento`
+    : 'Arquivo';
+
+  const rows = arquivos.map(a => {
+    const tipoBadge = a.tipo === 'XML'
+      ? '<span class="arquivo-badge xml">XML</span>'
+      : '<span class="arquivo-badge pdf">PDF</span>';
+
+    const usarUrl = `/arquivo/selecionar/${a.id}?destino=${encodeURIComponent(modoSelecao || '')}&rotina_id=${encodeURIComponent(rotinaId || '')}&origem=${encodeURIComponent(origem || '')}`;
+
+    return `
+      <tr>
+        <td>${tipoBadge}</td>
+        <td class="arquivo-nome">${escapeHtmlGlobal(a.nome_arquivo || '')}</td>
+        <td>${escapeHtmlGlobal(a.nome_original || '')}</td>
+        <td>${Number(a.tamanho_bytes || 0).toLocaleString('pt-BR')} bytes</td>
+        <td>${formatDateBR(a.criado_em)}</td>
+        <td class="arquivo-actions">
+          <a class="btn-soft-mini" href="/uploads/${encodeURIComponent(a.nome_arquivo)}" target="_blank">Abrir</a>
+          ${modoSelecao ? `<a class="btn-green-mini" href="${usarUrl}">Usar</a>` : ''}
+          <form method="POST" action="/arquivo/${a.id}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
+            <button type="submit" class="btn-danger-mini">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const navVoltar = modoSelecao
+    ? `<a class="dm-menu-btn" href="/novo${rotinaId ? `?rotina_id=${encodeURIComponent(rotinaId)}` : ''}">Voltar ao lançamento</a>`
+    : `<a class="dm-menu-btn" href="/dashboard">Voltar para o Painel</a>`;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Arquivo - PlennaTec</title>
+      <style>
+        body {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+          color: #0f172a;
+          background: linear-gradient(135deg,#b7efc8 0%,#eef4f8 28%,#ffffff 100%);
+        }
+        * { box-sizing: border-box; }
+        .dm-global-page-shell {
+          width: min(1500px, calc(100vw - 48px));
+          margin: 0 auto;
+          padding: 20px 0;
+        }
+        .top-card, .nav-card, .content-card {
+          background: rgba(255,255,255,.92);
+          border: 1px solid #dce7ef;
+          border-radius: 22px;
+          box-shadow: 0 16px 36px rgba(15,23,42,.08);
+        }
+        .top-card {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding: 18px 24px;
+          margin-bottom: 12px;
+        }
+        .top-title h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 800;
+        }
+        .top-title p {
+          margin: 4px 0 0;
+          color:#475569;
+          font-weight:600;
+        }
+        .nav-card {
+          display:flex;
+          gap:10px;
+          align-items:center;
+          padding: 12px 16px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+        }
+        .dm-menu-btn, .btn-green, .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
+          border: 1px solid #d6e2ec;
+          border-radius: 12px;
+          padding: 11px 16px;
+          text-decoration:none;
+          color:#00843d;
+          font-weight:800;
+          background:#f8fafc;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          white-space:nowrap;
+        }
+        .btn-green, .btn-green-mini {
+          background:#00a84f;
+          color:#fff;
+          border-color:#00a84f;
+          box-shadow:0 10px 22px rgba(0,168,79,.16);
+        }
+        .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
+          height:30px;
+          padding:0 10px;
+          font-size:12px;
+          border-radius:9px;
+        }
+        .btn-danger-mini {
+          color:#b42318;
+          background:#fff5f5;
+          border-color:#fecaca;
+        }
+        .content-card {
+          padding: 20px;
+        }
+        .upload-panel {
+          border: 1px dashed #9ecfb2;
+          background: #f5fff8;
+          border-radius: 18px;
+          padding: 18px;
+          margin-bottom: 18px;
+        }
+        .upload-form {
+          display:flex;
+          gap:12px;
+          align-items:center;
+          flex-wrap:wrap;
+        }
+        input[type=file] {
+          border:1px solid #d6e2ec;
+          border-radius:12px;
+          background:#fff;
+          padding:10px;
+          min-width:320px;
+        }
+        .alert-ok, .alert-error {
+          padding: 12px 14px;
+          border-radius: 12px;
+          margin-bottom: 12px;
+          font-weight:700;
+        }
+        .alert-ok { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+        .alert-error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+        .table-wrap {
+          width:100%;
+          overflow:auto;
+          border:1px solid #dce7ef;
+          border-radius:16px;
+        }
+        table {
+          width:100%;
+          border-collapse:collapse;
+          table-layout:fixed;
+          background:#fff;
+        }
+        th, td {
+          padding: 11px 10px;
+          border-bottom:1px solid #e6edf4;
+          font-size:13px;
+          text-align:left;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        th {
+          background:#f8fafc;
+          color:#334155;
+          font-size:12px;
+          text-transform:uppercase;
+        }
+        th:nth-child(1), td:nth-child(1) { width:70px; text-align:center; }
+        th:nth-child(2), td:nth-child(2) { width:32%; }
+        th:nth-child(3), td:nth-child(3) { width:26%; }
+        th:nth-child(4), td:nth-child(4) { width:120px; }
+        th:nth-child(5), td:nth-child(5) { width:110px; }
+        th:nth-child(6), td:nth-child(6) { width:230px; }
+        .arquivo-badge {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          min-width:46px;
+          height:26px;
+          border-radius:999px;
+          font-size:11px;
+          font-weight:900;
+        }
+        .arquivo-badge.pdf { background:#dbeafe; color:#1d4ed8; }
+        .arquivo-badge.xml { background:#dcfce7; color:#15803d; }
+        .arquivo-actions {
+          display:flex;
+          gap:7px;
+          align-items:center;
+          justify-content:flex-start;
+        }
+        .arquivo-actions form { margin:0; }
+        .empty {
+          padding:34px;
+          text-align:center;
+          color:#64748b;
+          font-weight:700;
+        }
+      </style>
+    </head>
+    <body class="dm-global-page">
+      <div class="dm-global-page-shell">
+        <div class="top-card">
+          <div class="top-title">
+            <h1>${tituloAcao}</h1>
+            <p>${modoSelecao ? 'Selecione um arquivo já renomeado da fila para carregar no lançamento.' : 'Importe, renomeie e organize PDFs/XMLs antes de lançar.'}</p>
+          </div>
+          <a class="dm-menu-btn" href="/logout">Sair</a>
+        </div>
+
+        <div class="nav-card">
+          ${navVoltar}
+          <a class="dm-menu-btn" href="/lancamentos">Comprovantes Fiscais</a>
+          <a class="dm-menu-btn" href="/rotina-despesas">Contas à Pagar</a>
+          <a class="dm-menu-btn" href="/categorias">Categorias</a>
+          <a class="dm-menu-btn" href="/espaco-contador">Espaço do Contador</a>
+        </div>
+
+        <div class="content-card">
+          ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
+          ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
+
+          ${!modoSelecao ? `
+            <div class="upload-panel">
+              <form class="upload-form" method="POST" action="/arquivo/importar" enctype="multipart/form-data">
+                <strong>Importar arquivos PDF/XML</strong>
+                <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
+                <button class="btn-green" type="submit">Buscar e importar arquivo</button>
+              </form>
+              <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
+                Ao importar, o sistema renomeia automaticamente para o padrão da PlennaTec e deixa disponível para uso no Novo Lançamento.
+              </p>
+            </div>
+          ` : ''}
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Nome PlennaTec</th>
+                  <th>Nome Original</th>
+                  <th>Tamanho</th>
+                  <th>Importado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || `<tr><td colspan="6"><div class="empty">Nenhum arquivo disponível na fila.</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+
+
+
+
+// =====================================================
+// PATCH NOVO LANÇAMENTO — BOTÕES BUSCAR EM ARQUIVO
+// =====================================================
+function renderPlennaTecNovoArquivoAssets() {
+  return `
+    <script id="plennatec-novo-arquivo-script">
+      (function(){
+        if (window.__plennatecNovoArquivoReady) return;
+        window.__plennatecNovoArquivoReady = true;
+
+        function params() {
+          return new URLSearchParams(window.location.search || '');
+        }
+
+        function adicionarBotoesArquivo(){
+          try {
+            if ((window.location.pathname || '').indexOf('/novo') < 0) return;
+
+            var p = params();
+            var rotinaId = p.get('rotina_id') || '';
+            var pdfId = p.get('arquivo_pdf_id') || '';
+            var xmlId = p.get('arquivo_xml_id') || '';
+
+            var form = document.querySelector('form');
+            if (form) {
+              if (pdfId && !form.querySelector('input[name="arquivo_pdf_id"]')) {
+                var h1 = document.createElement('input');
+                h1.type = 'hidden';
+                h1.name = 'arquivo_pdf_id';
+                h1.value = pdfId;
+                form.appendChild(h1);
+              }
+
+              if (xmlId && !form.querySelector('input[name="arquivo_xml_id"]')) {
+                var h2 = document.createElement('input');
+                h2.type = 'hidden';
+                h2.name = 'arquivo_xml_id';
+                h2.value = xmlId;
+                form.appendChild(h2);
+              }
+            }
+
+            document.querySelectorAll('input[type="file"]').forEach(function(input){
+              var labelText = '';
+              var label = input.closest('label') || input.parentElement;
+              if (label) labelText = (label.innerText || '').toLowerCase();
+
+              var accept = (input.getAttribute('accept') || '').toLowerCase();
+              var name = (input.getAttribute('name') || '').toLowerCase();
+
+              var destino = '';
+              if (accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0 || labelText.indexOf('pdf') >= 0) destino = 'pdf';
+              if (accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0 || labelText.indexOf('xml') >= 0) destino = 'xml';
+
+              if (!destino) return;
+              if (input.parentElement && input.parentElement.querySelector('.btn-buscar-arquivo-fila-' + destino)) return;
+
+              var a = document.createElement('a');
+              a.className = 'btn-buscar-arquivo-fila-' + destino;
+              a.href = '/arquivo?selecionar=' + destino + (rotinaId ? '&rotina_id=' + encodeURIComponent(rotinaId) : '');
+              a.textContent = destino === 'pdf' ? 'Buscar PDF no Arquivo' : 'Buscar XML no Arquivo';
+              a.style.display = 'inline-flex';
+              a.style.alignItems = 'center';
+              a.style.justifyContent = 'center';
+              a.style.height = '32px';
+              a.style.marginLeft = '8px';
+              a.style.padding = '0 12px';
+              a.style.borderRadius = '10px';
+              a.style.background = '#f0fdf4';
+              a.style.color = '#00843d';
+              a.style.border = '1px solid #86efac';
+              a.style.fontWeight = '800';
+              a.style.textDecoration = 'none';
+              a.style.fontSize = '12px';
+              a.style.whiteSpace = 'nowrap';
+
+              input.insertAdjacentElement('afterend', a);
+            });
+          } catch(e) {}
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', adicionarBotoesArquivo);
+        } else {
+          adicionarBotoesArquivo();
+        }
+      })();
+    </script>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+
+  res.send = function plennatecNovoArquivoSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-novo-arquivo-script')) {
+        body = body.replace('</head>', `${renderPlennaTecNovoArquivoAssets()}</head>`);
+      }
+    } catch (error) {}
+
+    return originalSend(body);
+  };
+
+  next();
+});
+
+
+
 // HELPERS
 function formatMoneyBR(valor) {
   const numero = Number(valor || 0);
@@ -15186,7 +15646,9 @@ router.post(
         valor,
         tipo_pagamento,
         categoria_id,
-        rotina_id
+        rotina_id,
+        arquivo_pdf_id,
+        arquivo_xml_id
       } = req.body;
 
       const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
@@ -15210,6 +15672,17 @@ router.post(
           anexoXml
         ]
       );
+
+      const arquivoPdfIdUsado = Number(arquivo_pdf_id || 0);
+      const arquivoXmlIdUsado = Number(arquivo_xml_id || 0);
+
+      if (Number.isFinite(arquivoPdfIdUsado) && arquivoPdfIdUsado > 0) {
+        await pool.query(`UPDATE arquivo_fila SET status = 'USADO', usado_em = NOW() WHERE id = $1`, [arquivoPdfIdUsado]);
+      }
+
+      if (Number.isFinite(arquivoXmlIdUsado) && arquivoXmlIdUsado > 0) {
+        await pool.query(`UPDATE arquivo_fila SET status = 'USADO', usado_em = NOW() WHERE id = $1`, [arquivoXmlIdUsado]);
+      }
 
       const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
@@ -17755,6 +18228,132 @@ anexo_xml: l.anexo_xml ? `${nomeBaseDownload}.xml` : ''  });
     res.send(`<pre>Erro ao exportar Excel:\n${error.message}</pre>`);
   }
 });
+
+
+
+// =====================================================
+// ROTAS — MÓDULO ARQUIVO OPERACIONAL V1
+// =====================================================
+
+router.get('/arquivo', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const modoSelecao = String(req.query.selecionar || '').toLowerCase();
+    const rotinaId = String(req.query.rotina_id || '').trim();
+    const origem = String(req.query.origem || '').trim();
+
+    const filtroTipo = modoSelecao === 'pdf' ? 'PDF' : (modoSelecao === 'xml' ? 'XML' : '');
+    const params = [];
+    let where = "WHERE status = 'DISPONIVEL'";
+
+    if (filtroTipo) {
+      params.push(filtroTipo);
+      where += ` AND tipo = $${params.length}`;
+    }
+
+    const result = await pool.query(`
+      SELECT *
+      FROM arquivo_fila
+      ${where}
+      ORDER BY criado_em DESC, id DESC
+    `, params);
+
+    res.send(renderArquivoFilaPage({
+      arquivos: result.rows,
+      mensagem: req.query.ok || '',
+      erro: req.query.erro || '',
+      modoSelecao,
+      rotinaId,
+      origem
+    }));
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos', 50), async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const files = req.files || [];
+    for (const file of files) {
+      const ext = path.extname(file.originalname || '').toLowerCase();
+      const tipo = ext === '.xml' ? 'XML' : 'PDF';
+
+      await pool.query(`
+        INSERT INTO arquivo_fila (nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status, origem)
+        VALUES ($1, $2, $3, $4, $5, 'DISPONIVEL', 'UPLOAD_MANUAL')
+      `, [
+        file.originalname || '',
+        file.filename,
+        tipo,
+        file.path,
+        file.size || 0
+      ]);
+    }
+
+    res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e renomeado(s) com sucesso.`)}`);
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
+router.get('/arquivo/selecionar/:id', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const id = Number(req.params.id);
+    const destino = String(req.query.destino || '').toLowerCase();
+    const rotinaId = String(req.query.rotina_id || '').trim();
+
+    if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
+      return res.redirect('/arquivo?erro=Seleção inválida.');
+    }
+
+    const result = await pool.query(`
+      SELECT *
+      FROM arquivo_fila
+      WHERE id = $1 AND status = 'DISPONIVEL'
+      LIMIT 1
+    `, [id]);
+
+    const arquivo = result.rows[0];
+    if (!arquivo) {
+      return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
+    }
+
+    const tipoEsperado = destino === 'xml' ? 'XML' : 'PDF';
+    if (arquivo.tipo !== tipoEsperado) {
+      return res.redirect(`/arquivo?selecionar=${destino}&rotina_id=${encodeURIComponent(rotinaId)}&erro=Tipo de arquivo incompatível.`);
+    }
+
+    const query = new URLSearchParams();
+    if (rotinaId) query.set('rotina_id', rotinaId);
+    if (destino === 'pdf') query.set('arquivo_pdf_id', String(id));
+    if (destino === 'xml') query.set('arquivo_xml_id', String(id));
+
+    res.redirect(`/novo?${query.toString()}`);
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao selecionar arquivo:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/arquivo/:id/excluir', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const id = Number(req.params.id);
+    if (Number.isFinite(id)) {
+      await pool.query(`UPDATE arquivo_fila SET status = 'EXCLUIDO', usado_em = NOW() WHERE id = $1`, [id]);
+    }
+
+    res.redirect('/arquivo?ok=Arquivo removido da fila.');
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
 
 router.get('/categorias', protegerRota, async (req, res) => {
   try {
