@@ -1802,6 +1802,27 @@ async function marcarArquivoFilaComoUsado(id) {
   `, [arquivoId]);
 }
 
+
+function formatXmlParaHtmlVisual(xml) {
+  const original = String(xml || '').trim();
+  if (!original) return '';
+
+  let formatted = original
+    .replace(/>\s*</g, '><')
+    .replace(/></g, '>\n<');
+
+  let pad = 0;
+  formatted = formatted.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (trimmed.match(/^<\//)) pad = Math.max(pad - 1, 0);
+    const out = '  '.repeat(pad) + trimmed;
+    if (trimmed.match(/^<[^!?/][^>]*[^/]>/) && !trimmed.match(/<\/[^>]+>$/)) pad += 1;
+    return out;
+  }).join('\n');
+
+  return escapeHtmlGlobal(formatted);
+}
+
 function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '' } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
@@ -3627,7 +3648,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'dashboard', href:'/dashboard', label:'⌂ Dashboard' },
     { key:'rotina-despesas', href:'/rotina-despesas', label:'▦ Contas a Pagar' },
     { key:'lancamentos', href:'/lancamentos', label:'▤ Comprovantes' },
-    { key:'documentos', href:'/documentos', label:'▣ Arquivo' },
+    { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
     ...(usuario.perfil === 'ADMIN' ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
@@ -4993,7 +5014,7 @@ function renderGlobalHeader(req, config = {}) {
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
-    { key: 'documentos', href: '/documentos', label: 'Arquivo' },
+    { key: 'documentos', href: '/arquivo', label: 'Arquivo' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
     ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
@@ -12738,7 +12759,7 @@ router.get('/dashboard', protegerRota, async (req, res) => {
 // =============================
 // ARQUIVO
 // =============================
-router.get('/documentos', protegerRota, async (req, res) => {
+router.get('/documentos-antigo', protegerRota, async (req, res) => {
   try {
     const docs = await pool.query(`
       SELECT
@@ -13791,6 +13812,28 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
     if (!arquivo) return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
 
     const previewUrl = `/arquivo/ver/${arquivo.id}`;
+    const filePath = getUploadFilePath(arquivo.nome_arquivo);
+    let viewerHtml = '';
+
+    if (arquivo.tipo === 'XML') {
+      let xmlVisual = '';
+      try {
+        xmlVisual = filePath && fs.existsSync(filePath)
+          ? formatXmlParaHtmlVisual(fs.readFileSync(filePath, 'utf8'))
+          : 'XML não encontrado no disco.';
+      } catch (e) {
+        xmlVisual = escapeHtmlGlobal('Erro ao ler XML: ' + e.message);
+      }
+
+      viewerHtml = `
+        <div class="xml-viewer-shell">
+          <div class="xml-viewer-title">Visualização do XML — ${escapeHtmlGlobal(arquivo.nome_arquivo || '')}</div>
+          <pre class="xml-viewer-pre">${xmlVisual}</pre>
+        </div>
+      `;
+    } else {
+      viewerHtml = `<iframe src="${previewUrl}"></iframe>`;
+    }
 
     res.send(`
       <!DOCTYPE html>
@@ -13801,14 +13844,23 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
         <title>Renomear Arquivo - PlennaTec</title>
         <style>
           body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#111827; color:#0f172a; }
-          .viewer { position:fixed; inset:0; background:#f8fafc; }
+          .viewer { position:fixed; inset:0; background:#f8fafc; overflow:auto; }
           .viewer iframe { width:100%; height:100%; border:0; }
+          .xml-viewer-shell { padding: 28px 34px 80px; }
+          .xml-viewer-title { position: sticky; top: 0; z-index: 2; background:#f8fafc; padding: 12px 0; font-size:18px; font-weight:800; color:#14532d; border-bottom:1px solid #dbe7ef; }
+          .xml-viewer-pre { white-space:pre-wrap; word-break:break-word; background:#ffffff; border:1px solid #dbe7ef; border-radius:16px; padding:18px; font-size:13px; line-height:1.5; color:#0f172a; box-shadow:0 10px 30px rgba(15,23,42,.08); }
           .floating {
             position:fixed; right:48px; top:70px; width:420px; background:#fff;
-            border:3px solid #00a84f; border-radius:18px; padding:18px;
+            border:3px solid #00a84f; border-radius:18px; padding:0 18px 18px;
             box-shadow:0 24px 80px rgba(15,23,42,.28); z-index:10;
           }
-          h1 { margin:0 0 12px; color:#15803d; font-size:22px; }
+          .drag-handle {
+            margin:0 -18px 12px; padding:16px 18px; border-radius:14px 14px 0 0;
+            background:#fff; border-bottom:1px solid #dcfce7; cursor:move; user-select:none;
+            display:flex; align-items:center; justify-content:space-between; gap:10px;
+          }
+          .drag-handle h1 { margin:0; color:#15803d; font-size:22px; }
+          .drag-hint { font-size:11px; color:#64748b; font-weight:700; }
           label { display:block; font-size:13px; font-weight:800; margin:10px 0 5px; }
           input { width:100%; height:42px; border:1px solid #d6e2ec; border-radius:10px; padding:0 12px; font-size:15px; }
           .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
@@ -13819,10 +13871,14 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
         </style>
       </head>
       <body>
-        <div class="viewer"><iframe src="${previewUrl}"></iframe></div>
+        <div class="viewer">${viewerHtml}</div>
 
-        <form class="floating" method="POST" action="/arquivo/renomear/${arquivo.id}">
-          <h1>Renomear</h1>
+        <form id="renomearFloating" class="floating" method="POST" action="/arquivo/renomear/${arquivo.id}">
+          <div id="renomearDragHandle" class="drag-handle">
+            <h1>Renomear</h1>
+            <span class="drag-hint">Arraste aqui</span>
+          </div>
+
           <label>Fornecedor / Favorecido</label>
           <input name="fornecedor" placeholder="Ex.: Bianca Macedo" required>
 
@@ -13839,6 +13895,44 @@ router.get('/arquivo/renomear/:id', protegerRota, async (req, res) => {
             <button class="btn green" type="submit">Renomear</button>
           </div>
         </form>
+
+        <script>
+          (function(){
+            const box = document.getElementById('renomearFloating');
+            const handle = document.getElementById('renomearDragHandle');
+            if (!box || !handle) return;
+
+            let dragging = false;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            handle.addEventListener('mousedown', function(e){
+              dragging = true;
+              const rect = box.getBoundingClientRect();
+              offsetX = e.clientX - rect.left;
+              offsetY = e.clientY - rect.top;
+              box.style.left = rect.left + 'px';
+              box.style.top = rect.top + 'px';
+              box.style.right = 'auto';
+              document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e){
+              if (!dragging) return;
+              const maxLeft = window.innerWidth - box.offsetWidth - 8;
+              const maxTop = window.innerHeight - box.offsetHeight - 8;
+              const left = Math.max(8, Math.min(e.clientX - offsetX, maxLeft));
+              const top = Math.max(8, Math.min(e.clientY - offsetY, maxTop));
+              box.style.left = left + 'px';
+              box.style.top = top + 'px';
+            });
+
+            document.addEventListener('mouseup', function(){
+              dragging = false;
+              document.body.style.userSelect = '';
+            });
+          })();
+        </script>
       </body>
       </html>
     `);
@@ -16200,8 +16294,29 @@ router.post(
         arquivo_xml_id
       } = req.body;
 
-      const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
-      const anexoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : null;
+      let anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
+      let anexoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : null;
+
+      // Quando o PDF/XML vem da tela Arquivo, o navegador não permite preencher input file.
+      // Por isso salvamos pelo ID oculto e usamos o nome físico já existente no /uploads.
+      const arquivoPdfIdFilaNovo = Number(arquivo_pdf_id || 0);
+      const arquivoXmlIdFilaNovo = Number(arquivo_xml_id || 0);
+
+      const arquivoPdfFilaNovo = Number.isFinite(arquivoPdfIdFilaNovo) && arquivoPdfIdFilaNovo > 0
+        ? await getArquivoFilaDisponivel(arquivoPdfIdFilaNovo, 'PDF')
+        : null;
+
+      const arquivoXmlFilaNovo = Number.isFinite(arquivoXmlIdFilaNovo) && arquivoXmlIdFilaNovo > 0
+        ? await getArquivoFilaDisponivel(arquivoXmlIdFilaNovo, 'XML')
+        : null;
+
+      if (!anexoPdf && arquivoPdfFilaNovo) {
+        anexoPdf = arquivoPdfFilaNovo.nome_arquivo;
+      }
+
+      if (!anexoXml && arquivoXmlFilaNovo) {
+        anexoXml = arquivoXmlFilaNovo.nome_arquivo;
+      }
 
       await pool.query(
         `INSERT INTO lancamentos
@@ -16221,6 +16336,15 @@ router.post(
           anexoXml
         ]
       );
+      // Depois de salvar o lançamento, remove da fila os arquivos usados.
+      if (arquivoPdfFilaNovo) {
+        await marcarArquivoFilaComoUsado(arquivoPdfFilaNovo.id);
+      }
+
+      if (arquivoXmlFilaNovo) {
+        await marcarArquivoFilaComoUsado(arquivoXmlFilaNovo.id);
+      }
+
 const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
         return res.redirect(`/rotina-despesas#rotina-${rotinaOrigem}`);
