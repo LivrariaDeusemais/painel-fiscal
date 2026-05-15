@@ -1712,20 +1712,27 @@ function sanitizeArquivoFilaNome(texto) {
 
 function gerarNomeArquivoFila(file) {
   const ext = path.extname(file.originalname || '').toLowerCase();
-  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'arquivo', ext));
   const tipo = ext === '.xml' ? 'XML' : 'PDF';
+  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'arquivo', ext));
+
   const agora = new Date();
-  const stamp = [
+  const data = [
     agora.getFullYear(),
     String(agora.getMonth() + 1).padStart(2, '0'),
-    String(agora.getDate()).padStart(2, '0'),
+    String(agora.getDate()).padStart(2, '0')
+  ].join('-');
+
+  const hora = [
     String(agora.getHours()).padStart(2, '0'),
     String(agora.getMinutes()).padStart(2, '0'),
     String(agora.getSeconds()).padStart(2, '0')
   ].join('');
-  const random = Math.round(Math.random() * 1e6);
-  const baseFinal = `${tipo} ${baseOriginal || 'Arquivo'} ${stamp}-${random}`;
-  return sanitizeArquivoFilaNome(baseFinal).replace(/\\s+/g, '-') + ext;
+
+  const random = String(Math.round(Math.random() * 1e6)).padStart(6, '0');
+
+  // Padrão legível: PDF - nome original - data - hora - random.pdf
+  const nomeLegivel = `${tipo} - ${baseOriginal || 'Arquivo'} - ${data} - ${hora}-${random}${ext}`;
+  return sanitizeArquivoFilaNome(nomeLegivel).replace(/\s+/g, ' ');
 }
 
 const uploadArquivoFila = multer({
@@ -2015,10 +2022,32 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', modoSe
 
 
 // =====================================================
-// PATCH NOVO LANÇAMENTO — BOTÕES BUSCAR EM ARQUIVO
+// PATCH NOVO LANÇAMENTO — BOTÕES BUSCAR EM ARQUIVO + CARREGAR PDF/XML
 // =====================================================
 function renderPlennaTecNovoArquivoAssets() {
   return `
+    <style id="plennatec-novo-arquivo-style">
+      .arquivo-selecionado-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 10px;
+        margin-left: 8px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #86efac;
+        font-size: 12px;
+        font-weight: 800;
+        max-width: 260px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+      }
+    </style>
+
     <script id="plennatec-novo-arquivo-script">
       (function(){
         if (window.__plennatecNovoArquivoReady) return;
@@ -2026,6 +2055,90 @@ function renderPlennaTecNovoArquivoAssets() {
 
         function params() {
           return new URLSearchParams(window.location.search || '');
+        }
+
+        function montarUrlArquivo(destino, rotinaId, pdfId, xmlId) {
+          var url = '/arquivo?selecionar=' + destino;
+          if (rotinaId) url += '&rotina_id=' + encodeURIComponent(rotinaId);
+          if (pdfId) url += '&arquivo_pdf_id=' + encodeURIComponent(pdfId);
+          if (xmlId) url += '&arquivo_xml_id=' + encodeURIComponent(xmlId);
+          return url;
+        }
+
+        async function carregarArquivoSelecionado(id, tipo) {
+          try {
+            if (!id) return null;
+
+            var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), {
+              credentials: 'same-origin'
+            });
+
+            if (!resp.ok) return null;
+
+            var data = await resp.json();
+            if (!data || !data.ok || !data.arquivo) return null;
+
+            var arquivo = data.arquivo;
+
+            if (tipo === 'pdf') {
+              var pdfUrl = arquivo.url;
+
+              // Tenta carregar nos visualizadores existentes da tela.
+              var iframe = document.querySelector('iframe[src*=".pdf"], iframe#pdfViewer, iframe[name*="pdf" i]');
+              if (iframe) iframe.src = pdfUrl;
+
+              var embed = document.querySelector('embed[type="application/pdf"], embed[src*=".pdf"]');
+              if (embed) embed.src = pdfUrl;
+
+              var objectPdf = document.querySelector('object[type="application/pdf"], object[data*=".pdf"]');
+              if (objectPdf) objectPdf.data = pdfUrl;
+
+              // Se a tela tem a mensagem "Selecione o PDF", cria um iframe ocupando a área central.
+              var aviso = Array.from(document.querySelectorAll('body *')).find(function(el){
+                return (el.innerText || '').trim().indexOf('Selecione o PDF') >= 0;
+              });
+
+              if (aviso && !document.getElementById('plennatecPdfArquivoViewer')) {
+                var viewer = document.createElement('iframe');
+                viewer.id = 'plennatecPdfArquivoViewer';
+                viewer.src = pdfUrl;
+                viewer.style.width = '100%';
+                viewer.style.height = '72vh';
+                viewer.style.border = '0';
+                viewer.style.borderRadius = '14px';
+                viewer.style.background = '#fff';
+
+                var container = aviso.closest('div') || aviso.parentElement;
+                if (container) {
+                  container.innerHTML = '';
+                  container.appendChild(viewer);
+                }
+              }
+
+              var copiarBtn = Array.from(document.querySelectorAll('button, a')).find(function(el){
+                return (el.innerText || '').toLowerCase().indexOf('copiar do pdf') >= 0;
+              });
+
+              if (copiarBtn) {
+                copiarBtn.setAttribute('data-pdf-url', pdfUrl);
+                copiarBtn.setAttribute('title', 'PDF selecionado do Arquivo: ' + arquivo.nome_arquivo);
+              }
+            }
+
+            return arquivo;
+          } catch(e) {
+            return null;
+          }
+        }
+
+        function adicionarChipDepoisInput(input, texto) {
+          if (!input || !texto) return;
+          if (input.parentElement && input.parentElement.querySelector('.arquivo-selecionado-chip')) return;
+
+          var chip = document.createElement('span');
+          chip.className = 'arquivo-selecionado-chip';
+          chip.textContent = texto;
+          input.insertAdjacentElement('afterend', chip);
         }
 
         function adicionarBotoesArquivo(){
@@ -2073,7 +2186,7 @@ function renderPlennaTecNovoArquivoAssets() {
 
               var a = document.createElement('a');
               a.className = 'btn-buscar-arquivo-fila-' + destino;
-              a.href = '/arquivo?selecionar=' + destino + (rotinaId ? '&rotina_id=' + encodeURIComponent(rotinaId) : '');
+              a.href = montarUrlArquivo(destino, rotinaId, pdfId, xmlId);
               a.textContent = destino === 'pdf' ? 'Buscar PDF no Arquivo' : 'Buscar XML no Arquivo';
               a.style.display = 'inline-flex';
               a.style.alignItems = 'center';
@@ -2091,6 +2204,26 @@ function renderPlennaTecNovoArquivoAssets() {
               a.style.whiteSpace = 'nowrap';
 
               input.insertAdjacentElement('afterend', a);
+            });
+
+            carregarArquivoSelecionado(pdfId, 'pdf').then(function(arq){
+              if (!arq) return;
+              var pdfInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(input){
+                var accept = (input.getAttribute('accept') || '').toLowerCase();
+                var name = (input.getAttribute('name') || '').toLowerCase();
+                return accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0;
+              });
+              adicionarChipDepoisInput(pdfInput, 'PDF do Arquivo: ' + arq.nome_arquivo);
+            });
+
+            carregarArquivoSelecionado(xmlId, 'xml').then(function(arq){
+              if (!arq) return;
+              var xmlInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(input){
+                var accept = (input.getAttribute('accept') || '').toLowerCase();
+                var name = (input.getAttribute('name') || '').toLowerCase();
+                return accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0;
+              });
+              adicionarChipDepoisInput(xmlInput, 'XML do Arquivo: ' + arq.nome_arquivo);
             });
           } catch(e) {}
         }
@@ -17539,6 +17672,49 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
   }
 });
 
+
+
+// =====================================================
+// API — ARQUIVO FILA PARA NOVO LANÇAMENTO
+// =====================================================
+router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: 'ID inválido.' });
+    }
+
+    const result = await pool.query(`
+      SELECT id, nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status
+      FROM arquivo_fila
+      WHERE id = $1 AND status = 'DISPONIVEL'
+      LIMIT 1
+    `, [id]);
+
+    const arquivo = result.rows[0];
+    if (!arquivo) {
+      return res.status(404).json({ ok: false, error: 'Arquivo não encontrado ou já utilizado.' });
+    }
+
+    res.json({
+      ok: true,
+      arquivo: {
+        id: arquivo.id,
+        nome_original: arquivo.nome_original,
+        nome_arquivo: arquivo.nome_arquivo,
+        tipo: arquivo.tipo,
+        url: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
+        tamanho_bytes: arquivo.tamanho_bytes
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+
 router.get('/arquivo/selecionar/:id', protegerRota, async (req, res) => {
   try {
     await ensureArquivoFilaTable();
@@ -17546,6 +17722,8 @@ router.get('/arquivo/selecionar/:id', protegerRota, async (req, res) => {
     const id = Number(req.params.id);
     const destino = String(req.query.destino || '').toLowerCase();
     const rotinaId = String(req.query.rotina_id || '').trim();
+    const pdfAtual = String(req.query.arquivo_pdf_id || '').trim();
+    const xmlAtual = String(req.query.arquivo_xml_id || '').trim();
 
     if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
       return res.redirect('/arquivo?erro=Seleção inválida.');
@@ -17565,13 +17743,21 @@ router.get('/arquivo/selecionar/:id', protegerRota, async (req, res) => {
 
     const tipoEsperado = destino === 'xml' ? 'XML' : 'PDF';
     if (arquivo.tipo !== tipoEsperado) {
-      return res.redirect(`/arquivo?selecionar=${destino}&rotina_id=${encodeURIComponent(rotinaId)}&erro=Tipo de arquivo incompatível.`);
+      return res.redirect(`/arquivo?selecionar=${destino}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(pdfAtual)}&arquivo_xml_id=${encodeURIComponent(xmlAtual)}&erro=Tipo de arquivo incompatível.`);
     }
 
     const query = new URLSearchParams();
     if (rotinaId) query.set('rotina_id', rotinaId);
-    if (destino === 'pdf') query.set('arquivo_pdf_id', String(id));
-    if (destino === 'xml') query.set('arquivo_xml_id', String(id));
+
+    if (destino === 'pdf') {
+      query.set('arquivo_pdf_id', String(id));
+      if (xmlAtual) query.set('arquivo_xml_id', xmlAtual);
+    }
+
+    if (destino === 'xml') {
+      query.set('arquivo_xml_id', String(id));
+      if (pdfAtual) query.set('arquivo_pdf_id', pdfAtual);
+    }
 
     res.redirect(`/novo?${query.toString()}`);
   } catch (error) {
