@@ -70,6 +70,15 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
       return res.status(404).send('<pre>Arquivo não encontrado no disco persistente.</pre>');
     }
 
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
+    } else if (ext === '.xml') {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
+    }
+
     return res.sendFile(filePath);
   } catch (error) {
     return res.status(500).send(`<pre>Erro ao abrir arquivo:\n${error.message}</pre>`);
@@ -1660,6 +1669,416 @@ router.use((req, res, next) => {
 
   next();
 });
+
+
+
+
+
+// =====================================================
+// MÓDULO ARQUIVO OPERACIONAL LIMPO — PDF/XML EM FILA
+// Regra: upload renomeado, PDF abre no mesmo popup do Novo Lançamento,
+// XML/PDF selecionados são anexados ao salvar e removidos da fila.
+// =====================================================
+
+async function ensureArquivoFilaTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS arquivo_fila (
+      id SERIAL PRIMARY KEY,
+      nome_original TEXT,
+      nome_arquivo TEXT NOT NULL,
+      tipo VARCHAR(10) NOT NULL,
+      caminho TEXT NOT NULL,
+      tamanho_bytes BIGINT DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'DISPONIVEL',
+      criado_em TIMESTAMP DEFAULT NOW(),
+      usado_em TIMESTAMP,
+      origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
+    )
+  `);
+
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS nome_original TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS nome_arquivo TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS tipo VARCHAR(10)`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS caminho TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS tamanho_bytes BIGINT DEFAULT 0`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DISPONIVEL'`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS usado_em TIMESTAMP`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'`);
+}
+
+function sanitizeArquivoFilaNome(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\/\\:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function gerarNomeArquivoFila(file) {
+  const extOriginal = path.extname(file.originalname || '').toLowerCase();
+  const ext = extOriginal === '.xml' ? '.xml' : '.pdf';
+
+  // Aqui aplicamos o mesmo conceito do "Baixar" do contador:
+  // nome legível, sem caracteres proibidos, mantendo o padrão operacional do arquivo.
+  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'Arquivo', extOriginal || ext));
+  const base = baseOriginal || 'Arquivo';
+
+  let nomeFinal = `${base}${ext}`;
+
+  // Se vier arquivo sem identificação clara, prefixa o tipo para evitar confusão.
+  if (!/^(PIX|DOP|DEB|CAR|Boleto|Guia|Recibo|NF|NFe|CTE|CTEs|XML|PDF)[\s\-]/i.test(base)) {
+    nomeFinal = `${ext === '.xml' ? 'XML' : 'PDF'}-${base}${ext}`;
+  }
+
+  return sanitizeArquivoFilaNome(nomeFinal);
+}
+
+function gerarNomeUnicoArquivoFila(nomeBase) {
+  const ext = path.extname(nomeBase);
+  const base = path.basename(nomeBase, ext);
+  let candidato = nomeBase;
+  let contador = 2;
+
+  while (fs.existsSync(path.join(uploadsDir, candidato))) {
+    candidato = `${base}-${contador}${ext}`;
+    contador += 1;
+  }
+
+  return candidato;
+}
+
+const uploadArquivoFila = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const nomeBase = gerarNomeArquivoFila(file);
+      cb(null, gerarNomeUnicoArquivoFila(nomeBase));
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext === '.pdf' || ext === '.xml') return cb(null, true);
+    return cb(new Error('Tipo de arquivo não permitido. Envie somente PDF ou XML.'));
+  }
+});
+
+async function getArquivoFilaDisponivel(id, tipoEsperado = '') {
+  await ensureArquivoFilaTable();
+
+  const params = [id];
+  let filtroTipo = '';
+
+  if (tipoEsperado) {
+    params.push(tipoEsperado);
+    filtroTipo = ` AND tipo = $${params.length}`;
+  }
+
+  const result = await pool.query(`
+    SELECT *
+    FROM arquivo_fila
+    WHERE id = $1
+      AND status = 'DISPONIVEL'
+      ${filtroTipo}
+    LIMIT 1
+  `, params);
+
+  return result.rows[0] || null;
+}
+
+async function marcarArquivoFilaComoUsado(id) {
+  const arquivoId = Number(id || 0);
+  if (!Number.isFinite(arquivoId) || arquivoId <= 0) return;
+
+  await ensureArquivoFilaTable();
+  await pool.query(`
+    UPDATE arquivo_fila
+    SET status = 'USADO',
+        usado_em = NOW()
+    WHERE id = $1
+  `, [arquivoId]);
+}
+
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '' } = {}) {
+  const modoSelecao = String(selecionar || '').toLowerCase();
+  const titulo = modoSelecao
+    ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
+    : 'Arquivo';
+
+  const subtitulo = modoSelecao
+    ? 'Escolha um arquivo da fila para carregar no Novo Lançamento.'
+    : 'Importe, renomeie e organize PDFs/XMLs antes de lançar.';
+
+  const linhas = arquivos.map(a => {
+    const tipo = String(a.tipo || '').toUpperCase();
+    const badge = tipo === 'XML'
+      ? '<span class="arquivo-badge xml">XML</span>'
+      : '<span class="arquivo-badge pdf">PDF</span>';
+
+    const usarParams = new URLSearchParams();
+    usarParams.set('destino', tipo === 'XML' ? 'xml' : 'pdf');
+    if (rotinaId) usarParams.set('rotina_id', rotinaId);
+    if (arquivoPdfId) usarParams.set('arquivo_pdf_id', arquivoPdfId);
+    if (arquivoXmlId) usarParams.set('arquivo_xml_id', arquivoXmlId);
+
+    const usarBtn = modoSelecao
+      ? `<a class="btn-green-mini" href="/arquivo/usar/${a.id}?${usarParams.toString()}">Usar</a>`
+      : '';
+
+    return `
+      <tr>
+        <td>${badge}</td>
+        <td class="arquivo-nome">${escapeHtmlGlobal(a.nome_arquivo || '')}</td>
+        <td>${escapeHtmlGlobal(a.nome_original || '')}</td>
+        <td>${Number(a.tamanho_bytes || 0).toLocaleString('pt-BR')} bytes</td>
+        <td>${formatDateBR(a.criado_em)}</td>
+        <td class="arquivo-actions">
+          <a class="btn-soft-mini" href="/arquivo/ver/${a.id}" target="_blank">Abrir</a>
+          ${usarBtn}
+          <form method="POST" action="/arquivo/${a.id}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
+            <button type="submit" class="btn-danger-mini">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const navVoltar = modoSelecao
+    ? `<a class="dm-menu-btn" href="/novo${rotinaId ? `?rotina_id=${encodeURIComponent(rotinaId)}` : ''}">Voltar ao lançamento</a>`
+    : `<a class="dm-menu-btn" href="/dashboard">Voltar para o Painel</a>`;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${titulo} - PlennaTec</title>
+      <style>
+        body {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+          color: #0f172a;
+          background: linear-gradient(135deg,#b7efc8 0%,#eef4f8 28%,#ffffff 100%);
+        }
+        * { box-sizing: border-box; }
+        .dm-global-page-shell {
+          width: min(1500px, calc(100vw - 48px));
+          margin: 0 auto;
+          padding: 20px 0;
+        }
+        .top-card, .nav-card, .content-card {
+          background: rgba(255,255,255,.92);
+          border: 1px solid #dce7ef;
+          border-radius: 22px;
+          box-shadow: 0 16px 36px rgba(15,23,42,.08);
+        }
+        .top-card {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding: 18px 24px;
+          margin-bottom: 12px;
+        }
+        .top-title h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 800;
+        }
+        .top-title p {
+          margin: 4px 0 0;
+          color:#475569;
+          font-weight:600;
+        }
+        .nav-card {
+          display:flex;
+          gap:10px;
+          align-items:center;
+          padding: 12px 16px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+        }
+        .dm-menu-btn, .btn-green, .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
+          border: 1px solid #d6e2ec;
+          border-radius: 12px;
+          padding: 11px 16px;
+          text-decoration:none;
+          color:#00843d;
+          font-weight:800;
+          background:#f8fafc;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          white-space:nowrap;
+        }
+        .btn-green, .btn-green-mini {
+          background:#00a84f;
+          color:#fff;
+          border-color:#00a84f;
+          box-shadow:0 10px 22px rgba(0,168,79,.16);
+        }
+        .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
+          height:30px;
+          padding:0 10px;
+          font-size:12px;
+          border-radius:9px;
+        }
+        .btn-danger-mini {
+          color:#b42318;
+          background:#fff5f5;
+          border-color:#fecaca;
+        }
+        .content-card { padding: 20px; }
+        .upload-panel {
+          border: 1px dashed #9ecfb2;
+          background: #f5fff8;
+          border-radius: 18px;
+          padding: 18px;
+          margin-bottom: 18px;
+        }
+        .upload-form {
+          display:flex;
+          gap:12px;
+          align-items:center;
+          flex-wrap:wrap;
+        }
+        input[type=file] {
+          border:1px solid #d6e2ec;
+          border-radius:12px;
+          background:#fff;
+          padding:10px;
+          min-width:320px;
+        }
+        .alert-ok, .alert-error {
+          padding: 12px 14px;
+          border-radius: 12px;
+          margin-bottom: 12px;
+          font-weight:700;
+        }
+        .alert-ok { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+        .alert-error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+        .table-wrap {
+          width:100%;
+          overflow:auto;
+          border:1px solid #dce7ef;
+          border-radius:16px;
+        }
+        table {
+          width:100%;
+          border-collapse:collapse;
+          table-layout:fixed;
+          background:#fff;
+        }
+        th, td {
+          padding: 11px 10px;
+          border-bottom:1px solid #e6edf4;
+          font-size:13px;
+          text-align:left;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        th {
+          background:#f8fafc;
+          color:#334155;
+          font-size:12px;
+          text-transform:uppercase;
+        }
+        th:nth-child(1), td:nth-child(1) { width:70px; text-align:center; }
+        th:nth-child(2), td:nth-child(2) { width:32%; }
+        th:nth-child(3), td:nth-child(3) { width:26%; }
+        th:nth-child(4), td:nth-child(4) { width:120px; }
+        th:nth-child(5), td:nth-child(5) { width:110px; }
+        th:nth-child(6), td:nth-child(6) { width:230px; }
+        .arquivo-badge {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          min-width:46px;
+          height:26px;
+          border-radius:999px;
+          font-size:11px;
+          font-weight:900;
+        }
+        .arquivo-badge.pdf { background:#dbeafe; color:#1d4ed8; }
+        .arquivo-badge.xml { background:#dcfce7; color:#15803d; }
+        .arquivo-actions {
+          display:flex;
+          gap:7px;
+          align-items:center;
+          justify-content:flex-start;
+        }
+        .arquivo-actions form { margin:0; }
+        .empty {
+          padding:34px;
+          text-align:center;
+          color:#64748b;
+          font-weight:700;
+        }
+      </style>
+    </head>
+    <body class="dm-global-page">
+      <div class="dm-global-page-shell">
+        <div class="top-card">
+          <div class="top-title">
+            <h1>${titulo}</h1>
+            <p>${subtitulo}</p>
+          </div>
+          <a class="dm-menu-btn" href="/logout">Sair</a>
+        </div>
+
+        <div class="nav-card">
+          ${navVoltar}
+          <a class="dm-menu-btn" href="/lancamentos">Comprovantes Fiscais</a>
+          <a class="dm-menu-btn" href="/rotina-despesas">Contas à Pagar</a>
+          <a class="dm-menu-btn" href="/categorias">Categorias</a>
+          <a class="dm-menu-btn" href="/espaco-contador">Espaço do Contador</a>
+        </div>
+
+        <div class="content-card">
+          ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
+          ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
+
+          ${!modoSelecao ? `
+            <div class="upload-panel">
+              <form class="upload-form" method="POST" action="/arquivo/importar" enctype="multipart/form-data">
+                <strong>Importar arquivos PDF/XML</strong>
+                <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
+                <button class="btn-green" type="submit">Buscar e importar arquivo</button>
+              </form>
+              <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
+                Ao importar, o sistema renomeia automaticamente para o padrão operacional da PlennaTec e deixa disponível para uso no Novo Lançamento.
+              </p>
+            </div>
+          ` : ''}
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Nome PlennaTec</th>
+                  <th>Nome Original</th>
+                  <th>Tamanho</th>
+                  <th>Importado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${linhas || `<tr><td colspan="6"><div class="empty">Nenhum arquivo disponível na fila.</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
 
 
@@ -6148,7 +6567,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -8476,7 +8895,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link active" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="premium-side-link" href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
             <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
-            <a class="premium-side-link" href="/documentos"><span>▣</span>Arquivo</a>
+            <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
@@ -8519,7 +8938,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         <nav class="nav-panel" aria-label="Menu principal">
           <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
-          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
+          <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -9097,7 +9516,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -10104,7 +10523,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -10806,7 +11225,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -12530,7 +12949,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -12967,8 +13386,19 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
-      const anexoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : null;
+      let anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
+      let anexoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : null;
+
+      const arquivoPdfFila = arquivo_pdf_id ? await getArquivoFilaDisponivel(Number(arquivo_pdf_id), 'PDF') : null;
+      const arquivoXmlFila = arquivo_xml_id ? await getArquivoFilaDisponivel(Number(arquivo_xml_id), 'XML') : null;
+
+      if (!anexoPdf && arquivoPdfFila) {
+        anexoPdf = arquivoPdfFila.nome_arquivo;
+      }
+
+      if (!anexoXml && arquivoXmlFila) {
+        anexoXml = arquivoXmlFila.nome_arquivo;
+      }
 
       let dados = {
         tipo_documento: '',
@@ -13022,6 +13452,205 @@ router.post(
     }
   }
 );
+
+
+
+// =====================================================
+// ROTAS — MÓDULO ARQUIVO OPERACIONAL LIMPO
+// =====================================================
+
+router.get('/arquivo', protegerRota, async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const selecionar = String(req.query.selecionar || '').toLowerCase();
+    const rotinaId = String(req.query.rotina_id || '').trim();
+    const arquivoPdfId = String(req.query.arquivo_pdf_id || '').trim();
+    const arquivoXmlId = String(req.query.arquivo_xml_id || '').trim();
+
+    const params = [];
+    let where = `WHERE status = 'DISPONIVEL'`;
+
+    if (selecionar === 'pdf') {
+      params.push('PDF');
+      where += ` AND tipo = $${params.length}`;
+    }
+
+    if (selecionar === 'xml') {
+      params.push('XML');
+      where += ` AND tipo = $${params.length}`;
+    }
+
+    const result = await pool.query(`
+      SELECT *
+      FROM arquivo_fila
+      ${where}
+      ORDER BY criado_em DESC, id DESC
+    `, params);
+
+    res.send(renderArquivoFilaPage({
+      arquivos: result.rows,
+      mensagem: req.query.ok || '',
+      erro: req.query.erro || '',
+      selecionar,
+      rotinaId,
+      arquivoPdfId,
+      arquivoXmlId
+    }));
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos', 80), async (req, res) => {
+  try {
+    await ensureArquivoFilaTable();
+
+    const files = req.files || [];
+    for (const file of files) {
+      const ext = path.extname(file.filename || file.originalname || '').toLowerCase();
+      const tipo = ext === '.xml' ? 'XML' : 'PDF';
+
+      await pool.query(`
+        INSERT INTO arquivo_fila (nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status, origem)
+        VALUES ($1, $2, $3, $4, $5, 'DISPONIVEL', 'UPLOAD_MANUAL')
+      `, [
+        file.originalname || '',
+        file.filename,
+        tipo,
+        file.path,
+        file.size || 0
+      ]);
+    }
+
+    res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e renomeado(s) com sucesso.`)}`);
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
+router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ ok: false, error: 'ID inválido.' });
+    }
+
+    const arquivo = await getArquivoFilaDisponivel(id);
+    if (!arquivo) {
+      return res.status(404).json({ ok: false, error: 'Arquivo não encontrado ou já utilizado.' });
+    }
+
+    res.json({
+      ok: true,
+      arquivo: {
+        id: arquivo.id,
+        nome_original: arquivo.nome_original,
+        nome_arquivo: arquivo.nome_arquivo,
+        tipo: arquivo.tipo,
+        viewUrl: `/arquivo/ver/${arquivo.id}`,
+        downloadUrl: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
+        tamanho_bytes: arquivo.tamanho_bytes
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).send('<pre>ID inválido.</pre>');
+    }
+
+    const arquivo = await getArquivoFilaDisponivel(id);
+    if (!arquivo) {
+      return res.status(404).send('<pre>Arquivo não encontrado ou já utilizado.</pre>');
+    }
+
+    const filePath = getUploadFilePath(arquivo.nome_arquivo);
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).send('<pre>Arquivo físico não encontrado.</pre>');
+    }
+
+    const tipo = arquivo.tipo === 'XML' ? 'application/xml; charset=utf-8' : 'application/pdf';
+    res.setHeader('Content-Type', tipo);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(arquivo.nome_arquivo)}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    return res.sendFile(filePath);
+  } catch (error) {
+    return res.status(500).send(`<pre>Erro ao visualizar arquivo:\n${error.message}</pre>`);
+  }
+});
+
+router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const destino = String(req.query.destino || '').toLowerCase();
+    const rotinaId = String(req.query.rotina_id || '').trim();
+    const arquivoPdfIdAtual = String(req.query.arquivo_pdf_id || '').trim();
+    const arquivoXmlIdAtual = String(req.query.arquivo_xml_id || '').trim();
+
+    if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
+      return res.redirect('/arquivo?erro=Seleção inválida.');
+    }
+
+    const tipoEsperado = destino === 'xml' ? 'XML' : 'PDF';
+    const arquivo = await getArquivoFilaDisponivel(id, tipoEsperado);
+
+    if (!arquivo) {
+      return res.redirect('/arquivo?erro=Arquivo não encontrado, incompatível ou já utilizado.');
+    }
+
+    const query = new URLSearchParams();
+    if (rotinaId) query.set('rotina_id', rotinaId);
+
+    if (destino === 'pdf') {
+      query.set('arquivo_pdf_id', String(id));
+      if (arquivoXmlIdAtual) query.set('arquivo_xml_id', arquivoXmlIdAtual);
+      query.set('abrir_pdf_arquivo', '1');
+    }
+
+    if (destino === 'xml') {
+      query.set('arquivo_xml_id', String(id));
+      if (arquivoPdfIdAtual) query.set('arquivo_pdf_id', arquivoPdfIdAtual);
+      if (arquivoPdfIdAtual) query.set('abrir_pdf_arquivo', '1');
+    }
+
+    res.redirect(`/novo?${query.toString()}`);
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao usar arquivo:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/arquivo/:id/excluir', protegerRota, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isFinite(id)) {
+      await ensureArquivoFilaTable();
+      await pool.query(`
+        UPDATE arquivo_fila
+        SET status = 'EXCLUIDO',
+            usado_em = NOW()
+        WHERE id = $1
+      `, [id]);
+    }
+
+    res.redirect('/arquivo?ok=Arquivo removido da fila.');
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
+// Compatibilidade: se algum menu antigo ainda chamar /documentos, abre o novo Arquivo.
+router.get('/documentos', protegerRota, (req, res) => {
+  const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  res.redirect('/arquivo' + query);
+});
+
 
 router.get('/documentos/gerar-lancamento/:id', async (req, res) => {
   try {
@@ -13345,7 +13974,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -13718,7 +14347,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               <div class="actions">
                 <button type="submit">Criar lançamento</button>
-                <a class="btn-secondary" href="/documentos">Cancelar</a>
+                <a class="btn-secondary" href="/arquivo">Cancelar</a>
               </div>
             </form>
           </div>
@@ -13870,7 +14499,7 @@ router.post('/documentos/gerar-lancamento/:id', async (req, res) => {
     
 router.get('/novo', async (req, res) => {
   try {
-    const { rotina_id = '' } = req.query;
+    const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '' } = req.query;
 
     const categoriasResult = await pool.query(`
       SELECT
@@ -14212,7 +14841,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -14709,6 +15338,8 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             <form id="novoLancamentoForm" method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
+              <input type="hidden" id="arquivo_pdf_id" name="arquivo_pdf_id" value="${arquivo_pdf_id || ''}">
+              <input type="hidden" id="arquivo_xml_id" name="arquivo_xml_id" value="${arquivo_xml_id || ''}">
 
               <div class="grid">
                 <div>
@@ -14786,6 +15417,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 <div>
                   <label for="anexo_xml">XML</label>
                   <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
+                  <a
+                    class="btn-buscar-arquivo-xml"
+                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}"
+                  >Buscar XML no Arquivo</a>
+                  <span id="xmlArquivoSelecionadoChip" class="arquivo-selecionado-chip" style="display:none;"></span>
                   <div class="field-hint">Anexe o XML para salvar junto com o lançamento e disponibilizar para download depois.</div>
                 </div>
               </div>
@@ -14817,6 +15453,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             <div class="pdf-copy-file-row">
               <input id="pdfCopyFile" type="file" accept="application/pdf,.pdf" onchange="carregarPDFManual(event)" />
+              <a
+                id="buscarPdfArquivoBtn"
+                class="btn-buscar-arquivo-fila"
+                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}"
+              >Buscar PDF no Arquivo</a>
             </div>
 
             <div class="pdf-copy-grid">
@@ -14860,6 +15501,80 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
       
         <script>
           var pdfCopyObjectUrl = null;
+
+          async function buscarArquivoFilaInfo(id) {
+            if (!id) return null;
+            try {
+              var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), { credentials: 'same-origin' });
+              if (!resp.ok) return null;
+              var data = await resp.json();
+              return data && data.ok ? data.arquivo : null;
+            } catch (erro) {
+              console.error('Erro ao buscar arquivo da fila:', erro);
+              return null;
+            }
+          }
+
+          async function carregarPdfDoArquivoFilaSeExistir() {
+            var pdfId = '${arquivo_pdf_id || ''}';
+            var abrirAutomatico = '${abrir_pdf_arquivo || ''}' === '1';
+
+            if (!pdfId) return;
+
+            var arquivo = await buscarArquivoFilaInfo(pdfId);
+            if (!arquivo) return;
+
+            var hidden = document.getElementById('arquivo_pdf_id');
+            if (hidden) hidden.value = pdfId;
+
+            if (abrirAutomatico) {
+              abrirCopiarDoPDF();
+            }
+
+            var viewer = document.getElementById('pdfCopyViewer');
+            var empty = document.getElementById('pdfCopyEmpty');
+
+            if (viewer) viewer.src = arquivo.viewUrl;
+            if (empty) empty.style.display = 'none';
+
+            var fileInput = document.getElementById('pdfCopyFile');
+            if (fileInput) {
+              fileInput.insertAdjacentHTML(
+                'afterend',
+                '<span class="arquivo-selecionado-chip">PDF do Arquivo: ' + arquivo.nome_arquivo + '</span>'
+              );
+            }
+
+            var msg = document.getElementById('nf_paste_msg');
+            if (msg) {
+              msg.className = 'nf-paste-msg ok';
+              msg.textContent = 'PDF carregado do Arquivo. Preencha os dados no pop-up e salve.';
+            }
+          }
+
+          async function carregarXmlDoArquivoFilaSeExistir() {
+            var xmlId = '${arquivo_xml_id || ''}';
+            if (!xmlId) return;
+
+            var arquivo = await buscarArquivoFilaInfo(xmlId);
+            if (!arquivo) return;
+
+            var hidden = document.getElementById('arquivo_xml_id');
+            if (hidden) hidden.value = xmlId;
+
+            var chip = document.getElementById('xmlArquivoSelecionadoChip');
+            if (chip) {
+              chip.style.display = 'inline-flex';
+              chip.textContent = 'XML do Arquivo: ' + arquivo.nome_arquivo;
+            }
+          }
+
+          document.addEventListener('DOMContentLoaded', function() {
+            carregarPdfDoArquivoFilaSeExistir();
+            carregarXmlDoArquivoFilaSeExistir();
+          });
+
+
 
           function abrirCopiarDoPDF() {
             var modal = document.getElementById('pdfCopyModal');
@@ -14919,6 +15634,9 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           }
 
           function anexarPDFSelecionadoNoFormulario() {
+            var arquivoPdfId = document.getElementById('arquivo_pdf_id');
+            if (arquivoPdfId && arquivoPdfId.value) return true;
+
             var origem = document.getElementById('pdfCopyFile');
             var destino = document.getElementById('anexo_pdf') || document.querySelector('input[name="anexo_pdf"]');
 
@@ -15186,7 +15904,9 @@ router.post(
         valor,
         tipo_pagamento,
         categoria_id,
-        rotina_id
+        rotina_id,
+        arquivo_pdf_id,
+        arquivo_xml_id
       } = req.body;
 
       const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
@@ -15210,6 +15930,14 @@ router.post(
           anexoXml
         ]
       );
+
+      if (arquivoPdfFila) {
+        await marcarArquivoFilaComoUsado(arquivoPdfFila.id);
+      }
+
+      if (arquivoXmlFila) {
+        await marcarArquivoFilaComoUsado(arquivoXmlFila.id);
+      }
 
       const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
@@ -15607,7 +16335,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -16820,7 +17548,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -18039,7 +18767,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -18645,7 +19373,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -19283,7 +20011,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -20373,7 +21101,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -21675,7 +22403,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -22446,7 +23174,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/documentos"],
+.actions a[href="/arquivo"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -25406,7 +26134,7 @@ body.contador-premium-page .trash-history {
               <a href="/dashboard"><span>⌂</span>Dashboard</a>
               <a href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
               <a href="/lancamentos"><span>▤</span>Comprovantes</a>
-              <a href="/documentos"><span>▣</span>Arquivo</a>
+              <a href="/arquivo"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
