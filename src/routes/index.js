@@ -70,15 +70,6 @@ router.get('/uploads/:filename', protegerRota, (req, res) => {
       return res.status(404).send('<pre>Arquivo não encontrado no disco persistente.</pre>');
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.pdf') {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
-    } else if (ext === '.xml') {
-      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(path.basename(filePath))}"`);
-    }
-
     return res.sendFile(filePath);
   } catch (error) {
     return res.status(500).send(`<pre>Erro ao abrir arquivo:\n${error.message}</pre>`);
@@ -1661,603 +1652,6 @@ router.use((req, res, next) => {
     try {
       if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-exportar-excel-v2-script')) {
         body = body.replace('</head>', `${renderPlennaTecExportarExcelV2Assets()}</head>`);
-      }
-    } catch (error) {}
-
-    return originalSend(body);
-  };
-
-  next();
-});
-
-
-
-
-
-// =====================================================
-// MÓDULO ARQUIVO OPERACIONAL V1 — FILA PDF/XML
-// =====================================================
-
-async function ensureArquivoFilaTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS arquivo_fila (
-      id SERIAL PRIMARY KEY,
-      nome_original TEXT,
-      nome_arquivo TEXT NOT NULL,
-      tipo VARCHAR(10) NOT NULL,
-      caminho TEXT NOT NULL,
-      tamanho_bytes BIGINT DEFAULT 0,
-      status VARCHAR(20) DEFAULT 'DISPONIVEL',
-      criado_em TIMESTAMP DEFAULT NOW(),
-      usado_em TIMESTAMP,
-      origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
-    )
-  `);
-
-  await pool.query(`
-    ALTER TABLE arquivo_fila
-    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DISPONIVEL'
-  `);
-
-  await pool.query(`
-    ALTER TABLE arquivo_fila
-    ADD COLUMN IF NOT EXISTS usado_em TIMESTAMP
-  `);
-
-  await pool.query(`
-    ALTER TABLE arquivo_fila
-    ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
-  `);
-}
-
-function sanitizeArquivoFilaNome(texto) {
-  return String(texto || '')
-    .replace(/[\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function gerarNomeArquivoFila(file) {
-  const extOriginal = path.extname(file.originalname || '').toLowerCase();
-  const ext = extOriginal === '.xml' ? '.xml' : '.pdf';
-  const tipo = ext === '.xml' ? 'XML' : 'PDF';
-  const baseOriginal = sanitizeArquivoFilaNome(path.basename(file.originalname || 'Arquivo', extOriginal || ext));
-
-  const agora = new Date();
-  const data = [
-    agora.getFullYear(),
-    String(agora.getMonth() + 1).padStart(2, '0'),
-    String(agora.getDate()).padStart(2, '0')
-  ].join('-');
-
-  const hora = [
-    String(agora.getHours()).padStart(2, '0'),
-    String(agora.getMinutes()).padStart(2, '0'),
-    String(agora.getSeconds()).padStart(2, '0')
-  ].join('');
-
-  const random = String(Math.round(Math.random() * 1e6)).padStart(6, '0');
-
-  return `${tipo} - ${baseOriginal || 'Arquivo'} - ${data} - ${hora}-${random}${ext}`;
-}
-
-const uploadArquivoFila = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-      cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-      cb(null, gerarNomeArquivoFila(file));
-    }
-  }),
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase();
-    if (ext === '.pdf' || ext === '.xml') return cb(null, true);
-    return cb(new Error('Tipo de arquivo não permitido. Envie somente PDF ou XML.'));
-  }
-});
-
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', modoSelecao = '', rotinaId = '', origem = '' } = {}) {
-  const tituloAcao = modoSelecao
-    ? `Escolha um arquivo ${modoSelecao === 'xml' ? 'XML' : 'PDF'} para o lançamento`
-    : 'Arquivo';
-
-  const rows = arquivos.map(a => {
-    const tipoBadge = a.tipo === 'XML'
-      ? '<span class="arquivo-badge xml">XML</span>'
-      : '<span class="arquivo-badge pdf">PDF</span>';
-
-    const usarUrl = `/arquivo/selecionar/${a.id}?destino=${encodeURIComponent(modoSelecao || '')}&rotina_id=${encodeURIComponent(rotinaId || '')}&origem=${encodeURIComponent(origem || '')}`;
-
-    return `
-      <tr>
-        <td>${tipoBadge}</td>
-        <td class="arquivo-nome">${escapeHtmlGlobal(a.nome_arquivo || '')}</td>
-        <td>${escapeHtmlGlobal(a.nome_original || '')}</td>
-        <td>${Number(a.tamanho_bytes || 0).toLocaleString('pt-BR')} bytes</td>
-        <td>${formatDateBR(a.criado_em)}</td>
-        <td class="arquivo-actions">
-          <a class="btn-soft-mini" href="/uploads/${encodeURIComponent(a.nome_arquivo)}" target="_blank">Abrir</a>
-          ${modoSelecao ? `<a class="btn-green-mini" href="${usarUrl}">Usar</a>` : ''}
-          <form method="POST" action="/arquivo/${a.id}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
-            <button type="submit" class="btn-danger-mini">Excluir</button>
-          </form>
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  const navVoltar = modoSelecao
-    ? `<a class="dm-menu-btn" href="/novo${rotinaId ? `?rotina_id=${encodeURIComponent(rotinaId)}` : ''}">Voltar ao lançamento</a>`
-    : `<a class="dm-menu-btn" href="/dashboard">Voltar para o Painel</a>`;
-
-  return `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-      <meta charset="UTF-8">
-      <title>Arquivo - PlennaTec</title>
-      <style>
-        body {
-          margin: 0;
-          font-family: Arial, Helvetica, sans-serif;
-          color: #0f172a;
-          background: linear-gradient(135deg,#b7efc8 0%,#eef4f8 28%,#ffffff 100%);
-        }
-        * { box-sizing: border-box; }
-        .dm-global-page-shell {
-          width: min(1500px, calc(100vw - 48px));
-          margin: 0 auto;
-          padding: 20px 0;
-        }
-        .top-card, .nav-card, .content-card {
-          background: rgba(255,255,255,.92);
-          border: 1px solid #dce7ef;
-          border-radius: 22px;
-          box-shadow: 0 16px 36px rgba(15,23,42,.08);
-        }
-        .top-card {
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          padding: 18px 24px;
-          margin-bottom: 12px;
-        }
-        .top-title h1 {
-          margin: 0;
-          font-size: 28px;
-          font-weight: 800;
-        }
-        .top-title p {
-          margin: 4px 0 0;
-          color:#475569;
-          font-weight:600;
-        }
-        .nav-card {
-          display:flex;
-          gap:10px;
-          align-items:center;
-          padding: 12px 16px;
-          margin-bottom: 14px;
-          flex-wrap: wrap;
-        }
-        .dm-menu-btn, .btn-green, .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
-          border: 1px solid #d6e2ec;
-          border-radius: 12px;
-          padding: 11px 16px;
-          text-decoration:none;
-          color:#00843d;
-          font-weight:800;
-          background:#f8fafc;
-          cursor:pointer;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          white-space:nowrap;
-        }
-        .btn-green, .btn-green-mini {
-          background:#00a84f;
-          color:#fff;
-          border-color:#00a84f;
-          box-shadow:0 10px 22px rgba(0,168,79,.16);
-        }
-        .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
-          height:30px;
-          padding:0 10px;
-          font-size:12px;
-          border-radius:9px;
-        }
-        .btn-danger-mini {
-          color:#b42318;
-          background:#fff5f5;
-          border-color:#fecaca;
-        }
-        .content-card {
-          padding: 20px;
-        }
-        .upload-panel {
-          border: 1px dashed #9ecfb2;
-          background: #f5fff8;
-          border-radius: 18px;
-          padding: 18px;
-          margin-bottom: 18px;
-        }
-        .upload-form {
-          display:flex;
-          gap:12px;
-          align-items:center;
-          flex-wrap:wrap;
-        }
-        input[type=file] {
-          border:1px solid #d6e2ec;
-          border-radius:12px;
-          background:#fff;
-          padding:10px;
-          min-width:320px;
-        }
-        .alert-ok, .alert-error {
-          padding: 12px 14px;
-          border-radius: 12px;
-          margin-bottom: 12px;
-          font-weight:700;
-        }
-        .alert-ok { background:#dcfce7; color:#166534; border:1px solid #86efac; }
-        .alert-error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-        .table-wrap {
-          width:100%;
-          overflow:auto;
-          border:1px solid #dce7ef;
-          border-radius:16px;
-        }
-        table {
-          width:100%;
-          border-collapse:collapse;
-          table-layout:fixed;
-          background:#fff;
-        }
-        th, td {
-          padding: 11px 10px;
-          border-bottom:1px solid #e6edf4;
-          font-size:13px;
-          text-align:left;
-          white-space:nowrap;
-          overflow:hidden;
-          text-overflow:ellipsis;
-        }
-        th {
-          background:#f8fafc;
-          color:#334155;
-          font-size:12px;
-          text-transform:uppercase;
-        }
-        th:nth-child(1), td:nth-child(1) { width:70px; text-align:center; }
-        th:nth-child(2), td:nth-child(2) { width:32%; }
-        th:nth-child(3), td:nth-child(3) { width:26%; }
-        th:nth-child(4), td:nth-child(4) { width:120px; }
-        th:nth-child(5), td:nth-child(5) { width:110px; }
-        th:nth-child(6), td:nth-child(6) { width:230px; }
-        .arquivo-badge {
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          min-width:46px;
-          height:26px;
-          border-radius:999px;
-          font-size:11px;
-          font-weight:900;
-        }
-        .arquivo-badge.pdf { background:#dbeafe; color:#1d4ed8; }
-        .arquivo-badge.xml { background:#dcfce7; color:#15803d; }
-        .arquivo-actions {
-          display:flex;
-          gap:7px;
-          align-items:center;
-          justify-content:flex-start;
-        }
-        .arquivo-actions form { margin:0; }
-        .empty {
-          padding:34px;
-          text-align:center;
-          color:#64748b;
-          font-weight:700;
-        }
-      </style>
-    </head>
-    <body class="dm-global-page">
-      <div class="dm-global-page-shell">
-        <div class="top-card">
-          <div class="top-title">
-            <h1>${tituloAcao}</h1>
-            <p>${modoSelecao ? 'Selecione um arquivo já renomeado da fila para carregar no lançamento.' : 'Importe, renomeie e organize PDFs/XMLs antes de lançar.'}</p>
-          </div>
-          <a class="dm-menu-btn" href="/logout">Sair</a>
-        </div>
-
-        <div class="nav-card">
-          ${navVoltar}
-          <a class="dm-menu-btn" href="/lancamentos">Comprovantes Fiscais</a>
-          <a class="dm-menu-btn" href="/rotina-despesas">Contas à Pagar</a>
-          <a class="dm-menu-btn" href="/categorias">Categorias</a>
-          <a class="dm-menu-btn" href="/espaco-contador">Espaço do Contador</a>
-        </div>
-
-        <div class="content-card">
-          ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
-          ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
-
-          ${!modoSelecao ? `
-            <div class="upload-panel">
-              <form class="upload-form" method="POST" action="/arquivo/importar" enctype="multipart/form-data">
-                <strong>Importar arquivos PDF/XML</strong>
-                <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
-                <button class="btn-green" type="submit">Buscar e importar arquivo</button>
-              </form>
-              <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
-                Ao importar, o sistema renomeia automaticamente para o padrão da PlennaTec e deixa disponível para uso no Novo Lançamento.
-              </p>
-            </div>
-          ` : ''}
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Nome PlennaTec</th>
-                  <th>Nome Original</th>
-                  <th>Tamanho</th>
-                  <th>Importado</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows || `<tr><td colspan="6"><div class="empty">Nenhum arquivo disponível na fila.</div></td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-
-
-
-
-
-
-
-
-
-// =====================================================
-// PATCH ARQUIVO OPERACIONAL V5 — PDF INLINE + RENOMEAÇÃO CORRETA
-// =====================================================
-function renderPlennaTecNovoArquivoV5Assets() {
-  return `
-    <style id="plennatec-novo-arquivo-v5-style">
-      .arquivo-selecionado-chip {
-        display:inline-flex !important;
-        align-items:center !important;
-        gap:6px !important;
-        height:30px !important;
-        padding:0 10px !important;
-        margin-left:8px !important;
-        border-radius:999px !important;
-        background:#ecfdf5 !important;
-        color:#047857 !important;
-        border:1px solid #86efac !important;
-        font-size:12px !important;
-        font-weight:800 !important;
-        max-width:260px !important;
-        white-space:nowrap !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        vertical-align:middle !important;
-      }
-
-      #plennatecPdfArquivoViewer {
-        width:100% !important;
-        height:78vh !important;
-        min-height:640px !important;
-        border:0 !important;
-        border-radius:14px !important;
-        background:#fff !important;
-      }
-    </style>
-
-    <script id="plennatec-novo-arquivo-v5-script">
-      (function(){
-        if (window.__plennatecNovoArquivoV5Ready) return;
-        window.__plennatecNovoArquivoV5Ready = true;
-
-        function params(){
-          return new URLSearchParams(window.location.search || '');
-        }
-
-        function montarUrlArquivo(destino, rotinaId, pdfId, xmlId){
-          var url = '/arquivo?selecionar=' + destino;
-          if (rotinaId) url += '&rotina_id=' + encodeURIComponent(rotinaId);
-          if (pdfId) url += '&arquivo_pdf_id=' + encodeURIComponent(pdfId);
-          if (xmlId) url += '&arquivo_xml_id=' + encodeURIComponent(xmlId);
-          return url;
-        }
-
-        async function buscarArquivo(id){
-          if (!id) return null;
-          try {
-            var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), { credentials:'same-origin' });
-            if (!resp.ok) return null;
-            var data = await resp.json();
-            return data && data.ok ? data.arquivo : null;
-          } catch(e) {
-            return null;
-          }
-        }
-
-        function encontrarAreaPdf(){
-          var existente = document.getElementById('plennatecPdfArquivoViewer');
-          if (existente) return existente;
-
-          var el = document.querySelector('iframe#pdfViewer, iframe[name*="pdf" i], iframe[src*=".pdf"], embed[type="application/pdf"], object[type="application/pdf"]');
-          if (el) return el;
-
-          var candidatos = Array.from(document.querySelectorAll('div, main, section'))
-            .filter(function(div){
-              var txt = (div.innerText || '').trim();
-              var rect = div.getBoundingClientRect();
-              var isPopup = txt.indexOf('Preencher') >= 0 && rect.width < 680;
-              return !isPopup && txt.indexOf('Selecione o PDF') >= 0 && rect.width > 500 && rect.height > 250;
-            })
-            .sort(function(a,b){
-              return (b.getBoundingClientRect().width * b.getBoundingClientRect().height) -
-                     (a.getBoundingClientRect().width * a.getBoundingClientRect().height);
-            });
-
-          var alvo = candidatos[0];
-
-          if (!alvo) {
-            alvo = Array.from(document.querySelectorAll('main, section, div'))
-              .filter(function(div){
-                var rect = div.getBoundingClientRect();
-                var txt = (div.innerText || '');
-                return rect.width > 650 && rect.height > 350 && txt.indexOf('Preencher') < 0;
-              })
-              .sort(function(a,b){
-                return (b.getBoundingClientRect().width * b.getBoundingClientRect().height) -
-                       (a.getBoundingClientRect().width * a.getBoundingClientRect().height);
-              })[0];
-          }
-
-          if (!alvo) return null;
-
-          var iframe = document.createElement('iframe');
-          iframe.id = 'plennatecPdfArquivoViewer';
-          alvo.innerHTML = '';
-          alvo.appendChild(iframe);
-          return iframe;
-        }
-
-        function carregarPdfInline(arquivo){
-          if (!arquivo) return;
-          var alvo = encontrarAreaPdf();
-          if (!alvo) return;
-
-          var url = arquivo.viewUrl || arquivo.url;
-          if (!url) return;
-
-          if (alvo.tagName === 'OBJECT') {
-            alvo.data = url;
-          } else {
-            alvo.src = url;
-          }
-        }
-
-        function chipDepoisInput(input, texto){
-          if (!input || !texto) return;
-          if (input.parentElement && input.parentElement.querySelector('.arquivo-selecionado-chip')) return;
-
-          var chip = document.createElement('span');
-          chip.className = 'arquivo-selecionado-chip';
-          chip.textContent = texto;
-          input.insertAdjacentElement('afterend', chip);
-        }
-
-        async function iniciar(){
-          if ((window.location.pathname || '').indexOf('/novo') < 0) return;
-
-          var p = params();
-          var rotinaId = p.get('rotina_id') || '';
-          var pdfId = p.get('arquivo_pdf_id') || '';
-          var xmlId = p.get('arquivo_xml_id') || '';
-
-          var form = document.querySelector('form');
-          if (form) {
-            if (pdfId && !form.querySelector('input[name="arquivo_pdf_id"]')) {
-              var hp = document.createElement('input');
-              hp.type = 'hidden';
-              hp.name = 'arquivo_pdf_id';
-              hp.value = pdfId;
-              form.appendChild(hp);
-            }
-
-            if (xmlId && !form.querySelector('input[name="arquivo_xml_id"]')) {
-              var hx = document.createElement('input');
-              hx.type = 'hidden';
-              hx.name = 'arquivo_xml_id';
-              hx.value = xmlId;
-              form.appendChild(hx);
-            }
-          }
-
-          document.querySelectorAll('input[type="file"]').forEach(function(input){
-            var accept = (input.getAttribute('accept') || '').toLowerCase();
-            var name = (input.getAttribute('name') || '').toLowerCase();
-            var parentText = (input.parentElement ? input.parentElement.innerText : '').toLowerCase();
-
-            var destino = '';
-            if (accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0 || parentText.indexOf('pdf') >= 0) destino = 'pdf';
-            if (accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0 || parentText.indexOf('xml') >= 0) destino = 'xml';
-
-            if (!destino) return;
-            if (input.parentElement && input.parentElement.querySelector('.btn-buscar-arquivo-fila-' + destino)) return;
-
-            var btn = document.createElement('a');
-            btn.className = 'btn-buscar-arquivo-fila-' + destino;
-            btn.href = montarUrlArquivo(destino, rotinaId, pdfId, xmlId);
-            btn.textContent = destino === 'pdf' ? 'Buscar PDF no Arquivo' : 'Buscar XML no Arquivo';
-            btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;height:32px;margin-left:8px;padding:0 12px;border-radius:10px;background:#f0fdf4;color:#00843d;border:1px solid #86efac;font-weight:800;text-decoration:none;font-size:12px;white-space:nowrap;';
-            input.insertAdjacentElement('afterend', btn);
-          });
-
-          var pdf = await buscarArquivo(pdfId);
-          if (pdf) {
-            carregarPdfInline(pdf);
-
-            var pdfInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(i){
-              var a = (i.getAttribute('accept') || '').toLowerCase();
-              var n = (i.getAttribute('name') || '').toLowerCase();
-              return a.indexOf('pdf') >= 0 || n.indexOf('pdf') >= 0;
-            });
-
-            chipDepoisInput(pdfInput, 'PDF do Arquivo: ' + pdf.nome_arquivo);
-          }
-
-          var xml = await buscarArquivo(xmlId);
-          if (xml) {
-            var xmlInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(i){
-              var a = (i.getAttribute('accept') || '').toLowerCase();
-              var n = (i.getAttribute('name') || '').toLowerCase();
-              return a.indexOf('xml') >= 0 || n.indexOf('xml') >= 0;
-            });
-
-            chipDepoisInput(xmlInput, 'XML do Arquivo: ' + xml.nome_arquivo);
-          }
-        }
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', iniciar);
-        } else {
-          iniciar();
-        }
-      })();
-    </script>
-  `;
-}
-
-router.use((req, res, next) => {
-  const originalSend = res.send.bind(res);
-
-  res.send = function plennatecNovoArquivoV5Send(body) {
-    try {
-      if (
-        typeof body === 'string' &&
-        body.includes('</head>') &&
-        !body.includes('plennatec-novo-arquivo-v5-script')
-      ) {
-        body = body.replace('</head>', `${renderPlennaTecNovoArquivoV5Assets()}</head>`);
       }
     } catch (error) {}
 
@@ -6754,7 +6148,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -9082,7 +8476,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link active" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="premium-side-link" href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
             <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
-            <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
+            <a class="premium-side-link" href="/documentos"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
@@ -9125,7 +8519,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         <nav class="nav-panel" aria-label="Menu principal">
           <a class="nav-btn active" href="/rotina-despesas"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Contas à Pagar</a>
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
-          <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
+          <a class="nav-btn" href="/documentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -9703,7 +9097,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -10710,7 +10104,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -11412,7 +10806,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -12788,6 +12182,782 @@ router.get('/dashboard', protegerRota, async (req, res) => {
 // =============================
 // ARQUIVO
 // =============================
+router.get('/documentos', protegerRota, async (req, res) => {
+  try {
+    const docs = await pool.query(`
+      SELECT
+        d.*,
+        l.id AS lancamento_relacionado
+      FROM documentos_fiscais d
+      LEFT JOIN lancamentos l ON l.id = d.lancamento_id
+      ORDER BY d.id DESC
+    `);
+
+    let linhas = '';
+    docs.rows.forEach(d => {
+      const dataFormatada = d.data_documento
+        ? new Date(d.data_documento).toISOString().split('T')[0]
+        : '';
+
+      const pdfHtml = d.anexo_pdf
+  ? `
+    <a class="icon-btn" href="/uploads/${d.anexo_pdf}" target="_blank" title="Ver PDF">👁</a>
+    <a class="icon-btn" href="/uploads/${d.anexo_pdf}" download title="Baixar PDF">⬇</a>
+  `
+  : '<span style="color:#6b7280;">—</span>';
+
+      const xmlHtml = d.anexo_xml
+  ? `
+    <a class="icon-btn" href="/uploads/${d.anexo_xml}" target="_blank" title="Ver XML">👁</a>
+    <a class="icon-btn" href="/uploads/${d.anexo_xml}" download title="Baixar XML">⬇</a>
+  `
+  : '<span style="color:#6b7280;">—</span>';
+      const acaoLancamento = d.lancamento_id
+  ? `<span style="color:#166534; font-weight:bold;">Lançado #${d.lancamento_id}</span>`
+  : `<a class="icon-btn" href="/documentos/gerar-lancamento/${d.id}" title="Gerar lançamento">🧾</a>`;
+
+      linhas += `
+        <tr>
+          <td>${d.id}</td>
+          <td>${d.tipo_documento || ''}</td>
+          <td>${d.numero_documento || ''}</td>
+          <td>${dataFormatada}</td>
+          <td>${d.fornecedor || ''}</td>
+          <td>${d.cnpj_cpf || ''}</td>
+          <td style="text-align:right;">${formatMoneyBR(d.valor || 0)}</td>
+          <td>${d.status}</td>
+          <td>${d.origem_layout || ''}</td>
+          <td>${pdfHtml}</td>
+          <td>${xmlHtml}</td>
+          <td>${acaoLancamento}</td>
+        </tr>
+      `;
+    });
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Arquivo</title>
+        <style>
+          * { box-sizing: border-box; }
+          body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  background: #f4f6f8;
+  color: #111827;
+}
+          .container { max-width: 1800px; margin: 40px auto; padding: 0 20px; }
+          .card { background: white; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+          h1 { margin-top: 0; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+          .full { grid-column: 1 / -1; }
+          label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; }
+          input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; }
+          .actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+          button, a {
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+          }
+          button { background: #2563eb; color: white; }
+          .btn-primary { background: #2563eb; color: white; }
+          .btn-secondary { background: #e5e7eb; color: #111827; }
+          table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; }
+          th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+          th { background: #2563eb; color: white; }
+         tr:nth-child(even) td {
+  background: #fbfcfe;
+}
+
+tr:hover td {
+  background: #f3f7ff;
+}
+          .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 10px;
+  background: transparent;
+  color: #334155;
+  border: none;
+}
+
+.icon-btn:hover {
+  background: #eef2ff;
+}
+          .hint { font-size: 13px; color: #6b7280; margin-top: 6px; }
+/* ===== REFINO VISUAL DOCUMENTOS ===== */
+
+/* fundo mais suave */
+body {
+  background: #f8fafc;
+}
+
+/* tabela mais leve */
+th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* linhas mais suaves */
+td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* hover mais elegante */
+tr:hover td {
+  background: #f9fafb;
+}
+
+/* remover peso dos ícones */
+.icon-btn {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  width: 18px;
+  height: 18px;
+  color: #64748b;
+}
+
+.icon-btn:hover {
+  background: transparent !important;
+  color: #1d4ed8;
+  transform: scale(1.08);
+}
+        
+
+/* ===== PADRÃO VISUAL PLENNATEC - APLICADO NAS TELAS INTERNAS ===== */
+:root {
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --dm-orange-soft: #E8F7EE;
+  --dm-text: #172033;
+  --dm-muted: #64748b;
+  --dm-border: rgba(226, 232, 240, 0.82);
+  --dm-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --dm-card: rgba(255, 255, 255, 0.84);
+}
+
+body {
+  color: var(--dm-text) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #fff4df 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.container,
+.login-page,
+.page-shell {
+  position: relative;
+}
+
+.hero,
+.card,
+.panel,
+.table-card,
+.form-card,
+.filter-box,
+.filter-panel,
+.nav-panel,
+.topbar,
+.stat-card,
+.chart-card,
+.login-page .card,
+form:not(.inline-form):not(.delete-form) {
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: var(--dm-card) !important;
+  box-shadow: var(--dm-shadow) !important;
+  backdrop-filter: blur(14px);
+}
+
+h1, h2, h3,
+.page-title,
+.title {
+  color: #101828 !important;
+  letter-spacing: -0.35px;
+}
+
+.subtitle,
+.hint,
+p,
+small,
+td,
+th,
+label {
+  color: inherit;
+}
+
+.btn,
+button,
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+}
+
+.btn:not(.btn-dark):not(.btn-danger):not(.btn-icon-danger),
+button:not(.btn-icon-danger):not(.btn-dark):not(.btn-danger),
+input[type="submit"],
+.btn-blue,
+.btn-green,
+.btn-primary,
+.btn-purple,
+.btn-orange,
+.btn-red,
+.btn-filter-apply,
+.login-page button {
+  background: linear-gradient(135deg, var(--dm-orange), var(--dm-orange-dark)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
+}
+
+.btn-dark,
+.btn-filter-clear,
+a[href="/dashboard"].btn,
+a[href="/logout"].btn,
+.logout-btn {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.btn:hover,
+button:hover,
+.logout-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+a {
+  color: var(--dm-orange-dark);
+}
+
+input,
+select,
+textarea {
+  border-radius: 12px !important;
+  border: 1px solid #dce3ec !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #172033 !important;
+  outline: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--dm-orange) !important;
+  box-shadow: 0 0 0 3px rgba(0, 176, 80, 0.14) !important;
+}
+
+table {
+  background: rgba(255,255,255,0.78) !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(248, 250, 252, 0.92) !important;
+  color: #334155 !important;
+}
+
+tr:hover {
+  background: rgba(232, 247, 238, 0.55) !important;
+}
+
+.icon-btn,
+.btn-icon-edit,
+.btn-icon-key {
+  color: var(--dm-orange-dark) !important;
+}
+
+@media (max-width: 760px) {
+  .container { margin-top: 16px !important; }
+}
+
+
+/* ===== AJUSTE PADRÃO BOTÕES CINZA/LARANJA - LISTA E ROTINA ===== */
+.actions .btn,
+.actions a,
+.actions button,
+.filter-buttons button,
+.filter-buttons a,
+.top-bar .filters button,
+.top-bar .filters a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  line-height: 1.15 !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.actions .btn-secondary,
+.actions .btn-success,
+.actions .btn-warning,
+.actions a[href="/dashboard"],
+.actions a[href="/documentos"],
+.actions a[href="/rotina-despesas"],
+.actions a[href="/lancamentos"],
+.actions button.btn-secondary,
+.actions button.btn-warning,
+.filter-buttons a,
+.top-bar .filters a.btn-secondary {
+  background: linear-gradient(180deg, #f8fafc, #eef2f7) !important;
+  color: #222b3b !important;
+  border: 1px solid #e0e6ef !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.actions .btn-primary,
+.filter-buttons button[type="submit"],
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, var(--dm-orange, #00B050), var(--dm-orange-dark, #009640)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important;
+}
+
+.actions form {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* ===== FIM AJUSTE PADRÃO BOTÕES ===== */
+
+/* ===== FIM PADRÃO VISUAL PLENNATEC ===== */
+
+      
+
+/* ===== AJUSTE FINAL UX - BOTÕES CINZA/LARANJA E ÍCONES LIMPOS ===== */
+.actions .btn, .actions a.btn, .actions button.btn, .filters .btn, .filters a.btn, .filters button.btn, .filter-buttons .btn, .filter-buttons a.btn, .filter-buttons button.btn, .top-bar .filters .btn, .top-bar .filters a.btn, .top-bar .filters button.btn { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; vertical-align: middle !important; line-height: 1.15 !important; min-height: 44px !important; padding: 0 18px !important; border-radius: 12px !important; text-decoration: none !important; font-weight: 800 !important; white-space: nowrap !important; }
+.actions .btn:not(.btn-primary), .actions a.btn:not(.btn-primary), .actions button.btn:not(.btn-primary), .filters .btn:not(.btn-primary), .filters a.btn:not(.btn-primary), .filters button.btn:not(.btn-primary), .filter-buttons .btn:not(.btn-primary), .filter-buttons a.btn:not(.btn-primary), .filter-buttons button.btn:not(.btn-primary), .top-bar .filters .btn:not(.btn-primary), .top-bar .filters a.btn:not(.btn-primary), .top-bar .filters button.btn:not(.btn-primary) { background: linear-gradient(180deg, #f8fafc, #eef2f7) !important; color: #222b3b !important; border: 1px solid #e0e6ef !important; box-shadow: 0 10px 20px rgba(15, 23, 42, .06) !important; }
+.actions .btn-primary, .actions a.btn-primary, .actions button.btn-primary, .filters button[type="submit"].btn-primary, .filters .btn-primary, .filter-buttons button[type="submit"].btn-primary, .top-bar .filters button[type="submit"].btn-primary { background: linear-gradient(135deg, #00B050, #009640) !important; color: #ffffff !important; border: 1px solid rgba(0, 176, 80, 0.88) !important; box-shadow: 0 12px 22px rgba(0, 176, 80, .18) !important; }
+.actions form, .actions-cell form, .acoes-user form, .acoes-wrap form { display: inline-flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+.icon-btn, button.icon-btn, .icon-btn.btn-icon-danger, button.icon-btn.btn-icon-danger, .btn-icon-danger { background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; outline: none !important; width: auto !important; min-width: 0 !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 4px !important; border-radius: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
+.logo, .login-page .logo { background: transparent !important; box-shadow: none !important; border: none !important; }
+/* ===== FIM AJUSTE FINAL UX ===== */
+
+
+
+/* ===== AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+:root {
+  --dm-green: #00B050;
+  --dm-green-dark: #009640;
+  --dm-green-soft: #E8F7EE;
+  --dm-orange: #00B050;
+  --dm-orange-dark: #009640;
+  --orange: #00B050;
+  --orange-dark: #009640;
+}
+
+body {
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 176, 80, 0.55) 0%, rgba(178, 232, 199, 0.42) 18%, transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(226, 235, 245, 0.95) 0%, rgba(240, 244, 249, 0.75) 31%, transparent 56%),
+    linear-gradient(135deg, #E8F7EE 0%, #f7f9fc 42%, #eef3f8 100%) !important;
+}
+
+.nav-panel {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 8px 24px !important;
+}
+
+.nav-btn,
+.logout-btn,
+.btn,
+.actions .btn,
+.actions a.btn,
+.actions button.btn,
+.filter-panel button,
+.filter-panel a,
+.filter-buttons button,
+.filter-buttons a {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+}
+
+.nav-btn {
+  min-width: 0 !important;
+  height: 50px !important;
+  padding: 0 10px !important;
+  font-size: clamp(11px, 0.82vw, 14px) !important;
+  line-height: 1.05 !important;
+}
+
+.nav-btn .nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.stat-card {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+}
+
+.stat-icon-box {
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.stat-content strong {
+  font-size: clamp(20px, 1.45vw, 25px) !important;
+}
+
+.filter-panel {
+  min-height: 62px !important;
+  padding: 10px 20px !important;
+}
+
+.filter-panel select,
+.filter-panel input[type="date"] {
+  width: min(310px, 31vw) !important;
+  height: 42px !important;
+}
+
+.btn-filter-apply,
+.filter-panel button[type="submit"],
+.actions .btn-primary,
+.actions a.btn-primary,
+.actions button.btn-primary,
+.filters .btn-primary,
+.filter-buttons button[type="submit"].btn-primary,
+.top-bar .filters button[type="submit"].btn-primary {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, 0.88) !important;
+  box-shadow: 0 12px 22px rgba(0, 176, 80, .20) !important;
+  color: #ffffff !important;
+}
+
+.nav-btn.active,
+.hbar-orange,
+.trend-line,
+.line-dot {
+  color: #00B050 !important;
+  stroke: #00B050 !important;
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #00B050, #009640) !important;
+  border-color: rgba(0, 176, 80, .9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(0, 176, 80, .22) !important;
+}
+
+.hbar-orange,
+.hbar-green {
+  background: linear-gradient(90deg, #00B050, #009640) !important;
+}
+
+.line-dot { fill: #00B050 !important; }
+.trend-line { stroke: #00B050 !important; }
+.stat-icon-box.orange { color: #00B050 !important; background: #E8F7EE !important; }
+.app-mark span:nth-child(2) { background: #00B050 !important; }
+.profile-copy strong, a { color: #00B050 !important; }
+
+@media (min-width: 1101px) {
+  .charts-grid { grid-template-columns: 1.05fr .96fr 1.05fr !important; gap: 14px !important; }
+  .chart-card { min-height: 290px !important; padding: 16px 20px 14px !important; }
+  .line-chart { height: 195px !important; }
+}
+
+@media (max-width: 1300px) and (min-width: 1101px) {
+  .page-shell { width: min(100% - 24px, 1680px) !important; }
+  .nav-panel { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; padding: 8px 18px !important; }
+  .nav-btn { font-size: 11px !important; padding: 0 8px !important; gap: 6px !important; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .stat-card { padding: 12px 14px !important; }
+  .stat-content small, .stat-content span { font-size: 9px !important; }
+  .stat-content strong { font-size: 20px !important; }
+  .chart-heading h2 { font-size: 16px !important; }
+  .hbar-header { font-size: 11px !important; }
+}
+
+@media (max-width: 1100px) {
+  .nav-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .charts-grid { grid-template-columns: 1fr !important; }
+}
+/* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
+
+
+
+/* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
+body.dm-global-page form[action="/lancamentos"] .filters {
+  display: grid !important;
+  grid-template-columns: 1.05fr 1.05fr 1.05fr 1.05fr 1.05fr 1fr .92fr .92fr auto !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters > div {
+  min-width: 0 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters label {
+  display: block !important;
+  margin: 0 0 5px !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filters input,
+body.dm-global-page form[action="/lancamentos"] .filters select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons {
+  display: inline-flex !important;
+  align-items: end !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  min-width: 142px !important;
+}
+
+body.dm-global-page form[action="/lancamentos"] .filter-buttons button,
+body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  border-radius: 11px !important;
+}
+
+@media (max-width: 1280px) {
+  body.dm-global-page form[action="/lancamentos"] .filters {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Espaço do Contador: conteúdo interno da coluna Enviar Arquivo alinhado à esquerda */
+.contador-premium-page .contador-table th:nth-child(4) {
+  text-align: center !important;
+}
+
+.contador-premium-page .contador-table td:nth-child(4) {
+  text-align: left !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.contador-premium-page .upload-cell-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+}
+
+.contador-premium-page .btn-upload-open {
+  width: auto !important;
+  min-width: 112px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  font-size: 10.8px !important;
+  line-height: 1 !important;
+  border-radius: 11px !important;
+}
+
+.contador-premium-page .upload-cell-compact .clip-indicator,
+.contador-premium-page .upload-cell-compact .empty-inline,
+.contador-premium-page .upload-cell-compact .attached-badge,
+.contador-premium-page .upload-cell-compact .attached-empty {
+  flex: 0 0 auto !important;
+}
+/* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+
+</style>
+      </head>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Arquivo de Comprovantes Fiscais', subtitulo: 'Importe, consulte e gere lançamentos a partir dos arquivos de comprovantes fiscais.', paginaAtual: 'documentos' })}
+        <div class="container">
+          <div class="card">
+            <h1>📁 Arquivo</h1>
+
+            <form method="POST" action="/documentos/importar" enctype="multipart/form-data">
+              <div class="grid">
+                <div>
+                  <label for="anexo_xml">XML</label>
+                  <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
+                </div>
+
+                <div>
+                  <label for="anexo_pdf">PDF</label>
+                  <input id="anexo_pdf" type="file" name="anexo_pdf" accept=".pdf" />
+                </div>
+
+                <div class="full">
+                  <div class="hint">Você pode subir só XML, só PDF, ou os dois. Mesmo quando o XML não for reconhecido, o documento será guardado.</div>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button type="submit">Importar documento</button>
+                <a class="btn-secondary" href="/dashboard">Voltar ao Painel</a>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <table>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Número</th>
+                <th>Data</th>
+                <th>Fornecedor</th>
+                <th>CNPJ/CPF</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Layout</th>
+                <th>PDF</th>
+                <th>XML</th>
+                <th>Ação</th>
+              </tr>
+              ${linhas || '<tr><td colspan="12">Nenhum documento importado.</td></tr>'}
+            </table>
+          </div>
+        </div>
+        <script>
+          function abrirModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('is-open');
+          }
+
+          function fecharModalUpload(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            const input = modal.querySelector('input[type="file"]');
+            const preview = modal.querySelector('[data-preview-list]');
+            if (input) input.value = '';
+            if (preview) preview.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+          }
+
+          function atualizarPreviewArquivos(input) {
+            const form = input.closest('form');
+            const list = form ? form.querySelector('[data-preview-list]') : null;
+            if (!list) return;
+
+            const dt = new DataTransfer();
+            Array.from(input.files || []).forEach(file => dt.items.add(file));
+            input.files = dt.files;
+
+            renderPreview(input, list);
+          }
+
+          function renderPreview(input, list) {
+            const files = Array.from(input.files || []);
+            if (!files.length) {
+              list.innerHTML = '<div class="modal-empty">Nenhum arquivo selecionado.</div>';
+              return;
+            }
+
+            list.innerHTML = '';
+            files.forEach((file, index) => {
+              const row = document.createElement('div');
+              row.className = 'modal-file-row';
+
+              const name = document.createElement('span');
+              name.textContent = file.name;
+              name.title = file.name;
+
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'modal-delete';
+              btn.title = 'Remover da seleção';
+              btn.textContent = '🗑';
+              btn.onclick = function () {
+                const novo = new DataTransfer();
+                Array.from(input.files || []).forEach((item, i) => {
+                  if (i !== index) novo.items.add(item);
+                });
+                input.files = novo.files;
+                renderPreview(input, list);
+              };
+
+              row.appendChild(name);
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+
+          document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('upload-modal-overlay')) {
+              event.target.classList.remove('is-open');
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.send(`<pre>Erro ao carregar documentos:\n${error.message}</pre>`);
+  }
+});
 
 router.post(
   '/documentos/importar',
@@ -13175,7 +13345,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -13548,7 +13718,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               <div class="actions">
                 <button type="submit">Criar lançamento</button>
-                <a class="btn-secondary" href="/arquivo">Cancelar</a>
+                <a class="btn-secondary" href="/documentos">Cancelar</a>
               </div>
             </form>
           </div>
@@ -14042,7 +14212,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -15016,9 +15186,7 @@ router.post(
         valor,
         tipo_pagamento,
         categoria_id,
-        rotina_id,
-        arquivo_pdf_id,
-        arquivo_xml_id
+        rotina_id
       } = req.body;
 
       const anexoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : null;
@@ -15042,17 +15210,6 @@ router.post(
           anexoXml
         ]
       );
-
-      const arquivoPdfIdUsado = Number(arquivo_pdf_id || 0);
-      const arquivoXmlIdUsado = Number(arquivo_xml_id || 0);
-
-      if (Number.isFinite(arquivoPdfIdUsado) && arquivoPdfIdUsado > 0) {
-        await pool.query(`UPDATE arquivo_fila SET status = 'USADO', usado_em = NOW() WHERE id = $1`, [arquivoPdfIdUsado]);
-      }
-
-      if (Number.isFinite(arquivoXmlIdUsado) && arquivoXmlIdUsado > 0) {
-        await pool.query(`UPDATE arquivo_fila SET status = 'USADO', usado_em = NOW() WHERE id = $1`, [arquivoXmlIdUsado]);
-      }
 
       const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
@@ -15450,7 +15607,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -16663,7 +16820,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -17599,291 +17756,6 @@ anexo_xml: l.anexo_xml ? `${nomeBaseDownload}.xml` : ''  });
   }
 });
 
-
-
-
-
-// =====================================================
-// COMPATIBILIDADE — MENU ANTIGO ARQUIVO (/documentos)
-// Redireciona a tela antiga para o novo módulo Arquivo.
-// =====================================================
-router.get('/documentos', protegerRota, (req, res) => {
-  const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-  res.redirect('/arquivo' + query);
-});
-
-router.post('/documentos', protegerRota, (req, res) => {
-  res.redirect('/arquivo');
-});
-
-
-
-
-// =====================================================
-// NORMALIZAÇÃO DE NOMES DA FILA DE ARQUIVOS
-// =====================================================
-async function normalizarNomesArquivoFilaDisponiveis() {
-  await ensureArquivoFilaTable();
-
-  const result = await pool.query(`
-    SELECT id, nome_original, nome_arquivo, tipo, caminho
-    FROM arquivo_fila
-    WHERE status = 'DISPONIVEL'
-    ORDER BY id ASC
-  `);
-
-  for (const arq of result.rows) {
-    try {
-      const tipo = arq.tipo === 'XML' ? 'XML' : 'PDF';
-      const ext = tipo === 'XML' ? '.xml' : '.pdf';
-
-      const baseFonte = arq.nome_original || arq.nome_arquivo || 'Arquivo';
-      const baseOriginal = sanitizeArquivoFilaNome(path.basename(baseFonte, path.extname(baseFonte) || ext));
-
-      const novoNome = `${tipo} - ${baseOriginal || 'Arquivo'} - ID ${arq.id}${ext}`;
-      const novoCaminho = path.join(uploadsDir, novoNome);
-
-      if (String(arq.nome_arquivo || '') === novoNome) continue;
-
-      const caminhoAtual = getUploadFilePath(arq.nome_arquivo);
-
-      if (caminhoAtual && fs.existsSync(caminhoAtual) && !fs.existsSync(novoCaminho)) {
-        fs.renameSync(caminhoAtual, novoCaminho);
-      }
-
-      await pool.query(`
-        UPDATE arquivo_fila
-        SET nome_arquivo = $1,
-            caminho = $2
-        WHERE id = $3
-      `, [novoNome, novoCaminho, arq.id]);
-    } catch (error) {
-      // não interrompe a tela se algum arquivo antigo estiver inconsistente
-    }
-  }
-}
-
-
-// =====================================================
-// ROTAS — MÓDULO ARQUIVO OPERACIONAL V1
-// =====================================================
-
-router.get('/arquivo', protegerRota, async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-    if (typeof normalizarNomesArquivoFilaDisponiveis === 'function') {
-      await normalizarNomesArquivoFilaDisponiveis();
-    }
-
-    const modoSelecao = String(req.query.selecionar || '').toLowerCase();
-    const rotinaId = String(req.query.rotina_id || '').trim();
-    const origem = String(req.query.origem || '').trim();
-
-    const filtroTipo = modoSelecao === 'pdf' ? 'PDF' : (modoSelecao === 'xml' ? 'XML' : '');
-    const params = [];
-    let where = "WHERE status = 'DISPONIVEL'";
-
-    if (filtroTipo) {
-      params.push(filtroTipo);
-      where += ` AND tipo = $${params.length}`;
-    }
-
-    const result = await pool.query(`
-      SELECT *
-      FROM arquivo_fila
-      ${where}
-      ORDER BY criado_em DESC, id DESC
-    `, params);
-
-    res.send(renderArquivoFilaPage({
-      arquivos: result.rows,
-      mensagem: req.query.ok || '',
-      erro: req.query.erro || '',
-      modoSelecao,
-      rotinaId,
-      origem
-    }));
-  } catch (error) {
-    res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
-  }
-});
-
-router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos', 50), async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-
-    const files = req.files || [];
-    for (const file of files) {
-      const ext = path.extname(file.originalname || '').toLowerCase();
-      const tipo = ext === '.xml' ? 'XML' : 'PDF';
-
-      await pool.query(`
-        INSERT INTO arquivo_fila (nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status, origem)
-        VALUES ($1, $2, $3, $4, $5, 'DISPONIVEL', 'UPLOAD_MANUAL')
-      `, [
-        file.originalname || '',
-        file.filename,
-        tipo,
-        file.path,
-        file.size || 0
-      ]);
-    }
-
-    res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e renomeado(s) com sucesso.`)}`);
-  } catch (error) {
-    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
-  }
-});
-
-
-
-// =====================================================
-// API — ARQUIVO FILA PARA NOVO LANÇAMENTO
-// =====================================================
-
-router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) {
-      return res.status(400).send('<pre>ID inválido.</pre>');
-    }
-
-    const result = await pool.query(`
-      SELECT *
-      FROM arquivo_fila
-      WHERE id = $1 AND status = 'DISPONIVEL'
-      LIMIT 1
-    `, [id]);
-
-    const arquivo = result.rows[0];
-    if (!arquivo) {
-      return res.status(404).send('<pre>Arquivo não encontrado ou já utilizado.</pre>');
-    }
-
-    const filePath = getUploadFilePath(arquivo.nome_arquivo);
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(404).send('<pre>Arquivo físico não encontrado.</pre>');
-    }
-
-    const tipo = arquivo.tipo === 'XML' ? 'application/xml; charset=utf-8' : 'application/pdf';
-    res.setHeader('Content-Type', tipo);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(arquivo.nome_arquivo)}"`);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-
-    return res.sendFile(filePath);
-  } catch (error) {
-    return res.status(500).send(`<pre>Erro ao visualizar arquivo:\n${error.message}</pre>`);
-  }
-});
-
-router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) {
-      return res.status(400).json({ ok: false, error: 'ID inválido.' });
-    }
-
-    const result = await pool.query(`
-      SELECT id, nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status
-      FROM arquivo_fila
-      WHERE id = $1 AND status = 'DISPONIVEL'
-      LIMIT 1
-    `, [id]);
-
-    const arquivo = result.rows[0];
-    if (!arquivo) {
-      return res.status(404).json({ ok: false, error: 'Arquivo não encontrado ou já utilizado.' });
-    }
-
-    res.json({
-      ok: true,
-      arquivo: {
-        id: arquivo.id,
-        nome_original: arquivo.nome_original,
-        nome_arquivo: arquivo.nome_arquivo,
-        tipo: arquivo.tipo,
-        url: `/arquivo/ver/${arquivo.id}`,
-        viewUrl: `/arquivo/ver/${arquivo.id}`,
-        downloadUrl: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
-        tamanho_bytes: arquivo.tamanho_bytes
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
-  }
-});
-
-
-router.get('/arquivo/selecionar/:id', protegerRota, async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-
-    const id = Number(req.params.id);
-    const destino = String(req.query.destino || '').toLowerCase();
-    const rotinaId = String(req.query.rotina_id || '').trim();
-    const pdfAtual = String(req.query.arquivo_pdf_id || '').trim();
-    const xmlAtual = String(req.query.arquivo_xml_id || '').trim();
-
-    if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
-      return res.redirect('/arquivo?erro=Seleção inválida.');
-    }
-
-    const result = await pool.query(`
-      SELECT *
-      FROM arquivo_fila
-      WHERE id = $1 AND status = 'DISPONIVEL'
-      LIMIT 1
-    `, [id]);
-
-    const arquivo = result.rows[0];
-    if (!arquivo) {
-      return res.redirect('/arquivo?erro=Arquivo não encontrado ou já utilizado.');
-    }
-
-    const tipoEsperado = destino === 'xml' ? 'XML' : 'PDF';
-    if (arquivo.tipo !== tipoEsperado) {
-      return res.redirect(`/arquivo?selecionar=${destino}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(pdfAtual)}&arquivo_xml_id=${encodeURIComponent(xmlAtual)}&erro=Tipo de arquivo incompatível.`);
-    }
-
-    const query = new URLSearchParams();
-    if (rotinaId) query.set('rotina_id', rotinaId);
-
-    if (destino === 'pdf') {
-      query.set('arquivo_pdf_id', String(id));
-      if (xmlAtual) query.set('arquivo_xml_id', xmlAtual);
-    }
-
-    if (destino === 'xml') {
-      query.set('arquivo_xml_id', String(id));
-      if (pdfAtual) query.set('arquivo_pdf_id', pdfAtual);
-    }
-
-    res.redirect(`/novo?${query.toString()}`);
-  } catch (error) {
-    res.status(500).send(`<pre>Erro ao selecionar arquivo:\n${error.message}</pre>`);
-  }
-});
-
-router.post('/arquivo/:id/excluir', protegerRota, async (req, res) => {
-  try {
-    await ensureArquivoFilaTable();
-
-    const id = Number(req.params.id);
-    if (Number.isFinite(id)) {
-      await pool.query(`UPDATE arquivo_fila SET status = 'EXCLUIDO', usado_em = NOW() WHERE id = $1`, [id]);
-    }
-
-    res.redirect('/arquivo?ok=Arquivo removido da fila.');
-  } catch (error) {
-    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
-  }
-});
-
-
 router.get('/categorias', protegerRota, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -18167,7 +18039,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -18773,7 +18645,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -19411,7 +19283,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -20501,7 +20373,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -21803,7 +21675,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -22574,7 +22446,7 @@ tr:hover {
 .actions .btn-success,
 .actions .btn-warning,
 .actions a[href="/dashboard"],
-.actions a[href="/arquivo"],
+.actions a[href="/documentos"],
 .actions a[href="/rotina-despesas"],
 .actions a[href="/lancamentos"],
 .actions button.btn-secondary,
@@ -25534,7 +25406,7 @@ body.contador-premium-page .trash-history {
               <a href="/dashboard"><span>⌂</span>Dashboard</a>
               <a href="/rotina-despesas"><span>▧</span>Contas a Pagar</a>
               <a href="/lancamentos"><span>▤</span>Comprovantes</a>
-              <a href="/arquivo"><span>▣</span>Arquivo</a>
+              <a href="/documentos"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
