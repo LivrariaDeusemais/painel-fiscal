@@ -2021,43 +2021,97 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', modoSe
 
 
 
+
+
+
+
+
 // =====================================================
-// PATCH NOVO LANÇAMENTO — BOTÕES BUSCAR EM ARQUIVO + CARREGAR PDF/XML
+// PATCH ARQUIVO OPERACIONAL V4 — RENOMEAR RETROATIVO + CARREGAR PDF/XML REAL
 // =====================================================
-function renderPlennaTecNovoArquivoAssets() {
+
+async function normalizarNomesArquivoFilaDisponiveis() {
+  await ensureArquivoFilaTable();
+
+  const result = await pool.query(`
+    SELECT id, nome_original, nome_arquivo, tipo, caminho
+    FROM arquivo_fila
+    WHERE status = 'DISPONIVEL'
+    ORDER BY id ASC
+  `);
+
+  for (const arq of result.rows) {
+    try {
+      const ext = path.extname(arq.nome_arquivo || arq.nome_original || '').toLowerCase() || (arq.tipo === 'XML' ? '.xml' : '.pdf');
+      const baseOriginal = sanitizeArquivoFilaNome(path.basename(arq.nome_original || arq.nome_arquivo || 'Arquivo', ext));
+      const tipo = arq.tipo === 'XML' ? 'XML' : 'PDF';
+
+      // Se já estiver no padrão novo, ignora.
+      if (String(arq.nome_arquivo || '').startsWith(`${tipo} - `)) continue;
+
+      const novoNome = sanitizeArquivoFilaNome(`${tipo} - ${baseOriginal || 'Arquivo'} - ID ${arq.id}${ext}`);
+      const novoCaminho = path.join(uploadsDir, novoNome);
+      const caminhoAtual = getUploadFilePath(arq.nome_arquivo);
+
+      if (caminhoAtual && fs.existsSync(caminhoAtual) && !fs.existsSync(novoCaminho)) {
+        fs.renameSync(caminhoAtual, novoCaminho);
+      }
+
+      await pool.query(`
+        UPDATE arquivo_fila
+        SET nome_arquivo = $1,
+            caminho = $2
+        WHERE id = $3
+      `, [novoNome, novoCaminho, arq.id]);
+    } catch (error) {
+      // Não interrompe a tela por causa de um arquivo problemático.
+    }
+  }
+}
+
+function renderPlennaTecNovoArquivoV4Assets() {
   return `
-    <style id="plennatec-novo-arquivo-style">
+    <style id="plennatec-novo-arquivo-v4-style">
       .arquivo-selecionado-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 30px;
-        padding: 0 10px;
-        margin-left: 8px;
-        border-radius: 999px;
-        background: #ecfdf5;
-        color: #047857;
-        border: 1px solid #86efac;
-        font-size: 12px;
-        font-weight: 800;
-        max-width: 260px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        vertical-align: middle;
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        height:30px !important;
+        padding:0 10px !important;
+        margin-left:8px !important;
+        border-radius:999px !important;
+        background:#ecfdf5 !important;
+        color:#047857 !important;
+        border:1px solid #86efac !important;
+        font-size:12px !important;
+        font-weight:800 !important;
+        max-width:260px !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+        vertical-align:middle !important;
+      }
+
+      #plennatecPdfArquivoViewer {
+        width:100% !important;
+        height:78vh !important;
+        min-height:620px !important;
+        border:0 !important;
+        border-radius:14px !important;
+        background:#fff !important;
       }
     </style>
 
-    <script id="plennatec-novo-arquivo-script">
+    <script id="plennatec-novo-arquivo-v4-script">
       (function(){
-        if (window.__plennatecNovoArquivoReady) return;
-        window.__plennatecNovoArquivoReady = true;
+        if (window.__plennatecNovoArquivoV4Ready) return;
+        window.__plennatecNovoArquivoV4Ready = true;
 
-        function params() {
+        function params(){
           return new URLSearchParams(window.location.search || '');
         }
 
-        function montarUrlArquivo(destino, rotinaId, pdfId, xmlId) {
+        function montarUrlArquivo(destino, rotinaId, pdfId, xmlId){
           var url = '/arquivo?selecionar=' + destino;
           if (rotinaId) url += '&rotina_id=' + encodeURIComponent(rotinaId);
           if (pdfId) url += '&arquivo_pdf_id=' + encodeURIComponent(pdfId);
@@ -2065,173 +2119,148 @@ function renderPlennaTecNovoArquivoAssets() {
           return url;
         }
 
-        async function carregarArquivoSelecionado(id, tipo) {
+        async function buscarArquivo(id){
+          if (!id) return null;
           try {
-            if (!id) return null;
-
-            var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), {
-              credentials: 'same-origin'
-            });
-
+            var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), { credentials:'same-origin' });
             if (!resp.ok) return null;
-
             var data = await resp.json();
-            if (!data || !data.ok || !data.arquivo) return null;
-
-            var arquivo = data.arquivo;
-
-            if (tipo === 'pdf') {
-              var pdfUrl = arquivo.url;
-
-              // Tenta carregar nos visualizadores existentes da tela.
-              var iframe = document.querySelector('iframe[src*=".pdf"], iframe#pdfViewer, iframe[name*="pdf" i]');
-              if (iframe) iframe.src = pdfUrl;
-
-              var embed = document.querySelector('embed[type="application/pdf"], embed[src*=".pdf"]');
-              if (embed) embed.src = pdfUrl;
-
-              var objectPdf = document.querySelector('object[type="application/pdf"], object[data*=".pdf"]');
-              if (objectPdf) objectPdf.data = pdfUrl;
-
-              // Se a tela tem a mensagem "Selecione o PDF", cria um iframe ocupando a área central.
-              var aviso = Array.from(document.querySelectorAll('body *')).find(function(el){
-                return (el.innerText || '').trim().indexOf('Selecione o PDF') >= 0;
-              });
-
-              if (aviso && !document.getElementById('plennatecPdfArquivoViewer')) {
-                var viewer = document.createElement('iframe');
-                viewer.id = 'plennatecPdfArquivoViewer';
-                viewer.src = pdfUrl;
-                viewer.style.width = '100%';
-                viewer.style.height = '72vh';
-                viewer.style.border = '0';
-                viewer.style.borderRadius = '14px';
-                viewer.style.background = '#fff';
-
-                var container = aviso.closest('div') || aviso.parentElement;
-                if (container) {
-                  container.innerHTML = '';
-                  container.appendChild(viewer);
-                }
-              }
-
-              var copiarBtn = Array.from(document.querySelectorAll('button, a')).find(function(el){
-                return (el.innerText || '').toLowerCase().indexOf('copiar do pdf') >= 0;
-              });
-
-              if (copiarBtn) {
-                copiarBtn.setAttribute('data-pdf-url', pdfUrl);
-                copiarBtn.setAttribute('title', 'PDF selecionado do Arquivo: ' + arquivo.nome_arquivo);
-              }
-            }
-
-            return arquivo;
+            return data && data.ok ? data.arquivo : null;
           } catch(e) {
             return null;
           }
         }
 
-        function adicionarChipDepoisInput(input, texto) {
+        function acharAreaPdf(){
+          var iframe = document.querySelector('iframe#pdfViewer, iframe[name*="pdf" i], iframe[src*=".pdf"]');
+          if (iframe) return iframe;
+
+          var embed = document.querySelector('embed[type="application/pdf"], embed[src*=".pdf"]');
+          if (embed) return embed;
+
+          var obj = document.querySelector('object[type="application/pdf"], object[data*=".pdf"]');
+          if (obj) return obj;
+
+          // Área grande do fundo da tela, onde aparece "Selecione o PDF"
+          var candidatos = Array.from(document.querySelectorAll('div, main, section'));
+          var alvo = candidatos.find(function(el){
+            var txt = (el.innerText || '').trim();
+            return txt.indexOf('Selecione o PDF') >= 0 && el.offsetWidth > 300 && el.offsetHeight > 200;
+          });
+
+          if (!alvo) {
+            alvo = candidatos
+              .filter(function(el){ return el.offsetWidth > 500 && el.offsetHeight > 300; })
+              .sort(function(a,b){ return (b.offsetWidth*b.offsetHeight) - (a.offsetWidth*a.offsetHeight); })[0];
+          }
+
+          if (!alvo) return null;
+
+          var viewer = document.getElementById('plennatecPdfArquivoViewer');
+          if (!viewer) {
+            viewer = document.createElement('iframe');
+            viewer.id = 'plennatecPdfArquivoViewer';
+          }
+
+          alvo.innerHTML = '';
+          alvo.appendChild(viewer);
+          return viewer;
+        }
+
+        function carregarPdfNaTela(arquivo){
+          if (!arquivo || !arquivo.url) return;
+          var alvo = acharAreaPdf();
+          if (!alvo) return;
+
+          if (alvo.tagName === 'OBJECT') {
+            alvo.data = arquivo.url;
+          } else {
+            alvo.src = arquivo.url;
+          }
+        }
+
+        function chipDepoisInput(input, texto){
           if (!input || !texto) return;
           if (input.parentElement && input.parentElement.querySelector('.arquivo-selecionado-chip')) return;
-
           var chip = document.createElement('span');
           chip.className = 'arquivo-selecionado-chip';
           chip.textContent = texto;
           input.insertAdjacentElement('afterend', chip);
         }
 
-        function adicionarBotoesArquivo(){
-          try {
-            if ((window.location.pathname || '').indexOf('/novo') < 0) return;
+        async function iniciar(){
+          if ((window.location.pathname || '').indexOf('/novo') < 0) return;
 
-            var p = params();
-            var rotinaId = p.get('rotina_id') || '';
-            var pdfId = p.get('arquivo_pdf_id') || '';
-            var xmlId = p.get('arquivo_xml_id') || '';
+          var p = params();
+          var rotinaId = p.get('rotina_id') || '';
+          var pdfId = p.get('arquivo_pdf_id') || '';
+          var xmlId = p.get('arquivo_xml_id') || '';
 
-            var form = document.querySelector('form');
-            if (form) {
-              if (pdfId && !form.querySelector('input[name="arquivo_pdf_id"]')) {
-                var h1 = document.createElement('input');
-                h1.type = 'hidden';
-                h1.name = 'arquivo_pdf_id';
-                h1.value = pdfId;
-                form.appendChild(h1);
-              }
-
-              if (xmlId && !form.querySelector('input[name="arquivo_xml_id"]')) {
-                var h2 = document.createElement('input');
-                h2.type = 'hidden';
-                h2.name = 'arquivo_xml_id';
-                h2.value = xmlId;
-                form.appendChild(h2);
-              }
+          var form = document.querySelector('form');
+          if (form) {
+            if (pdfId && !form.querySelector('input[name="arquivo_pdf_id"]')) {
+              var hp = document.createElement('input');
+              hp.type = 'hidden';
+              hp.name = 'arquivo_pdf_id';
+              hp.value = pdfId;
+              form.appendChild(hp);
             }
 
-            document.querySelectorAll('input[type="file"]').forEach(function(input){
-              var labelText = '';
-              var label = input.closest('label') || input.parentElement;
-              if (label) labelText = (label.innerText || '').toLowerCase();
+            if (xmlId && !form.querySelector('input[name="arquivo_xml_id"]')) {
+              var hx = document.createElement('input');
+              hx.type = 'hidden';
+              hx.name = 'arquivo_xml_id';
+              hx.value = xmlId;
+              form.appendChild(hx);
+            }
+          }
 
-              var accept = (input.getAttribute('accept') || '').toLowerCase();
-              var name = (input.getAttribute('name') || '').toLowerCase();
+          document.querySelectorAll('input[type="file"]').forEach(function(input){
+            var accept = (input.getAttribute('accept') || '').toLowerCase();
+            var name = (input.getAttribute('name') || '').toLowerCase();
+            var parentText = (input.parentElement ? input.parentElement.innerText : '').toLowerCase();
 
-              var destino = '';
-              if (accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0 || labelText.indexOf('pdf') >= 0) destino = 'pdf';
-              if (accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0 || labelText.indexOf('xml') >= 0) destino = 'xml';
+            var destino = '';
+            if (accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0 || parentText.indexOf('pdf') >= 0) destino = 'pdf';
+            if (accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0 || parentText.indexOf('xml') >= 0) destino = 'xml';
 
-              if (!destino) return;
-              if (input.parentElement && input.parentElement.querySelector('.btn-buscar-arquivo-fila-' + destino)) return;
+            if (!destino) return;
+            if (input.parentElement && input.parentElement.querySelector('.btn-buscar-arquivo-fila-' + destino)) return;
 
-              var a = document.createElement('a');
-              a.className = 'btn-buscar-arquivo-fila-' + destino;
-              a.href = montarUrlArquivo(destino, rotinaId, pdfId, xmlId);
-              a.textContent = destino === 'pdf' ? 'Buscar PDF no Arquivo' : 'Buscar XML no Arquivo';
-              a.style.display = 'inline-flex';
-              a.style.alignItems = 'center';
-              a.style.justifyContent = 'center';
-              a.style.height = '32px';
-              a.style.marginLeft = '8px';
-              a.style.padding = '0 12px';
-              a.style.borderRadius = '10px';
-              a.style.background = '#f0fdf4';
-              a.style.color = '#00843d';
-              a.style.border = '1px solid #86efac';
-              a.style.fontWeight = '800';
-              a.style.textDecoration = 'none';
-              a.style.fontSize = '12px';
-              a.style.whiteSpace = 'nowrap';
+            var btn = document.createElement('a');
+            btn.className = 'btn-buscar-arquivo-fila-' + destino;
+            btn.href = montarUrlArquivo(destino, rotinaId, pdfId, xmlId);
+            btn.textContent = destino === 'pdf' ? 'Buscar PDF no Arquivo' : 'Buscar XML no Arquivo';
+            btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;height:32px;margin-left:8px;padding:0 12px;border-radius:10px;background:#f0fdf4;color:#00843d;border:1px solid #86efac;font-weight:800;text-decoration:none;font-size:12px;white-space:nowrap;';
+            input.insertAdjacentElement('afterend', btn);
+          });
 
-              input.insertAdjacentElement('afterend', a);
+          var pdf = await buscarArquivo(pdfId);
+          if (pdf) {
+            carregarPdfNaTela(pdf);
+            var pdfInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(i){
+              var a = (i.getAttribute('accept') || '').toLowerCase();
+              var n = (i.getAttribute('name') || '').toLowerCase();
+              return a.indexOf('pdf') >= 0 || n.indexOf('pdf') >= 0;
             });
+            chipDepoisInput(pdfInput, 'PDF do Arquivo: ' + pdf.nome_arquivo);
+          }
 
-            carregarArquivoSelecionado(pdfId, 'pdf').then(function(arq){
-              if (!arq) return;
-              var pdfInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(input){
-                var accept = (input.getAttribute('accept') || '').toLowerCase();
-                var name = (input.getAttribute('name') || '').toLowerCase();
-                return accept.indexOf('pdf') >= 0 || name.indexOf('pdf') >= 0;
-              });
-              adicionarChipDepoisInput(pdfInput, 'PDF do Arquivo: ' + arq.nome_arquivo);
+          var xml = await buscarArquivo(xmlId);
+          if (xml) {
+            var xmlInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(i){
+              var a = (i.getAttribute('accept') || '').toLowerCase();
+              var n = (i.getAttribute('name') || '').toLowerCase();
+              return a.indexOf('xml') >= 0 || n.indexOf('xml') >= 0;
             });
-
-            carregarArquivoSelecionado(xmlId, 'xml').then(function(arq){
-              if (!arq) return;
-              var xmlInput = Array.from(document.querySelectorAll('input[type="file"]')).find(function(input){
-                var accept = (input.getAttribute('accept') || '').toLowerCase();
-                var name = (input.getAttribute('name') || '').toLowerCase();
-                return accept.indexOf('xml') >= 0 || name.indexOf('xml') >= 0;
-              });
-              adicionarChipDepoisInput(xmlInput, 'XML do Arquivo: ' + arq.nome_arquivo);
-            });
-          } catch(e) {}
+            chipDepoisInput(xmlInput, 'XML do Arquivo: ' + xml.nome_arquivo);
+          }
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', adicionarBotoesArquivo);
+          document.addEventListener('DOMContentLoaded', iniciar);
         } else {
-          adicionarBotoesArquivo();
+          iniciar();
         }
       })();
     </script>
@@ -2241,10 +2270,14 @@ function renderPlennaTecNovoArquivoAssets() {
 router.use((req, res, next) => {
   const originalSend = res.send.bind(res);
 
-  res.send = function plennatecNovoArquivoSend(body) {
+  res.send = function plennatecNovoArquivoV4Send(body) {
     try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-novo-arquivo-script')) {
-        body = body.replace('</head>', `${renderPlennaTecNovoArquivoAssets()}</head>`);
+      if (
+        typeof body === 'string' &&
+        body.includes('</head>') &&
+        !body.includes('plennatec-novo-arquivo-v4-script')
+      ) {
+        body = body.replace('</head>', `${renderPlennaTecNovoArquivoV4Assets()}</head>`);
       }
     } catch (error) {}
 
@@ -17611,6 +17644,7 @@ router.post('/documentos', protegerRota, (req, res) => {
 router.get('/arquivo', protegerRota, async (req, res) => {
   try {
     await ensureArquivoFilaTable();
+    await normalizarNomesArquivoFilaDisponiveis();
 
     const modoSelecao = String(req.query.selecionar || '').toLowerCase();
     const rotinaId = String(req.query.rotina_id || '').trim();
