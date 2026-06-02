@@ -27843,4 +27843,228 @@ router.get('/backup/download/:filename', protegerRota, somenteAdmin, (req, res) 
   }
 });
 
+
+// =====================================================
+// PATCH DEFINITIVO MENU ADMIN — DROPDOWN ACIMA DE TODOS OS CARDS
+// Resolve o dropdown do perfil ficando preso/por baixo dos containers com overflow.
+// Estratégia: usa position: fixed e calcula a posição pelo JS no hover/focus/click.
+// =====================================================
+function renderPlennaTecAdminDropdownOverAllAssets() {
+  return `
+    <style id="plennatec-admin-dropdown-overall">
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-user,
+      body.dm-global-page .dm-global-user-menu,
+      body.dm-global-page .dm-global-user-trigger {
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 2147483000 !important;
+      }
+
+      body.dm-global-page .dm-global-user-trigger {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+      }
+
+      body.dm-global-page .dm-global-user-copy,
+      body.dm-global-page .dm-global-user-copy strong,
+      body.dm-global-page .dm-global-user-copy span {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown {
+        position: fixed !important;
+        display: none !important;
+        z-index: 2147483647 !important;
+        min-width: 220px !important;
+        width: max-content !important;
+        max-width: 300px !important;
+        padding: 8px !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 22px 55px rgba(15,23,42,.28) !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown.is-open,
+      body.dm-global-page .dm-global-user-menu:hover .dm-global-dropdown,
+      body.dm-global-page .dm-global-user-menu:focus-within .dm-global-dropdown {
+        display: block !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown a,
+      body.dm-global-page .dm-global-dropdown a:visited {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        width: 100% !important;
+        padding: 11px 12px !important;
+        border-radius: 10px !important;
+        text-decoration: none !important;
+        color: #172033 !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        white-space: nowrap !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown a:hover {
+        background: #f0fdf4 !important;
+        color: #008f3a !important;
+      }
+    </style>
+
+    <script id="plennatec-admin-dropdown-overall-script">
+      (function(){
+        if (window.__plennatecAdminDropdownOverAllReady) return;
+        window.__plennatecAdminDropdownOverAllReady = true;
+
+        function posicionarDropdown(menu){
+          try {
+            if (!menu) return;
+            var dropdown = menu.querySelector('.dm-global-dropdown');
+            var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
+            if (!dropdown || !trigger) return;
+
+            dropdown.classList.add('is-open');
+            dropdown.style.display = 'block';
+
+            var rect = trigger.getBoundingClientRect();
+            var largura = dropdown.offsetWidth || 240;
+            var margem = 14;
+            var top = Math.round(rect.bottom + 10);
+            var left = Math.round(rect.right - largura);
+
+            if (left < margem) left = margem;
+            if (left + largura > window.innerWidth - margem) {
+              left = Math.max(margem, window.innerWidth - largura - margem);
+            }
+
+            dropdown.style.top = top + 'px';
+            dropdown.style.left = left + 'px';
+            dropdown.style.right = 'auto';
+          } catch(e) {}
+        }
+
+        function fecharOutrosDropdowns(menuAtual){
+          document.querySelectorAll('.dm-global-dropdown.is-open').forEach(function(drop){
+            var menu = drop.closest('.dm-global-user-menu');
+            if (menu !== menuAtual) {
+              drop.classList.remove('is-open');
+              drop.style.display = '';
+            }
+          });
+        }
+
+        function configurar(){
+          document.querySelectorAll('.dm-global-user-menu').forEach(function(menu){
+            if (menu.dataset.dropdownOverallReady === '1') return;
+            menu.dataset.dropdownOverallReady = '1';
+
+            var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
+            var dropdown = menu.querySelector('.dm-global-dropdown');
+            if (!dropdown) return;
+
+            menu.addEventListener('mouseenter', function(){
+              fecharOutrosDropdowns(menu);
+              posicionarDropdown(menu);
+            });
+            menu.addEventListener('focusin', function(){
+              fecharOutrosDropdowns(menu);
+              posicionarDropdown(menu);
+            });
+            trigger.addEventListener('click', function(ev){
+              ev.preventDefault();
+              ev.stopPropagation();
+              var aberto = dropdown.classList.contains('is-open');
+              fecharOutrosDropdowns(menu);
+              if (aberto) {
+                dropdown.classList.remove('is-open');
+                dropdown.style.display = '';
+              } else {
+                posicionarDropdown(menu);
+              }
+            });
+            menu.addEventListener('mouseleave', function(){
+              setTimeout(function(){
+                if (!menu.matches(':hover') && !dropdown.matches(':hover')) {
+                  dropdown.classList.remove('is-open');
+                  dropdown.style.display = '';
+                }
+              }, 180);
+            });
+            dropdown.addEventListener('mouseleave', function(){
+              setTimeout(function(){
+                if (!menu.matches(':hover') && !dropdown.matches(':hover')) {
+                  dropdown.classList.remove('is-open');
+                  dropdown.style.display = '';
+                }
+              }, 180);
+            });
+          });
+        }
+
+        document.addEventListener('click', function(ev){
+          if (!ev.target.closest('.dm-global-user-menu') && !ev.target.closest('.dm-global-dropdown')) {
+            fecharOutrosDropdowns(null);
+          }
+        });
+
+        window.addEventListener('resize', function(){
+          var aberto = document.querySelector('.dm-global-user-menu .dm-global-dropdown.is-open');
+          if (aberto) posicionarDropdown(aberto.closest('.dm-global-user-menu'));
+        });
+        window.addEventListener('scroll', function(){
+          var aberto = document.querySelector('.dm-global-user-menu .dm-global-dropdown.is-open');
+          if (aberto) posicionarDropdown(aberto.closest('.dm-global-user-menu'));
+        }, true);
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', configurar);
+        } else {
+          configurar();
+        }
+      })();
+    </script>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+  res.send = function plennatecAdminDropdownOverAllSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-admin-dropdown-overall-script')) {
+        body = body.replace('</head>', `${renderPlennaTecAdminDropdownOverAllAssets()}</head>`);
+      }
+    } catch (error) {}
+    return originalSend(body);
+  };
+  next();
+});
+
 module.exports = router;
