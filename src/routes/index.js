@@ -5214,18 +5214,18 @@ function renderGlobalHeader(req, config = {}) {
       .dm-global-logo{width:54px;height:54px;border-radius:999px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:4px;box-shadow:0 8px 22px rgba(15,23,42,.08);}
       .dm-global-title h1{margin:0 0 5px;font-size:clamp(22px,1.8vw,32px);line-height:1;letter-spacing:-.7px;color:#101828;}
       .dm-global-title p{margin:0;color:#52627a;font-size:13px;font-weight:700;}
-      .dm-global-user{display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;}
-      .dm-global-user-menu{position:relative;display:flex;align-items:center;gap:12px;}
-      .dm-global-user-trigger{display:flex;align-items:center;gap:12px;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;color:inherit;}
-      .dm-global-user-copy{text-align:right;line-height:1.15;}
-      .dm-global-user-copy strong{display:block;font-size:14px;color:#00B050;margin-bottom:4px;}
-      .dm-global-user-copy span{display:block;font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase;}
-      .dm-global-dropdown{display:none;position:absolute;right:0;top:calc(100% + 10px);z-index:9999;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 45px rgba(15,23,42,.16);padding:8px;}
-      .dm-global-user-menu:hover .dm-global-dropdown,.dm-global-user-menu:focus-within .dm-global-dropdown{display:block;}
-      .dm-global-dropdown a{display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:10px;text-decoration:none;color:#172033 !important;font-weight:800;font-size:13px;white-space:nowrap;}
-      .dm-global-dropdown a:hover{background:#f0fdf4;color:#008f3a !important;}
+      .dm-global-user{display:flex !important;align-items:center !important;gap:12px !important;flex-shrink:0 !important;position:relative !important;overflow:visible !important;}
+      .dm-global-user-menu{position:relative !important;display:flex !important;align-items:center !important;gap:12px !important;overflow:visible !important;z-index:200000 !important;}
+      .dm-global-user-trigger{appearance:none !important;-webkit-appearance:none !important;display:flex !important;align-items:center !important;gap:12px !important;border:0 !important;background:transparent !important;background-color:transparent !important;background-image:none !important;padding:0 !important;margin:0 !important;min-width:0 !important;width:auto !important;height:auto !important;min-height:0 !important;box-shadow:none !important;border-radius:0 !important;cursor:pointer !important;font:inherit !important;color:inherit !important;line-height:1.15 !important;}
+      .dm-global-user-copy{text-align:right !important;line-height:1.15 !important;background:transparent !important;background-color:transparent !important;background-image:none !important;box-shadow:none !important;padding:0 !important;margin:0 !important;min-width:0 !important;width:auto !important;}
+      .dm-global-user-copy strong{display:block !important;font-size:14px !important;color:#00B050 !important;margin:0 0 4px !important;background:transparent !important;background-color:transparent !important;background-image:none !important;box-shadow:none !important;padding:0 !important;line-height:1.05 !important;}
+      .dm-global-user-copy span{display:block !important;font-size:11px !important;color:#64748b !important;font-weight:800 !important;text-transform:uppercase !important;background:transparent !important;background-color:transparent !important;background-image:none !important;box-shadow:none !important;padding:0 !important;line-height:1.05 !important;}
+      .dm-global-dropdown{display:none !important;position:absolute !important;right:0 !important;top:calc(100% + 10px) !important;z-index:2147483647 !important;min-width:220px !important;background:#fff !important;border:1px solid #e2e8f0 !important;border-radius:14px !important;box-shadow:0 18px 45px rgba(15,23,42,.20) !important;padding:8px !important;overflow:visible !important;}
+      .dm-global-user-menu:hover .dm-global-dropdown,.dm-global-user-menu:focus-within .dm-global-dropdown{display:block !important;}
+      .dm-global-dropdown a{display:flex !important;align-items:center !important;gap:8px !important;padding:11px 12px !important;border-radius:10px !important;text-decoration:none !important;color:#172033 !important;font-weight:800 !important;font-size:13px !important;white-space:nowrap !important;background:transparent !important;border:0 !important;box-shadow:none !important;height:auto !important;min-height:0 !important;width:100% !important;justify-content:flex-start !important;}
+      .dm-global-dropdown a:hover{background:#f0fdf4 !important;color:#008f3a !important;}
       .dm-global-dropdown .danger-link{color:#334155 !important;}
-      .dm-global-avatar{position:relative;width:50px;height:50px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;display:grid;place-items:center;box-shadow:0 8px 22px rgba(15,23,42,.08);overflow:hidden;}
+      .dm-global-avatar{position:relative !important;width:50px !important;height:50px !important;min-width:50px !important;min-height:50px !important;border-radius:999px !important;background:#fff !important;background-color:#fff !important;background-image:none !important;border:1px solid #e2e8f0 !important;display:grid !important;place-items:center !important;box-shadow:0 8px 22px rgba(15,23,42,.08) !important;overflow:hidden !important;padding:0 !important;margin:0 !important;}
       .dm-global-avatar img{width:42px;height:42px;object-fit:contain;border-radius:50%;}
       .dm-global-online{position:absolute;right:3px;bottom:5px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:3px solid #fff;}
       .dm-global-logout{height:44px;padding:0 16px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#222b3b !important;border:1px solid #e0e6ef;font-weight:900;box-shadow:0 10px 20px rgba(15,23,42,.06);white-space:nowrap;}
@@ -5338,146 +5338,6 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 }
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
-
-/* ===== PATCH FINAL PERFIL ADMIN / DROPDOWN BACKUP =====
-   Corrige deformação do botão Genivaldo/ADMIN e mantém o menu de Backup clicável.
-*/
-.dm-global-header-shell,
-.dm-global-header-shell *,
-.dm-global-top,
-.dm-global-user,
-.dm-global-user-menu {
-  overflow: visible !important;
-}
-
-.dm-global-user {
-  position: relative !important;
-  z-index: 99990 !important;
-}
-
-.dm-global-user-menu {
-  position: relative !important;
-  flex: 0 0 auto !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-}
-
-.dm-global-user-trigger,
-button.dm-global-user-trigger,
-body.dm-global-page button.dm-global-user-trigger {
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 12px !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  height: auto !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  color: inherit !important;
-  cursor: pointer !important;
-  transform: none !important;
-  filter: none !important;
-}
-
-.dm-global-user-trigger:hover,
-.dm-global-user-trigger:focus,
-.dm-global-user-trigger:active {
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  outline: none !important;
-  transform: none !important;
-  filter: none !important;
-}
-
-.dm-global-user-copy {
-  display: block !important;
-  width: auto !important;
-  min-width: 82px !important;
-  max-width: 150px !important;
-  text-align: right !important;
-  line-height: 1.15 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-}
-
-.dm-global-user-copy strong {
-  display: block !important;
-  color: #00B050 !important;
-  font-size: 14px !important;
-  font-weight: 900 !important;
-  margin: 0 0 4px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-.dm-global-user-copy span {
-  display: block !important;
-  color: #64748b !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  white-space: nowrap !important;
-}
-
-.dm-global-avatar {
-  flex: 0 0 50px !important;
-  width: 50px !important;
-  height: 50px !important;
-}
-
-.dm-global-dropdown {
-  display: none !important;
-  position: absolute !important;
-  right: 0 !important;
-  top: calc(100% + 10px) !important;
-  z-index: 999999 !important;
-  min-width: 220px !important;
-  width: max-content !important;
-  max-width: 280px !important;
-  overflow: visible !important;
-  pointer-events: auto !important;
-}
-
-.dm-global-user-menu:hover .dm-global-dropdown,
-.dm-global-user-menu:focus-within .dm-global-dropdown {
-  display: block !important;
-}
-
-.dm-global-dropdown a {
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  justify-content: flex-start !important;
-}
-
-@media(max-width:900px){
-  .dm-global-user-copy {
-    text-align: left !important;
-    max-width: 220px !important;
-  }
-  .dm-global-dropdown {
-    left: 0 !important;
-    right: auto !important;
-  }
-}
-/* ===== FIM PATCH FINAL PERFIL ADMIN / DROPDOWN BACKUP ===== */
-
 </style>
     <header class="dm-global-header-shell">
       <div class="dm-global-top">
@@ -5487,10 +5347,10 @@ body.dm-global-page button.dm-global-user-trigger {
         </div>
         <div class="dm-global-user">
           <div class="dm-global-user-menu">
-            <button type="button" class="dm-global-user-trigger" aria-label="Abrir menu do usuário">
+            <div class="dm-global-user-trigger" role="button" tabindex="0" aria-label="Abrir menu do usuário">
               <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
               <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
-            </button>
+            </div>
             <div class="dm-global-dropdown">
               ${isAdmin ? '<a href="/backup">💾 Realizar Backup</a>' : ''}
               <a class="danger-link" href="/logout">↪ Sair</a>
@@ -5503,6 +5363,204 @@ body.dm-global-page button.dm-global-user-trigger {
     </header>`;
 }
 
+
+
+
+// =====================================================
+// PATCH FINAL PERFIL ADMIN — corrige botão Genivaldo/ADMIN e dropdown Backup
+// Causa: estilos genéricos de button/links das telas estavam interferindo no bloco do usuário.
+// Solução: perfil não usa mais <button> e recebe CSS com escopo ultra específico.
+// =====================================================
+function renderPlennaTecPerfilAdminFinalAssets() {
+  return `
+    <style id="plennatec-perfil-admin-final">
+      body.dm-global-page .dm-global-top,
+      body.dm-global-page .dm-global-header-shell,
+      body.dm-global-page .dm-global-user,
+      body.dm-global-page .dm-global-user-menu {
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-global-user {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+        flex: 0 0 auto !important;
+        position: relative !important;
+        z-index: 300000 !important;
+      }
+
+      body.dm-global-page .dm-global-user-menu {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        position: relative !important;
+        z-index: 300001 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+
+      body.dm-global-page .dm-global-user-trigger,
+      body.dm-global-page .dm-global-user-trigger:hover,
+      body.dm-global-page .dm-global-user-trigger:focus {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        color: inherit !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+        transform: none !important;
+        filter: none !important;
+      }
+
+      body.dm-global-page .dm-global-user-copy,
+      body.dm-global-page .dm-global-user-copy:hover,
+      body.dm-global-page .dm-global-user-copy strong,
+      body.dm-global-page .dm-global-user-copy span {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 160px !important;
+        text-align: right !important;
+      }
+
+      body.dm-global-page .dm-global-user-copy strong {
+        display: block !important;
+        color: #00B050 !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        line-height: 1.05 !important;
+        margin-bottom: 4px !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page .dm-global-user-copy span {
+        display: block !important;
+        color: #64748b !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        line-height: 1.05 !important;
+        text-transform: uppercase !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page .dm-global-avatar,
+      body.dm-global-page .dm-global-avatar:hover {
+        width: 50px !important;
+        height: 50px !important;
+        min-width: 50px !important;
+        min-height: 50px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 999px !important;
+        background: #fff !important;
+        background-color: #fff !important;
+        background-image: none !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 8px 22px rgba(15,23,42,.08) !important;
+        display: grid !important;
+        place-items: center !important;
+        overflow: hidden !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown {
+        display: none !important;
+        position: absolute !important;
+        top: calc(100% + 10px) !important;
+        right: 0 !important;
+        left: auto !important;
+        z-index: 2147483647 !important;
+        min-width: 220px !important;
+        width: max-content !important;
+        max-width: 280px !important;
+        padding: 8px !important;
+        margin: 0 !important;
+        background: #fff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 18px 45px rgba(15,23,42,.22) !important;
+        overflow: visible !important;
+      }
+
+      body.dm-global-page .dm-global-user-menu:hover .dm-global-dropdown,
+      body.dm-global-page .dm-global-user-menu:focus-within .dm-global-dropdown {
+        display: block !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown a,
+      body.dm-global-page .dm-global-dropdown a:visited {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 11px 12px !important;
+        margin: 0 !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        color: #172033 !important;
+        text-decoration: none !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        white-space: nowrap !important;
+      }
+
+      body.dm-global-page .dm-global-dropdown a:hover {
+        background: #f0fdf4 !important;
+        color: #008f3a !important;
+      }
+    </style>
+  `;
+}
+
+router.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
+  res.send = function plennatecPerfilAdminFinalSend(body) {
+    try {
+      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-perfil-admin-final')) {
+        body = body.replace('</head>', `${renderPlennaTecPerfilAdminFinalAssets()}</head>`);
+      }
+    } catch (error) {}
+    return originalSend(body);
+  };
+  next();
+});
 
 // Middleware visual: aplica shell premium nas telas Categorias e Usuários sem alterar regras de negócio.
 router.use((req, res, next) => {
