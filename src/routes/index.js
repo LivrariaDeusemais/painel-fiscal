@@ -5500,13 +5500,9 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         </div>
         <div class="dm-global-user">
           <div class="dm-global-user-menu">
-            <div class="dm-global-user-trigger" role="button" tabindex="0" aria-label="Abrir menu do usuário">
+            <div class="dm-global-user-trigger" role="button" tabindex="0" aria-label="Abrir menu do usuário" data-is-admin="${isAdmin ? '1' : '0'}">
               <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
               <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
-            </div>
-            <div class="dm-global-dropdown">
-              ${isAdmin ? '<a href="/backup">💾 Realizar Backup</a>' : ''}
-              <a class="danger-link" href="/logout">↪ Sair</a>
             </div>
           </div>
           <a class="dm-global-logout" href="/logout">Sair</a>
@@ -5519,35 +5515,83 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         if (window.__plennatecGlobalUserMenuReady) return;
         window.__plennatecGlobalUserMenuReady = true;
 
-        var dropdownAberto = null;
+        var menuFlutuante = null;
+        var triggerAberto = null;
 
-        function fecharDropdown(){
-          if (!dropdownAberto) return;
-          var dropdown = dropdownAberto.dropdown;
-          var placeholder = dropdownAberto.placeholder;
-
-          dropdown.classList.remove('is-open', 'dm-global-dropdown-floating');
-          dropdown.style.display = '';
-          dropdown.style.top = '';
-          dropdown.style.left = '';
-          dropdown.style.right = '';
-
-          if (placeholder && placeholder.parentNode) {
-            placeholder.parentNode.insertBefore(dropdown, placeholder);
-            placeholder.parentNode.removeChild(placeholder);
-          }
-
-          dropdownAberto = null;
+        function aplicarEstiloLink(link){
+          link.style.setProperty('display', 'flex', 'important');
+          link.style.setProperty('align-items', 'center', 'important');
+          link.style.setProperty('justify-content', 'flex-start', 'important');
+          link.style.setProperty('width', '100%', 'important');
+          link.style.setProperty('padding', '12px 14px', 'important');
+          link.style.setProperty('border-radius', '10px', 'important');
+          link.style.setProperty('color', '#172033', 'important');
+          link.style.setProperty('text-decoration', 'none', 'important');
+          link.style.setProperty('font-size', '14px', 'important');
+          link.style.setProperty('font-weight', '900', 'important');
+          link.style.setProperty('white-space', 'nowrap', 'important');
+          link.style.setProperty('background', 'transparent', 'important');
+          link.style.setProperty('border', '0', 'important');
+          link.style.setProperty('box-shadow', 'none', 'important');
+          link.style.setProperty('height', 'auto', 'important');
+          link.style.setProperty('min-height', '0', 'important');
+          link.addEventListener('mouseenter', function(){
+            link.style.setProperty('background', '#f0fdf4', 'important');
+            link.style.setProperty('color', '#008f3a', 'important');
+          });
+          link.addEventListener('mouseleave', function(){
+            link.style.setProperty('background', 'transparent', 'important');
+            link.style.setProperty('color', '#172033', 'important');
+          });
         }
 
-        function posicionarDropdown(menu, dropdown, trigger){
-          var rect = trigger.getBoundingClientRect();
-          dropdown.classList.add('is-open', 'dm-global-dropdown-floating');
-          dropdown.style.display = 'block';
+        function criarMenu(trigger){
+          var menu = document.createElement('div');
+          menu.className = 'plennatec-floating-user-menu';
+          menu.style.setProperty('position', 'fixed', 'important');
+          menu.style.setProperty('display', 'block', 'important');
+          menu.style.setProperty('z-index', '2147483647', 'important');
+          menu.style.setProperty('min-width', '220px', 'important');
+          menu.style.setProperty('padding', '8px', 'important');
+          menu.style.setProperty('background', '#ffffff', 'important');
+          menu.style.setProperty('border', '1px solid #e2e8f0', 'important');
+          menu.style.setProperty('border-radius', '14px', 'important');
+          menu.style.setProperty('box-shadow', '0 22px 55px rgba(15,23,42,.28)', 'important');
+          menu.style.setProperty('overflow', 'visible', 'important');
+          menu.style.setProperty('pointer-events', 'auto', 'important');
 
+          if (trigger && trigger.dataset && trigger.dataset.isAdmin === '1') {
+            var backup = document.createElement('a');
+            backup.href = '/backup';
+            backup.textContent = 'Realizar Backup';
+            aplicarEstiloLink(backup);
+            menu.appendChild(backup);
+          }
+
+          var sair = document.createElement('a');
+          sair.href = '/logout';
+          sair.textContent = 'Sair';
+          aplicarEstiloLink(sair);
+          menu.appendChild(sair);
+
+          document.body.appendChild(menu);
+          return menu;
+        }
+
+        function fecharMenu(){
+          if (menuFlutuante && menuFlutuante.parentNode) {
+            menuFlutuante.parentNode.removeChild(menuFlutuante);
+          }
+          menuFlutuante = null;
+          triggerAberto = null;
+        }
+
+        function posicionarMenu(trigger){
+          if (!menuFlutuante || !trigger) return;
+          var rect = trigger.getBoundingClientRect();
           var margem = 14;
-          var largura = dropdown.offsetWidth || 240;
-          var altura = dropdown.offsetHeight || 90;
+          var largura = menuFlutuante.offsetWidth || 240;
+          var altura = menuFlutuante.offsetHeight || 100;
           var top = Math.round(rect.bottom + 10);
           var left = Math.round(rect.right - largura);
 
@@ -5559,28 +5603,21 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             top = Math.max(margem, Math.round(rect.top - altura - 10));
           }
 
-          dropdown.style.top = top + 'px';
-          dropdown.style.left = left + 'px';
-          dropdown.style.right = 'auto';
+          menuFlutuante.style.setProperty('top', top + 'px', 'important');
+          menuFlutuante.style.setProperty('left', left + 'px', 'important');
+          menuFlutuante.style.setProperty('right', 'auto', 'important');
         }
 
-        function abrirDropdown(menu){
-          var dropdown = menu.querySelector('.dm-global-dropdown');
-          var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
-          if (!dropdown || !trigger) return;
-
-          if (dropdownAberto && dropdownAberto.dropdown === dropdown) {
-            posicionarDropdown(menu, dropdown, trigger);
+        function abrirMenu(trigger){
+          if (!trigger) return;
+          if (menuFlutuante && triggerAberto === trigger) {
+            posicionarMenu(trigger);
             return;
           }
-
-          fecharDropdown();
-
-          var placeholder = document.createComment('plennatec-user-dropdown');
-          dropdown.parentNode.insertBefore(placeholder, dropdown);
-          document.body.appendChild(dropdown);
-          dropdownAberto = { menu: menu, dropdown: dropdown, trigger: trigger, placeholder: placeholder };
-          posicionarDropdown(menu, dropdown, trigger);
+          fecharMenu();
+          triggerAberto = trigger;
+          menuFlutuante = criarMenu(trigger);
+          posicionarMenu(trigger);
         }
 
         function configurarMenus(){
@@ -5589,45 +5626,44 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             menu.dataset.globalUserMenuReady = '1';
 
             var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
-            var dropdown = menu.querySelector('.dm-global-dropdown');
-            if (!dropdown || !trigger) return;
+            if (!trigger) return;
 
             trigger.addEventListener('click', function(event){
               event.preventDefault();
               event.stopPropagation();
-              if (dropdownAberto && dropdownAberto.dropdown === dropdown) {
-                fecharDropdown();
+              if (menuFlutuante && triggerAberto === trigger) {
+                fecharMenu();
               } else {
-                abrirDropdown(menu);
+                abrirMenu(trigger);
               }
             });
 
             trigger.addEventListener('mouseenter', function(){
-              abrirDropdown(menu);
+              abrirMenu(trigger);
             });
 
             trigger.addEventListener('focusin', function(){
-              abrirDropdown(menu);
+              abrirMenu(trigger);
             });
           });
         }
 
         document.addEventListener('click', function(event){
-          if (!dropdownAberto) return;
-          if (dropdownAberto.dropdown.contains(event.target) || dropdownAberto.trigger.contains(event.target)) return;
-          fecharDropdown();
+          if (!menuFlutuante) return;
+          if (menuFlutuante.contains(event.target) || (triggerAberto && triggerAberto.contains(event.target))) return;
+          fecharMenu();
         });
 
         document.addEventListener('keydown', function(event){
-          if (event.key === 'Escape') fecharDropdown();
+          if (event.key === 'Escape') fecharMenu();
         });
 
         window.addEventListener('resize', function(){
-          if (dropdownAberto) posicionarDropdown(dropdownAberto.menu, dropdownAberto.dropdown, dropdownAberto.trigger);
+          if (menuFlutuante && triggerAberto) posicionarMenu(triggerAberto);
         });
 
         window.addEventListener('scroll', function(){
-          if (dropdownAberto) posicionarDropdown(dropdownAberto.menu, dropdownAberto.dropdown, dropdownAberto.trigger);
+          if (menuFlutuante && triggerAberto) posicionarMenu(triggerAberto);
         }, true);
 
         if (document.readyState === 'loading') {
