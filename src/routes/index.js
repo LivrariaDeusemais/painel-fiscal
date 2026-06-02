@@ -5351,8 +5351,8 @@ function renderGlobalHeader(req, config = {}) {
   const extraActionsHtml = String(config.extraActions || '').trim();
   return `
     <style>
-      .dm-global-header-shell{width:min(1560px,calc(100% - 48px));margin:18px auto 14px;font-family:Arial,Helvetica,sans-serif;color:#172033;}
-      .dm-global-top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.72);border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:16px 24px;}
+      .dm-global-header-shell{width:min(1560px,calc(100% - 48px));margin:18px auto 14px;font-family:Arial,Helvetica,sans-serif;color:#172033;position:relative !important;z-index:2147483000 !important;overflow:visible !important;}
+      .dm-global-top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.72);border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(14px);padding:16px 24px;position:relative !important;z-index:2147483001 !important;overflow:visible !important;}
       .dm-global-brand{display:flex;align-items:center;gap:14px;min-width:0;}
       .dm-global-logo{width:54px;height:54px;border-radius:999px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:4px;box-shadow:0 8px 22px rgba(15,23,42,.08);}
       .dm-global-title h1{margin:0 0 5px;font-size:clamp(22px,1.8vw,32px);line-height:1;letter-spacing:-.7px;color:#101828;}
@@ -5381,8 +5381,6 @@ function renderGlobalHeader(req, config = {}) {
       body.dm-global-page .container{margin-top:14px !important;}
       body.dm-global-page .container > .card > h1:first-child{display:none !important;}
       body.dm-global-page .container > .hero > .hero-top:first-child{display:none !important;}
-      body.dm-global-page .dm-global-user-menu:hover .dm-global-dropdown:not(.is-open),
-      body.dm-global-page .dm-global-user-menu:focus-within .dm-global-dropdown:not(.is-open){display:none !important;}
       body.dm-global-page .dm-global-dropdown.is-open{display:block !important;}
       body.dm-global-page .dm-global-dropdown.dm-global-dropdown-floating{
         position:fixed !important;
