@@ -3826,6 +3826,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
   const paginaAtual = String(config.paginaAtual || '');
   const titulo = escapeHtmlGlobal(config.titulo || 'PlennaTec');
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão inteligente de despesas.');
+  const isAdmin = usuario.perfil === 'ADMIN';
   const navItems = [
     { key:'dashboard', href:'/dashboard', label:'⌂ Dashboard' },
     { key:'rotina-despesas', href:'/rotina-despesas', label:'▦ Contas a Pagar' },
@@ -3833,7 +3834,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
-    ...(usuario.perfil === 'ADMIN' ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
+    ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
   ];
   const nav = navItems.map(item => `<a class="${item.key === paginaAtual ? 'active' : ''}" href="${item.href}">${item.label}</a>`).join('');
   return `
@@ -4019,6 +4020,25 @@ body.plennatec-premium-admin-page{
   display:flex;
   align-items:center;
   gap:12px;
+  position:relative;
+  overflow:visible;
+}
+.plennatec-top-user-menu{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:relative;
+  overflow:visible;
+}
+.plennatec-top-user-trigger{
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  padding:0;
+  margin:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
 }
 .plennatec-top-user-copy{
   text-align:right;
@@ -4049,6 +4069,44 @@ body.plennatec-premium-admin-page{
   width:42px;
   height:42px;
   object-fit:contain;
+}
+.plennatec-user-dropdown{
+  display:none;
+  position:absolute;
+  right:0;
+  top:calc(100% + 10px);
+  min-width:190px;
+  padding:8px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  box-shadow:0 22px 55px rgba(15,23,42,.24);
+  z-index:2147483647;
+}
+.plennatec-user-dropdown.is-open,
+.plennatec-user-dropdown.plennatec-user-dropdown-floating{
+  display:block!important;
+}
+.plennatec-user-dropdown.plennatec-user-dropdown-floating{
+  position:fixed!important;
+  right:auto!important;
+}
+.plennatec-user-dropdown a{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  width:100%;
+  padding:11px 12px;
+  border-radius:10px;
+  color:#172033!important;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.plennatec-user-dropdown a:hover{
+  background:#f0fdf4;
+  color:#008f3a!important;
 }
 .plennatec-logout{
   height:46px;
@@ -5168,14 +5226,99 @@ body.plennatec-premium-admin-page{
               <div><h1>${titulo}</h1><p>${subtitulo}</p></div>
             </div>
             <div class="plennatec-top-user">
-              <div class="plennatec-top-user-copy"><strong>${nome}</strong><span>${perfil}</span></div>
-              <div class="plennatec-top-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil"></div>
+              <div class="plennatec-top-user-menu">
+                <div class="plennatec-top-user-trigger" role="button" tabindex="0" aria-label="Abrir menu do usuário">
+                  <div class="plennatec-top-user-copy"><strong>${nome}</strong><span>${perfil}</span></div>
+                  <div class="plennatec-top-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil"></div>
+                </div>
+                <div class="plennatec-user-dropdown">
+                  ${isAdmin ? '<a href="/backup">Realizar Backup</a>' : ''}
+                  <a href="/logout">Sair</a>
+                </div>
+              </div>
               <a class="plennatec-logout" href="/logout">Sair</a>
             </div>
           </header>
           ${innerHtml}
         </main>
       </div>
+      <script>
+        (function(){
+          if (window.__plennatecPremiumUserMenuReady) return;
+          window.__plennatecPremiumUserMenuReady = true;
+          var aberto = null;
+
+          function fechar(){
+            if (!aberto) return;
+            var dropdown = aberto.dropdown;
+            var placeholder = aberto.placeholder;
+            dropdown.classList.remove('is-open', 'plennatec-user-dropdown-floating');
+            dropdown.style.display = '';
+            dropdown.style.top = '';
+            dropdown.style.left = '';
+            dropdown.style.right = '';
+            if (placeholder && placeholder.parentNode) {
+              placeholder.parentNode.insertBefore(dropdown, placeholder);
+              placeholder.parentNode.removeChild(placeholder);
+            }
+            aberto = null;
+          }
+
+          function posicionar(menu, dropdown, trigger){
+            var rect = trigger.getBoundingClientRect();
+            dropdown.classList.add('is-open', 'plennatec-user-dropdown-floating');
+            dropdown.style.display = 'block';
+            var margem = 14;
+            var largura = dropdown.offsetWidth || 220;
+            var top = Math.round(rect.bottom + 10);
+            var left = Math.round(rect.right - largura);
+            if (left < margem) left = margem;
+            if (left + largura > window.innerWidth - margem) left = Math.max(margem, window.innerWidth - largura - margem);
+            dropdown.style.top = top + 'px';
+            dropdown.style.left = left + 'px';
+            dropdown.style.right = 'auto';
+          }
+
+          function abrir(menu){
+            var dropdown = menu.querySelector('.plennatec-user-dropdown');
+            var trigger = menu.querySelector('.plennatec-top-user-trigger') || menu;
+            if (!dropdown || !trigger) return;
+            if (aberto && aberto.dropdown === dropdown) {
+              posicionar(menu, dropdown, trigger);
+              return;
+            }
+            fechar();
+            var placeholder = document.createComment('plennatec-premium-user-dropdown');
+            dropdown.parentNode.insertBefore(placeholder, dropdown);
+            document.body.appendChild(dropdown);
+            aberto = { menu: menu, dropdown: dropdown, trigger: trigger, placeholder: placeholder };
+            posicionar(menu, dropdown, trigger);
+          }
+
+          document.querySelectorAll('.plennatec-top-user-menu').forEach(function(menu){
+            var trigger = menu.querySelector('.plennatec-top-user-trigger') || menu;
+            var dropdown = menu.querySelector('.plennatec-user-dropdown');
+            if (!dropdown || !trigger) return;
+            trigger.addEventListener('click', function(event){
+              event.preventDefault();
+              event.stopPropagation();
+              if (aberto && aberto.dropdown === dropdown) fechar();
+              else abrir(menu);
+            });
+            trigger.addEventListener('mouseenter', function(){ abrir(menu); });
+            trigger.addEventListener('focusin', function(){ abrir(menu); });
+          });
+
+          document.addEventListener('click', function(event){
+            if (!aberto) return;
+            if (aberto.dropdown.contains(event.target) || aberto.trigger.contains(event.target)) return;
+            fechar();
+          });
+          document.addEventListener('keydown', function(event){ if (event.key === 'Escape') fechar(); });
+          window.addEventListener('resize', function(){ if (aberto) posicionar(aberto.menu, aberto.dropdown, aberto.trigger); });
+          window.addEventListener('scroll', function(){ if (aberto) posicionar(aberto.menu, aberto.dropdown, aberto.trigger); }, true);
+        })();
+      </script>
     </body>
     </html>
   `;
@@ -5238,6 +5381,18 @@ function renderGlobalHeader(req, config = {}) {
       body.dm-global-page .container{margin-top:14px !important;}
       body.dm-global-page .container > .card > h1:first-child{display:none !important;}
       body.dm-global-page .container > .hero > .hero-top:first-child{display:none !important;}
+      body.dm-global-page .dm-global-user-menu:hover .dm-global-dropdown:not(.is-open),
+      body.dm-global-page .dm-global-user-menu:focus-within .dm-global-dropdown:not(.is-open){display:none !important;}
+      body.dm-global-page .dm-global-dropdown.is-open{display:block !important;}
+      body.dm-global-page .dm-global-dropdown.dm-global-dropdown-floating{
+        position:fixed !important;
+        z-index:2147483647 !important;
+        display:block !important;
+        right:auto !important;
+        top:auto;
+        overflow:visible !important;
+        pointer-events:auto !important;
+      }
       @media(max-width:900px){.dm-global-header-shell{width:min(100% - 24px,900px);}.dm-global-top{align-items:flex-start;flex-direction:column;}.dm-global-user{width:100%;justify-content:space-between;}.dm-global-user-copy{text-align:left;}.dm-global-nav{overflow-x:auto;flex-wrap:nowrap;}.dm-menu-btn{flex:0 0 auto;}}
     
 
@@ -5360,7 +5515,130 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         </div>
       </div>
       <nav class="dm-global-nav">${menuHtml}${extraActionsHtml ? `<span class="dm-menu-extra-separator"></span>${extraActionsHtml}` : ''}</nav>
-    </header>`;
+    </header>
+    <script>
+      (function(){
+        if (window.__plennatecGlobalUserMenuReady) return;
+        window.__plennatecGlobalUserMenuReady = true;
+
+        var dropdownAberto = null;
+
+        function fecharDropdown(){
+          if (!dropdownAberto) return;
+          var dropdown = dropdownAberto.dropdown;
+          var placeholder = dropdownAberto.placeholder;
+
+          dropdown.classList.remove('is-open', 'dm-global-dropdown-floating');
+          dropdown.style.display = '';
+          dropdown.style.top = '';
+          dropdown.style.left = '';
+          dropdown.style.right = '';
+
+          if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(dropdown, placeholder);
+            placeholder.parentNode.removeChild(placeholder);
+          }
+
+          dropdownAberto = null;
+        }
+
+        function posicionarDropdown(menu, dropdown, trigger){
+          var rect = trigger.getBoundingClientRect();
+          dropdown.classList.add('is-open', 'dm-global-dropdown-floating');
+          dropdown.style.display = 'block';
+
+          var margem = 14;
+          var largura = dropdown.offsetWidth || 240;
+          var altura = dropdown.offsetHeight || 90;
+          var top = Math.round(rect.bottom + 10);
+          var left = Math.round(rect.right - largura);
+
+          if (left < margem) left = margem;
+          if (left + largura > window.innerWidth - margem) {
+            left = Math.max(margem, window.innerWidth - largura - margem);
+          }
+          if (top + altura > window.innerHeight - margem) {
+            top = Math.max(margem, Math.round(rect.top - altura - 10));
+          }
+
+          dropdown.style.top = top + 'px';
+          dropdown.style.left = left + 'px';
+          dropdown.style.right = 'auto';
+        }
+
+        function abrirDropdown(menu){
+          var dropdown = menu.querySelector('.dm-global-dropdown');
+          var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
+          if (!dropdown || !trigger) return;
+
+          if (dropdownAberto && dropdownAberto.dropdown === dropdown) {
+            posicionarDropdown(menu, dropdown, trigger);
+            return;
+          }
+
+          fecharDropdown();
+
+          var placeholder = document.createComment('plennatec-user-dropdown');
+          dropdown.parentNode.insertBefore(placeholder, dropdown);
+          document.body.appendChild(dropdown);
+          dropdownAberto = { menu: menu, dropdown: dropdown, trigger: trigger, placeholder: placeholder };
+          posicionarDropdown(menu, dropdown, trigger);
+        }
+
+        function configurarMenus(){
+          document.querySelectorAll('.dm-global-user-menu').forEach(function(menu){
+            if (menu.dataset.globalUserMenuReady === '1') return;
+            menu.dataset.globalUserMenuReady = '1';
+
+            var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
+            var dropdown = menu.querySelector('.dm-global-dropdown');
+            if (!dropdown || !trigger) return;
+
+            trigger.addEventListener('click', function(event){
+              event.preventDefault();
+              event.stopPropagation();
+              if (dropdownAberto && dropdownAberto.dropdown === dropdown) {
+                fecharDropdown();
+              } else {
+                abrirDropdown(menu);
+              }
+            });
+
+            trigger.addEventListener('mouseenter', function(){
+              abrirDropdown(menu);
+            });
+
+            trigger.addEventListener('focusin', function(){
+              abrirDropdown(menu);
+            });
+          });
+        }
+
+        document.addEventListener('click', function(event){
+          if (!dropdownAberto) return;
+          if (dropdownAberto.dropdown.contains(event.target) || dropdownAberto.trigger.contains(event.target)) return;
+          fecharDropdown();
+        });
+
+        document.addEventListener('keydown', function(event){
+          if (event.key === 'Escape') fecharDropdown();
+        });
+
+        window.addEventListener('resize', function(){
+          if (dropdownAberto) posicionarDropdown(dropdownAberto.menu, dropdownAberto.dropdown, dropdownAberto.trigger);
+        });
+
+        window.addEventListener('scroll', function(){
+          if (dropdownAberto) posicionarDropdown(dropdownAberto.menu, dropdownAberto.dropdown, dropdownAberto.trigger);
+        }, true);
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', configurarMenus);
+        } else {
+          configurarMenus();
+        }
+      })();
+    </script>`;
 }
 
 
@@ -5643,6 +5921,7 @@ function renderDashboard(data) {
   const detalhesMesesJson = safeJson(detalhesMeses);
   const detalhesCategoriasJson = safeJson(detalhesCategorias);
   const detalhesFornecedoresJson = safeJson(detalhesFornecedores);
+  const isAdminDashboard = String(usuario.perfil || '').toUpperCase() === 'ADMIN';
 
   const hoje = new Date();
   const opcoesMes = [];
@@ -5892,6 +6171,27 @@ function renderDashboard(data) {
           justify-content: flex-end;
           gap: 14px;
           flex-shrink: 0;
+          position: relative;
+          overflow: visible;
+        }
+
+        .profile-user-menu {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          position: relative;
+          overflow: visible;
+        }
+
+        .profile-user-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          padding: 0;
+          margin: 0;
+          border: 0;
+          background: transparent;
+          cursor: pointer;
         }
 
         .profile-copy { text-align: right; }
@@ -5939,6 +6239,49 @@ function renderDashboard(data) {
           border-radius: 50%;
           background: #23c33a;
           border: 3px solid white;
+        }
+
+        .profile-dropdown {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: calc(100% + 10px);
+          min-width: 210px;
+          padding: 8px;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          box-shadow: 0 22px 55px rgba(15,23,42,.24);
+          z-index: 2147483647;
+        }
+
+        .profile-dropdown.is-open,
+        .profile-dropdown.profile-dropdown-floating {
+          display: block !important;
+        }
+
+        .profile-dropdown.profile-dropdown-floating {
+          position: fixed !important;
+          right: auto !important;
+        }
+
+        .profile-dropdown a {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          width: 100%;
+          padding: 11px 12px;
+          border-radius: 10px;
+          color: #172033 !important;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .profile-dropdown a:hover {
+          background: #f0fdf4;
+          color: #008f3a !important;
         }
 
         .logout-btn {
@@ -9476,11 +9819,19 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           </div>
 
           <div class="profile-area">
-            <div class="profile-copy">
-              <strong>${escapeHtml(usuario.nome || usuario.email || 'Usuário')}</strong>
-              <span>${escapeHtml(usuario.perfil || 'Dashboard gerencial interno')}</span>
+            <div class="profile-user-menu">
+              <div class="profile-user-trigger" role="button" tabindex="0" aria-label="Abrir menu do usuário">
+                <div class="profile-copy">
+                  <strong>${escapeHtml(usuario.nome || usuario.email || 'Usuário')}</strong>
+                  <span>${escapeHtml(usuario.perfil || 'Dashboard gerencial interno')}</span>
+                </div>
+                <div class="avatar-wrap"><img src="/assets/logo-plennatec-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-plennatec.png'" /><span class="online-dot"></span></div>
+              </div>
+              <div class="profile-dropdown">
+                ${isAdminDashboard ? '<a href="/backup">Realizar Backup</a>' : ''}
+                <a href="/logout">Sair</a>
+              </div>
             </div>
-            <div class="avatar-wrap"><img src="/assets/logo-plennatec-perfil.png" class="avatar-img" onerror="this.src='/assets/logo-plennatec.png'" /><span class="online-dot"></span></div>
             <a class="logout-btn" href="/logout" title="Sair">
               <span class="logout-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
               Sair
@@ -9729,6 +10080,84 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           window.fecharDetalheDashboard = fecharDetalheDashboard;
           window.atualizarDetalheCategorias = atualizarDetalheCategorias;
           window.atualizarDetalheFornecedores = atualizarDetalheFornecedores;
+
+          (function configurarMenuUsuarioDashboard(){
+            if (window.__plennatecDashboardUserMenuReady) return;
+            window.__plennatecDashboardUserMenuReady = true;
+            var aberto = null;
+
+            function fechar(){
+              if (!aberto) return;
+              var dropdown = aberto.dropdown;
+              var placeholder = aberto.placeholder;
+              dropdown.classList.remove('is-open', 'profile-dropdown-floating');
+              dropdown.style.display = '';
+              dropdown.style.top = '';
+              dropdown.style.left = '';
+              dropdown.style.right = '';
+              if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(dropdown, placeholder);
+                placeholder.parentNode.removeChild(placeholder);
+              }
+              aberto = null;
+            }
+
+            function posicionar(menu, dropdown, trigger){
+              var rect = trigger.getBoundingClientRect();
+              dropdown.classList.add('is-open', 'profile-dropdown-floating');
+              dropdown.style.display = 'block';
+              var margem = 14;
+              var largura = dropdown.offsetWidth || 220;
+              var altura = dropdown.offsetHeight || 90;
+              var top = Math.round(rect.bottom + 10);
+              var left = Math.round(rect.right - largura);
+              if (left < margem) left = margem;
+              if (left + largura > window.innerWidth - margem) left = Math.max(margem, window.innerWidth - largura - margem);
+              if (top + altura > window.innerHeight - margem) top = Math.max(margem, Math.round(rect.top - altura - 10));
+              dropdown.style.top = top + 'px';
+              dropdown.style.left = left + 'px';
+              dropdown.style.right = 'auto';
+            }
+
+            function abrir(menu){
+              var dropdown = menu.querySelector('.profile-dropdown');
+              var trigger = menu.querySelector('.profile-user-trigger') || menu;
+              if (!dropdown || !trigger) return;
+              if (aberto && aberto.dropdown === dropdown) {
+                posicionar(menu, dropdown, trigger);
+                return;
+              }
+              fechar();
+              var placeholder = document.createComment('plennatec-dashboard-user-dropdown');
+              dropdown.parentNode.insertBefore(placeholder, dropdown);
+              document.body.appendChild(dropdown);
+              aberto = { menu: menu, dropdown: dropdown, trigger: trigger, placeholder: placeholder };
+              posicionar(menu, dropdown, trigger);
+            }
+
+            document.querySelectorAll('.profile-user-menu').forEach(function(menu){
+              var trigger = menu.querySelector('.profile-user-trigger') || menu;
+              var dropdown = menu.querySelector('.profile-dropdown');
+              if (!dropdown || !trigger) return;
+              trigger.addEventListener('click', function(event){
+                event.preventDefault();
+                event.stopPropagation();
+                if (aberto && aberto.dropdown === dropdown) fechar();
+                else abrir(menu);
+              });
+              trigger.addEventListener('mouseenter', function(){ abrir(menu); });
+              trigger.addEventListener('focusin', function(){ abrir(menu); });
+            });
+
+            document.addEventListener('click', function(event){
+              if (!aberto) return;
+              if (aberto.dropdown.contains(event.target) || aberto.trigger.contains(event.target)) return;
+              fechar();
+            });
+            document.addEventListener('keydown', function(event){ if (event.key === 'Escape') fechar(); });
+            window.addEventListener('resize', function(){ if (aberto) posicionar(aberto.menu, aberto.dropdown, aberto.trigger); });
+            window.addEventListener('scroll', function(){ if (aberto) posicionar(aberto.menu, aberto.dropdown, aberto.trigger); }, true);
+          })();
 
           document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.chart-card.chart-clickable').forEach(function (card) {
@@ -27841,230 +28270,6 @@ router.get('/backup/download/:filename', protegerRota, somenteAdmin, (req, res) 
   } catch (error) {
     res.status(500).send(`<pre>Erro ao baixar backup:\n${error.message}</pre>`);
   }
-});
-
-
-// =====================================================
-// PATCH DEFINITIVO MENU ADMIN — DROPDOWN ACIMA DE TODOS OS CARDS
-// Resolve o dropdown do perfil ficando preso/por baixo dos containers com overflow.
-// Estratégia: usa position: fixed e calcula a posição pelo JS no hover/focus/click.
-// =====================================================
-function renderPlennaTecAdminDropdownOverAllAssets() {
-  return `
-    <style id="plennatec-admin-dropdown-overall">
-      body.dm-global-page .dm-global-header-shell,
-      body.dm-global-page .dm-global-top,
-      body.dm-global-page .dm-global-user,
-      body.dm-global-page .dm-global-user-menu,
-      body.dm-global-page .dm-global-user-trigger {
-        overflow: visible !important;
-        position: relative !important;
-        z-index: 2147483000 !important;
-      }
-
-      body.dm-global-page .dm-global-user-trigger {
-        background: transparent !important;
-        background-color: transparent !important;
-        background-image: none !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        width: auto !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        height: auto !important;
-        min-height: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 12px !important;
-      }
-
-      body.dm-global-page .dm-global-user-copy,
-      body.dm-global-page .dm-global-user-copy strong,
-      body.dm-global-page .dm-global-user-copy span {
-        background: transparent !important;
-        background-color: transparent !important;
-        background-image: none !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-      }
-
-      body.dm-global-page .dm-global-dropdown {
-        position: fixed !important;
-        display: none !important;
-        z-index: 2147483647 !important;
-        min-width: 220px !important;
-        width: max-content !important;
-        max-width: 300px !important;
-        padding: 8px !important;
-        margin: 0 !important;
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 14px !important;
-        box-shadow: 0 22px 55px rgba(15,23,42,.28) !important;
-        overflow: visible !important;
-        pointer-events: auto !important;
-      }
-
-      body.dm-global-page .dm-global-dropdown.is-open,
-      body.dm-global-page .dm-global-user-menu:hover .dm-global-dropdown,
-      body.dm-global-page .dm-global-user-menu:focus-within .dm-global-dropdown {
-        display: block !important;
-      }
-
-      body.dm-global-page .dm-global-dropdown a,
-      body.dm-global-page .dm-global-dropdown a:visited {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        gap: 8px !important;
-        width: 100% !important;
-        padding: 11px 12px !important;
-        border-radius: 10px !important;
-        text-decoration: none !important;
-        color: #172033 !important;
-        font-size: 13px !important;
-        font-weight: 800 !important;
-        white-space: nowrap !important;
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
-      }
-
-      body.dm-global-page .dm-global-dropdown a:hover {
-        background: #f0fdf4 !important;
-        color: #008f3a !important;
-      }
-    </style>
-
-    <script id="plennatec-admin-dropdown-overall-script">
-      (function(){
-        if (window.__plennatecAdminDropdownOverAllReady) return;
-        window.__plennatecAdminDropdownOverAllReady = true;
-
-        function posicionarDropdown(menu){
-          try {
-            if (!menu) return;
-            var dropdown = menu.querySelector('.dm-global-dropdown');
-            var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
-            if (!dropdown || !trigger) return;
-
-            dropdown.classList.add('is-open');
-            dropdown.style.display = 'block';
-
-            var rect = trigger.getBoundingClientRect();
-            var largura = dropdown.offsetWidth || 240;
-            var margem = 14;
-            var top = Math.round(rect.bottom + 10);
-            var left = Math.round(rect.right - largura);
-
-            if (left < margem) left = margem;
-            if (left + largura > window.innerWidth - margem) {
-              left = Math.max(margem, window.innerWidth - largura - margem);
-            }
-
-            dropdown.style.top = top + 'px';
-            dropdown.style.left = left + 'px';
-            dropdown.style.right = 'auto';
-          } catch(e) {}
-        }
-
-        function fecharOutrosDropdowns(menuAtual){
-          document.querySelectorAll('.dm-global-dropdown.is-open').forEach(function(drop){
-            var menu = drop.closest('.dm-global-user-menu');
-            if (menu !== menuAtual) {
-              drop.classList.remove('is-open');
-              drop.style.display = '';
-            }
-          });
-        }
-
-        function configurar(){
-          document.querySelectorAll('.dm-global-user-menu').forEach(function(menu){
-            if (menu.dataset.dropdownOverallReady === '1') return;
-            menu.dataset.dropdownOverallReady = '1';
-
-            var trigger = menu.querySelector('.dm-global-user-trigger') || menu;
-            var dropdown = menu.querySelector('.dm-global-dropdown');
-            if (!dropdown) return;
-
-            menu.addEventListener('mouseenter', function(){
-              fecharOutrosDropdowns(menu);
-              posicionarDropdown(menu);
-            });
-            menu.addEventListener('focusin', function(){
-              fecharOutrosDropdowns(menu);
-              posicionarDropdown(menu);
-            });
-            trigger.addEventListener('click', function(ev){
-              ev.preventDefault();
-              ev.stopPropagation();
-              var aberto = dropdown.classList.contains('is-open');
-              fecharOutrosDropdowns(menu);
-              if (aberto) {
-                dropdown.classList.remove('is-open');
-                dropdown.style.display = '';
-              } else {
-                posicionarDropdown(menu);
-              }
-            });
-            menu.addEventListener('mouseleave', function(){
-              setTimeout(function(){
-                if (!menu.matches(':hover') && !dropdown.matches(':hover')) {
-                  dropdown.classList.remove('is-open');
-                  dropdown.style.display = '';
-                }
-              }, 180);
-            });
-            dropdown.addEventListener('mouseleave', function(){
-              setTimeout(function(){
-                if (!menu.matches(':hover') && !dropdown.matches(':hover')) {
-                  dropdown.classList.remove('is-open');
-                  dropdown.style.display = '';
-                }
-              }, 180);
-            });
-          });
-        }
-
-        document.addEventListener('click', function(ev){
-          if (!ev.target.closest('.dm-global-user-menu') && !ev.target.closest('.dm-global-dropdown')) {
-            fecharOutrosDropdowns(null);
-          }
-        });
-
-        window.addEventListener('resize', function(){
-          var aberto = document.querySelector('.dm-global-user-menu .dm-global-dropdown.is-open');
-          if (aberto) posicionarDropdown(aberto.closest('.dm-global-user-menu'));
-        });
-        window.addEventListener('scroll', function(){
-          var aberto = document.querySelector('.dm-global-user-menu .dm-global-dropdown.is-open');
-          if (aberto) posicionarDropdown(aberto.closest('.dm-global-user-menu'));
-        }, true);
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', configurar);
-        } else {
-          configurar();
-        }
-      })();
-    </script>
-  `;
-}
-
-router.use((req, res, next) => {
-  const originalSend = res.send.bind(res);
-  res.send = function plennatecAdminDropdownOverAllSend(body) {
-    try {
-      if (typeof body === 'string' && body.includes('</head>') && !body.includes('plennatec-admin-dropdown-overall-script')) {
-        body = body.replace('</head>', `${renderPlennaTecAdminDropdownOverAllAssets()}</head>`);
-      }
-    } catch (error) {}
-    return originalSend(body);
-  };
-  next();
 });
 
 module.exports = router;
