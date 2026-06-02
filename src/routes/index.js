@@ -5338,6 +5338,146 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 }
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
+
+/* ===== PATCH FINAL PERFIL ADMIN / DROPDOWN BACKUP =====
+   Corrige deformação do botão Genivaldo/ADMIN e mantém o menu de Backup clicável.
+*/
+.dm-global-header-shell,
+.dm-global-header-shell *,
+.dm-global-top,
+.dm-global-user,
+.dm-global-user-menu {
+  overflow: visible !important;
+}
+
+.dm-global-user {
+  position: relative !important;
+  z-index: 99990 !important;
+}
+
+.dm-global-user-menu {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.dm-global-user-trigger,
+button.dm-global-user-trigger,
+body.dm-global-page button.dm-global-user-trigger {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.dm-global-user-trigger:hover,
+.dm-global-user-trigger:focus,
+.dm-global-user-trigger:active {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.dm-global-user-copy {
+  display: block !important;
+  width: auto !important;
+  min-width: 82px !important;
+  max-width: 150px !important;
+  text-align: right !important;
+  line-height: 1.15 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.dm-global-user-copy strong {
+  display: block !important;
+  color: #00B050 !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  margin: 0 0 4px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.dm-global-user-copy span {
+  display: block !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.dm-global-avatar {
+  flex: 0 0 50px !important;
+  width: 50px !important;
+  height: 50px !important;
+}
+
+.dm-global-dropdown {
+  display: none !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 10px) !important;
+  z-index: 999999 !important;
+  min-width: 220px !important;
+  width: max-content !important;
+  max-width: 280px !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+.dm-global-user-menu:hover .dm-global-dropdown,
+.dm-global-user-menu:focus-within .dm-global-dropdown {
+  display: block !important;
+}
+
+.dm-global-dropdown a {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+}
+
+@media(max-width:900px){
+  .dm-global-user-copy {
+    text-align: left !important;
+    max-width: 220px !important;
+  }
+  .dm-global-dropdown {
+    left: 0 !important;
+    right: auto !important;
+  }
+}
+/* ===== FIM PATCH FINAL PERFIL ADMIN / DROPDOWN BACKUP ===== */
+
 </style>
     <header class="dm-global-header-shell">
       <div class="dm-global-top">
