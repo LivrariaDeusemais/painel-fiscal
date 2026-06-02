@@ -31,6 +31,7 @@ const path = require('path');
 const fs = require('fs');
 const xml2js = require('xml2js');
 const archiver = require('archiver');
+const { spawn } = require('child_process');
 
 // CONFIG UPLOAD
 
@@ -5213,10 +5214,17 @@ function renderGlobalHeader(req, config = {}) {
       .dm-global-logo{width:54px;height:54px;border-radius:999px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:4px;box-shadow:0 8px 22px rgba(15,23,42,.08);}
       .dm-global-title h1{margin:0 0 5px;font-size:clamp(22px,1.8vw,32px);line-height:1;letter-spacing:-.7px;color:#101828;}
       .dm-global-title p{margin:0;color:#52627a;font-size:13px;font-weight:700;}
-      .dm-global-user{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+      .dm-global-user{display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;}
+      .dm-global-user-menu{position:relative;display:flex;align-items:center;gap:12px;}
+      .dm-global-user-trigger{display:flex;align-items:center;gap:12px;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;color:inherit;}
       .dm-global-user-copy{text-align:right;line-height:1.15;}
       .dm-global-user-copy strong{display:block;font-size:14px;color:#00B050;margin-bottom:4px;}
       .dm-global-user-copy span{display:block;font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase;}
+      .dm-global-dropdown{display:none;position:absolute;right:0;top:calc(100% + 10px);z-index:9999;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 45px rgba(15,23,42,.16);padding:8px;}
+      .dm-global-user-menu:hover .dm-global-dropdown,.dm-global-user-menu:focus-within .dm-global-dropdown{display:block;}
+      .dm-global-dropdown a{display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:10px;text-decoration:none;color:#172033 !important;font-weight:800;font-size:13px;white-space:nowrap;}
+      .dm-global-dropdown a:hover{background:#f0fdf4;color:#008f3a !important;}
+      .dm-global-dropdown .danger-link{color:#334155 !important;}
       .dm-global-avatar{position:relative;width:50px;height:50px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;display:grid;place-items:center;box-shadow:0 8px 22px rgba(15,23,42,.08);overflow:hidden;}
       .dm-global-avatar img{width:42px;height:42px;object-fit:contain;border-radius:50%;}
       .dm-global-online{position:absolute;right:3px;bottom:5px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:3px solid #fff;}
@@ -5338,8 +5346,16 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           <div class="dm-global-title"><h1>${titulo}</h1><p>${subtitulo}</p></div>
         </div>
         <div class="dm-global-user">
-          <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
-          <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
+          <div class="dm-global-user-menu">
+            <button type="button" class="dm-global-user-trigger" aria-label="Abrir menu do usuário">
+              <div class="dm-global-user-copy"><strong>${usuarioNome}</strong><span>${usuarioPerfil}</span></div>
+              <div class="dm-global-avatar"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil" /><span class="dm-global-online"></span></div>
+            </button>
+            <div class="dm-global-dropdown">
+              ${isAdmin ? '<a href="/backup">💾 Realizar Backup</a>' : ''}
+              <a class="danger-link" href="/logout">↪ Sair</a>
+            </div>
+          </div>
           <a class="dm-global-logout" href="/logout">Sair</a>
         </div>
       </div>
@@ -27348,6 +27364,284 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
     await archive.finalize();
   } catch (error) {
     res.send(`<pre>Erro ao Baixar:\n${error.message}</pre>`);
+  }
+});
+
+
+// =====================================================
+// MÓDULO BACKUP ADMIN — BANCO + UPLOADS
+// Página oculta do menu, acessível somente por ADMIN via cabeçalho.
+// =====================================================
+const backupDir = path.join(uploadsDir, 'backups');
+
+function ensureBackupDir() {
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+}
+
+function backupTimestamp() {
+  const agora = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}_${pad(agora.getHours())}-${pad(agora.getMinutes())}-${pad(agora.getSeconds())}`;
+}
+
+function formatBytesPlennaTec(bytes) {
+  const n = Number(bytes || 0);
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+function listarBackupsGerados() {
+  ensureBackupDir();
+  return fs.readdirSync(backupDir)
+    .filter(nome => !nome.startsWith('.'))
+    .map(nome => {
+      const filePath = path.join(backupDir, nome);
+      const stat = fs.statSync(filePath);
+      return { nome, tamanho: stat.size, criado: stat.mtime };
+    })
+    .sort((a, b) => b.criado - a.criado)
+    .slice(0, 30);
+}
+
+function runPgDump(destino) {
+  return new Promise((resolve, reject) => {
+    const databaseUrl = process.env.DATABASE_URL || process.env.EXTERNAL_DATABASE_URL;
+    if (!databaseUrl) {
+      return reject(new Error('DATABASE_URL não encontrada nas variáveis de ambiente.'));
+    }
+
+    const out = fs.createWriteStream(destino);
+    const args = ['--no-owner', '--no-privileges', '--format=plain', databaseUrl];
+    const child = spawn('pg_dump', args, {
+      env: { ...process.env, PGSSLMODE: process.env.PGSSLMODE || 'require' }
+    });
+
+    let stderr = '';
+    child.stdout.pipe(out);
+    child.stderr.on('data', data => { stderr += data.toString(); });
+    child.on('error', err => reject(err));
+    child.on('close', code => {
+      out.end();
+      if (code === 0) return resolve(destino);
+      reject(new Error(stderr || `pg_dump finalizou com código ${code}`));
+    });
+  });
+}
+
+async function gerarBackupBancoFallbackJson(destino) {
+  const tabelas = await pool.query(`
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY tablename
+  `);
+
+  const backup = {
+    gerado_em: new Date().toISOString(),
+    tipo: 'fallback-json',
+    observacao: 'Backup gerado em JSON porque o pg_dump não estava disponível no ambiente.',
+    tabelas: {}
+  };
+
+  for (const row of tabelas.rows) {
+    const nomeTabela = row.tablename;
+    const dados = await pool.query(`SELECT * FROM ${nomeTabela}`);
+    backup.tabelas[nomeTabela] = dados.rows;
+  }
+
+  fs.writeFileSync(destino, JSON.stringify(backup, null, 2), 'utf8');
+  return destino;
+}
+
+async function gerarBackupBanco() {
+  ensureBackupDir();
+  const stamp = backupTimestamp();
+  const destinoSql = path.join(backupDir, `plennatec-banco-${stamp}.sql`);
+
+  try {
+    await runPgDump(destinoSql);
+    return { arquivo: path.basename(destinoSql), tipo: 'SQL', aviso: '' };
+  } catch (error) {
+    const destinoJson = path.join(backupDir, `plennatec-banco-${stamp}.json`);
+    await gerarBackupBancoFallbackJson(destinoJson);
+    try { if (fs.existsSync(destinoSql) && fs.statSync(destinoSql).size === 0) fs.unlinkSync(destinoSql); } catch (e) {}
+    return {
+      arquivo: path.basename(destinoJson),
+      tipo: 'JSON',
+      aviso: `pg_dump não foi usado: ${error.message}. Foi gerado backup alternativo em JSON.`
+    };
+  }
+}
+
+function adicionarDiretorioAoZip(archive, diretorioBase, prefixo = '') {
+  if (!fs.existsSync(diretorioBase)) return;
+  const itens = fs.readdirSync(diretorioBase);
+
+  for (const item of itens) {
+    const caminho = path.join(diretorioBase, item);
+    const stat = fs.statSync(caminho);
+
+    // Evita incluir a pasta de backups dentro do próprio backup.
+    if (path.resolve(caminho) === path.resolve(backupDir)) continue;
+
+    const nomeNoZip = path.join(prefixo, item).replace(/\\/g, '/');
+    if (stat.isDirectory()) {
+      adicionarDiretorioAoZip(archive, caminho, nomeNoZip);
+    } else {
+      archive.file(caminho, { name: nomeNoZip });
+    }
+  }
+}
+
+function gerarBackupArquivos() {
+  ensureBackupDir();
+  const destino = path.join(backupDir, `plennatec-uploads-${backupTimestamp()}.zip`);
+
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(destino);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => resolve({ arquivo: path.basename(destino), tipo: 'ZIP', aviso: '' }));
+    archive.on('error', err => reject(err));
+    archive.pipe(output);
+    adicionarDiretorioAoZip(archive, uploadsDir, 'uploads');
+    archive.finalize();
+  });
+}
+
+async function gerarBackupCompleto() {
+  ensureBackupDir();
+  const banco = await gerarBackupBanco();
+  const arquivos = await gerarBackupArquivos();
+  const destino = path.join(backupDir, `plennatec-backup-completo-${backupTimestamp()}.zip`);
+
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(destino);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => resolve({
+      arquivo: path.basename(destino),
+      tipo: 'ZIP',
+      aviso: [banco.aviso, arquivos.aviso].filter(Boolean).join(' | ')
+    }));
+    archive.on('error', err => reject(err));
+    archive.pipe(output);
+    archive.file(path.join(backupDir, banco.arquivo), { name: `banco/${banco.arquivo}` });
+    archive.file(path.join(backupDir, arquivos.arquivo), { name: `arquivos/${arquivos.arquivo}` });
+    archive.finalize();
+  });
+}
+
+function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
+  const backups = listarBackupsGerados();
+  const linhas = backups.map(b => `
+    <tr>
+      <td>${escapeHtmlGlobal(b.nome)}</td>
+      <td>${formatBytesPlennaTec(b.tamanho)}</td>
+      <td>${b.criado.toLocaleString('pt-BR')}</td>
+      <td><a class="btn-mini" href="/backup/download/${encodeURIComponent(b.nome)}">Baixar</a></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" class="muted">Nenhum backup gerado ainda.</td></tr>`;
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backup - PlennaTec</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#baf2cf 0%,#f8fafc 42%,#eef2f7 100%);color:#172033;min-height:100vh;}
+    .backup-shell{width:min(1450px,calc(100vw - 48px));margin:18px auto 28px;}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.9);border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:18px 24px;margin-bottom:14px;}
+    .top h1{margin:0 0 6px;font-size:30px;letter-spacing:-.7px;}.top p{margin:0;color:#52627a;font-weight:700;}.user{font-weight:900;color:#00B050;text-align:right;}.user span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-top:4px;}.nav{display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:10px 14px;margin-bottom:16px;}.nav a{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640!important;border:1px solid #d7eadf;}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px;}.card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:22px;}.card h2{margin:0 0 8px;font-size:20px;}.card p{margin:0 0 16px;color:#52627a;font-weight:650;line-height:1.35;}.btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}.btn.secondary{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#172033;border:1px solid #dbe7df;}.alert{padding:14px 16px;border-radius:14px;margin-bottom:14px;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}.table-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:0;overflow:hidden;}table{width:100%;border-collapse:collapse;}th,td{padding:13px 16px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px;}th{background:#f8fafc;color:#334155;font-size:12px;text-transform:uppercase;}.btn-mini{height:32px;padding:0 12px;border-radius:9px;text-decoration:none;display:inline-flex;align-items:center;background:#f0fdf4;color:#008f3a!important;border:1px solid #bbf7d0;font-weight:900;}.muted{color:#64748b;}@media(max-width:900px){.backup-shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid{grid-template-columns:1fr}.user{text-align:left}}
+  </style>
+</head>
+<body>
+  <main class="backup-shell">
+    <section class="top">
+      <div><h1>Backup PlennaTec</h1><p>Área administrativa para gerar cópias do banco e dos arquivos fiscais.</p></div>
+      <div class="user">${escapeHtmlGlobal(req.session.usuario?.nome || 'ADMIN')}<span>${escapeHtmlGlobal(req.session.usuario?.perfil || 'ADMIN')}</span></div>
+    </section>
+    <nav class="nav">
+      <a href="/dashboard">Voltar para o Painel</a>
+      <a href="/lancamentos">Comprovantes Fiscais</a>
+      <a href="/rotina-despesas">Contas à Pagar</a>
+      <a href="/arquivo">Arquivo</a>
+      <a href="/logout">Sair</a>
+    </nav>
+    ${ok ? `<div class="alert ok">${escapeHtmlGlobal(ok)}</div>` : ''}
+    ${aviso ? `<div class="alert warn">${escapeHtmlGlobal(aviso)}</div>` : ''}
+    ${erro ? `<div class="alert err">${escapeHtmlGlobal(erro)}</div>` : ''}
+    <section class="grid">
+      <article class="card"><h2>Banco de Dados</h2><p>Gera uma cópia dos dados do PostgreSQL: usuários, lançamentos, categorias, status e configurações.</p><form method="post" action="/backup/banco"><button class="btn" type="submit">Gerar Backup do Banco</button></form></article>
+      <article class="card"><h2>Arquivos</h2><p>Compacta a pasta persistente /uploads com PDFs, XMLs, relatórios e arquivos do contador.</p><form method="post" action="/backup/arquivos"><button class="btn" type="submit">Gerar Backup dos Arquivos</button></form></article>
+      <article class="card"><h2>Backup Completo</h2><p>Gera banco + arquivos e empacota tudo em um único ZIP para baixar e salvar no OneDrive.</p><form method="post" action="/backup/completo"><button class="btn" type="submit">Backup Completo</button></form></article>
+    </section>
+    <section class="table-card">
+      <table>
+        <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Gerado em</th><th>Ação</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
+router.get('/backup', protegerRota, somenteAdmin, (req, res) => {
+  res.send(renderBackupAdminPage(req, {
+    ok: req.query.ok || '',
+    erro: req.query.erro || '',
+    aviso: req.query.aviso || ''
+  }));
+});
+
+router.post('/backup/banco', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const result = await gerarBackupBanco();
+    const params = new URLSearchParams({ ok: `Backup do banco gerado: ${result.arquivo}` });
+    if (result.aviso) params.set('aviso', result.aviso);
+    res.redirect(`/backup?${params.toString()}`);
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Erro ao gerar backup do banco: ' + error.message)}`);
+  }
+});
+
+router.post('/backup/arquivos', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const result = await gerarBackupArquivos();
+    res.redirect(`/backup?ok=${encodeURIComponent('Backup dos arquivos gerado: ' + result.arquivo)}`);
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Erro ao gerar backup dos arquivos: ' + error.message)}`);
+  }
+});
+
+router.post('/backup/completo', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const result = await gerarBackupCompleto();
+    const params = new URLSearchParams({ ok: `Backup completo gerado: ${result.arquivo}` });
+    if (result.aviso) params.set('aviso', result.aviso);
+    res.redirect(`/backup?${params.toString()}`);
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Erro ao gerar backup completo: ' + error.message)}`);
+  }
+});
+
+router.get('/backup/download/:filename', protegerRota, somenteAdmin, (req, res) => {
+  try {
+    ensureBackupDir();
+    const filename = path.basename(String(req.params.filename || ''));
+    const filePath = path.join(backupDir, filename);
+    if (!filename || !fs.existsSync(filePath)) {
+      return res.status(404).send('<pre>Backup não encontrado.</pre>');
+    }
+    res.download(filePath, filename);
+  } catch (error) {
+    res.status(500).send(`<pre>Erro ao baixar backup:\n${error.message}</pre>`);
   }
 });
 
