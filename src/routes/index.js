@@ -28034,6 +28034,7 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 // Página oculta do menu, acessível somente por ADMIN via cabeçalho.
 // =====================================================
 const backupDir = path.join(uploadsDir, 'backups');
+const BACKUP_RETENTION_LIMIT = 5;
 
 function ensureBackupDir() {
   if (!fs.existsSync(backupDir)) {
@@ -28055,17 +28056,37 @@ function formatBytesPlennaTec(bytes) {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-function listarBackupsGerados() {
+function listarTodosBackupsGerados() {
   ensureBackupDir();
   return fs.readdirSync(backupDir)
     .filter(nome => !nome.startsWith('.'))
     .map(nome => {
       const filePath = path.join(backupDir, nome);
       const stat = fs.statSync(filePath);
-      return { nome, tamanho: stat.size, criado: stat.mtime };
+      return { nome, filePath, tamanho: stat.size, criado: stat.mtime };
     })
-    .sort((a, b) => b.criado - a.criado)
-    .slice(0, 30);
+    .filter(item => {
+      try { return fs.statSync(item.filePath).isFile(); } catch (e) { return false; }
+    })
+    .sort((a, b) => b.criado - a.criado);
+}
+
+function listarBackupsGerados() {
+  return listarTodosBackupsGerados().slice(0, BACKUP_RETENTION_LIMIT);
+}
+
+function limparBackupsAntigos() {
+  const antigos = listarTodosBackupsGerados().slice(BACKUP_RETENTION_LIMIT);
+  const removidos = [];
+
+  antigos.forEach(item => {
+    try {
+      fs.unlinkSync(item.filePath);
+      removidos.push(item.nome);
+    } catch (error) {}
+  });
+
+  return removidos;
 }
 
 function runPgDump(destino) {
@@ -28125,11 +28146,13 @@ async function gerarBackupBanco() {
 
   try {
     await runPgDump(destinoSql);
+    limparBackupsAntigos();
     return { arquivo: path.basename(destinoSql), tipo: 'SQL', aviso: '' };
   } catch (error) {
     const destinoJson = path.join(backupDir, `plennatec-banco-${stamp}.json`);
     await gerarBackupBancoFallbackJson(destinoJson);
     try { if (fs.existsSync(destinoSql) && fs.statSync(destinoSql).size === 0) fs.unlinkSync(destinoSql); } catch (e) {}
+    limparBackupsAntigos();
     return {
       arquivo: path.basename(destinoJson),
       tipo: 'JSON',
@@ -28166,7 +28189,10 @@ function gerarBackupArquivos() {
     const output = fs.createWriteStream(destino);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
-    output.on('close', () => resolve({ arquivo: path.basename(destino), tipo: 'ZIP', aviso: '' }));
+    output.on('close', () => {
+      limparBackupsAntigos();
+      resolve({ arquivo: path.basename(destino), tipo: 'ZIP', aviso: '' });
+    });
     archive.on('error', err => reject(err));
     archive.pipe(output);
     adicionarDiretorioAoZip(archive, uploadsDir, 'uploads');
@@ -28184,11 +28210,14 @@ async function gerarBackupCompleto() {
     const output = fs.createWriteStream(destino);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
-    output.on('close', () => resolve({
-      arquivo: path.basename(destino),
-      tipo: 'ZIP',
-      aviso: [banco.aviso, arquivos.aviso].filter(Boolean).join(' | ')
-    }));
+    output.on('close', () => {
+      limparBackupsAntigos();
+      resolve({
+        arquivo: path.basename(destino),
+        tipo: 'ZIP',
+        aviso: [banco.aviso, arquivos.aviso].filter(Boolean).join(' | ')
+      });
+    });
     archive.on('error', err => reject(err));
     archive.pipe(output);
     archive.file(path.join(backupDir, banco.arquivo), { name: `banco/${banco.arquivo}` });
@@ -28198,6 +28227,7 @@ async function gerarBackupCompleto() {
 }
 
 function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
+  limparBackupsAntigos();
   const backups = listarBackupsGerados();
   const linhas = backups.map(b => `
     <tr>
