@@ -3216,6 +3216,20 @@ function renderMonthPickerAssets() {
     
 
 /* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
+/* Contas a pagar: mantém os títulos das colunas visíveis ao rolar a página */
+body.dm-global-page #rotinaTable {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+body.dm-global-page #rotinaTable thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: #f8fafc !important;
+  box-shadow: 0 1px 0 #e5e7eb, 0 10px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
 /* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
 body.dm-global-page form[action="/lancamentos"] .filters {
   display: grid !important;
@@ -23123,7 +23137,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           </div>
 
 
-          <table id="rotinaTable">
+          <table id="rotinaTable" class="rotina-table">
             <thead>
               <tr>
                 <th class="col-rot-fornecedor sortable-head" onclick="ordenarRotinaTabela(0, 'text')">Fornecedor</th>
