@@ -22814,6 +22814,27 @@ table thead th {
   box-shadow: inset 0 -2px 0 #e5e7eb, 0 5px 16px rgba(15, 23, 42, 0.10) !important;
 }
 
+#rotinaTable {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  overflow: visible !important;
+}
+
+#rotinaTable thead,
+#rotinaTable thead tr {
+  overflow: visible !important;
+}
+
+#rotinaTable thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5000 !important;
+  background: rgba(248, 250, 252, 0.99) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: inset 0 -2px 0 #e5e7eb, 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+}
+
 thead th {
   font-size: 12px !important;
   line-height: 1.15 !important;
