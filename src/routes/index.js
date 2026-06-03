@@ -3216,18 +3216,56 @@ function renderMonthPickerAssets() {
     
 
 /* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
-/* Contas a pagar: mantém os títulos das colunas visíveis ao rolar a página */
+/* Contas a pagar: cabeçalho fixo real, usando a mesma lógica de Comprovantes Fiscais */
 body.dm-global-page #rotinaTable {
   border-collapse: separate !important;
   border-spacing: 0 !important;
 }
 
 body.dm-global-page #rotinaTable thead th {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 30 !important;
+  position: static !important;
+  top: auto !important;
   background: #f8fafc !important;
-  box-shadow: 0 1px 0 #e5e7eb, 0 10px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+.rotina-table-fixed-head {
+  display: none;
+  position: fixed;
+  top: 0;
+  z-index: 99999;
+  pointer-events: none;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  background: rgba(248, 250, 252, 0.992) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+}
+
+.rotina-table-fixed-head.is-visible {
+  display: table;
+}
+
+.rotina-table-fixed-head th {
+  background: rgba(248, 250, 252, 0.992) !important;
+  color: #334155 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: none !important;
+  padding: 8px 10px !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: left !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.rotina-table-fixed-head th.col-vencimento,
+.rotina-table-fixed-head th.col-status-pagto,
+.rotina-table-fixed-head th.col-status,
+.rotina-table-fixed-head th.col-ativo,
+.rotina-table-fixed-head th.col-acoes {
+  text-align: center !important;
 }
 
 /* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
@@ -22811,7 +22849,7 @@ table {
   overflow: visible !important;
 }
 
-/* Cabeçalho fixo na rolagem da página: fica no topo quando filtros/cabeçalho somem */
+/* O cabeçalho fixo real é criado por JavaScript, igual à tela de Comprovantes. */
 table thead,
 table thead tr,
 table thead th {
@@ -22819,13 +22857,13 @@ table thead th {
 }
 
 table thead th {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 999 !important;
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
   background: rgba(248, 250, 252, 0.985) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  box-shadow: inset 0 -2px 0 #e5e7eb, 0 5px 16px rgba(15, 23, 42, 0.10) !important;
+  box-shadow: inset 0 -2px 0 #e5e7eb !important;
 }
 
 #rotinaTable {
@@ -22840,13 +22878,13 @@ table thead th {
 }
 
 #rotinaTable thead th {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 5000 !important;
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
   background: rgba(248, 250, 252, 0.99) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
-  box-shadow: inset 0 -2px 0 #e5e7eb, 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+  box-shadow: inset 0 -2px 0 #e5e7eb !important;
 }
 
 thead th {
@@ -23171,6 +23209,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           document.querySelectorAll('.' + nomeColuna).forEach(el => {
             el.style.display = mostrar ? '' : 'none';
           });
+          if (window.rotinaSyncHeaderFixo) window.rotinaSyncHeaderFixo();
         }
 
         function salvarPreferenciasColunasRotina() {
@@ -23213,7 +23252,68 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           });
         }
 
-        document.addEventListener('DOMContentLoaded', carregarPreferenciasColunasRotina);
+        function inicializarHeaderFixoRotina() {
+          const table = document.getElementById('rotinaTable');
+          if (!table || !table.tHead) return;
+
+          let fixedHeaderTable = null;
+
+          function criarHeaderFixo() {
+            if (fixedHeaderTable) fixedHeaderTable.remove();
+            fixedHeaderTable = document.createElement('table');
+            fixedHeaderTable.className = 'rotina-table-fixed-head';
+            fixedHeaderTable.setAttribute('aria-hidden', 'true');
+            fixedHeaderTable.appendChild(table.tHead.cloneNode(true));
+            document.body.appendChild(fixedHeaderTable);
+            window.rotinaSyncHeaderFixo = sincronizarHeaderFixo;
+          }
+
+          function sincronizarHeaderFixo() {
+            if (!fixedHeaderTable || !table.tHead) return;
+
+            const tableRect = table.getBoundingClientRect();
+            const originalThs = Array.from(table.tHead.querySelectorAll('th'));
+            const clonedThs = Array.from(fixedHeaderTable.querySelectorAll('th'));
+            const headerHeight = table.tHead.getBoundingClientRect().height || 40;
+            const deveFixar = tableRect.top < 0 && tableRect.bottom > headerHeight;
+
+            if (!deveFixar) {
+              fixedHeaderTable.classList.remove('is-visible');
+              return;
+            }
+
+            fixedHeaderTable.style.left = tableRect.left + 'px';
+            fixedHeaderTable.style.width = tableRect.width + 'px';
+
+            originalThs.forEach(function (th, index) {
+              const clone = clonedThs[index];
+              if (!clone) return;
+
+              const style = window.getComputedStyle(th);
+              const visivel = style.display !== 'none' && th.offsetWidth > 0;
+              clone.style.display = visivel ? '' : 'none';
+
+              if (visivel) {
+                const width = th.getBoundingClientRect().width;
+                clone.style.width = width + 'px';
+                clone.style.minWidth = width + 'px';
+                clone.style.maxWidth = width + 'px';
+              }
+            });
+
+            fixedHeaderTable.classList.add('is-visible');
+          }
+
+          criarHeaderFixo();
+          sincronizarHeaderFixo();
+          window.addEventListener('scroll', sincronizarHeaderFixo, { passive: true });
+          window.addEventListener('resize', sincronizarHeaderFixo);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          carregarPreferenciasColunasRotina();
+          inicializarHeaderFixoRotina();
+        });
 
         let mesSelecionadoPicker = '${mesNumeroEdicao}';
         const nomesMesPicker = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
