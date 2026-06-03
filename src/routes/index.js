@@ -3216,58 +3216,6 @@ function renderMonthPickerAssets() {
     
 
 /* ===== AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
-/* Contas a pagar: cabeçalho fixo real, usando a mesma lógica de Comprovantes Fiscais */
-body.dm-global-page #rotinaTable {
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-body.dm-global-page #rotinaTable thead th {
-  position: static !important;
-  top: auto !important;
-  background: #f8fafc !important;
-}
-
-.rotina-table-fixed-head {
-  display: none;
-  position: fixed;
-  top: 0;
-  z-index: 99999;
-  pointer-events: none;
-  border-collapse: collapse !important;
-  table-layout: fixed !important;
-  background: rgba(248, 250, 252, 0.992) !important;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
-}
-
-.rotina-table-fixed-head.is-visible {
-  display: table;
-}
-
-.rotina-table-fixed-head th {
-  background: rgba(248, 250, 252, 0.992) !important;
-  color: #334155 !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  text-transform: none !important;
-  padding: 8px 10px !important;
-  border-bottom: 2px solid #e5e7eb !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  text-align: left !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-}
-
-.rotina-table-fixed-head th.col-vencimento,
-.rotina-table-fixed-head th.col-status-pagto,
-.rotina-table-fixed-head th.col-status,
-.rotina-table-fixed-head th.col-ativo,
-.rotina-table-fixed-head th.col-acoes {
-  text-align: center !important;
-}
-
 /* Comprovantes Fiscais: filtros compactos para caberem em uma única linha em telas largas */
 body.dm-global-page form[action="/lancamentos"] .filters {
   display: grid !important;
@@ -22887,6 +22835,56 @@ table thead th {
   box-shadow: inset 0 -2px 0 #e5e7eb !important;
 }
 
+/* Cabeçalho fixo real de Contas à pagar.
+   Fica aqui, dentro da própria tela, para não depender de CSS global/remendos anteriores. */
+.rotina-table-fixed-head {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 2147482500 !important;
+  pointer-events: none !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+  background: rgba(248, 250, 252, 0.992) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12) !important;
+}
+
+.rotina-table-fixed-head.is-visible {
+  display: table !important;
+}
+
+.rotina-table-fixed-head th {
+  background: rgba(248, 250, 252, 0.992) !important;
+  color: #253247 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  padding: 10px 10px !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.rotina-table-fixed-head th.col-vencimento,
+.rotina-table-fixed-head th.col-status-pagto,
+.rotina-table-fixed-head th.col-status,
+.rotina-table-fixed-head th.col-ativo,
+.rotina-table-fixed-head th.col-acoes,
+.rotina-table-fixed-head th.col-rot-vencimento,
+.rotina-table-fixed-head th.col-rot-status-pagto,
+.rotina-table-fixed-head th.col-rot-status,
+.rotina-table-fixed-head th.col-rot-ativo,
+.rotina-table-fixed-head th.col-rot-acoes {
+  text-align: center !important;
+}
+
 thead th {
   font-size: 12px !important;
   line-height: 1.15 !important;
@@ -23275,15 +23273,22 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             const originalThs = Array.from(table.tHead.querySelectorAll('th'));
             const clonedThs = Array.from(fixedHeaderTable.querySelectorAll('th'));
             const headerHeight = table.tHead.getBoundingClientRect().height || 40;
-            const deveFixar = tableRect.top < 0 && tableRect.bottom > headerHeight;
+            const deveFixar = tableRect.top <= 0 && tableRect.bottom > headerHeight;
 
             if (!deveFixar) {
               fixedHeaderTable.classList.remove('is-visible');
+              fixedHeaderTable.style.display = 'none';
               return;
             }
 
+            fixedHeaderTable.style.position = 'fixed';
+            fixedHeaderTable.style.top = '0px';
             fixedHeaderTable.style.left = tableRect.left + 'px';
             fixedHeaderTable.style.width = tableRect.width + 'px';
+            fixedHeaderTable.style.zIndex = '2147482500';
+            fixedHeaderTable.style.pointerEvents = 'none';
+            fixedHeaderTable.style.tableLayout = 'fixed';
+            fixedHeaderTable.style.borderCollapse = 'collapse';
 
             originalThs.forEach(function (th, index) {
               const clone = clonedThs[index];
@@ -23302,10 +23307,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             });
 
             fixedHeaderTable.classList.add('is-visible');
+            fixedHeaderTable.style.display = 'table';
           }
 
           criarHeaderFixo();
-          sincronizarHeaderFixo();
+          requestAnimationFrame(sincronizarHeaderFixo);
           window.addEventListener('scroll', sincronizarHeaderFixo, { passive: true });
           window.addEventListener('resize', sincronizarHeaderFixo);
         }
