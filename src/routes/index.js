@@ -1824,7 +1824,7 @@ function formatXmlParaHtmlVisual(xml) {
   return escapeHtmlGlobal(formatted);
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '' } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '' } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -1845,6 +1845,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
     if (rotinaId) usarParams.set('rotina_id', rotinaId);
     if (arquivoPdfId) usarParams.set('arquivo_pdf_id', arquivoPdfId);
     if (arquivoXmlId) usarParams.set('arquivo_xml_id', arquivoXmlId);
+    if (editarLancamentoId) usarParams.set('editar_lancamento_id', editarLancamentoId);
 
     const usarBtn = modoSelecao
       ? `<a class="btn-green-mini" href="/arquivo/usar/${a.id}?${usarParams.toString()}">Usar</a>`
@@ -14491,6 +14492,7 @@ router.get('/arquivo', protegerRota, async (req, res) => {
     const rotinaId = String(req.query.rotina_id || '').trim();
     const arquivoPdfId = String(req.query.arquivo_pdf_id || '').trim();
     const arquivoXmlId = String(req.query.arquivo_xml_id || '').trim();
+    const editarLancamentoId = String(req.query.editar_lancamento_id || '').trim();
 
     const params = [];
     let where = `WHERE status = 'DISPONIVEL'`;
@@ -14519,7 +14521,8 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       selecionar,
       rotinaId,
       arquivoPdfId,
-      arquivoXmlId
+      arquivoXmlId,
+      editarLancamentoId
     }));
   } catch (error) {
     res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
@@ -14642,6 +14645,7 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
     const rotinaId = String(req.query.rotina_id || '').trim();
     const arquivoPdfIdAtual = String(req.query.arquivo_pdf_id || '').trim();
     const arquivoXmlIdAtual = String(req.query.arquivo_xml_id || '').trim();
+    const editarLancamentoId = String(req.query.editar_lancamento_id || '').trim();
 
     if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
       return res.redirect('/arquivo?erro=Seleção inválida.');
@@ -14668,6 +14672,10 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
       if (arquivoPdfIdAtual) query.set('arquivo_pdf_id', arquivoPdfIdAtual);
       // Ao escolher XML, não reabre o pop-up de PDF.
       // A etapa do XML é apenas anexar o XML ao lançamento.
+    }
+
+    if (editarLancamentoId) {
+      return res.redirect(`/editar/${encodeURIComponent(editarLancamentoId)}?${query.toString()}`);
     }
 
     res.redirect(`/novo?${query.toString()}`);
@@ -17269,6 +17277,7 @@ const rotinaOrigem = String(rotina_id || '').trim();
 router.get('/editar/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { arquivo_xml_id = '' } = req.query;
 
     const lancamentoResult = await pool.query(
       'SELECT * FROM lancamentos WHERE id = $1',
@@ -17461,6 +17470,42 @@ button:hover {
 
 .btn-secondary:hover {
   background: #d1d5db;
+}
+
+.btn-buscar-arquivo-xml {
+  margin-top: 10px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  padding: 0;
+  color: #00B050 !important;
+  font-weight: 900;
+  text-decoration: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.arquivo-selecionado-chip {
+  margin-top: 8px;
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #E8F7EE;
+  border: 1px solid #b7ebc9;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.field-hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #6b7280;
 }
 
 
@@ -17960,6 +18005,8 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             ${linkXml}
 
             <form method="POST" action="/editar/${lancamento.id}" enctype="multipart/form-data">
+              <input type="hidden" id="arquivo_xml_id" name="arquivo_xml_id" value="${arquivo_xml_id || ''}">
+
               <div class="grid">
                 <div>
                   <label for="tipo_documento">Tipo do documento</label>
@@ -18030,6 +18077,12 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 <div>
                   <label for="anexo_xml">Trocar XML</label>
                   <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
+                  <a
+                    class="btn-buscar-arquivo-xml"
+                    href="/arquivo?selecionar=xml&editar_lancamento_id=${encodeURIComponent(lancamento.id)}"
+                  >Buscar XML no Arquivo</a>
+                  <span id="xmlArquivoSelecionadoChip" class="arquivo-selecionado-chip" style="display:none;"></span>
+                  <div class="field-hint">Você pode trocar o XML enviando um arquivo do computador ou escolhendo um XML já salvo no Arquivo.</div>
                 </div>
               </div>
 
@@ -18041,6 +18094,73 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           </div>
         </div>
         <script>
+          function salvarRascunhoEditarLancamentoAntesArquivo() {
+            try {
+              const campos = {};
+              document.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (!el.name && !el.id) return;
+                if (el.type === 'file') return;
+                const key = el.name || el.id;
+                campos[key] = el.value;
+              });
+              sessionStorage.setItem('plennatec_editar_lancamento_${lancamento.id}_rascunho', JSON.stringify(campos));
+            } catch (e) {}
+          }
+
+          function restaurarRascunhoEditarLancamentoDepoisArquivo() {
+            try {
+              const raw = sessionStorage.getItem('plennatec_editar_lancamento_${lancamento.id}_rascunho');
+              if (!raw) return;
+              const campos = JSON.parse(raw);
+              Object.keys(campos || {}).forEach(function(key) {
+                const el = document.querySelector('[name="' + key + '"], #' + key);
+                if (!el || el.type === 'file') return;
+                if (key !== 'arquivo_xml_id') el.value = campos[key] || '';
+              });
+              sessionStorage.removeItem('plennatec_editar_lancamento_${lancamento.id}_rascunho');
+            } catch (e) {}
+          }
+
+          async function buscarArquivoFilaInfoEditar(id) {
+            if (!id) return null;
+            try {
+              var resp = await fetch('/arquivo/api/' + encodeURIComponent(id), { credentials: 'same-origin' });
+              if (!resp.ok) return null;
+              var data = await resp.json();
+              return data && data.ok ? data.arquivo : null;
+            } catch (erro) {
+              console.error('Erro ao buscar arquivo da fila:', erro);
+              return null;
+            }
+          }
+
+          async function carregarXmlDoArquivoFilaEditarSeExistir() {
+            var xmlId = '${arquivo_xml_id || ''}';
+            if (!xmlId) return;
+
+            var arquivo = await buscarArquivoFilaInfoEditar(xmlId);
+            if (!arquivo) return;
+
+            var hidden = document.getElementById('arquivo_xml_id');
+            if (hidden) hidden.value = xmlId;
+
+            var chip = document.getElementById('xmlArquivoSelecionadoChip');
+            if (chip) {
+              chip.style.display = 'inline-flex';
+              chip.textContent = 'XML do Arquivo: ' + arquivo.nome_arquivo;
+            }
+          }
+
+          document.addEventListener('click', function(e) {
+            const alvo = e.target.closest('.btn-buscar-arquivo-xml, a[href*="selecionar=xml"]');
+            if (alvo) salvarRascunhoEditarLancamentoAntesArquivo();
+          }, true);
+
+          document.addEventListener('DOMContentLoaded', function() {
+            restaurarRascunhoEditarLancamentoDepoisArquivo();
+            carregarXmlDoArquivoFilaEditarSeExistir();
+          });
+
           function abrirModalUpload(id) {
             const modal = document.getElementById(id);
             if (modal) modal.classList.add('is-open');
@@ -18130,8 +18250,17 @@ router.post('/editar/:id', upload.fields([{ name: 'anexo_pdf', maxCount: 1 }, { 
     );
 
     const lancamentoAtual = atual.rows[0] || {};
+    const arquivoXmlIdFilaEditar = Number(req.body.arquivo_xml_id || 0);
+    const arquivoXmlFilaEditar = Number.isFinite(arquivoXmlIdFilaEditar) && arquivoXmlIdFilaEditar > 0
+      ? await getArquivoFilaDisponivel(arquivoXmlIdFilaEditar, 'XML')
+      : null;
+
     const novoPdf = req.files && req.files.anexo_pdf ? req.files.anexo_pdf[0].filename : lancamentoAtual.anexo_pdf;
-    const novoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : lancamentoAtual.anexo_xml;
+    let novoXml = req.files && req.files.anexo_xml ? req.files.anexo_xml[0].filename : lancamentoAtual.anexo_xml;
+
+    if (!(req.files && req.files.anexo_xml) && arquivoXmlFilaEditar) {
+      novoXml = arquivoXmlFilaEditar.nome_arquivo;
+    }
 
     const {
       tipo_documento,
@@ -18161,6 +18290,10 @@ router.post('/editar/:id', upload.fields([{ name: 'anexo_pdf', maxCount: 1 }, { 
        WHERE id = $12`,
       [tipo_documento, numero_documento || null, data_despesa, fornecedor, cnpj_cpf || null, codigo_pagamento || null, parseMoneyBR(valor), tipo_pagamento, categoria_id, novoPdf, novoXml, id]
     );
+
+    if (!(req.files && req.files.anexo_xml) && arquivoXmlFilaEditar) {
+      await marcarArquivoFilaComoUsado(arquivoXmlFilaEditar.id);
+    }
 
     res.redirect('/lancamentos');
   } catch (error) {
