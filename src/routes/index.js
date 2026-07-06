@@ -11169,7 +11169,7 @@ async function getDestinatariosAlertasVencimento() {
   return result.rows;
 }
 
-async function getContasVencendoNoDia(dataParts = getSaoPauloDateParts()) {
+async function getContasPendentesAteODia(dataParts = getSaoPauloDateParts()) {
   await ensureRotinaDespesasColumns();
 
   const mesAnoConfig = (await getPainelConfig('rotina_mes_ano_edicao', '')) || dataParts.mesAno || getMesAnoAtual();
@@ -11200,8 +11200,14 @@ async function getContasVencendoNoDia(dataParts = getSaoPauloDateParts()) {
       AND COALESCE(
         NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int,
         EXTRACT(DAY FROM r.data_vencimento)::int
-      ) = $2::int
-    ORDER BY r.fornecedor ASC
+      ) <= $2::int
+    ORDER BY
+      COALESCE(
+        NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int,
+        EXTRACT(DAY FROM r.data_vencimento)::int,
+        99
+      ) ASC,
+      r.fornecedor ASC
   `, [mesAnoConfig, diaVencimento]);
 
   return {
@@ -11209,6 +11215,8 @@ async function getContasVencendoNoDia(dataParts = getSaoPauloDateParts()) {
     contas: result.rows
   };
 }
+
+const getContasVencendoNoDia = getContasPendentesAteODia;
 
 function montarTextoAlertaVencimento(contas, dataParts, mesAno) {
   const dataBR = `${String(dataParts.day).padStart(2, '0')}/${String(dataParts.month).padStart(2, '0')}/${dataParts.year}`;
@@ -11224,7 +11232,7 @@ function montarTextoAlertaVencimento(contas, dataParts, mesAno) {
   });
 
   return [
-    `Alerta PlennaTec - Contas a pagar com vencimento hoje (${dataBR})`,
+    `Alerta PlennaTec - Contas a pagar pendentes até hoje (${dataBR})`,
     `Mês de competência: ${formatMesAnoCurto(mesAno)}`,
     '',
     ...linhas,
@@ -11285,7 +11293,7 @@ async function executarAlertasVencimento({ force = false } = {}) {
   const { mesAno, contas } = await getContasVencendoNoDia(dataParts);
   const destinatarios = await getDestinatariosAlertasVencimento();
   const smtpConfigurado = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && (process.env.ALERTAS_EMAIL_FROM || process.env.SMTP_USER));
-  const assunto = `PlennaTec: contas vencendo hoje (${dataParts.day}/${dataParts.month}/${dataParts.year})`;
+  const assunto = `PlennaTec: contas pendentes até hoje (${dataParts.day}/${dataParts.month}/${dataParts.year})`;
   const texto = montarTextoAlertaVencimento(contas, dataParts, mesAno);
   const resultados = [];
 
@@ -13283,7 +13291,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
         </style>
       </head>
       <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Vencimentos Hoje', subtitulo: 'Confira destinatários e contas que serão avisadas às 09:00.', paginaAtual: 'alertas-vencimentos' })}
+        ${renderGlobalHeader(req, { titulo: 'Vencimentos Hoje', subtitulo: 'Confira contas vencidas ou com vencimento hoje que serão avisadas às 09:00.', paginaAtual: 'alertas-vencimentos' })}
         <div class="container">
           <div class="grid">
             <section class="card">
@@ -13292,7 +13300,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                 <div class="status-line">Data de hoje: <span class="ok">${dataBR}</span></div>
                 <div class="status-line">Mês de competência: <span class="ok">${formatMesAnoCurto(mesAno)}</span></div>
                 <div class="status-line">Destinatários marcados: <span class="ok">${destinatarios.length}</span></div>
-                <div class="status-line">Contas vencendo hoje: <span class="ok">${contas.length}</span></div>
+                <div class="status-line">Pendentes até hoje: <span class="ok">${contas.length}</span></div>
                 <div class="status-line">E-mail: <span class="${smtpConfigurado ? 'ok' : 'warn'}">${smtpConfigurado ? 'Configurado' : 'Pendente de configuração SMTP'}</span></div>
                 <div class="status-line">WhatsApp: <span class="warn">Preparado, aguardando API/provedor</span></div>
               </div>
@@ -13321,7 +13329,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                 </tbody>
               </table>
 
-              <h2 style="margin-top:24px;">Contas com vencimento hoje</h2>
+              <h2 style="margin-top:24px;">Contas vencidas ou com vencimento hoje</h2>
               <table>
                 <thead>
                   <tr>
@@ -13335,7 +13343,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                   </tr>
                 </thead>
                 <tbody>
-                  ${contasHtml || '<tr><td colspan="7">Nenhuma conta vencendo hoje dentro dos critérios.</td></tr>'}
+                  ${contasHtml || '<tr><td colspan="7">Nenhuma conta pendente até hoje dentro dos critérios.</td></tr>'}
                 </tbody>
               </table>
             </section>
