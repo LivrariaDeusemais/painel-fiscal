@@ -11071,10 +11071,325 @@ function escapeUsuarioHtml(text = '') {
     .replace(/'/g, '&#039;');
 }
 
+function checkboxMarcado(value) {
+  return value === 'on' || value === 'true' || value === true || value === '1';
+}
+
+function normalizarTelefoneWhatsApp(value = '') {
+  return String(value || '').replace(/[^\d+]/g, '').trim();
+}
+
+async function ensureUsuariosAlertasColumns() {
+  await pool.query(`
+    ALTER TABLE usuarios
+    ADD COLUMN IF NOT EXISTS telefone_whatsapp TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE usuarios
+    ADD COLUMN IF NOT EXISTS recebe_alertas BOOLEAN DEFAULT false
+  `);
+
+  await pool.query(`
+    ALTER TABLE usuarios
+    ADD COLUMN IF NOT EXISTS alerta_email BOOLEAN DEFAULT true
+  `);
+
+  await pool.query(`
+    ALTER TABLE usuarios
+    ADD COLUMN IF NOT EXISTS alerta_whatsapp BOOLEAN DEFAULT false
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS alertas_vencimento_envios (
+      id SERIAL PRIMARY KEY,
+      usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+      rotina_id INTEGER REFERENCES rotina_despesas(id) ON DELETE CASCADE,
+      mes_ano VARCHAR(7) NOT NULL,
+      canal VARCHAR(20) NOT NULL,
+      data_alerta DATE NOT NULL,
+      enviado_em TIMESTAMP DEFAULT NOW(),
+      status VARCHAR(20) DEFAULT 'PENDENTE',
+      erro TEXT,
+      UNIQUE (usuario_id, rotina_id, mes_ano, canal, data_alerta)
+    )
+  `);
+}
+
+function renderUsuarioAlertasBadge(user) {
+  if (!user.recebe_alertas) {
+    return '<span class="alerta-badge alerta-off">Não recebe</span>';
+  }
+
+  const canais = [];
+  if (user.alerta_email) canais.push('E-mail');
+  if (user.alerta_whatsapp) canais.push('WhatsApp');
+
+  return `<span class="alerta-badge alerta-on">${canais.length ? canais.join(' + ') : 'Marcado'}</span>`;
+}
+
+function getSaoPauloDateParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    isoDate: `${parts.year}-${parts.month}-${parts.day}`,
+    mesAno: `${parts.year}-${parts.month}`,
+    diaMes: Number.parseInt(parts.day, 10)
+  };
+}
+
+async function getDestinatariosAlertasVencimento() {
+  await ensureUsuariosAlertasColumns();
+
+  const result = await pool.query(`
+    SELECT id, nome, email, telefone_whatsapp, recebe_alertas, alerta_email, alerta_whatsapp
+    FROM usuarios
+    WHERE recebe_alertas = true
+    ORDER BY nome
+  `);
+
+  return result.rows;
+}
+
+async function getContasVencendoNoDia(dataParts = getSaoPauloDateParts()) {
+  await ensureRotinaDespesasColumns();
+
+  const mesAnoConfig = (await getPainelConfig('rotina_mes_ano_edicao', '')) || dataParts.mesAno || getMesAnoAtual();
+  const diaVencimento = String(dataParts.diaMes || '').trim();
+
+  const result = await pool.query(`
+    SELECT
+      r.id,
+      r.fornecedor,
+      r.cnpj_cpf,
+      r.fato_gerador,
+      r.onde_encontrar_comprovante,
+      r.tipo_pagamento_padrao,
+      r.dia_vencimento,
+      r.data_vencimento,
+      cp.nome AS categoria_principal_nome,
+      cs.nome AS subcategoria_nome,
+      COALESCE(sm.status_pagto, 'A_PAGAR') AS status_pagto_mes,
+      COALESCE(sm.ativo, r.ativo, true) AS ativo_mes
+    FROM rotina_despesas r
+    LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
+    LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
+    LEFT JOIN rotina_despesas_status_mensal sm
+      ON sm.rotina_id = r.id
+     AND sm.mes_ano = $1
+    WHERE COALESCE(sm.ativo, r.ativo, true) = true
+      AND UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) NOT IN ('PAGO', 'NAO_TEM', 'NAOTEM')
+      AND COALESCE(
+        NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int,
+        EXTRACT(DAY FROM r.data_vencimento)::int
+      ) = $2::int
+    ORDER BY r.fornecedor ASC
+  `, [mesAnoConfig, diaVencimento]);
+
+  return {
+    mesAno: mesAnoConfig,
+    contas: result.rows
+  };
+}
+
+function montarTextoAlertaVencimento(contas, dataParts, mesAno) {
+  const dataBR = `${String(dataParts.day).padStart(2, '0')}/${String(dataParts.month).padStart(2, '0')}/${dataParts.year}`;
+  const linhas = contas.map((conta, index) => {
+    const vencimento = formatDiaVencimento(conta.dia_vencimento) || formatDateBR(conta.data_vencimento) || dataParts.day;
+    return [
+      `${index + 1}. ${conta.fornecedor || 'Fornecedor sem nome'}`,
+      `Vencimento: ${vencimento}`,
+      `Status: ${normalizarStatusPagto(conta.status_pagto_mes)}`,
+      conta.subcategoria_nome ? `Subcategoria: ${conta.subcategoria_nome}` : '',
+      conta.tipo_pagamento_padrao ? `Pagamento: ${conta.tipo_pagamento_padrao}` : ''
+    ].filter(Boolean).join(' | ');
+  });
+
+  return [
+    `Alerta PlennaTec - Contas a pagar com vencimento hoje (${dataBR})`,
+    `Mês de competência: ${formatMesAnoCurto(mesAno)}`,
+    '',
+    ...linhas,
+    '',
+    'Itens já marcados como Pago ou Não tem foram ignorados automaticamente.'
+  ].join('\n');
+}
+
+async function enviarEmailAlertaVencimento(destinatario, assunto, texto) {
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.ALERTAS_EMAIL_FROM || smtpUser;
+
+  if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+    throw new Error('Envio de e-mail ainda não configurado no Render. Informe SMTP_HOST, SMTP_USER, SMTP_PASS e ALERTAS_EMAIL_FROM.');
+  }
+
+  let nodemailer;
+  try {
+    nodemailer = require('nodemailer');
+  } catch (error) {
+    throw new Error('Biblioteca de e-mail não instalada. Instale o pacote nodemailer para ativar o envio.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
+    auth: {
+      user: smtpUser,
+      pass: smtpPass
+    }
+  });
+
+  await transporter.sendMail({
+    from: smtpFrom,
+    to: destinatario.email,
+    subject: assunto,
+    text: texto
+  });
+}
+
+async function registrarAlertaVencimento({ usuarioId, rotinaId, mesAno, canal, dataAlerta, status, erro = '' }) {
+  await pool.query(`
+    INSERT INTO alertas_vencimento_envios (usuario_id, rotina_id, mes_ano, canal, data_alerta, status, erro, enviado_em)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    ON CONFLICT (usuario_id, rotina_id, mes_ano, canal, data_alerta)
+    DO UPDATE SET
+      status = EXCLUDED.status,
+      erro = EXCLUDED.erro,
+      enviado_em = NOW()
+  `, [usuarioId, rotinaId, mesAno, canal, dataAlerta, status, erro || null]);
+}
+
+async function executarAlertasVencimento({ force = false } = {}) {
+  const dataParts = getSaoPauloDateParts();
+  const { mesAno, contas } = await getContasVencendoNoDia(dataParts);
+  const destinatarios = await getDestinatariosAlertasVencimento();
+  const smtpConfigurado = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && (process.env.ALERTAS_EMAIL_FROM || process.env.SMTP_USER));
+  const assunto = `PlennaTec: contas vencendo hoje (${dataParts.day}/${dataParts.month}/${dataParts.year})`;
+  const texto = montarTextoAlertaVencimento(contas, dataParts, mesAno);
+  const resultados = [];
+
+  if (!contas.length || !destinatarios.length) {
+    return { dataParts, mesAno, contas, destinatarios, resultados, smtpConfigurado };
+  }
+
+  for (const destinatario of destinatarios) {
+    if (destinatario.alerta_email && destinatario.email) {
+      const contasPendentes = [];
+
+      for (const conta of contas) {
+        if (!force) {
+          const jaEnviado = await pool.query(`
+            SELECT id
+            FROM alertas_vencimento_envios
+            WHERE usuario_id = $1
+              AND rotina_id = $2
+              AND mes_ano = $3
+              AND canal = 'EMAIL'
+              AND data_alerta = $4
+              AND status = 'ENVIADO'
+            LIMIT 1
+          `, [destinatario.id, conta.id, mesAno, dataParts.isoDate]);
+
+          if (jaEnviado.rows.length) {
+            resultados.push({ usuario: destinatario.nome, canal: 'EMAIL', conta: conta.fornecedor, status: 'IGNORADO' });
+            continue;
+          }
+        }
+
+        contasPendentes.push(conta);
+      }
+
+      if (contasPendentes.length) {
+        try {
+          if (!smtpConfigurado) throw new Error('E-mail SMTP não configurado.');
+
+          const textoDestinatario = montarTextoAlertaVencimento(contasPendentes, dataParts, mesAno);
+          await enviarEmailAlertaVencimento(destinatario, assunto, textoDestinatario);
+
+          for (const conta of contasPendentes) {
+            await registrarAlertaVencimento({
+              usuarioId: destinatario.id,
+              rotinaId: conta.id,
+              mesAno,
+              canal: 'EMAIL',
+              dataAlerta: dataParts.isoDate,
+              status: 'ENVIADO'
+            });
+            resultados.push({ usuario: destinatario.nome, canal: 'EMAIL', conta: conta.fornecedor, status: 'ENVIADO' });
+          }
+        } catch (error) {
+          for (const conta of contasPendentes) {
+            await registrarAlertaVencimento({
+              usuarioId: destinatario.id,
+              rotinaId: conta.id,
+              mesAno,
+              canal: 'EMAIL',
+              dataAlerta: dataParts.isoDate,
+              status: 'ERRO',
+              erro: error.message
+            });
+            resultados.push({ usuario: destinatario.nome, canal: 'EMAIL', conta: conta.fornecedor, status: 'ERRO', erro: error.message });
+          }
+        }
+      }
+    }
+
+    if (destinatario.alerta_whatsapp) {
+      resultados.push({
+        usuario: destinatario.nome,
+        canal: 'WHATSAPP',
+        conta: 'Configuração',
+        status: 'DESATIVADO',
+        erro: 'WhatsApp depende de API/provedor contratado.'
+      });
+    }
+  }
+
+  return { dataParts, mesAno, contas, destinatarios, resultados, smtpConfigurado };
+}
+
+function iniciarAgendadorAlertasVencimento() {
+  if (global.__plennatecAlertasVencimentoSchedulerStarted) return;
+  global.__plennatecAlertasVencimentoSchedulerStarted = true;
+
+  let ultimaExecucao = '';
+  setInterval(async () => {
+    try {
+      const parts = getSaoPauloDateParts();
+      if (parts.hour !== '09' || Number(parts.minute) > 10 || ultimaExecucao === parts.isoDate) return;
+      ultimaExecucao = parts.isoDate;
+      await executarAlertasVencimento();
+    } catch (error) {
+      console.error('Erro no agendador de alertas de vencimento:', error.message);
+    }
+  }, 5 * 60 * 1000);
+}
+
+iniciarAgendadorAlertasVencimento();
+
 router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
   try {
+    await ensureUsuariosAlertasColumns();
+
     const result = await pool.query(`
-      SELECT id, nome, email, perfil, criado_em
+      SELECT id, nome, email, perfil, criado_em, telefone_whatsapp, recebe_alertas, alerta_email, alerta_whatsapp
       FROM usuarios
       ORDER BY nome
     `);
@@ -11087,33 +11402,33 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
         user.perfil === 'CONTADOR' ? 'perfil-contador' :
         'perfil-usuario';
 
-      const podeExcluir = Number(user.id) !== Number(usuarioLogadoId);
+      const usuarioAtual = Number(user.id) === Number(usuarioLogadoId);
 
       return `
         <tr>
           <td>${escapeUsuarioHtml(user.nome)}</td>
           <td>${escapeUsuarioHtml(user.email)}</td>
+          <td>${escapeUsuarioHtml(user.telefone_whatsapp || '-')}</td>
           <td>
             <span class="perfil-badge ${perfilClass}">
               ${escapeUsuarioHtml(user.perfil)}
             </span>
           </td>
+          <td>${renderUsuarioAlertasBadge(user)}</td>
           <td>${user.criado_em ? new Date(user.criado_em).toLocaleDateString('pt-BR') : ''}</td>
           <td class="col-acoes">
-            ${
-              podeExcluir
-                ? `
-                  <div class="acoes-user">
+            <div class="acoes-user">
   <a class="btn-icon-edit" href="/usuarios/editar/${user.id}" title="Editar">✏️</a>
   <a class="btn-icon-key" href="/usuarios/resetar-senha/${user.id}" title="Resetar senha">🔑</a>
-
-  <form method="POST" action="/usuarios/excluir/${user.id}" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-    <button type="submit" class="btn-icon-danger" title="Excluir">🗑️</button>
-  </form>
+  ${usuarioAtual
+    ? '<span class="meu-usuario">Você</span>'
+    : `
+      <form method="POST" action="/usuarios/excluir/${user.id}" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+        <button type="submit" class="btn-icon-danger" title="Excluir">🗑️</button>
+      </form>
+    `
+  }
 </div>
-                `
-                : `<span class="meu-usuario">Você</span>`
-            }
           </td>
         </tr>
       `;
@@ -11345,6 +11660,50 @@ router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
             color: #6b7280;
             font-size: 10px;
             font-weight: 700;
+          }
+
+          .alerta-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            white-space: nowrap;
+          }
+
+          .alerta-on {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+          }
+
+          .alerta-off {
+            background: #f3f4f6;
+            color: #64748b;
+            border: 1px solid #e5e7eb;
+          }
+
+          .check-grid {
+            display: grid;
+            gap: 8px;
+            margin: 4px 0 14px;
+          }
+
+          .check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 12px;
+            color: #334155;
+          }
+
+          .check-item input {
+            width: auto;
+            margin: 0;
           }
 
           @media (max-width: 950px) {
@@ -11854,6 +12213,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               <div class="actions">
                 <a class="btn btn-dark" href="/dashboard">Voltar ao Painel</a>
+                <a class="btn btn-dark" href="/alertas-vencimentos">Alertas</a>
                 <a class="btn btn-dark" href="/logout">🚪 Sair</a>
               </div>
             </div>
@@ -11869,6 +12229,9 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   <label for="email">E-mail</label>
                   <input id="email" name="email" type="email" placeholder="email@empresa.com" required />
 
+                  <label for="telefone_whatsapp">Telefone/WhatsApp</label>
+                  <input id="telefone_whatsapp" name="telefone_whatsapp" placeholder="Ex.: 5511999999999" />
+
                   <label for="senha">Senha inicial</label>
                   <input id="senha" name="senha" type="password" placeholder="Senha inicial" required />
                   <div class="hint">Depois o usuário poderá receber uma nova senha se necessário.</div>
@@ -11879,6 +12242,12 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                     <option value="CONTADOR">Contador</option>
                     <option value="ADMIN">ADMIN</option>
                   </select>
+
+                  <div class="check-grid">
+                    <label class="check-item"><input type="checkbox" name="recebe_alertas"> Receber alertas de vencimento</label>
+                    <label class="check-item"><input type="checkbox" name="alerta_email" checked> Enviar por e-mail</label>
+                    <label class="check-item"><input type="checkbox" name="alerta_whatsapp"> Preparar WhatsApp</label>
+                  </div>
 
                   <button class="btn btn-green" type="submit">➕ Criar usuário</button>
                 </form>
@@ -11892,13 +12261,15 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                     <tr>
                       <th>Nome</th>
                       <th>E-mail</th>
+                      <th>WhatsApp</th>
                       <th>Perfil</th>
+                      <th>Alertas</th>
                       <th>Criado em</th>
                       <th class="col-acoes">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${linhas || '<tr><td colspan="5">Nenhum usuário cadastrado.</td></tr>'}
+                    ${linhas || '<tr><td colspan="7">Nenhum usuário cadastrado.</td></tr>'}
                   </tbody>
                 </table>
               </div>
@@ -11917,7 +12288,9 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
 router.post('/usuarios/novo', protegerRota, somenteAdmin, async (req, res) => {
   try {
-    const { nome, email, senha, perfil } = req.body;
+    await ensureUsuariosAlertasColumns();
+
+    const { nome, email, senha, perfil, telefone_whatsapp } = req.body;
 
     const perfilPermitido = ['ADMIN', 'USUARIO', 'CONTADOR'].includes(String(perfil || '').toUpperCase())
       ? String(perfil).toUpperCase()
@@ -11926,13 +12299,17 @@ router.post('/usuarios/novo', protegerRota, somenteAdmin, async (req, res) => {
     const senhaHash = await bcrypt.hash(String(senha || ''), 10);
 
     await pool.query(`
-      INSERT INTO usuarios (nome, email, senha_hash, perfil)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO usuarios (nome, email, senha_hash, perfil, telefone_whatsapp, recebe_alertas, alerta_email, alerta_whatsapp)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [
       nome,
       String(email || '').trim().toLowerCase(),
       senhaHash,
-      perfilPermitido
+      perfilPermitido,
+      normalizarTelefoneWhatsApp(telefone_whatsapp),
+      checkboxMarcado(req.body.recebe_alertas),
+      checkboxMarcado(req.body.alerta_email),
+      checkboxMarcado(req.body.alerta_whatsapp)
     ]);
 
     res.redirect('/usuarios');
@@ -11966,10 +12343,12 @@ router.post('/usuarios/excluir/:id', protegerRota, somenteAdmin, async (req, res
 
 router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) => {
   try {
+    await ensureUsuariosAlertasColumns();
+
     const { id } = req.params;
 
     const result = await pool.query(`
-      SELECT id, nome, email, perfil
+      SELECT id, nome, email, perfil, telefone_whatsapp, recebe_alertas, alerta_email, alerta_whatsapp
       FROM usuarios
       WHERE id = $1
     `, [id]);
@@ -12053,6 +12432,33 @@ router.get('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) 
           .btn-dark {
             background: #111827;
             color: white;
+          }
+
+          .check-grid {
+            display: grid;
+            gap: 8px;
+            margin: 4px 0 16px;
+          }
+
+          .check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+          }
+
+          .check-item input {
+            width: auto;
+            margin: 0;
+          }
+
+          .hint {
+            margin: -8px 0 14px;
+            color: #64748b;
+            font-size: 11px;
           }
         
 
@@ -12551,10 +12957,14 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             <form method="POST" action="/usuarios/editar/${user.id}">
               <label>Nome</label>
-              <input name="nome" value="${user.nome || ''}" required />
+              <input name="nome" value="${escapeUsuarioHtml(user.nome || '')}" required />
 
               <label>E-mail</label>
-              <input name="email" type="email" value="${user.email || ''}" required />
+              <input name="email" type="email" value="${escapeUsuarioHtml(user.email || '')}" required />
+
+              <label>Telefone/WhatsApp</label>
+              <input name="telefone_whatsapp" value="${escapeUsuarioHtml(user.telefone_whatsapp || '')}" placeholder="Ex.: 5511999999999" />
+              <div class="hint">Preencha com DDI + DDD + número. Ex.: 5511999999999.</div>
 
               <label>Perfil</label>
               <select name="perfil" required>
@@ -12562,6 +12972,12 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 <option value="CONTADOR" ${user.perfil === 'CONTADOR' ? 'selected' : ''}>Contador</option>
                 <option value="ADMIN" ${user.perfil === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
               </select>
+
+              <div class="check-grid">
+                <label class="check-item"><input type="checkbox" name="recebe_alertas" ${user.recebe_alertas ? 'checked' : ''}> Receber alertas de vencimento</label>
+                <label class="check-item"><input type="checkbox" name="alerta_email" ${user.alerta_email ? 'checked' : ''}> Enviar por e-mail</label>
+                <label class="check-item"><input type="checkbox" name="alerta_whatsapp" ${user.alerta_whatsapp ? 'checked' : ''}> Preparar WhatsApp</label>
+              </div>
 
               <div class="actions">
                 <button class="btn btn-green" type="submit">Salvar alterações</button>
@@ -12650,8 +13066,10 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
 router.post('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res) => {
   try {
+    await ensureUsuariosAlertasColumns();
+
     const { id } = req.params;
-    const { nome, email, perfil } = req.body;
+    const { nome, email, perfil, telefone_whatsapp } = req.body;
 
     const perfilPermitido = ['ADMIN', 'USUARIO', 'CONTADOR'].includes(String(perfil || '').toUpperCase())
       ? String(perfil).toUpperCase()
@@ -12661,18 +13079,294 @@ router.post('/usuarios/editar/:id', protegerRota, somenteAdmin, async (req, res)
       UPDATE usuarios
       SET nome = $1,
           email = $2,
-          perfil = $3
-      WHERE id = $4
+          perfil = $3,
+          telefone_whatsapp = $4,
+          recebe_alertas = $5,
+          alerta_email = $6,
+          alerta_whatsapp = $7
+      WHERE id = $8
     `, [
       nome,
       String(email || '').trim().toLowerCase(),
       perfilPermitido,
+      normalizarTelefoneWhatsApp(telefone_whatsapp),
+      checkboxMarcado(req.body.recebe_alertas),
+      checkboxMarcado(req.body.alerta_email),
+      checkboxMarcado(req.body.alerta_whatsapp),
       id
     ]);
 
     res.redirect('/usuarios');
   } catch (error) {
     res.send(`<pre>Erro ao salvar usuário:\n${error.message}</pre>`);
+  }
+});
+
+router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    await ensureUsuariosAlertasColumns();
+
+    const dataParts = getSaoPauloDateParts();
+    const { mesAno, contas } = await getContasVencendoNoDia(dataParts);
+    const destinatarios = await getDestinatariosAlertasVencimento();
+    const smtpConfigurado = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && (process.env.ALERTAS_EMAIL_FROM || process.env.SMTP_USER));
+    const dataBR = `${dataParts.day}/${dataParts.month}/${dataParts.year}`;
+
+    const destinatariosHtml = destinatarios.map(user => `
+      <tr>
+        <td>${escapeUsuarioHtml(user.nome || '')}</td>
+        <td>${escapeUsuarioHtml(user.email || '')}</td>
+        <td>${escapeUsuarioHtml(user.telefone_whatsapp || '-')}</td>
+        <td>${renderUsuarioAlertasBadge(user)}</td>
+      </tr>
+    `).join('');
+
+    const contasHtml = contas.map(conta => `
+      <tr>
+        <td>${escapeUsuarioHtml(conta.fornecedor || '')}</td>
+        <td>${escapeUsuarioHtml(conta.cnpj_cpf || '')}</td>
+        <td>${escapeUsuarioHtml(conta.tipo_pagamento_padrao || '')}</td>
+        <td>${escapeUsuarioHtml(conta.categoria_principal_nome || '')}</td>
+        <td>${escapeUsuarioHtml(conta.subcategoria_nome || '')}</td>
+        <td>${escapeUsuarioHtml(formatDiaVencimento(conta.dia_vencimento) || formatDateBR(conta.data_vencimento) || '-')}</td>
+        <td>${escapeUsuarioHtml(normalizarStatusPagto(conta.status_pagto_mes))}</td>
+      </tr>
+    `).join('');
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Alertas de vencimento - PlennaTec</title>
+        <style>
+          body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f6f8fb;
+            color: #172033;
+          }
+
+          .container {
+            max-width: 1380px;
+            margin: 34px auto;
+            padding: 0 20px 46px;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 18px;
+            align-items: start;
+          }
+
+          .card {
+            background: rgba(255,255,255,.88);
+            border: 1px solid rgba(226,232,240,.9);
+            border-radius: 18px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+            padding: 22px;
+          }
+
+          h1, h2 {
+            margin: 0 0 14px;
+            color: #101828;
+          }
+
+          p {
+            color: #64748b;
+            line-height: 1.45;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+          }
+
+          th, td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: 13px;
+          }
+
+          th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 900;
+          }
+
+          .status-box {
+            display: grid;
+            gap: 10px;
+            margin: 12px 0 18px;
+          }
+
+          .status-line {
+            padding: 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            font-weight: 800;
+          }
+
+          .ok { color: #166534; }
+          .warn { color: #92400e; }
+          .muted { color: #64748b; }
+
+          .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+          }
+
+          .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: 12px;
+            border: 1px solid #e0e6ef;
+            text-decoration: none;
+            font-weight: 900;
+            cursor: pointer;
+          }
+
+          .btn-primary {
+            background: linear-gradient(135deg, #00B050, #009640);
+            color: white;
+            border-color: rgba(0,176,80,.9);
+          }
+
+          .btn-dark {
+            background: linear-gradient(180deg, #f8fafc, #eef2f7);
+            color: #222b3b;
+          }
+
+          .alerta-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            white-space: nowrap;
+          }
+
+          .alerta-on {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+          }
+
+          .alerta-off {
+            background: #f3f4f6;
+            color: #64748b;
+            border: 1px solid #e5e7eb;
+          }
+
+          @media (max-width: 980px) {
+            .grid { grid-template-columns: 1fr; }
+          }
+        </style>
+      </head>
+      <body class="dm-global-page">
+        ${renderGlobalHeader(req, { titulo: 'Alertas de Vencimento', subtitulo: 'Confira destinatários e contas que serão avisadas às 09:00.', paginaAtual: 'usuarios' })}
+        <div class="container">
+          <div class="grid">
+            <section class="card">
+              <h1>Resumo</h1>
+              <div class="status-box">
+                <div class="status-line">Data de hoje: <span class="ok">${dataBR}</span></div>
+                <div class="status-line">Mês de competência: <span class="ok">${formatMesAnoCurto(mesAno)}</span></div>
+                <div class="status-line">Destinatários marcados: <span class="ok">${destinatarios.length}</span></div>
+                <div class="status-line">Contas vencendo hoje: <span class="ok">${contas.length}</span></div>
+                <div class="status-line">E-mail: <span class="${smtpConfigurado ? 'ok' : 'warn'}">${smtpConfigurado ? 'Configurado' : 'Pendente de configuração SMTP'}</span></div>
+                <div class="status-line">WhatsApp: <span class="warn">Preparado, aguardando API/provedor</span></div>
+              </div>
+              <p>O alerta ignora automaticamente contas marcadas como Pago ou Não tem.</p>
+              <div class="actions">
+                <form method="POST" action="/alertas-vencimentos/enviar">
+                  <button class="btn btn-primary" type="submit">Enviar alerta agora</button>
+                </form>
+                <a class="btn btn-dark" href="/usuarios">Voltar para usuários</a>
+              </div>
+            </section>
+
+            <section class="card">
+              <h2>Usuários que recebem alertas</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>WhatsApp</th>
+                    <th>Canais</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${destinatariosHtml || '<tr><td colspan="4">Nenhum usuário marcado para receber alertas.</td></tr>'}
+                </tbody>
+              </table>
+
+              <h2 style="margin-top:24px;">Contas com vencimento hoje</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fornecedor</th>
+                    <th>CNPJ/CPF</th>
+                    <th>Pagamento</th>
+                    <th>Categoria</th>
+                    <th>Subcategoria</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contasHtml || '<tr><td colspan="7">Nenhuma conta vencendo hoje dentro dos critérios.</td></tr>'}
+                </tbody>
+              </table>
+            </section>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.send(`<pre>Erro ao carregar alertas de vencimento:\n${error.message}</pre>`);
+  }
+});
+
+router.post('/alertas-vencimentos/enviar', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const resultado = await executarAlertasVencimento({ force: true });
+    const linhas = resultado.resultados.map(item => {
+      const detalhe = item.erro ? ` - ${item.erro}` : '';
+      return `${item.status} | ${item.canal} | ${item.usuario || '-'} | ${item.conta || '-'}${detalhe}`;
+    }).join('\n');
+
+    res.send(`
+      <pre>Execução manual dos alertas
+Data: ${resultado.dataParts.day}/${resultado.dataParts.month}/${resultado.dataParts.year}
+Mês: ${formatMesAnoCurto(resultado.mesAno)}
+Contas encontradas: ${resultado.contas.length}
+Destinatários: ${resultado.destinatarios.length}
+E-mail configurado: ${resultado.smtpConfigurado ? 'sim' : 'não'}
+
+${linhas || 'Nenhum envio executado.'}
+
+Volte em /alertas-vencimentos</pre>
+    `);
+  } catch (error) {
+    res.send(`<pre>Erro ao executar alertas:\n${error.message}</pre>`);
   }
 });
 
