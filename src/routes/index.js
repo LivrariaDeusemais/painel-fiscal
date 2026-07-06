@@ -3835,6 +3835,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
+    ...(isAdmin ? [{ key:'alertas-vencimentos', href:'/alertas-vencimentos', label:'◌ Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
   ];
   const nav = navItems.map(item => `<a class="${item.key === paginaAtual ? 'active' : ''}" href="${item.href}">${item.label}</a>`).join('');
@@ -5333,7 +5334,7 @@ function renderGlobalHeader(req, config = {}) {
   const titulo = escapeHtmlGlobal(config.titulo || 'Painel Fiscal - PlennaTec');
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão fiscal e contábil da PlennaTec.');
   const isAdmin = usuario.perfil === 'ADMIN';
-  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador'];
+  const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador', 'alertas-vencimentos'];
   const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
   const menuBase = [
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
@@ -5343,6 +5344,7 @@ function renderGlobalHeader(req, config = {}) {
     { key: 'documentos', href: '/arquivo', label: 'Arquivo' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
+    ...(isAdmin ? [{ key: 'alertas-vencimentos', href: '/alertas-vencimentos', label: 'Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
   ];
   const menuHtml = menuBase
@@ -9829,6 +9831,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
+            <a class="premium-side-link" href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
           </nav>
 
@@ -9880,6 +9883,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
+          <a class="nav-btn" href="/alertas-vencimentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 15h4"/><path d="M8 18h8"/></svg></span>Vencimentos hoje</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
         </nav>
 
@@ -13279,7 +13283,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
         </style>
       </head>
       <body class="dm-global-page">
-        ${renderGlobalHeader(req, { titulo: 'Alertas de Vencimento', subtitulo: 'Confira destinatários e contas que serão avisadas às 09:00.', paginaAtual: 'usuarios' })}
+        ${renderGlobalHeader(req, { titulo: 'Vencimentos Hoje', subtitulo: 'Confira destinatários e contas que serão avisadas às 09:00.', paginaAtual: 'alertas-vencimentos' })}
         <div class="container">
           <div class="grid">
             <section class="card">
@@ -28420,6 +28424,7 @@ body.contador-premium-page .trash-history {
               <a href="/arquivo"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
+              ${isAdmin ? `<a href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>` : ''}
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
             </nav>
 
