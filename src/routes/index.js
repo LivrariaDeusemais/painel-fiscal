@@ -26233,6 +26233,54 @@ function normalizarStatusDownload(value) {
   return String(value || '').trim().toLowerCase() === 'baixado' ? 'Baixado' : 'Não Baixado';
 }
 
+const CONTADOR_DOWNLOAD_BLOQUEADO_MSG = 'Não disponível no momento: Levantamento das despesas não concluído, favor aguardar a Empresa finalizar o levantamento e mudar o Status para: "Liberado para Baixar"';
+
+function normalizarStatusProntoContador(value) {
+  return String(value || 'Aguardar')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function contadorStatusPermiteDownload(status) {
+  return normalizarStatusProntoContador(status) === 'liberado para baixar';
+}
+
+function renderContadorDownloadBloqueado(res) {
+  return res.status(403).send(`<script>alert(${JSON.stringify(CONTADOR_DOWNLOAD_BLOQUEADO_MSG)}); history.back();</script>`);
+}
+
+async function getContadorStatusPronto(mesRef, key) {
+  await ensureContadorTables();
+  const config = (await getContadorArquivoConfigCompleta(mesRef)).find(item => item.key === key);
+  if (!config) return null;
+
+  if (config.custom) {
+    const result = await pool.query(`
+      SELECT status_pronto
+      FROM contador_status_custom_mensal
+      WHERE mes_ref = $1 AND tipo_key = $2
+      LIMIT 1
+    `, [mesRef, key]);
+    return result.rows[0]?.status_pronto || 'Aguardar';
+  }
+
+  await pool.query(`
+    INSERT INTO contador_status_mensal (mes_ref)
+    VALUES ($1)
+    ON CONFLICT (mes_ref) DO NOTHING
+  `, [mesRef]);
+
+  const result = await pool.query(`
+    SELECT ${config.statusColumn} AS status_pronto
+    FROM contador_status_mensal
+    WHERE mes_ref = $1
+    LIMIT 1
+  `, [mesRef]);
+  return result.rows[0]?.status_pronto || 'Aguardar';
+}
+
 function formatDateTimeBR(value) {
   if (!value) return '-';
   const data = value instanceof Date ? value : new Date(value);
@@ -26526,6 +26574,12 @@ function renderContadorTabelaDefinitivaAssets() {
         border-radius: 8px !important;
       }
 
+      body.contador-premium-page .btn-download-locked {
+        opacity: 0.58 !important;
+        filter: grayscale(0.25) !important;
+        cursor: not-allowed !important;
+      }
+
       body.contador-premium-page .download-status-text,
       body.contador-premium-page .download-status,
       body.contador-premium-page .status-pill {
@@ -26685,6 +26739,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const arquivosExtras = extrasResult.rows || [];
     const statusMes = statusResult.rows[0] || {};
     const isAdmin = req.session?.usuario?.perfil === 'ADMIN';
+    const podeEditarStatusContador = ['ADMIN', 'USUARIO'].includes(req.session?.usuario?.perfil);
     const customStatusResult = await pool.query(`
       SELECT *
       FROM contador_status_custom_mensal
@@ -26710,6 +26765,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
     const escapeHtml = (text = '') => String(text || '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\"/g, '&quot;').replace(/'/g, '&#039;');
+    const downloadBloqueadoMsgJs = JSON.stringify(CONTADOR_DOWNLOAD_BLOQUEADO_MSG);
 
     const labelMes = formatMesAnoCurto(mes);
     const mesContadorAno = /^\d{4}-\d{2}$/.test(mes) ? mes.slice(0, 4) : String(new Date().getFullYear());
@@ -26727,14 +26783,21 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
       return 'status-aguardar';
     };
 
-    const statusForm = (tipoStatus, atual) => `
-      <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
-        <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
-        <input type="hidden" name="tipo_status" value="${escapeHtml(tipoStatus)}">
-        <select name="status" class="status-select ${statusClass(atual)}" onchange="this.form.submit()">
+    const statusForm = (tipoStatus, atual) => {
+      const selectHtml = `
+        <select name="status" class="status-select ${statusClass(atual)}" ${podeEditarStatusContador ? 'onchange="this.form.submit()"' : 'disabled'}>
           ${renderStatusOptions(atual || 'Aguardar')}
-        </select>
-      </form>`;
+        </select>`;
+
+      if (!podeEditarStatusContador) return selectHtml;
+
+      return `
+        <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
+          <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
+          <input type="hidden" name="tipo_status" value="${escapeHtml(tipoStatus)}">
+          ${selectHtml}
+        </form>`;
+    };
 
     const normalizarTitulo = (text = '') => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     const getExtrasByTitle = (titulo) => arquivosExtras.filter(item => normalizarTitulo(item.titulo) === normalizarTitulo(titulo));
@@ -26838,7 +26901,10 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
         ? (customStatus.status_pronto || 'Aguardar')
         : (statusMes[config.statusColumn] || (config.key === 'xml' ? statusMes.status_xml : config.key === 'pdf' ? statusMes.status_pdf : 'Aguardar') || 'Aguardar');
       const statusPronto = statusForm(config.key, statusAtual);
-      const downloadBtn = `<a class="btn btn-mini btn-green btn-download" href="${config.downloadHref(mes)}">${config.downloadLabel}</a>`;
+      const downloadLiberado = contadorStatusPermiteDownload(statusAtual);
+      const downloadBtn = downloadLiberado
+        ? `<a class="btn btn-mini btn-green btn-download" href="${config.downloadHref(mes)}">${config.downloadLabel}</a>`
+        : `<a class="btn btn-mini btn-green btn-download btn-download-locked" href="${config.downloadHref(mes)}" onclick="alert(${downloadBloqueadoMsgJs}); return false;" title="Download indisponível até liberar o status">${config.downloadLabel}</a>`;
       const statusDownload = config.custom ? downloadPill(customStatus.download_status) : downloadPill(statusMes[config.downloadStatusColumn]);
       const dataDownload = config.custom ? renderDataDownload(config, customStatus.download_at) : renderDataDownload(config, statusMes[config.downloadAtColumn]);
       return `
@@ -28885,7 +28951,7 @@ ${error.message}</pre>`);
   }
 });
 
-router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 'CONTADOR'), async (req, res) => {
+router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
     await ensureContadorTables();
     const { mes_ref, tipo_status, status } = req.body;
@@ -28939,6 +29005,11 @@ router.get('/espaco-contador/download-extra/:id', protegerRota, permitirPerfis('
     const item = result.rows[0];
     if (!item) return res.send('<pre>Arquivo não encontrado.</pre>');
 
+    const config = (await getContadorArquivoConfigCompleta(item.mes_ref)).find(configItem => !configItem.auto && configItem.titulo === item.titulo);
+    if (config && !contadorStatusPermiteDownload(await getContadorStatusPronto(item.mes_ref, config.key))) {
+      return renderContadorDownloadBloqueado(res);
+    }
+
     const filePath = getUploadFilePath(item.nome_arquivo);
     if (!filePath || !fs.existsSync(filePath)) return res.send('<pre>Arquivo físico não encontrado em /uploads.</pre>');
 
@@ -28958,6 +29029,10 @@ router.get('/espaco-contador/download-extra-grupo/:grupo', protegerRota, permiti
 
     const config = (await getContadorArquivoConfigCompleta(mes)).find(item => item.key === grupo && !item.auto);
     if (!config) return res.send('<pre>Grupo de arquivo inválido.</pre>');
+
+    if (!contadorStatusPermiteDownload(await getContadorStatusPronto(mes, grupo))) {
+      return renderContadorDownloadBloqueado(res);
+    }
 
     const result = await pool.query(`
       SELECT *
@@ -29010,6 +29085,10 @@ router.get('/espaco-contador/download/:tipo', protegerRota, permitirPerfis('ADMI
 
     if (!mes) {
       return res.send('<pre>Mês não informado.</pre>');
+    }
+
+    if (!contadorStatusPermiteDownload(await getContadorStatusPronto(mes, tipo))) {
+      return renderContadorDownloadBloqueado(res);
     }
 
     const campo = tipo === 'pdf' ? 'anexo_pdf' : 'anexo_xml';
