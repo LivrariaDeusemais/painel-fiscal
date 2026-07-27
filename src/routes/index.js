@@ -2698,6 +2698,24 @@ function renderStatusPagtoOptions(selectedValue = '') {
   `;
 }
 
+function rotinaDespesasWantsJson(req) {
+  const accept = String(req.get('accept') || '').toLowerCase();
+  const requestedWith = String(req.get('x-requested-with') || '').toLowerCase();
+  return requestedWith === 'fetch' || accept.includes('application/json');
+}
+
+function redirectRotinaDespesasComFiltros(req, res, id) {
+  const { fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+  const redirectParams = new URLSearchParams();
+  if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
+  if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
+  if (status_filtro) redirectParams.set('status', status_filtro);
+  if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
+  const redirectQuery = redirectParams.toString();
+  const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
+  return res.redirect(destino);
+}
+
 async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto, ativo = null) {
   const mes = String(mesAno || '').trim() || getMesAnoAtual();
   await pool.query(`
@@ -22657,7 +22675,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
               <select
                 name="status_pagto"
                 class="status-select status-pagto-${normalizarStatusPagto(r.status_pagto_mes)}"
-                onchange="this.form.submit()"
               >
                 ${renderStatusPagtoOptions(r.status_pagto_mes)}
               </select>
@@ -22674,7 +22691,6 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
               <select
                 name="status"
                 class="status-select status-${normalizarStatusLinha(r.status_linha_mes)}"
-                onchange="this.form.submit()"
               >
                 <option value="PENDENTE" ${normalizarStatusLinha(r.status_linha_mes) === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
                 <option value="FEITO" ${normalizarStatusLinha(r.status_linha_mes) === 'FEITO' ? 'selected' : ''}>FEITO</option>
@@ -22689,7 +22705,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
               <input type="hidden" name="status_filtro" value="${statusFiltro}">
               <input type="hidden" name="mes_ano_filtro" value="${mesAnoEdicao}">
               <input type="hidden" name="dia_vencimento_filtro" value="${diaVencimentoFiltro}">
-              <select name="ativo" class="status-select status-ativo-${r.ativo_mes ? 'SIM' : 'NAO'}" onchange="this.form.submit()">
+              <select name="ativo" class="status-select status-ativo-${r.ativo_mes ? 'SIM' : 'NAO'}">
                 <option value="true" ${r.ativo_mes ? 'selected' : ''}>Sim</option>
                 <option value="false" ${!r.ativo_mes ? 'selected' : ''}>Não</option>
               </select>
@@ -22982,6 +22998,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           border: 1px solid #fca5a5 !important;
         }
 
+        .status-pagto-NAO_TEM,
         .status-pagto-Não tem {
           background-color: #e5e7eb !important;
           color: #991b1b !important;
@@ -24278,14 +24295,76 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           rows.forEach(row => tbody.appendChild(row));
         }
 
-        document.querySelectorAll('.status-select').forEach(select => {
-          select.addEventListener('change', function () {
-            this.classList.remove('status-FEITO', 'status-PENDENTE', 'status-N/A', 'status-pagto-A_PAGAR', 'status-pagto-PAGO', 'status-pagto-NAO_TEM', 'status-pagto-VENCIDO');
-            if (this.name === 'status_pagto') {
-              this.classList.add('status-pagto-' + this.value);
-            } else {
-              this.classList.add('status-' + this.value);
+        function atualizarClasseStatusRotina(select) {
+          select.classList.remove(
+            'status-FEITO',
+            'status-PENDENTE',
+            'status-N/A',
+            'status-pagto-A_PAGAR',
+            'status-pagto-PAGO',
+            'status-pagto-NAO_TEM',
+            'status-pagto-VENCIDO',
+            'status-ativo-SIM',
+            'status-ativo-NAO'
+          );
+
+          if (select.name === 'status_pagto') {
+            select.classList.add('status-pagto-' + select.value);
+            const row = select.closest('tr');
+            if (row) row.dataset.statusPagto = select.value;
+          } else if (select.name === 'ativo') {
+            select.classList.add('status-ativo-' + (select.value === 'true' ? 'SIM' : 'NAO'));
+          } else {
+            select.classList.add('status-' + select.value);
+          }
+        }
+
+        async function salvarStatusRotina(select) {
+          const form = select.form;
+          if (!form || select.dataset.saving === 'true') return;
+
+          const valorAnterior = select.dataset.lastSavedValue || select.defaultValue || select.value;
+          const valorAtual = select.value;
+          const body = new URLSearchParams(new FormData(form));
+          select.dataset.saving = 'true';
+          select.disabled = true;
+          atualizarClasseStatusRotina(select);
+
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'fetch'
+              },
+              body,
+              credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+              throw new Error('Erro HTTP ' + response.status);
             }
+
+            const data = await response.json().catch(() => null);
+            if (!data || data.ok !== true) {
+              throw new Error((data && data.error) || 'Resposta inválida do servidor');
+            }
+
+            select.dataset.lastSavedValue = valorAtual;
+          } catch (error) {
+            select.value = valorAnterior;
+            atualizarClasseStatusRotina(select);
+            alert('Não foi possível salvar esta alteração. A tela permaneceu na mesma posição.');
+          } finally {
+            select.disabled = false;
+            select.dataset.saving = 'false';
+          }
+        }
+
+        document.querySelectorAll('.status-select').forEach(select => {
+          select.dataset.lastSavedValue = select.value;
+          select.addEventListener('change', function () {
+            salvarStatusRotina(this);
           });
         });
       </script>
@@ -24320,22 +24399,22 @@ ${error.message}</pre>`);
 router.post('/rotina-despesas/status/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { status, mes_ano_filtro } = req.body;
 
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
-    await upsertStatusMensal(id, mesCompetencia, normalizarStatusLinha(status), null);
+    const statusLinha = normalizarStatusLinha(status);
+    await upsertStatusMensal(id, mesCompetencia, statusLinha, null);
 
-    const redirectParams = new URLSearchParams();
-    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
-    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
-    if (status_filtro) redirectParams.set('status', status_filtro);
-    if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
-    const redirectQuery = redirectParams.toString();
-    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
+    if (rotinaDespesasWantsJson(req)) {
+      return res.json({ ok: true, id, status: statusLinha, mes_ano: mesCompetencia });
+    }
 
-    res.redirect(destino);
+    return redirectRotinaDespesasComFiltros(req, res, id);
   } catch (error) {
-    res.send(`<pre>Erro ao atualizar status:
+    if (rotinaDespesasWantsJson(req)) {
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    return res.send(`<pre>Erro ao atualizar status:
 ${error.message}</pre>`);
   }
 });
@@ -24344,22 +24423,22 @@ router.post('/rotina-despesas/status-pagto/:id', async (req, res) => {
   try {
     await ensureRotinaDespesasColumns();
     const { id } = req.params;
-    const { status_pagto, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { status_pagto, mes_ano_filtro } = req.body;
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
 
-    await upsertStatusMensal(id, mesCompetencia, null, normalizarStatusPagto(status_pagto));
+    const statusPagto = normalizarStatusPagto(status_pagto);
+    await upsertStatusMensal(id, mesCompetencia, null, statusPagto);
 
-    const redirectParams = new URLSearchParams();
-    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
-    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
-    if (status_filtro) redirectParams.set('status', status_filtro);
-    if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
-    const redirectQuery = redirectParams.toString();
-    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
+    if (rotinaDespesasWantsJson(req)) {
+      return res.json({ ok: true, id, status_pagto: statusPagto, mes_ano: mesCompetencia });
+    }
 
-    res.redirect(destino);
+    return redirectRotinaDespesasComFiltros(req, res, id);
   } catch (error) {
-    res.send(`<pre>Erro ao atualizar status de pagamento:
+    if (rotinaDespesasWantsJson(req)) {
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    return res.send(`<pre>Erro ao atualizar status de pagamento:
 ${error.message}</pre>`);
   }
 });
@@ -24368,22 +24447,22 @@ router.post('/rotina-despesas/ativo/:id', protegerRota, permitirPerfis('ADMIN', 
   try {
     await ensureRotinaDespesasColumns();
     const { id } = req.params;
-    const { ativo, fornecedor_filtro, status_filtro, mes_ano_filtro, dia_vencimento_filtro } = req.body;
+    const { ativo, mes_ano_filtro } = req.body;
     const mesCompetencia = String(mes_ano_filtro || '').trim() || await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
 
-    await upsertStatusMensal(id, mesCompetencia, null, null, normalizarAtivoMensal(ativo));
+    const ativoNormalizado = normalizarAtivoMensal(ativo);
+    await upsertStatusMensal(id, mesCompetencia, null, null, ativoNormalizado);
 
-    const redirectParams = new URLSearchParams();
-    if (mes_ano_filtro) redirectParams.set('mes_ano', mes_ano_filtro);
-    if (fornecedor_filtro) redirectParams.set('fornecedor', fornecedor_filtro);
-    if (status_filtro) redirectParams.set('status', status_filtro);
-    if (dia_vencimento_filtro) redirectParams.set('dia_vencimento', dia_vencimento_filtro);
-    const redirectQuery = redirectParams.toString();
-    const destino = (redirectQuery ? `/rotina-despesas?${redirectQuery}` : '/rotina-despesas') + `#rotina-${id}`;
+    if (rotinaDespesasWantsJson(req)) {
+      return res.json({ ok: true, id, ativo: ativoNormalizado, mes_ano: mesCompetencia });
+    }
 
-    res.redirect(destino);
+    return redirectRotinaDespesasComFiltros(req, res, id);
   } catch (error) {
-    res.send(`<pre>Erro ao atualizar ativo do mês:
+    if (rotinaDespesasWantsJson(req)) {
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    return res.send(`<pre>Erro ao atualizar ativo do mês:
 ${error.message}</pre>`);
   }
 });
