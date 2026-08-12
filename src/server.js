@@ -30,6 +30,9 @@ if (!fs.existsSync(uploadsDir)) {
 // Servir arquivos estáticos
 app.use('/uploads', express.static(uploadsDir));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'assets', 'favicon.ico'));
+});
 
 // Rota inicial inteligente
 app.get('/', (req, res) => {
