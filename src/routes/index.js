@@ -29582,6 +29582,17 @@ function nfseDataDentroPeriodo(dataNome = '', dataInicial = '', dataFinal = '') 
   return true;
 }
 
+function nfseCompararPeriodo(dataNome = '', dataInicial = '', dataFinal = '') {
+  const data = nfseNormalizarDataFiltro(dataNome);
+  const inicial = nfseNormalizarDataFiltro(dataInicial);
+  const final = nfseNormalizarDataFiltro(dataFinal);
+
+  if (!data) return 'sem_data';
+  if (inicial && data < inicial) return 'antes';
+  if (final && data > final) return 'depois';
+  return 'dentro';
+}
+
 function nfseDecodificarArquivoXml(arquivoXml = '') {
   const buffer = Buffer.from(String(arquivoXml || '').replace(/\s+/g, ''), 'base64');
   if (!buffer.length) return '';
@@ -29658,6 +29669,10 @@ function nfseNormalizarLoteDfe(json) {
   const lote = json && (json.LoteDFe || json.loteDFe || json.loteDfe || json.documentos || []);
   if (Array.isArray(lote)) return lote;
   return lote ? [lote] : [];
+}
+
+function nfseObterNsuItem(item = {}) {
+  return Number(String(item.NSU || item.nsu || '').replace(/\D/g, '')) || 0;
 }
 
 function carregarCertificadoNfsePfx(certPath) {
@@ -29792,23 +29807,26 @@ async function testarNfseNacionalConexao({ nsu = '' } = {}) {
   return { cfg, nsuConsulta, url, resultado, pendencias };
 }
 
-async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '' } = {}) {
+async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '', maxLotes = 12 } = {}) {
   await ensureArquivoFilaTable();
 
-  const teste = await testarNfseNacionalConexao({ nsu });
+  let teste = await testarNfseNacionalConexao({ nsu });
   const periodo = {
     dataInicial: nfseNormalizarDataFiltro(dataInicial),
     dataFinal: nfseNormalizarDataFiltro(dataFinal)
   };
+  const limiteLotes = Math.min(Math.max(Number(maxLotes) || 12, 1), 40);
 
   if (teste.pendencias.length) {
-    return { teste, periodo, importados: 0, duplicados: 0, foraPeriodo: 0, ignorados: 0, erros: teste.pendencias };
+    return { teste, periodo, lotesConsultados: 0, ultimoNsu: teste.nsuConsulta, importados: 0, duplicados: 0, foraPeriodo: 0, ignorados: 0, erros: teste.pendencias };
   }
 
   if (!teste.resultado?.ok) {
     return {
       teste,
       periodo,
+      lotesConsultados: 1,
+      ultimoNsu: teste.nsuConsulta,
       importados: 0,
       duplicados: 0,
       foraPeriodo: 0,
@@ -29817,109 +29835,142 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
     };
   }
 
-  const lote = nfseNormalizarLoteDfe(teste.resultado.json);
   let importados = 0;
   let duplicados = 0;
   let foraPeriodo = 0;
   let ignorados = 0;
+  let lotesConsultados = 0;
+  let ultimoNsu = Number(teste.nsuConsulta) || 0;
   const erros = [];
 
-  for (const item of lote) {
-    const chave = String(item.ChaveAcesso || item.chaveAcesso || '').trim();
-    const arquivoXmlBase64 = item.ArquivoXml || item.arquivoXml || '';
+  for (let loteNumero = 0; loteNumero < limiteLotes; loteNumero += 1) {
+    const lote = nfseNormalizarLoteDfe(teste.resultado?.json);
+    lotesConsultados += 1;
 
-    if (!chave || !arquivoXmlBase64) {
-      ignorados += 1;
-      continue;
-    }
+    if (!lote.length) break;
 
-    const jaExiste = await pool.query(`
-      SELECT id
-      FROM arquivo_fila
-      WHERE origem = 'NFSE_NACIONAL'
-        AND tipo = 'XML'
-        AND chave_origem = $1
-        AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
-      LIMIT 1
-    `, [chave]);
+    let maiorNsuNoLote = ultimoNsu;
+    let encontrouDepoisPeriodo = false;
 
-    if (jaExiste.rows[0]) {
-      duplicados += 1;
-      continue;
-    }
+    for (const item of lote) {
+      const itemNsu = nfseObterNsuItem(item);
+      if (itemNsu > maiorNsuNoLote) maiorNsuNoLote = itemNsu;
 
-    try {
-      const xml = nfseDecodificarArquivoXml(arquivoXmlBase64);
-      if (!xml) {
+      const chave = String(item.ChaveAcesso || item.chaveAcesso || '').trim();
+      const arquivoXmlBase64 = item.ArquivoXml || item.arquivoXml || '';
+
+      if (!chave || !arquivoXmlBase64) {
         ignorados += 1;
         continue;
       }
 
-      const meta = nfseExtrairMetadadosXml(xml, item);
-      if (!nfseDataDentroPeriodo(meta.dataNome, periodo.dataInicial, periodo.dataFinal)) {
-        foraPeriodo += 1;
-        continue;
-      }
-
-      const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
-      const caminhoInicial = path.join(uploadsDir, nomeInicial);
-      fs.writeFileSync(caminhoInicial, xml, 'utf8');
-
-      const inserted = await pool.query(`
-        INSERT INTO arquivo_fila (
-          nome_original,
-          nome_arquivo,
-          tipo,
-          caminho,
-          tamanho_bytes,
-          status,
-          origem,
-          chave_origem,
-          metadados
-        )
-        VALUES ($1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
-        RETURNING id
-      `, [
-        `NFS-e Nacional ${chave}`,
-        nomeInicial,
-        caminhoInicial,
-        Buffer.byteLength(xml, 'utf8'),
-        chave,
-        {
-          nsu: item.NSU || item.nsu || '',
-          chaveAcesso: chave,
-          tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
-          fornecedor: meta.fornecedor,
-          dataEmissao: meta.dataEmissao,
-          numero: meta.numero,
-          sugestaoSubcategoria: meta.sugestao
+      try {
+        const xml = nfseDecodificarArquivoXml(arquivoXmlBase64);
+        if (!xml) {
+          ignorados += 1;
+          continue;
         }
-      ]);
 
-      const id = inserted.rows[0]?.id;
-      if (id) {
-        const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
-        await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+        const meta = nfseExtrairMetadadosXml(xml, item);
+        const posicaoPeriodo = nfseCompararPeriodo(meta.dataNome, periodo.dataInicial, periodo.dataFinal);
+        if (posicaoPeriodo !== 'dentro') {
+          foraPeriodo += 1;
+          if (posicaoPeriodo === 'depois') encontrouDepoisPeriodo = true;
+          continue;
+        }
+
+        const jaExiste = await pool.query(`
+          SELECT id
+          FROM arquivo_fila
+          WHERE origem = 'NFSE_NACIONAL'
+            AND tipo = 'XML'
+            AND chave_origem = $1
+            AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
+          LIMIT 1
+        `, [chave]);
+
+        if (jaExiste.rows[0]) {
+          duplicados += 1;
+          continue;
+        }
+
+        const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
+        const caminhoInicial = path.join(uploadsDir, nomeInicial);
+        fs.writeFileSync(caminhoInicial, xml, 'utf8');
+
+        const inserted = await pool.query(`
+          INSERT INTO arquivo_fila (
+            nome_original,
+            nome_arquivo,
+            tipo,
+            caminho,
+            tamanho_bytes,
+            status,
+            origem,
+            chave_origem,
+            metadados
+          )
+          VALUES ($1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
+          RETURNING id
+        `, [
+          `NFS-e Nacional ${chave}`,
+          nomeInicial,
+          caminhoInicial,
+          Buffer.byteLength(xml, 'utf8'),
+          chave,
+          {
+            nsu: item.NSU || item.nsu || '',
+            chaveAcesso: chave,
+            tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
+            fornecedor: meta.fornecedor,
+            dataEmissao: meta.dataEmissao,
+            numero: meta.numero,
+            sugestaoSubcategoria: meta.sugestao
+          }
+        ]);
+
+        const id = inserted.rows[0]?.id;
+        if (id) {
+          const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
+          await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+        }
+
+        importados += 1;
+      } catch (error) {
+        if (error && error.code === '23505') {
+          duplicados += 1;
+        } else {
+          erros.push(`Chave ${chave}: ${error.message}`);
+        }
       }
+    }
 
-      importados += 1;
-    } catch (error) {
-      if (error && error.code === '23505') {
-        duplicados += 1;
-      } else {
-        erros.push(`Chave ${chave}: ${error.message}`);
+    if (encontrouDepoisPeriodo || maiorNsuNoLote <= ultimoNsu) break;
+
+    ultimoNsu = maiorNsuNoLote;
+
+    if (loteNumero + 1 < limiteLotes) {
+      teste = await testarNfseNacionalConexao({ nsu: String(ultimoNsu) });
+      if (teste.pendencias.length || !teste.resultado?.ok) {
+        erros.push(teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'} ao consultar o próximo lote.`);
+        break;
       }
     }
   }
 
-  return { teste, periodo, importados, duplicados, foraPeriodo, ignorados, erros };
+  if (lotesConsultados >= limiteLotes) {
+    erros.push(`A busca parou no limite de ${limiteLotes} lotes para evitar consulta longa demais. Último NSU consultado: ${ultimoNsu}.`);
+  }
+
+  return { teste, periodo, lotesConsultados, ultimoNsu, importados, duplicados, foraPeriodo, ignorados, erros };
 }
 
 function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', periodo = null } = {}) {
   const cfg = getNfseConfig();
   const periodoAtual = {
     dataInicial: periodo?.dataInicial || req.body?.dataInicial || nfseDataInputPadrao(-30),
-    dataFinal: periodo?.dataFinal || req.body?.dataFinal || nfseDataInputPadrao(0)
+    dataFinal: periodo?.dataFinal || req.body?.dataFinal || nfseDataInputPadrao(0),
+    maxLotes: String(req.body?.maxLotes || '12')
   };
   const statusItem = (label, ativo, detalhe = '') => `
     <li class="${ativo ? 'ok' : 'bad'}">
@@ -30019,6 +30070,10 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
               <label for="dataFinal">Data final</label>
               <input id="dataFinal" name="dataFinal" type="date" value="${escapeHtmlGlobal(periodoAtual.dataFinal)}" />
             </div>
+            <div>
+              <label for="maxLotes">Lotes máximos</label>
+              <input id="maxLotes" name="maxLotes" type="number" min="1" max="40" value="${escapeHtmlGlobal(periodoAtual.maxLotes)}" />
+            </div>
           </div>
           <button class="btn" type="submit">Importar XMLs para Arquivo</button>
         </form>
@@ -30052,13 +30107,16 @@ router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, r
     const resultado = await importarNfseNacionalParaArquivo({
       nsu: req.body.nsu,
       dataInicial: req.body.dataInicial,
-      dataFinal: req.body.dataFinal
+      dataFinal: req.body.dataFinal,
+      maxLotes: req.body.maxLotes
     });
     const partes = [
       `${resultado.importados} XML(s) importado(s) para a tela Arquivo`,
       `${resultado.duplicados} já existia(m) e não foi/foram duplicado(s)`,
       `${resultado.foraPeriodo} fora do período escolhido`,
-      `${resultado.ignorados} ignorado(s)`
+      `${resultado.ignorados} ignorado(s)`,
+      `${resultado.lotesConsultados} lote(s) consultado(s)`,
+      `último NSU ${resultado.ultimoNsu || '0'}`
     ];
 
     const erros = resultado.erros?.filter(Boolean) || [];
