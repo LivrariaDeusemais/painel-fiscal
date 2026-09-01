@@ -32,6 +32,7 @@ const fs = require('fs');
 const xml2js = require('xml2js');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
+const https = require('https');
 
 // CONFIG UPLOAD
 
@@ -29416,6 +29417,7 @@ function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
       <a href="/lancamentos">Comprovantes Fiscais</a>
       <a href="/rotina-despesas">Contas à Pagar</a>
       <a href="/arquivo">Arquivo</a>
+      <a href="/nfse-nacional">NFS-e Nacional</a>
       <a href="/logout">Sair</a>
     </nav>
     ${ok ? `<div class="alert ok">${escapeHtmlGlobal(ok)}</div>` : ''}
@@ -29487,6 +29489,252 @@ router.get('/backup/download/:filename', protegerRota, somenteAdmin, (req, res) 
     res.download(filePath, filename);
   } catch (error) {
     res.status(500).send(`<pre>Erro ao baixar backup:\n${error.message}</pre>`);
+  }
+});
+
+// =====================================================
+// NFS-e Nacional — diagnóstico seguro de integração
+// Certificado e senha devem ficar no Render como Secret File / Environment.
+// =====================================================
+
+function somenteDigitos(text = '') {
+  return String(text || '').replace(/\D/g, '');
+}
+
+function getNfseConfig() {
+  const certPath = process.env.NFSE_CERT_PATH || '/etc/secrets/certificado-deusemais.pfx';
+  const certPassword = process.env.NFSE_CERT_PASSWORD || '';
+  const cnpj = somenteDigitos(process.env.NFSE_CNPJ || '');
+  const apiBase = process.env.NFSE_API_BASE || 'https://adn.nfse.gov.br/contribuintes';
+  const dfePathTemplate = process.env.NFSE_DFE_PATH_TEMPLATE || '/DFe/{nsu}?cnpjConsulta={cnpj}';
+  const nsuInicial = String(process.env.NFSE_DFE_NSU_INICIAL || '0').trim() || '0';
+
+  return {
+    certPath,
+    certPasswordSet: !!certPassword,
+    certPassword,
+    cnpj,
+    apiBase,
+    dfePathTemplate,
+    nsuInicial,
+    certExists: !!certPath && fs.existsSync(certPath),
+    certSize: (() => {
+      try { return fs.existsSync(certPath) ? fs.statSync(certPath).size : 0; } catch (error) { return 0; }
+    })()
+  };
+}
+
+function buildNfseDfeUrl({ apiBase, dfePathTemplate, nsu, cnpj }) {
+  const base = String(apiBase || '').replace(/\/+$/, '');
+  const pathFinal = String(dfePathTemplate || '')
+    .replace(/\{nsu\}/g, encodeURIComponent(String(nsu || '0')))
+    .replace(/\{cnpj\}/g, encodeURIComponent(String(cnpj || '')));
+  return `${base}${pathFinal.startsWith('/') ? '' : '/'}${pathFinal}`;
+}
+
+function resumirBodySeguro(body = '') {
+  const texto = String(body || '').trim();
+  if (!texto) return '';
+  return texto.length > 1800 ? `${texto.slice(0, 1800)}...` : texto;
+}
+
+function nfseHttpsGetJson(url, { certPath, certPassword }) {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    let pfx;
+
+    try {
+      pfx = fs.readFileSync(certPath);
+    } catch (error) {
+      return resolve({
+        ok: false,
+        etapa: 'certificado',
+        erro: `Não foi possível ler o Secret File do certificado em ${certPath}.`
+      });
+    }
+
+    const req = https.request(url, {
+      method: 'GET',
+      pfx,
+      passphrase: certPassword,
+      timeout: 25000,
+      headers: {
+        Accept: 'application/json'
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        let json = null;
+        try { json = body ? JSON.parse(body) : null; } catch (error) {}
+
+        resolve({
+          ok: response.statusCode >= 200 && response.statusCode < 300,
+          etapa: 'api',
+          statusCode: response.statusCode,
+          contentType: response.headers['content-type'] || '',
+          tempoMs: Date.now() - startedAt,
+          bodyResumo: resumirBodySeguro(body),
+          jsonKeys: json && typeof json === 'object' ? Object.keys(json).slice(0, 20) : []
+        });
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy(new Error('Tempo limite excedido ao consultar a API da NFS-e Nacional.'));
+    });
+
+    req.on('error', (error) => {
+      resolve({
+        ok: false,
+        etapa: 'conexao',
+        tempoMs: Date.now() - startedAt,
+        erro: error.message
+      });
+    });
+
+    req.end();
+  });
+}
+
+async function testarNfseNacionalConexao({ nsu = '' } = {}) {
+  const cfg = getNfseConfig();
+  const pendencias = [];
+
+  if (!cfg.certPath) pendencias.push('NFSE_CERT_PATH não configurado.');
+  if (!cfg.certExists) pendencias.push(`Secret File não encontrado em ${cfg.certPath}.`);
+  if (!cfg.certPasswordSet) pendencias.push('NFSE_CERT_PASSWORD não configurada.');
+  if (!cfg.cnpj || cfg.cnpj.length !== 14) pendencias.push('NFSE_CNPJ deve conter 14 dígitos.');
+  if (!cfg.apiBase) pendencias.push('NFSE_API_BASE não configurada.');
+
+  const nsuConsulta = String(nsu || cfg.nsuInicial || '0').replace(/\D/g, '') || '0';
+  const url = buildNfseDfeUrl({
+    apiBase: cfg.apiBase,
+    dfePathTemplate: cfg.dfePathTemplate,
+    nsu: nsuConsulta,
+    cnpj: cfg.cnpj
+  });
+
+  if (pendencias.length) {
+    return { cfg, nsuConsulta, url, resultado: null, pendencias };
+  }
+
+  const resultado = await nfseHttpsGetJson(url, {
+    certPath: cfg.certPath,
+    certPassword: cfg.certPassword
+  });
+
+  return { cfg, nsuConsulta, url, resultado, pendencias };
+}
+
+function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } = {}) {
+  const cfg = getNfseConfig();
+  const statusItem = (label, ativo, detalhe = '') => `
+    <li class="${ativo ? 'ok' : 'bad'}">
+      <strong>${escapeHtmlGlobal(label)}</strong>
+      <span>${ativo ? 'OK' : 'Pendente'}${detalhe ? ` - ${escapeHtmlGlobal(detalhe)}` : ''}</span>
+    </li>
+  `;
+
+  const testeHtml = teste ? `
+    <section class="card full">
+      <h2>Resultado do teste</h2>
+      ${teste.pendencias?.length ? `<div class="alert warn">${teste.pendencias.map(escapeHtmlGlobal).join('<br>')}</div>` : ''}
+      <div class="result-grid">
+        <div><strong>URL testada</strong><span>${escapeHtmlGlobal(teste.url || '-')}</span></div>
+        <div><strong>NSU</strong><span>${escapeHtmlGlobal(teste.nsuConsulta || '0')}</span></div>
+        <div><strong>Status HTTP</strong><span>${escapeHtmlGlobal(teste.resultado?.statusCode || '-')}</span></div>
+        <div><strong>Tempo</strong><span>${teste.resultado?.tempoMs ? `${teste.resultado.tempoMs} ms` : '-'}</span></div>
+      </div>
+      ${teste.resultado?.ok ? `<div class="alert ok">Conexão realizada. Próximo passo: interpretar o retorno e preparar a importação para a tela Arquivo.</div>` : ''}
+      ${teste.resultado?.erro ? `<div class="alert err">${escapeHtmlGlobal(teste.resultado.erro)}</div>` : ''}
+      ${teste.resultado?.bodyResumo ? `<pre>${escapeHtmlGlobal(teste.resultado.bodyResumo)}</pre>` : ''}
+    </section>
+  ` : '';
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFS-e Nacional - PlennaTec</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#baf2cf 0%,#f8fafc 42%,#eef2f7 100%);color:#172033;min-height:100vh;}
+    .shell{width:min(1450px,calc(100vw - 48px));margin:18px auto 28px;}
+    .top,.nav,.card{background:rgba(255,255,255,.92);border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 24px;margin-bottom:14px;}
+    h1{margin:0 0 6px;font-size:30px;} h2{margin:0 0 10px;font-size:20px;} p{color:#52627a;font-weight:700;line-height:1.42;}
+    .user{font-weight:900;color:#00B050;text-align:right;}.user span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-top:4px;}
+    .nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:16px;}
+    .nav a{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640!important;border:1px solid #d7eadf;}
+    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-bottom:16px;}.card{padding:22px;}.card.full{grid-column:1/-1;}
+    ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:9px;}li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:13px;border:1px solid #e2e8f0;background:#f8fafc;}li.ok{background:#f0fdf4;border-color:#bbf7d0;}li.bad{background:#fff7ed;border-color:#fed7aa;}li span{font-size:12px;font-weight:900;color:#475569;text-align:right;}
+    label{display:block;font-weight:900;margin:0 0 7px;color:#334155;}input{height:42px;border:1px solid #dbe7df;border-radius:12px;padding:0 12px;font-weight:800;width:210px;max-width:100%;}
+    .btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}
+    .alert{padding:14px 16px;border-radius:14px;margin:12px 0;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}
+    .result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0;}.result-grid div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;}.result-grid strong{display:block;font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:5px;}.result-grid span{font-weight:850;overflow-wrap:anywhere;}
+    pre{white-space:pre-wrap;overflow:auto;max-height:360px;background:#0f172a;color:#dbeafe;border-radius:14px;padding:16px;font-size:12px;line-height:1.45;}
+    code{background:#eef2f7;border:1px solid #dbe7df;border-radius:8px;padding:2px 6px;font-weight:900;color:#0f172a;}
+    @media(max-width:900px){.shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid,.result-grid{grid-template-columns:1fr}.user{text-align:left}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="top">
+      <div><h1>NFS-e Nacional</h1><p>Diagnóstico seguro para consultar NFS-e recebidas via API oficial, sem armazenar certificado no código.</p></div>
+      <div class="user">${escapeHtmlGlobal(req.session.usuario?.nome || 'ADMIN')}<span>${escapeHtmlGlobal(req.session.usuario?.perfil || 'ADMIN')}</span></div>
+    </section>
+    <nav class="nav">
+      <a href="/dashboard">Voltar para o Painel</a>
+      <a href="/arquivo">Arquivo</a>
+      <a href="/backup">Backup</a>
+      <a href="/logout">Sair</a>
+    </nav>
+    ${ok ? `<div class="alert ok">${escapeHtmlGlobal(ok)}</div>` : ''}
+    ${erro ? `<div class="alert err">${escapeHtmlGlobal(erro)}</div>` : ''}
+    <section class="grid">
+      <article class="card">
+        <h2>Checklist Render</h2>
+        <p>Configure estes itens no serviço do Render. O PlennaTec apenas lê os secrets em runtime.</p>
+        <ul>
+          ${statusItem('Secret File do certificado', cfg.certExists, cfg.certExists ? `${cfg.certPath} (${formatBytesPlennaTec(cfg.certSize)})` : cfg.certPath)}
+          ${statusItem('Senha do certificado', cfg.certPasswordSet, 'NFSE_CERT_PASSWORD')}
+          ${statusItem('CNPJ da empresa', cfg.cnpj.length === 14, cfg.cnpj ? cfg.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : 'NFSE_CNPJ')}
+          ${statusItem('Base da API', !!cfg.apiBase, cfg.apiBase)}
+        </ul>
+      </article>
+      <article class="card">
+        <h2>Teste de conexão</h2>
+        <p>Este teste consulta a API com certificado A1. Ele não importa arquivos e não grava XML/PDF.</p>
+        <form method="post" action="/nfse-nacional/testar">
+          <label for="nsu">NSU inicial</label>
+          <input id="nsu" name="nsu" value="${escapeHtmlGlobal(cfg.nsuInicial)}" inputmode="numeric" />
+          <div style="height:14px"></div>
+          <button class="btn" type="submit">Testar conexão</button>
+        </form>
+      </article>
+      <article class="card full">
+        <h2>Como configurar no Render</h2>
+        <p>Entre no serviço do PlennaTec no Render, abra <strong>Environment</strong>, adicione um <strong>Secret File</strong> com o nome <code>certificado-deusemais.pfx</code> e depois adicione as variáveis <code>NFSE_CERT_PASSWORD</code> e <code>NFSE_CNPJ</code>. O caminho padrão esperado é <code>/etc/secrets/certificado-deusemais.pfx</code>.</p>
+      </article>
+      ${testeHtml}
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
+router.get('/nfse-nacional', protegerRota, somenteAdmin, (req, res) => {
+  res.send(renderNfseNacionalAdminPage(req));
+});
+
+router.post('/nfse-nacional/testar', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const teste = await testarNfseNacionalConexao({ nsu: req.body.nsu });
+    res.send(renderNfseNacionalAdminPage(req, { teste }));
+  } catch (error) {
+    res.send(renderNfseNacionalAdminPage(req, { erro: 'Erro ao testar NFS-e Nacional: ' + error.message }));
   }
 });
 
