@@ -29557,6 +29557,29 @@ function nfseNormalizarDataNome(valor = '') {
   return '';
 }
 
+function nfseDataInputPadrao(offsetDias = 0) {
+  const data = new Date();
+  data.setDate(data.getDate() + offsetDias);
+  return data.toISOString().slice(0, 10);
+}
+
+function nfseNormalizarDataFiltro(valor = '') {
+  const data = nfseNormalizarDataNome(valor);
+  return /^\d{4}-\d{2}-\d{2}$/.test(data) ? data : '';
+}
+
+function nfseDataDentroPeriodo(dataNome = '', dataInicial = '', dataFinal = '') {
+  const data = nfseNormalizarDataFiltro(dataNome);
+  const inicial = nfseNormalizarDataFiltro(dataInicial);
+  const final = nfseNormalizarDataFiltro(dataFinal);
+
+  if (!inicial && !final) return true;
+  if (!data) return false;
+  if (inicial && data < inicial) return false;
+  if (final && data > final) return false;
+  return true;
+}
+
 function nfseDecodificarArquivoXml(arquivoXml = '') {
   const buffer = Buffer.from(String(arquivoXml || '').replace(/\s+/g, ''), 'base64');
   if (!buffer.length) return '';
@@ -29767,19 +29790,26 @@ async function testarNfseNacionalConexao({ nsu = '' } = {}) {
   return { cfg, nsuConsulta, url, resultado, pendencias };
 }
 
-async function importarNfseNacionalParaArquivo({ nsu = '' } = {}) {
+async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '' } = {}) {
   await ensureArquivoFilaTable();
 
   const teste = await testarNfseNacionalConexao({ nsu });
+  const periodo = {
+    dataInicial: nfseNormalizarDataFiltro(dataInicial),
+    dataFinal: nfseNormalizarDataFiltro(dataFinal)
+  };
+
   if (teste.pendencias.length) {
-    return { teste, importados: 0, duplicados: 0, ignorados: 0, erros: teste.pendencias };
+    return { teste, periodo, importados: 0, duplicados: 0, foraPeriodo: 0, ignorados: 0, erros: teste.pendencias };
   }
 
   if (!teste.resultado?.ok) {
     return {
       teste,
+      periodo,
       importados: 0,
       duplicados: 0,
+      foraPeriodo: 0,
       ignorados: 0,
       erros: [teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'}.`]
     };
@@ -29788,6 +29818,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '' } = {}) {
   const lote = nfseNormalizarLoteDfe(teste.resultado.json);
   let importados = 0;
   let duplicados = 0;
+  let foraPeriodo = 0;
   let ignorados = 0;
   const erros = [];
 
@@ -29822,6 +29853,11 @@ async function importarNfseNacionalParaArquivo({ nsu = '' } = {}) {
       }
 
       const meta = nfseExtrairMetadadosXml(xml, item);
+      if (!nfseDataDentroPeriodo(meta.dataNome, periodo.dataInicial, periodo.dataFinal)) {
+        foraPeriodo += 1;
+        continue;
+      }
+
       const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
       const caminhoInicial = path.join(uploadsDir, nomeInicial);
       fs.writeFileSync(caminhoInicial, xml, 'utf8');
@@ -29873,11 +29909,15 @@ async function importarNfseNacionalParaArquivo({ nsu = '' } = {}) {
     }
   }
 
-  return { teste, importados, duplicados, ignorados, erros };
+  return { teste, periodo, importados, duplicados, foraPeriodo, ignorados, erros };
 }
 
-function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } = {}) {
+function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', periodo = null } = {}) {
   const cfg = getNfseConfig();
+  const periodoAtual = {
+    dataInicial: periodo?.dataInicial || req.body?.dataInicial || nfseDataInputPadrao(-30),
+    dataFinal: periodo?.dataFinal || req.body?.dataFinal || nfseDataInputPadrao(0)
+  };
   const statusItem = (label, ativo, detalhe = '') => `
     <li class="${ativo ? 'ok' : 'bad'}">
       <strong>${escapeHtmlGlobal(label)}</strong>
@@ -29919,6 +29959,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } =
     .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-bottom:16px;}.card{padding:22px;}.card.full{grid-column:1/-1;}
     ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:9px;}li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:13px;border:1px solid #e2e8f0;background:#f8fafc;}li.ok{background:#f0fdf4;border-color:#bbf7d0;}li.bad{background:#fff7ed;border-color:#fed7aa;}li span{font-size:12px;font-weight:900;color:#475569;text-align:right;}
     label{display:block;font-weight:900;margin:0 0 7px;color:#334155;}input{height:42px;border:1px solid #dbe7df;border-radius:12px;padding:0 12px;font-weight:800;width:210px;max-width:100%;}
+    .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}.form-row input[type="date"]{width:160px;}
     .btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}
     .alert{padding:14px 16px;border-radius:14px;margin:12px 0;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}
     .result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0;}.result-grid div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;}.result-grid strong{display:block;font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:5px;}.result-grid span{font-weight:850;overflow-wrap:anywhere;}
@@ -29966,6 +30007,16 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } =
         <p>Depois que o teste estiver OK, importe os XMLs encontrados para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
         <form method="post" action="/nfse-nacional/importar">
           <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
+          <div class="form-row">
+            <div>
+              <label for="dataInicial">Data inicial</label>
+              <input id="dataInicial" name="dataInicial" type="date" value="${escapeHtmlGlobal(periodoAtual.dataInicial)}" />
+            </div>
+            <div>
+              <label for="dataFinal">Data final</label>
+              <input id="dataFinal" name="dataFinal" type="date" value="${escapeHtmlGlobal(periodoAtual.dataFinal)}" />
+            </div>
+          </div>
           <button class="btn" type="submit">Importar XMLs para Arquivo</button>
         </form>
       </article>
@@ -29995,16 +30046,22 @@ router.post('/nfse-nacional/testar', protegerRota, somenteAdmin, async (req, res
 
 router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, res) => {
   try {
-    const resultado = await importarNfseNacionalParaArquivo({ nsu: req.body.nsu });
+    const resultado = await importarNfseNacionalParaArquivo({
+      nsu: req.body.nsu,
+      dataInicial: req.body.dataInicial,
+      dataFinal: req.body.dataFinal
+    });
     const partes = [
       `${resultado.importados} XML(s) importado(s) para a tela Arquivo`,
       `${resultado.duplicados} já existia(m) e não foi/foram duplicado(s)`,
+      `${resultado.foraPeriodo} fora do período escolhido`,
       `${resultado.ignorados} ignorado(s)`
     ];
 
     const erros = resultado.erros?.filter(Boolean) || [];
     res.send(renderNfseNacionalAdminPage(req, {
       teste: resultado.teste,
+      periodo: resultado.periodo,
       ok: erros.length ? '' : partes.join('. ') + '.',
       erro: erros.length ? `${partes.join('. ')}. Pendências: ${erros.join(' | ')}` : ''
     }));
