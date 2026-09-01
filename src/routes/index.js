@@ -29829,6 +29829,18 @@ async function testarNfseNacionalConexaoComRetry({ nsu = '' } = {}) {
   return teste;
 }
 
+function nfseResultadoSemDocumento(resultado) {
+  const statusProcessamento = String(resultado?.json?.StatusProcessamento || '').toUpperCase();
+  const codigoErro = String(resultado?.json?.Erros?.[0]?.Codigo || '').toUpperCase();
+  const descricaoErro = String(resultado?.json?.Erros?.[0]?.Descricao || '').toLowerCase();
+
+  return resultado?.statusCode === 404 && (
+    statusProcessamento === 'NENHUM_DOCUMENTO_LOCALIZADO' ||
+    codigoErro === 'E2220' ||
+    descricaoErro.includes('nenhum documento localizado')
+  );
+}
+
 async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '', maxLotes = 12 } = {}) {
   await ensureArquivoFilaTable();
 
@@ -29844,6 +29856,20 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
   }
 
   if (!teste.resultado?.ok) {
+    if (nfseResultadoSemDocumento(teste.resultado)) {
+      return {
+        teste,
+        periodo,
+        lotesConsultados: 1,
+        ultimoNsu: teste.nsuConsulta,
+        importados: 0,
+        duplicados: 0,
+        foraPeriodo: 0,
+        ignorados: 0,
+        erros: []
+      };
+    }
+
     return {
       teste,
       periodo,
@@ -29974,6 +30000,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
     if (loteNumero + 1 < limiteLotes) {
       teste = await testarNfseNacionalConexaoComRetry({ nsu: String(ultimoNsu + 1) });
       if (teste.pendencias.length || !teste.resultado?.ok) {
+        if (nfseResultadoSemDocumento(teste.resultado)) break;
         erros.push(teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'} ao consultar o próximo lote.`);
         break;
       }
