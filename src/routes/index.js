@@ -29538,13 +29538,24 @@ function resumirBodySeguro(body = '') {
   return texto.length > 1800 ? `${texto.slice(0, 1800)}...` : texto;
 }
 
+function carregarCertificadoNfsePfx(certPath) {
+  const raw = fs.readFileSync(certPath);
+  const texto = raw.toString('utf8').trim();
+  const pareceBase64 = /^[A-Za-z0-9+/=\r\n]+$/.test(texto) && texto.replace(/\s+/g, '').length > 100;
+
+  if (!pareceBase64) return raw;
+
+  const decoded = Buffer.from(texto.replace(/\s+/g, ''), 'base64');
+  return decoded.length ? decoded : raw;
+}
+
 function nfseHttpsGetJson(url, { certPath, certPassword }) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
     let pfx;
 
     try {
-      pfx = fs.readFileSync(certPath);
+      pfx = carregarCertificadoNfsePfx(certPath);
     } catch (error) {
       return resolve({
         ok: false,
@@ -29586,11 +29597,14 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
     });
 
     req.on('error', (error) => {
+      const mensagemErro = String(error.message || '');
       resolve({
         ok: false,
         etapa: 'conexao',
         tempoMs: Date.now() - startedAt,
-        erro: error.message
+        erro: mensagemErro.includes('header too long')
+          ? 'O certificado não pôde ser lido no formato atual. Converta o arquivo .pfx para Base64 e cole o texto Base64 no Secret File certificado-deusemais.pfx.'
+          : mensagemErro
       });
     });
 
