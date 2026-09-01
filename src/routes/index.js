@@ -29549,10 +29549,30 @@ function carregarCertificadoNfsePfx(certPath) {
   return decoded.length ? decoded : raw;
 }
 
+function normalizarErroCertificadoNfse(error) {
+  const mensagemErro = String(error && error.message ? error.message : error || '');
+  const mensagemLower = mensagemErro.toLowerCase();
+
+  if (mensagemLower.includes('header too long')) {
+    return 'O certificado não pôde ser lido no formato atual. Converta o arquivo .pfx para Base64 e cole o texto Base64 no Secret File certificado-deusemais.pfx.';
+  }
+
+  if (mensagemLower.includes('mac verify failure') || mensagemLower.includes('bad decrypt')) {
+    return 'A senha do certificado parece incorreta. Confira a variável NFSE_CERT_PASSWORD no Render.';
+  }
+
+  if (mensagemLower.includes('unsupported pkcs12') || mensagemLower.includes('pkcs12 pfx')) {
+    return 'O arquivo lido não parece ser um certificado A1 .pfx válido para o Node. Refaça a conversão Base64 a partir do arquivo .pfx original e substitua o Secret File certificado-deusemais.pfx.';
+  }
+
+  return mensagemErro;
+}
+
 function nfseHttpsGetJson(url, { certPath, certPassword }) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
     let pfx;
+    let req;
 
     try {
       pfx = carregarCertificadoNfsePfx(certPath);
@@ -29564,33 +29584,42 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
       });
     }
 
-    const req = https.request(url, {
-      method: 'GET',
-      pfx,
-      passphrase: certPassword,
-      timeout: 25000,
-      headers: {
-        Accept: 'application/json'
-      }
-    }, (response) => {
-      const chunks = [];
-      response.on('data', chunk => chunks.push(chunk));
-      response.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
-        let json = null;
-        try { json = body ? JSON.parse(body) : null; } catch (error) {}
+    try {
+      req = https.request(url, {
+        method: 'GET',
+        pfx,
+        passphrase: certPassword,
+        timeout: 25000,
+        headers: {
+          Accept: 'application/json'
+        }
+      }, (response) => {
+        const chunks = [];
+        response.on('data', chunk => chunks.push(chunk));
+        response.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8');
+          let json = null;
+          try { json = body ? JSON.parse(body) : null; } catch (error) {}
 
-        resolve({
-          ok: response.statusCode >= 200 && response.statusCode < 300,
-          etapa: 'api',
-          statusCode: response.statusCode,
-          contentType: response.headers['content-type'] || '',
-          tempoMs: Date.now() - startedAt,
-          bodyResumo: resumirBodySeguro(body),
-          jsonKeys: json && typeof json === 'object' ? Object.keys(json).slice(0, 20) : []
+          resolve({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            etapa: 'api',
+            statusCode: response.statusCode,
+            contentType: response.headers['content-type'] || '',
+            tempoMs: Date.now() - startedAt,
+            bodyResumo: resumirBodySeguro(body),
+            jsonKeys: json && typeof json === 'object' ? Object.keys(json).slice(0, 20) : []
+          });
         });
       });
-    });
+    } catch (error) {
+      return resolve({
+        ok: false,
+        etapa: 'certificado',
+        tempoMs: Date.now() - startedAt,
+        erro: normalizarErroCertificadoNfse(error)
+      });
+    }
 
     req.on('timeout', () => {
       req.destroy(new Error('Tempo limite excedido ao consultar a API da NFS-e Nacional.'));
@@ -29602,9 +29631,7 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
         ok: false,
         etapa: 'conexao',
         tempoMs: Date.now() - startedAt,
-        erro: mensagemErro.includes('header too long')
-          ? 'O certificado não pôde ser lido no formato atual. Converta o arquivo .pfx para Base64 e cole o texto Base64 no Secret File certificado-deusemais.pfx.'
-          : mensagemErro
+        erro: normalizarErroCertificadoNfse(mensagemErro)
       });
     });
 
