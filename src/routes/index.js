@@ -1726,10 +1726,12 @@ async function ensureArquivoFilaTable() {
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS chave_origem TEXT`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS metadados JSONB`);
+  await pool.query(`DROP INDEX IF EXISTS arquivo_fila_origem_chave_tipo_idx`);
   await pool.query(`
-    CREATE UNIQUE INDEX IF NOT EXISTS arquivo_fila_origem_chave_tipo_idx
+    CREATE UNIQUE INDEX IF NOT EXISTS arquivo_fila_origem_chave_tipo_ativo_idx
     ON arquivo_fila (origem, chave_origem, tipo)
     WHERE chave_origem IS NOT NULL
+      AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
   `);
 }
 
@@ -29837,6 +29839,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
       WHERE origem = 'NFSE_NACIONAL'
         AND tipo = 'XML'
         AND chave_origem = $1
+        AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
       LIMIT 1
     `, [chave]);
 
