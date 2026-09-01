@@ -29807,10 +29807,32 @@ async function testarNfseNacionalConexao({ nsu = '' } = {}) {
   return { cfg, nsuConsulta, url, resultado, pendencias };
 }
 
+function aguardarNfse(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function testarNfseNacionalConexaoComRetry({ nsu = '' } = {}) {
+  let teste = await testarNfseNacionalConexao({ nsu });
+  const erro = String(teste.resultado?.erro || '').toLowerCase();
+  const deveTentarNovamente = !teste.pendencias.length && !teste.resultado?.ok && (
+    erro.includes('socket hang up') ||
+    erro.includes('tempo limite') ||
+    erro.includes('econnreset') ||
+    erro.includes('etimedout')
+  );
+
+  if (deveTentarNovamente) {
+    await aguardarNfse(1200);
+    teste = await testarNfseNacionalConexao({ nsu });
+  }
+
+  return teste;
+}
+
 async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '', maxLotes = 12 } = {}) {
   await ensureArquivoFilaTable();
 
-  let teste = await testarNfseNacionalConexao({ nsu });
+  let teste = await testarNfseNacionalConexaoComRetry({ nsu });
   const periodo = {
     dataInicial: nfseNormalizarDataFiltro(dataInicial),
     dataFinal: nfseNormalizarDataFiltro(dataFinal)
@@ -29950,7 +29972,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
     ultimoNsu = maiorNsuNoLote;
 
     if (loteNumero + 1 < limiteLotes) {
-      teste = await testarNfseNacionalConexao({ nsu: String(ultimoNsu) });
+      teste = await testarNfseNacionalConexaoComRetry({ nsu: String(ultimoNsu + 1) });
       if (teste.pendencias.length || !teste.resultado?.ok) {
         erros.push(teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'} ao consultar o próximo lote.`);
         break;
