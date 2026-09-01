@@ -33,6 +33,7 @@ const xml2js = require('xml2js');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
 const https = require('https');
+const zlib = require('zlib');
 
 // CONFIG UPLOAD
 
@@ -1709,7 +1710,9 @@ async function ensureArquivoFilaTable() {
       status VARCHAR(20) DEFAULT 'DISPONIVEL',
       criado_em TIMESTAMP DEFAULT NOW(),
       usado_em TIMESTAMP,
-      origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'
+      origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL',
+      chave_origem TEXT,
+      metadados JSONB
     )
   `);
 
@@ -1721,6 +1724,13 @@ async function ensureArquivoFilaTable() {
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DISPONIVEL'`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS usado_em TIMESTAMP`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS chave_origem TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS metadados JSONB`);
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS arquivo_fila_origem_chave_tipo_idx
+    ON arquivo_fila (origem, chave_origem, tipo)
+    WHERE chave_origem IS NOT NULL
+  `);
 }
 
 function sanitizeArquivoFilaNome(texto) {
@@ -29538,6 +29548,93 @@ function resumirBodySeguro(body = '') {
   return texto.length > 1800 ? `${texto.slice(0, 1800)}...` : texto;
 }
 
+function nfseNormalizarDataNome(valor = '') {
+  const texto = String(valor || '').trim();
+  const matchIso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (matchIso) return `${matchIso[1]}-${matchIso[2]}-${matchIso[3]}`;
+  const matchBr = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (matchBr) return `${matchBr[3]}-${matchBr[2]}-${matchBr[1]}`;
+  return '';
+}
+
+function nfseDecodificarArquivoXml(arquivoXml = '') {
+  const buffer = Buffer.from(String(arquivoXml || '').replace(/\s+/g, ''), 'base64');
+  if (!buffer.length) return '';
+
+  const descompactado = buffer[0] === 0x1f && buffer[1] === 0x8b
+    ? zlib.gunzipSync(buffer)
+    : buffer;
+
+  return descompactado.toString('utf8').trim();
+}
+
+function nfseSugerirSubcategoria({ fornecedor = '', descricao = '' } = {}) {
+  const texto = `${fornecedor} ${descricao}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (/\b(frete|entrega|logistic|transport|cte|ct-e)\b/.test(texto)) return 'Frete';
+  if (/\b(armazen|storage|fulfillment|full)\b/.test(texto)) return 'Armazenagem';
+  if (/\b(afiliad)\b/.test(texto)) return 'Comissao de afiliados';
+  if (/\b(comissao|intermediacao|intermediacao|marketplace)\b/.test(texto)) return 'Comissao de vendas';
+  if (/\b(marketing|propaganda|publicidade|ads|promocao|anuncio|campanha|click live)\b/.test(texto)) return 'Propaganda';
+  if (/\b(assistencia medica|plano de saude|saude)\b/.test(texto)) return 'Assistencia Medica';
+  if (/\b(mercado livre|ebazar|e-bazar)\b/.test(texto)) return 'Marketplace';
+
+  return 'Subcategoria sugerida';
+}
+
+function nfseExtrairMetadadosXml(xml = '', item = {}) {
+  const fornecedor =
+    arquivoAutoFindInBlock(xml, 'prest', ['xNome', 'Nome', 'RazaoSocial']) ||
+    arquivoAutoFindInBlock(xml, 'Prestador', ['RazaoSocialPrestador', 'RazaoSocial', 'Nome', 'NomeFantasia']) ||
+    arquivoAutoFindTag(xml, ['xNome', 'RazaoSocialPrestador', 'RazaoSocial', 'NomeFantasia', 'Nome']);
+
+  const dataEmissao =
+    arquivoAutoFindTag(xml, ['dhEmi', 'dEmi', 'DataEmissao', 'DataEmissaoNfse', 'DataEmissaoNFS-e', 'Competencia']);
+
+  const numero =
+    arquivoAutoFindTag(xml, ['nNFSe', 'nNFS-e', 'NumeroNfse', 'NumeroNFS-e', 'Numero', 'NumeroNFe']);
+
+  const descricao =
+    arquivoAutoFindTag(xml, ['Discriminacao', 'Descricao', 'DescricaoServico', 'xServ', 'ItemListaServico']);
+
+  const fornecedorSeguro = arquivoAutoSafeName(fornecedor || `NFS-e ${item.NSU || ''}`.trim() || 'NFS-e');
+  const dataNome = nfseNormalizarDataNome(dataEmissao);
+  const sugestao = nfseSugerirSubcategoria({ fornecedor: fornecedorSeguro, descricao });
+  const chave = String(item.ChaveAcesso || item.chaveAcesso || '').trim();
+
+  return {
+    fornecedor: fornecedorSeguro,
+    dataEmissao,
+    dataNome,
+    numero: arquivoAutoSafeName(numero),
+    descricao: arquivoAutoSafeName(descricao).slice(0, 120),
+    sugestao,
+    chave
+  };
+}
+
+function nfseMontarNomeArquivoXml(meta, id = '') {
+  const partes = [
+    'XML NFSe',
+    meta.fornecedor,
+    meta.dataNome ? `Emissao ${meta.dataNome}` : '',
+    meta.sugestao ? `Sugestao ${meta.sugestao}` : '',
+    meta.numero ? `Doc ${meta.numero}` : '',
+    id ? `ID ${id}` : ''
+  ].filter(Boolean).map(arquivoAutoSafeName);
+
+  return partes.join(' - ') + '.xml';
+}
+
+function nfseNormalizarLoteDfe(json) {
+  const lote = json && (json.LoteDFe || json.loteDFe || json.loteDfe || json.documentos || []);
+  if (Array.isArray(lote)) return lote;
+  return lote ? [lote] : [];
+}
+
 function carregarCertificadoNfsePfx(certPath) {
   const raw = fs.readFileSync(certPath);
   const texto = raw.toString('utf8').trim();
@@ -29608,6 +29705,7 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
             contentType: response.headers['content-type'] || '',
             tempoMs: Date.now() - startedAt,
             bodyResumo: resumirBodySeguro(body),
+            json,
             jsonKeys: json && typeof json === 'object' ? Object.keys(json).slice(0, 20) : []
           });
         });
@@ -29669,6 +29767,115 @@ async function testarNfseNacionalConexao({ nsu = '' } = {}) {
   return { cfg, nsuConsulta, url, resultado, pendencias };
 }
 
+async function importarNfseNacionalParaArquivo({ nsu = '' } = {}) {
+  await ensureArquivoFilaTable();
+
+  const teste = await testarNfseNacionalConexao({ nsu });
+  if (teste.pendencias.length) {
+    return { teste, importados: 0, duplicados: 0, ignorados: 0, erros: teste.pendencias };
+  }
+
+  if (!teste.resultado?.ok) {
+    return {
+      teste,
+      importados: 0,
+      duplicados: 0,
+      ignorados: 0,
+      erros: [teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'}.`]
+    };
+  }
+
+  const lote = nfseNormalizarLoteDfe(teste.resultado.json);
+  let importados = 0;
+  let duplicados = 0;
+  let ignorados = 0;
+  const erros = [];
+
+  for (const item of lote) {
+    const chave = String(item.ChaveAcesso || item.chaveAcesso || '').trim();
+    const arquivoXmlBase64 = item.ArquivoXml || item.arquivoXml || '';
+
+    if (!chave || !arquivoXmlBase64) {
+      ignorados += 1;
+      continue;
+    }
+
+    const jaExiste = await pool.query(`
+      SELECT id
+      FROM arquivo_fila
+      WHERE origem = 'NFSE_NACIONAL'
+        AND tipo = 'XML'
+        AND chave_origem = $1
+      LIMIT 1
+    `, [chave]);
+
+    if (jaExiste.rows[0]) {
+      duplicados += 1;
+      continue;
+    }
+
+    try {
+      const xml = nfseDecodificarArquivoXml(arquivoXmlBase64);
+      if (!xml) {
+        ignorados += 1;
+        continue;
+      }
+
+      const meta = nfseExtrairMetadadosXml(xml, item);
+      const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
+      const caminhoInicial = path.join(uploadsDir, nomeInicial);
+      fs.writeFileSync(caminhoInicial, xml, 'utf8');
+
+      const inserted = await pool.query(`
+        INSERT INTO arquivo_fila (
+          nome_original,
+          nome_arquivo,
+          tipo,
+          caminho,
+          tamanho_bytes,
+          status,
+          origem,
+          chave_origem,
+          metadados
+        )
+        VALUES ($1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
+        RETURNING id
+      `, [
+        `NFS-e Nacional ${chave}`,
+        nomeInicial,
+        caminhoInicial,
+        Buffer.byteLength(xml, 'utf8'),
+        chave,
+        {
+          nsu: item.NSU || item.nsu || '',
+          chaveAcesso: chave,
+          tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
+          fornecedor: meta.fornecedor,
+          dataEmissao: meta.dataEmissao,
+          numero: meta.numero,
+          sugestaoSubcategoria: meta.sugestao
+        }
+      ]);
+
+      const id = inserted.rows[0]?.id;
+      if (id) {
+        const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
+        await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+      }
+
+      importados += 1;
+    } catch (error) {
+      if (error && error.code === '23505') {
+        duplicados += 1;
+      } else {
+        erros.push(`Chave ${chave}: ${error.message}`);
+      }
+    }
+  }
+
+  return { teste, importados, duplicados, ignorados, erros };
+}
+
 function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } = {}) {
   const cfg = getNfseConfig();
   const statusItem = (label, ativo, detalhe = '') => `
@@ -29717,6 +29924,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } =
     .result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0;}.result-grid div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;}.result-grid strong{display:block;font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:5px;}.result-grid span{font-weight:850;overflow-wrap:anywhere;}
     pre{white-space:pre-wrap;overflow:auto;max-height:360px;background:#0f172a;color:#dbeafe;border-radius:14px;padding:16px;font-size:12px;line-height:1.45;}
     code{background:#eef2f7;border:1px solid #dbe7df;border-radius:8px;padding:2px 6px;font-weight:900;color:#0f172a;}
+    .divider{height:1px;background:#e2e8f0;margin:18px 0;}
     @media(max-width:900px){.shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid,.result-grid{grid-template-columns:1fr}.user{text-align:left}}
   </style>
 </head>
@@ -29754,6 +29962,12 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '' } =
           <div style="height:14px"></div>
           <button class="btn" type="submit">Testar conexão</button>
         </form>
+        <div class="divider"></div>
+        <p>Depois que o teste estiver OK, importe os XMLs encontrados para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
+        <form method="post" action="/nfse-nacional/importar">
+          <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
+          <button class="btn" type="submit">Importar XMLs para Arquivo</button>
+        </form>
       </article>
       <article class="card full">
         <h2>Como configurar no Render</h2>
@@ -29776,6 +29990,26 @@ router.post('/nfse-nacional/testar', protegerRota, somenteAdmin, async (req, res
     res.send(renderNfseNacionalAdminPage(req, { teste }));
   } catch (error) {
     res.send(renderNfseNacionalAdminPage(req, { erro: 'Erro ao testar NFS-e Nacional: ' + error.message }));
+  }
+});
+
+router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const resultado = await importarNfseNacionalParaArquivo({ nsu: req.body.nsu });
+    const partes = [
+      `${resultado.importados} XML(s) importado(s) para a tela Arquivo`,
+      `${resultado.duplicados} já existia(m) e não foi/foram duplicado(s)`,
+      `${resultado.ignorados} ignorado(s)`
+    ];
+
+    const erros = resultado.erros?.filter(Boolean) || [];
+    res.send(renderNfseNacionalAdminPage(req, {
+      teste: resultado.teste,
+      ok: erros.length ? '' : partes.join('. ') + '.',
+      erro: erros.length ? `${partes.join('. ')}. Pendências: ${erros.join(' | ')}` : ''
+    }));
+  } catch (error) {
+    res.send(renderNfseNacionalAdminPage(req, { erro: 'Erro ao importar NFS-e Nacional: ' + error.message }));
   }
 });
 
