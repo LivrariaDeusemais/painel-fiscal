@@ -29519,6 +29519,7 @@ function getNfseConfig() {
   const cnpj = somenteDigitos(process.env.NFSE_CNPJ || '');
   const apiBase = process.env.NFSE_API_BASE || 'https://adn.nfse.gov.br/contribuintes';
   const dfePathTemplate = process.env.NFSE_DFE_PATH_TEMPLATE || '/DFe/{nsu}?cnpjConsulta={cnpj}';
+  const danfseUrlTemplate = process.env.NFSE_DANFSE_URL_TEMPLATE || 'https://adn.nfse.gov.br/danfse/{chave}';
   const nsuInicial = String(process.env.NFSE_DFE_NSU_INICIAL || '0').trim() || '0';
 
   return {
@@ -29528,6 +29529,7 @@ function getNfseConfig() {
     cnpj,
     apiBase,
     dfePathTemplate,
+    danfseUrlTemplate,
     nsuInicial,
     certExists: !!certPath && fs.existsSync(certPath),
     certSize: (() => {
@@ -29542,6 +29544,11 @@ function buildNfseDfeUrl({ apiBase, dfePathTemplate, nsu, cnpj }) {
     .replace(/\{nsu\}/g, encodeURIComponent(String(nsu || '0')))
     .replace(/\{cnpj\}/g, encodeURIComponent(String(cnpj || '')));
   return `${base}${pathFinal.startsWith('/') ? '' : '/'}${pathFinal}`;
+}
+
+function buildNfseDanfseUrl({ danfseUrlTemplate, chave }) {
+  return String(danfseUrlTemplate || '')
+    .replace(/\{chave\}/g, encodeURIComponent(String(chave || '')));
 }
 
 function resumirBodySeguro(body = '') {
@@ -29604,6 +29611,67 @@ function nfseDecodificarArquivoXml(arquivoXml = '') {
   return descompactado.toString('utf8').trim();
 }
 
+function nfseDecodificarArquivoBinarioBase64(valor = '') {
+  const buffer = Buffer.from(String(valor || '').replace(/\s+/g, ''), 'base64');
+  if (!buffer.length) return Buffer.alloc(0);
+
+  return buffer[0] === 0x1f && buffer[1] === 0x8b
+    ? zlib.gunzipSync(buffer)
+    : buffer;
+}
+
+function nfseEhPdf(buffer) {
+  return Buffer.isBuffer(buffer) && buffer.length > 4 && buffer.slice(0, 4).toString('utf8') === '%PDF';
+}
+
+function nfseObterCampoItem(item = {}, nomes = []) {
+  for (const nome of nomes) {
+    if (item[nome]) return item[nome];
+  }
+  return '';
+}
+
+function nfseObterArquivoPdfBase64(item = {}) {
+  return nfseObterCampoItem(item, [
+    'ArquivoPdf',
+    'arquivoPdf',
+    'ArquivoPDF',
+    'arquivoPDF',
+    'Pdf',
+    'pdf',
+    'PDF',
+    'DanfsePdf',
+    'danfsePdf',
+    'DANFSePdf',
+    'DANFSePDF',
+    'ArquivoDanfse',
+    'arquivoDanfse',
+    'ArquivoDANFSe',
+    'arquivoDANFSe'
+  ]);
+}
+
+function nfseObterPdfDanfseUrl(item = {}) {
+  return nfseObterCampoItem(item, [
+    'UrlPdf',
+    'urlPdf',
+    'URLPdf',
+    'UrlPDF',
+    'LinkPdf',
+    'linkPdf',
+    'UrlDanfse',
+    'urlDanfse',
+    'URLDanfse',
+    'UrlDANFSe',
+    'LinkDanfse',
+    'linkDanfse',
+    'LinkDANFSe',
+    'DanfseUrl',
+    'danfseUrl',
+    'DANFSeUrl'
+  ]);
+}
+
 function nfseSugerirSubcategoria({ fornecedor = '', descricao = '' } = {}) {
   const texto = `${fornecedor} ${descricao}`
     .normalize('NFD')
@@ -29663,6 +29731,19 @@ function nfseMontarNomeArquivoXml(meta, id = '') {
   ].filter(Boolean).map(arquivoAutoSafeName);
 
   return partes.join(' - ') + '.xml';
+}
+
+function nfseMontarNomeArquivoPdf(meta, id = '') {
+  const partes = [
+    'PDF NFSe',
+    meta.fornecedor,
+    meta.dataNome ? `Emissao ${meta.dataNome}` : '',
+    meta.sugestao ? `Sugestao ${meta.sugestao}` : '',
+    meta.numero ? `Doc ${meta.numero}` : '',
+    id ? `ID ${id}` : ''
+  ].filter(Boolean).map(arquivoAutoSafeName);
+
+  return partes.join(' - ') + '.pdf';
 }
 
 function nfseNormalizarLoteDfe(json) {
@@ -29777,6 +29858,71 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
   });
 }
 
+function nfseHttpsGetBuffer(url, { certPath, certPassword, accept = 'application/pdf', timeoutMs = 8000 }) {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    let pfx;
+    let req;
+
+    try {
+      pfx = carregarCertificadoNfsePfx(certPath);
+    } catch (error) {
+      return resolve({
+        ok: false,
+        etapa: 'certificado',
+        erro: `Não foi possível ler o Secret File do certificado em ${certPath}.`
+      });
+    }
+
+    try {
+      req = https.request(url, {
+        method: 'GET',
+        pfx,
+        passphrase: certPassword,
+        timeout: timeoutMs,
+        headers: { Accept: accept }
+      }, (response) => {
+        const chunks = [];
+        response.on('data', chunk => chunks.push(chunk));
+        response.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            etapa: 'api',
+            statusCode: response.statusCode,
+            contentType: response.headers['content-type'] || '',
+            tempoMs: Date.now() - startedAt,
+            buffer,
+            bodyResumo: response.statusCode >= 400 ? resumirBodySeguro(buffer.toString('utf8')) : ''
+          });
+        });
+      });
+    } catch (error) {
+      return resolve({
+        ok: false,
+        etapa: 'certificado',
+        tempoMs: Date.now() - startedAt,
+        erro: normalizarErroCertificadoNfse(error)
+      });
+    }
+
+    req.on('timeout', () => {
+      req.destroy(new Error('Tempo limite excedido ao consultar o DANFSe da NFS-e Nacional.'));
+    });
+
+    req.on('error', (error) => {
+      resolve({
+        ok: false,
+        etapa: 'conexao',
+        tempoMs: Date.now() - startedAt,
+        erro: normalizarErroCertificadoNfse(error.message || error)
+      });
+    });
+
+    req.end();
+  });
+}
+
 async function testarNfseNacionalConexao({ nsu = '' } = {}) {
   const cfg = getNfseConfig();
   const pendencias = [];
@@ -29841,9 +29987,164 @@ function nfseResultadoSemDocumento(resultado) {
   );
 }
 
+async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
+  const jaExiste = await pool.query(`
+    SELECT id
+    FROM arquivo_fila
+    WHERE origem = 'NFSE_NACIONAL'
+      AND tipo = 'XML'
+      AND chave_origem = $1
+      AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
+    LIMIT 1
+  `, [chave]);
+
+  if (jaExiste.rows[0]) return { importado: false, duplicado: true };
+
+  const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
+  const caminhoInicial = path.join(uploadsDir, nomeInicial);
+  fs.writeFileSync(caminhoInicial, xml, 'utf8');
+
+  const inserted = await pool.query(`
+    INSERT INTO arquivo_fila (
+      nome_original,
+      nome_arquivo,
+      tipo,
+      caminho,
+      tamanho_bytes,
+      status,
+      origem,
+      chave_origem,
+      metadados
+    )
+    VALUES ($1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
+    RETURNING id
+  `, [
+    `NFS-e Nacional ${chave}`,
+    nomeInicial,
+    caminhoInicial,
+    Buffer.byteLength(xml, 'utf8'),
+    chave,
+    {
+      nsu: item.NSU || item.nsu || '',
+      chaveAcesso: chave,
+      tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
+      fornecedor: meta.fornecedor,
+      dataEmissao: meta.dataEmissao,
+      numero: meta.numero,
+      sugestaoSubcategoria: meta.sugestao
+    }
+  ]);
+
+  const id = inserted.rows[0]?.id;
+  if (id) {
+    const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
+    await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+  }
+
+  return { importado: true, duplicado: false };
+}
+
+async function nfseObterPdfDanfseBuffer({ cfg, chave, item }) {
+  const arquivoPdfBase64 = nfseObterArquivoPdfBase64(item);
+
+  if (arquivoPdfBase64) {
+    const buffer = nfseDecodificarArquivoBinarioBase64(arquivoPdfBase64);
+    return { disponivel: nfseEhPdf(buffer), buffer, fonte: 'lote' };
+  }
+
+  const urlItem = String(nfseObterPdfDanfseUrl(item) || '').trim();
+  const url = urlItem || (cfg.danfseUrlTemplate
+    ? buildNfseDanfseUrl({ danfseUrlTemplate: cfg.danfseUrlTemplate, chave })
+    : '');
+
+  if (!/^https:\/\//i.test(url)) return { disponivel: false, buffer: null, fonte: 'sem_endpoint' };
+
+  const resposta = await nfseHttpsGetBuffer(url, {
+    certPath: cfg.certPath,
+    certPassword: cfg.certPassword,
+    accept: 'application/pdf,application/octet-stream,*/*'
+  });
+
+  if (!resposta.ok || !nfseEhPdf(resposta.buffer)) {
+    return {
+      disponivel: false,
+      buffer: null,
+      fonte: urlItem ? 'link_lote' : 'endpoint',
+      statusCode: resposta.statusCode,
+      erro: resposta.erro || resposta.bodyResumo || ''
+    };
+  }
+
+  return { disponivel: true, buffer: resposta.buffer, fonte: urlItem ? 'link_lote' : 'endpoint', statusCode: resposta.statusCode };
+}
+
+async function nfseImportarPdfArquivoFila({ cfg, chave, meta, item }) {
+  const jaExiste = await pool.query(`
+    SELECT id
+    FROM arquivo_fila
+    WHERE origem = 'NFSE_NACIONAL'
+      AND tipo = 'PDF'
+      AND chave_origem = $1
+      AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
+    LIMIT 1
+  `, [chave]);
+
+  if (jaExiste.rows[0]) return { importado: false, duplicado: true, indisponivel: false, invalido: false };
+
+  const pdf = await nfseObterPdfDanfseBuffer({ cfg, chave, item });
+  if (!pdf.disponivel) {
+    return { importado: false, duplicado: false, indisponivel: true, invalido: !!pdf.erro, erro: pdf.erro };
+  }
+
+  const nomeInicial = gerarNomeUnicoArquivoFila(`danfse-nacional-${chave.slice(-12) || Date.now()}.pdf`);
+  const caminhoInicial = path.join(uploadsDir, nomeInicial);
+  fs.writeFileSync(caminhoInicial, pdf.buffer);
+
+  const inserted = await pool.query(`
+    INSERT INTO arquivo_fila (
+      nome_original,
+      nome_arquivo,
+      tipo,
+      caminho,
+      tamanho_bytes,
+      status,
+      origem,
+      chave_origem,
+      metadados
+    )
+    VALUES ($1, $2, 'PDF', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
+    RETURNING id
+  `, [
+    `DANFSe NFS-e Nacional ${chave}`,
+    nomeInicial,
+    caminhoInicial,
+    pdf.buffer.length,
+    chave,
+    {
+      nsu: item.NSU || item.nsu || '',
+      chaveAcesso: chave,
+      tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
+      fornecedor: meta.fornecedor,
+      dataEmissao: meta.dataEmissao,
+      numero: meta.numero,
+      sugestaoSubcategoria: meta.sugestao,
+      fontePdf: pdf.fonte
+    }
+  ]);
+
+  const id = inserted.rows[0]?.id;
+  if (id) {
+    const nomeFinal = nfseMontarNomeArquivoPdf(meta, id);
+    await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+  }
+
+  return { importado: true, duplicado: false, indisponivel: false, invalido: false };
+}
+
 async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dataFinal = '', maxLotes = 12 } = {}) {
   await ensureArquivoFilaTable();
 
+  const cfg = getNfseConfig();
   let teste = await testarNfseNacionalConexaoComRetry({ nsu });
   const periodo = {
     dataInicial: nfseNormalizarDataFiltro(dataInicial),
@@ -29852,7 +30153,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
   const limiteLotes = Math.min(Math.max(Number(maxLotes) || 12, 1), 40);
 
   if (teste.pendencias.length) {
-    return { teste, periodo, lotesConsultados: 0, ultimoNsu: teste.nsuConsulta, importados: 0, duplicados: 0, foraPeriodo: 0, ignorados: 0, erros: teste.pendencias };
+    return { teste, periodo, lotesConsultados: 0, ultimoNsu: teste.nsuConsulta, importados: 0, duplicados: 0, pdfImportados: 0, pdfDuplicados: 0, pdfIndisponiveis: 0, foraPeriodo: 0, ignorados: 0, erros: teste.pendencias };
   }
 
   if (!teste.resultado?.ok) {
@@ -29864,6 +30165,9 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
         ultimoNsu: teste.nsuConsulta,
         importados: 0,
         duplicados: 0,
+        pdfImportados: 0,
+        pdfDuplicados: 0,
+        pdfIndisponiveis: 0,
         foraPeriodo: 0,
         ignorados: 0,
         erros: []
@@ -29877,6 +30181,9 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
       ultimoNsu: teste.nsuConsulta,
       importados: 0,
       duplicados: 0,
+      pdfImportados: 0,
+      pdfDuplicados: 0,
+      pdfIndisponiveis: 0,
       foraPeriodo: 0,
       ignorados: 0,
       erros: [teste.resultado?.erro || `API retornou status ${teste.resultado?.statusCode || 'desconhecido'}.`]
@@ -29885,6 +30192,9 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
 
   let importados = 0;
   let duplicados = 0;
+  let pdfImportados = 0;
+  let pdfDuplicados = 0;
+  let pdfIndisponiveis = 0;
   let foraPeriodo = 0;
   let ignorados = 0;
   let lotesConsultados = 0;
@@ -29927,63 +30237,14 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
           continue;
         }
 
-        const jaExiste = await pool.query(`
-          SELECT id
-          FROM arquivo_fila
-          WHERE origem = 'NFSE_NACIONAL'
-            AND tipo = 'XML'
-            AND chave_origem = $1
-            AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
-          LIMIT 1
-        `, [chave]);
+        const resultadoXml = await nfseImportarXmlArquivoFila({ chave, xml, meta, item });
+        if (resultadoXml.duplicado) duplicados += 1;
+        if (resultadoXml.importado) importados += 1;
 
-        if (jaExiste.rows[0]) {
-          duplicados += 1;
-          continue;
-        }
-
-        const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
-        const caminhoInicial = path.join(uploadsDir, nomeInicial);
-        fs.writeFileSync(caminhoInicial, xml, 'utf8');
-
-        const inserted = await pool.query(`
-          INSERT INTO arquivo_fila (
-            nome_original,
-            nome_arquivo,
-            tipo,
-            caminho,
-            tamanho_bytes,
-            status,
-            origem,
-            chave_origem,
-            metadados
-          )
-          VALUES ($1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_NACIONAL', $5, $6)
-          RETURNING id
-        `, [
-          `NFS-e Nacional ${chave}`,
-          nomeInicial,
-          caminhoInicial,
-          Buffer.byteLength(xml, 'utf8'),
-          chave,
-          {
-            nsu: item.NSU || item.nsu || '',
-            chaveAcesso: chave,
-            tipoDocumento: item.TipoDocumento || item.tipoDocumento || '',
-            fornecedor: meta.fornecedor,
-            dataEmissao: meta.dataEmissao,
-            numero: meta.numero,
-            sugestaoSubcategoria: meta.sugestao
-          }
-        ]);
-
-        const id = inserted.rows[0]?.id;
-        if (id) {
-          const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
-          await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
-        }
-
-        importados += 1;
+        const resultadoPdf = await nfseImportarPdfArquivoFila({ cfg, chave, meta, item });
+        if (resultadoPdf.duplicado) pdfDuplicados += 1;
+        if (resultadoPdf.importado) pdfImportados += 1;
+        if (resultadoPdf.indisponivel) pdfIndisponiveis += 1;
       } catch (error) {
         if (error && error.code === '23505') {
           duplicados += 1;
@@ -30011,7 +30272,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
     erros.push(`A busca parou no limite de ${limiteLotes} lotes para evitar consulta longa demais. Último NSU consultado: ${ultimoNsu}.`);
   }
 
-  return { teste, periodo, lotesConsultados, ultimoNsu, importados, duplicados, foraPeriodo, ignorados, erros };
+  return { teste, periodo, lotesConsultados, ultimoNsu, importados, duplicados, pdfImportados, pdfDuplicados, pdfIndisponiveis, foraPeriodo, ignorados, erros };
 }
 
 function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', periodo = null } = {}) {
@@ -30107,7 +30368,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
           <button class="btn" type="submit">Testar conexão</button>
         </form>
         <div class="divider"></div>
-        <p>Depois que o teste estiver OK, importe os XMLs encontrados para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
+        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe encontrados para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
         <form method="post" action="/nfse-nacional/importar">
           <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
           <div class="form-row">
@@ -30124,7 +30385,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
               <input id="maxLotes" name="maxLotes" type="number" min="1" max="40" value="${escapeHtmlGlobal(periodoAtual.maxLotes)}" />
             </div>
           </div>
-          <button class="btn" type="submit">Importar XMLs para Arquivo</button>
+          <button class="btn" type="submit">Importar XMLs/PDFs para Arquivo</button>
         </form>
       </article>
       <article class="card full">
@@ -30161,7 +30422,10 @@ router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, r
     });
     const partes = [
       `${resultado.importados} XML(s) importado(s) para a tela Arquivo`,
-      `${resultado.duplicados} já existia(m) e não foi/foram duplicado(s)`,
+      `${resultado.duplicados} XML(s) já existia(m) e não foi/foram duplicado(s)`,
+      `${resultado.pdfImportados || 0} PDF/DANFSe importado(s) para a tela Arquivo`,
+      `${resultado.pdfDuplicados || 0} PDF/DANFSe já existia(m) e não foi/foram duplicado(s)`,
+      `${resultado.pdfIndisponiveis || 0} PDF/DANFSe não disponibilizado(s) pela API`,
       `${resultado.foraPeriodo} fora do período escolhido`,
       `${resultado.ignorados} ignorado(s)`,
       `${resultado.lotesConsultados} lote(s) consultado(s)`,
