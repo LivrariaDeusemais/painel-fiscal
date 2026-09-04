@@ -29519,7 +29519,7 @@ function getNfseConfig() {
   const cnpj = somenteDigitos(process.env.NFSE_CNPJ || '');
   const apiBase = process.env.NFSE_API_BASE || 'https://adn.nfse.gov.br/contribuintes';
   const dfePathTemplate = process.env.NFSE_DFE_PATH_TEMPLATE || '/DFe/{nsu}?cnpjConsulta={cnpj}';
-  const danfseUrlTemplate = process.env.NFSE_DANFSE_URL_TEMPLATE || 'https://adn.nfse.gov.br/danfse/{chave}';
+  const danfseUrlTemplate = process.env.NFSE_DANFSE_URL_TEMPLATE || '';
   const nsuInicial = String(process.env.NFSE_DFE_NSU_INICIAL || '0').trim() || '0';
 
   return {
@@ -29744,130 +29744,6 @@ function nfseMontarNomeArquivoPdf(meta, id = '') {
   ].filter(Boolean).map(arquivoAutoSafeName);
 
   return partes.join(' - ') + '.pdf';
-}
-
-function nfseTextoPdfSeguro(valor = '') {
-  return String(valor || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\x20-\x7E]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function nfsePdfEscape(valor = '') {
-  return nfseTextoPdfSeguro(valor)
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
-}
-
-function nfseQuebrarLinhaPdf(texto = '', tamanho = 88) {
-  const palavras = nfseTextoPdfSeguro(texto).split(/\s+/).filter(Boolean);
-  const linhas = [];
-  let linha = '';
-
-  for (const palavra of palavras) {
-    const proxima = linha ? `${linha} ${palavra}` : palavra;
-    if (proxima.length > tamanho && linha) {
-      linhas.push(linha);
-      linha = palavra;
-    } else {
-      linha = proxima;
-    }
-  }
-
-  if (linha) linhas.push(linha);
-  return linhas.length ? linhas : ['-'];
-}
-
-function nfseCriarPdfTextoSimples(linhas = []) {
-  const paginaLargura = 595;
-  const paginaAltura = 842;
-  const conteudo = [
-    'BT',
-    '/F1 16 Tf',
-    '1 0 0 1 42 798 Tm',
-    `(DANFSe - NFS-e Nacional) Tj`,
-    '/F1 9 Tf'
-  ];
-
-  let y = 772;
-  const linhasLimitadas = linhas.slice(0, 48);
-  for (const linha of linhasLimitadas) {
-    conteudo.push(`1 0 0 1 42 ${y} Tm`);
-    conteudo.push(`(${nfsePdfEscape(linha)}) Tj`);
-    y -= 14;
-  }
-
-  conteudo.push('ET');
-  const stream = conteudo.join('\n');
-  const objetos = [
-    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
-    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${paginaLargura} ${paginaAltura}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`,
-    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
-    `5 0 obj\n<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream\nendobj\n`
-  ];
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  for (const objeto of objetos) {
-    offsets.push(Buffer.byteLength(pdf, 'utf8'));
-    pdf += objeto;
-  }
-
-  const xrefOffset = Buffer.byteLength(pdf, 'utf8');
-  pdf += `xref\n0 ${objetos.length + 1}\n`;
-  pdf += '0000000000 65535 f \n';
-  for (let i = 1; i < offsets.length; i += 1) {
-    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-
-  return Buffer.from(pdf, 'utf8');
-}
-
-function nfseGerarDanfsePdfBuffer({ chave, xml, meta, item }) {
-  const prestadorCnpj =
-    arquivoAutoFindInBlock(xml, 'prest', ['CNPJ', 'CPF', 'Cnpj', 'Cpf']) ||
-    arquivoAutoFindInBlock(xml, 'Prestador', ['CNPJ', 'CpfCnpj', 'Cpf', 'Cnpj']);
-  const tomadorNome =
-    arquivoAutoFindInBlock(xml, 'toma', ['xNome', 'Nome', 'RazaoSocial']) ||
-    arquivoAutoFindInBlock(xml, 'Tomador', ['RazaoSocial', 'Nome', 'NomeFantasia']);
-  const tomadorCnpj =
-    arquivoAutoFindInBlock(xml, 'toma', ['CNPJ', 'CPF', 'Cnpj', 'Cpf']) ||
-    arquivoAutoFindInBlock(xml, 'Tomador', ['CNPJ', 'CPF', 'CpfCnpj']);
-  const competencia = arquivoAutoFindTag(xml, ['Competencia', 'competencia']);
-  const valorServico = arquivoAutoFindTag(xml, ['vServPrest', 'vServ', 'ValorServicos', 'ValorServico']);
-  const municipio = arquivoAutoFindTag(xml, ['xMun', 'Municipio', 'MunicipioIncidencia']);
-  const discriminacao = arquivoAutoFindTag(xml, ['Discriminacao', 'Descricao', 'DescricaoServico', 'xServ']);
-
-  const linhas = [
-    'Documento gerado pelo PlennaTec a partir do XML oficial recebido pela API NFS-e Nacional.',
-    'Use este PDF como espelho operacional da DANFSe para conferencia e anexacao interna.',
-    '',
-    `Fornecedor: ${meta.fornecedor || '-'}`,
-    `CNPJ/CPF prestador: ${prestadorCnpj || '-'}`,
-    `Tomador: ${tomadorNome || '-'}`,
-    `CNPJ/CPF tomador: ${tomadorCnpj || '-'}`,
-    `Emissao: ${meta.dataEmissao || meta.dataNome || '-'}`,
-    `Competencia: ${competencia || '-'}`,
-    `Numero: ${meta.numero || '-'}`,
-    `Valor do servico: ${valorServico || '-'}`,
-    `Municipio: ${municipio || '-'}`,
-    `Sugestao de subcategoria: ${meta.sugestao || '-'}`,
-    `Chave de acesso: ${chave || meta.chave || '-'}`,
-    `NSU: ${item.NSU || item.nsu || '-'}`,
-    '',
-    'Descricao do servico:'
-  ];
-
-  for (const linha of nfseQuebrarLinhaPdf(discriminacao || meta.descricao || '-', 92)) {
-    linhas.push(linha);
-  }
-
-  return nfseCriarPdfTextoSimples(linhas);
 }
 
 function nfseNormalizarLoteDfe(json) {
@@ -30168,12 +30044,19 @@ async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
   return { importado: true, duplicado: false };
 }
 
-async function nfseObterPdfDanfseBuffer({ cfg, chave, xml, meta, item }) {
+async function nfseObterPdfDanfseBuffer({ cfg, chave, item }) {
   const arquivoPdfBase64 = nfseObterArquivoPdfBase64(item);
 
   if (arquivoPdfBase64) {
     const buffer = nfseDecodificarArquivoBinarioBase64(arquivoPdfBase64);
     if (nfseEhPdf(buffer)) return { disponivel: true, buffer, fonte: 'lote' };
+
+    return {
+      disponivel: false,
+      buffer: null,
+      fonte: 'lote',
+      erro: 'Arquivo PDF retornado pela API nao e um PDF valido.'
+    };
   }
 
   const urlItem = String(nfseObterPdfDanfseUrl(item) || '').trim();
@@ -30181,10 +30064,7 @@ async function nfseObterPdfDanfseBuffer({ cfg, chave, xml, meta, item }) {
     ? buildNfseDanfseUrl({ danfseUrlTemplate: cfg.danfseUrlTemplate, chave })
     : '');
 
-  if (!/^https:\/\//i.test(url)) {
-    const gerado = nfseGerarDanfsePdfBuffer({ chave, xml, meta, item });
-    return { disponivel: nfseEhPdf(gerado), buffer: gerado, fonte: 'xml_gerado' };
-  }
+  if (!/^https:\/\//i.test(url)) return { disponivel: false, buffer: null, fonte: 'nao_informado' };
 
   const resposta = await nfseHttpsGetBuffer(url, {
     certPath: cfg.certPath,
@@ -30193,14 +30073,19 @@ async function nfseObterPdfDanfseBuffer({ cfg, chave, xml, meta, item }) {
   });
 
   if (!resposta.ok || !nfseEhPdf(resposta.buffer)) {
-    const gerado = nfseGerarDanfsePdfBuffer({ chave, xml, meta, item });
-    return { disponivel: nfseEhPdf(gerado), buffer: gerado, fonte: 'xml_gerado', statusCode: resposta.statusCode };
+    return {
+      disponivel: false,
+      buffer: null,
+      fonte: urlItem ? 'link_lote' : 'endpoint',
+      statusCode: resposta.statusCode,
+      erro: resposta.erro || resposta.bodyResumo || ''
+    };
   }
 
   return { disponivel: true, buffer: resposta.buffer, fonte: urlItem ? 'link_lote' : 'endpoint', statusCode: resposta.statusCode };
 }
 
-async function nfseImportarPdfArquivoFila({ cfg, chave, xml, meta, item }) {
+async function nfseImportarPdfArquivoFila({ cfg, chave, meta, item }) {
   const jaExiste = await pool.query(`
     SELECT id
     FROM arquivo_fila
@@ -30213,7 +30098,7 @@ async function nfseImportarPdfArquivoFila({ cfg, chave, xml, meta, item }) {
 
   if (jaExiste.rows[0]) return { importado: false, duplicado: true, indisponivel: false, invalido: false };
 
-  const pdf = await nfseObterPdfDanfseBuffer({ cfg, chave, xml, meta, item });
+  const pdf = await nfseObterPdfDanfseBuffer({ cfg, chave, item });
   if (!pdf.disponivel) {
     return { importado: false, duplicado: false, indisponivel: true, invalido: !!pdf.erro, erro: pdf.erro };
   }
@@ -30363,7 +30248,7 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
         if (resultadoXml.duplicado) duplicados += 1;
         if (resultadoXml.importado) importados += 1;
 
-        const resultadoPdf = await nfseImportarPdfArquivoFila({ cfg, chave, xml, meta, item });
+        const resultadoPdf = await nfseImportarPdfArquivoFila({ cfg, chave, meta, item });
         if (resultadoPdf.duplicado) pdfDuplicados += 1;
         if (resultadoPdf.importado) pdfImportados += 1;
         if (resultadoPdf.indisponivel) pdfIndisponiveis += 1;
@@ -30490,7 +30375,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
           <button class="btn" type="submit">Testar conexão</button>
         </form>
         <div class="divider"></div>
-        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe encontrados para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
+        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe oficiais disponibilizados pela API para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
         <form method="post" action="/nfse-nacional/importar">
           <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
           <div class="form-row">
@@ -30507,7 +30392,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
               <input id="maxLotes" name="maxLotes" type="number" min="1" max="40" value="${escapeHtmlGlobal(periodoAtual.maxLotes)}" />
             </div>
           </div>
-          <button class="btn" type="submit">Importar XMLs/PDFs para Arquivo</button>
+          <button class="btn" type="submit">Importar XMLs/PDFs oficiais para Arquivo</button>
         </form>
       </article>
       <article class="card full">
