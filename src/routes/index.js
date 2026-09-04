@@ -29520,6 +29520,11 @@ function getNfseConfig() {
   const apiBase = process.env.NFSE_API_BASE || 'https://adn.nfse.gov.br/contribuintes';
   const dfePathTemplate = process.env.NFSE_DFE_PATH_TEMPLATE || '/DFe/{nsu}?cnpjConsulta={cnpj}';
   const danfseUrlTemplate = process.env.NFSE_DANFSE_URL_TEMPLATE || '';
+  const danfseUrlTemplates = String(process.env.NFSE_DANFSE_URL_TEMPLATES || danfseUrlTemplate || '')
+    .split(/[\n,]+/)
+    .map(template => template.trim())
+    .filter(Boolean);
+  const danfseAuthToken = String(process.env.NFSE_DANFSE_AUTH_TOKEN || '').trim();
   const nsuInicial = String(process.env.NFSE_DFE_NSU_INICIAL || '0').trim() || '0';
 
   return {
@@ -29530,6 +29535,8 @@ function getNfseConfig() {
     apiBase,
     dfePathTemplate,
     danfseUrlTemplate,
+    danfseUrlTemplates,
+    danfseAuthToken,
     nsuInicial,
     certExists: !!certPath && fs.existsSync(certPath),
     certSize: (() => {
@@ -29858,7 +29865,7 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
   });
 }
 
-function nfseHttpsGetBuffer(url, { certPath, certPassword, accept = 'application/pdf', timeoutMs = 8000 }) {
+function nfseHttpsGetBuffer(url, { certPath, certPassword, accept = 'application/pdf', timeoutMs = 8000, authToken = '' }) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
     let pfx;
@@ -29880,7 +29887,10 @@ function nfseHttpsGetBuffer(url, { certPath, certPassword, accept = 'application
         pfx,
         passphrase: certPassword,
         timeout: timeoutMs,
-        headers: { Accept: accept }
+        headers: {
+          Accept: accept,
+          ...(authToken ? { Authorization: `Bearer ${authToken}`, 'X-Api-Token': authToken } : {})
+        }
       }, (response) => {
         const chunks = [];
         response.on('data', chunk => chunks.push(chunk));
@@ -30060,29 +30070,42 @@ async function nfseObterPdfDanfseBuffer({ cfg, chave, item }) {
   }
 
   const urlItem = String(nfseObterPdfDanfseUrl(item) || '').trim();
-  const url = urlItem || (cfg.danfseUrlTemplate
-    ? buildNfseDanfseUrl({ danfseUrlTemplate: cfg.danfseUrlTemplate, chave })
-    : '');
+  const urls = [
+    urlItem,
+    ...(Array.isArray(cfg.danfseUrlTemplates) ? cfg.danfseUrlTemplates.map(template => buildNfseDanfseUrl({ danfseUrlTemplate: template, chave })) : [])
+  ].map(url => String(url || '').trim()).filter(Boolean);
 
-  if (!/^https:\/\//i.test(url)) return { disponivel: false, buffer: null, fonte: 'nao_informado' };
+  if (!urls.length) return { disponivel: false, buffer: null, fonte: 'nao_informado' };
 
-  const resposta = await nfseHttpsGetBuffer(url, {
-    certPath: cfg.certPath,
-    certPassword: cfg.certPassword,
-    accept: 'application/pdf,application/octet-stream,*/*'
-  });
+  let ultimaResposta = null;
+  let ultimaFonte = 'endpoint';
 
-  if (!resposta.ok || !nfseEhPdf(resposta.buffer)) {
-    return {
-      disponivel: false,
-      buffer: null,
-      fonte: urlItem ? 'link_lote' : 'endpoint',
-      statusCode: resposta.statusCode,
-      erro: resposta.erro || resposta.bodyResumo || ''
-    };
+  for (const [index, url] of urls.entries()) {
+    const fonte = index === 0 && urlItem ? 'link_lote' : 'endpoint';
+    if (!/^https:\/\//i.test(url)) continue;
+
+    const resposta = await nfseHttpsGetBuffer(url, {
+      certPath: cfg.certPath,
+      certPassword: cfg.certPassword,
+      accept: 'application/pdf,application/octet-stream,*/*',
+      authToken: cfg.danfseAuthToken
+    });
+
+    ultimaResposta = resposta;
+    ultimaFonte = fonte;
+
+    if (resposta.ok && nfseEhPdf(resposta.buffer)) {
+      return { disponivel: true, buffer: resposta.buffer, fonte, statusCode: resposta.statusCode };
+    }
   }
 
-  return { disponivel: true, buffer: resposta.buffer, fonte: urlItem ? 'link_lote' : 'endpoint', statusCode: resposta.statusCode };
+  return {
+    disponivel: false,
+    buffer: null,
+    fonte: ultimaFonte,
+    statusCode: ultimaResposta?.statusCode,
+    erro: ultimaResposta?.erro || ultimaResposta?.bodyResumo || ''
+  };
 }
 
 async function nfseImportarPdfArquivoFila({ cfg, chave, meta, item }) {
@@ -30363,6 +30386,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
           ${statusItem('Senha do certificado', cfg.certPasswordSet, 'NFSE_CERT_PASSWORD')}
           ${statusItem('CNPJ da empresa', cfg.cnpj.length === 14, cfg.cnpj ? cfg.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : 'NFSE_CNPJ')}
           ${statusItem('Base da API', !!cfg.apiBase, cfg.apiBase)}
+          ${statusItem('Endpoint PDF/DANFSe', cfg.danfseUrlTemplates.length > 0, cfg.danfseUrlTemplates.length ? `${cfg.danfseUrlTemplates.length} configurado(s)` : 'NFSE_DANFSE_URL_TEMPLATE ou NFSE_DANFSE_URL_TEMPLATES')}
         </ul>
       </article>
       <article class="card">
@@ -30375,7 +30399,7 @@ function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', pe
           <button class="btn" type="submit">Testar conexão</button>
         </form>
         <div class="divider"></div>
-        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe oficiais disponibilizados pela API para a tela Arquivo. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
+        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe oficiais disponibilizados pela API para a tela Arquivo. Para baixar DANFSe por serviço externo, configure o endpoint HTTPS em <code>NFSE_DANFSE_URL_TEMPLATE</code>. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
         <form method="post" action="/nfse-nacional/importar">
           <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
           <div class="form-row">
