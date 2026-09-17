@@ -29,6 +29,8 @@ const ExcelJS = require('exceljs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const { PDFParse } = require('pdf-parse');
 const xml2js = require('xml2js');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
@@ -1726,6 +1728,21 @@ async function ensureArquivoFilaTable() {
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS origem VARCHAR(40) DEFAULT 'UPLOAD_MANUAL'`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS chave_origem TEXT`);
   await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS metadados JSONB`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS documento_classe VARCHAR(20)`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS chave_fiscal TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS cnpj_cpf TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS fornecedor TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS numero_documento TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS tipo_documento_detectado TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS data_documento DATE`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS valor_documento NUMERIC(15,2)`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS hash_sha256 TEXT`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS analise_status VARCHAR(30)`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS par_id INTEGER`);
+  await pool.query(`ALTER TABLE arquivo_fila ADD COLUMN IF NOT EXISTS analisado_em TIMESTAMP`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS arquivo_fila_chave_fiscal_idx ON arquivo_fila (chave_fiscal)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS arquivo_fila_cnpj_cpf_idx ON arquivo_fila (cnpj_cpf)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS arquivo_fila_par_id_idx ON arquivo_fila (par_id)`);
   await pool.query(`DROP INDEX IF EXISTS arquivo_fila_origem_chave_tipo_idx`);
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS arquivo_fila_origem_chave_tipo_ativo_idx
@@ -1852,7 +1869,7 @@ function formatXmlParaHtmlVisual(xml) {
   return escapeHtmlGlobal(formatted);
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '' } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0 } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -1864,33 +1881,53 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
 
   const linhas = arquivos.map(a => {
     const tipo = String(a.tipo || '').toUpperCase();
-    const badge = tipo === 'XML'
-      ? '<span class="arquivo-badge xml">XML</span>'
-      : '<span class="arquivo-badge pdf">PDF</span>';
+    const badge = a.pdf_id && a.xml_id
+      ? '<span class="arquivo-badge completo">PDF + XML</span>'
+      : tipo === 'XML' ? '<span class="arquivo-badge xml">XML</span>' : '<span class="arquivo-badge pdf">PDF</span>';
 
     const usarParams = new URLSearchParams();
-    usarParams.set('destino', tipo === 'XML' ? 'xml' : 'pdf');
+    usarParams.set('destino', modoSelecao || (tipo === 'XML' ? 'xml' : 'pdf'));
     if (rotinaId) usarParams.set('rotina_id', rotinaId);
     if (arquivoPdfId) usarParams.set('arquivo_pdf_id', arquivoPdfId);
     if (arquivoXmlId) usarParams.set('arquivo_xml_id', arquivoXmlId);
     if (editarLancamentoId) usarParams.set('editar_lancamento_id', editarLancamentoId);
 
+    const idSelecao = modoSelecao === 'xml' ? (a.xml_id || a.id) : (a.pdf_id || a.id);
     const usarBtn = modoSelecao
-      ? `<a class="btn-green-mini" href="/arquivo/usar/${a.id}?${usarParams.toString()}">Usar</a>`
+      ? `<a class="btn-green-mini" href="/arquivo/usar/${idSelecao}?${usarParams.toString()}">${a.pdf_id && a.xml_id ? 'Usar conjunto' : 'Usar'}</a>`
       : '';
+
+    const statusLabel = {
+      COMPLETO: 'Completo',
+      AGUARDANDO_XML: 'Aguardando XML',
+      AGUARDANDO_PDF: 'Aguardando PDF',
+      COMPROVANTE: 'Comprovante comum',
+      DUPLICADO: 'Possível duplicado',
+      ARQUIVO_AUSENTE: 'Arquivo ausente'
+    }[a.analise_status] || 'Aguardando análise';
+    const statusClass = String(a.analise_status || 'PENDENTE').toLowerCase();
+    const documento = [a.fornecedor, a.numero_documento ? `Doc ${a.numero_documento}` : ''].filter(Boolean).join(' - ') || a.nome_arquivo || '';
+    const valor = a.valor_documento != null
+      ? Number(a.valor_documento).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      : '-';
+    const arquivosLinks = [
+      a.pdf_id ? `<a class="btn-soft-mini" href="/arquivo/ver/${a.pdf_id}" target="_blank">PDF</a>` : '',
+      a.xml_id ? `<a class="btn-soft-mini" href="/arquivo/ver/${a.xml_id}" target="_blank">XML</a>` : ''
+    ].filter(Boolean).join('');
+    const idAcao = a.pdf_id || a.xml_id || a.id;
 
     return `
       <tr>
         <td>${badge}</td>
-        <td class="arquivo-nome">${escapeHtmlGlobal(a.nome_arquivo || '')}</td>
-        <td>${escapeHtmlGlobal(a.nome_original || '')}</td>
-        <td>${Number(a.tamanho_bytes || 0).toLocaleString('pt-BR')} bytes</td>
-        <td>${formatDateBR(a.criado_em)}</td>
+        <td class="arquivo-nome"><strong>${escapeHtmlGlobal(documento)}</strong><small>${escapeHtmlGlobal(a.chave_fiscal ? `Chave ${a.chave_fiscal}` : (a.nome_original || ''))}</small></td>
+        <td>${escapeHtmlGlobal(a.cnpj_cpf || '-')}</td>
+        <td>${valor}</td>
+        <td><span class="conciliacao-status ${statusClass}">${statusLabel}</span></td>
         <td class="arquivo-actions">
-          <a class="btn-soft-mini" href="/arquivo/ver/${a.id}" target="_blank">Abrir</a>
-          <a class="btn-soft-mini" href="/arquivo/renomear/${a.id}">Renomear</a>
+          ${arquivosLinks || `<a class="btn-soft-mini" href="/arquivo/ver/${idAcao}" target="_blank">Abrir</a>`}
+          ${a.analise_status === 'COMPROVANTE' ? `<a class="btn-soft-mini" href="/arquivo/renomear/${idAcao}">Renomear</a>` : ''}
           ${usarBtn}
-          <form method="POST" action="/arquivo/${a.id}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
+          <form method="POST" action="/arquivo/${idAcao}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
             <button type="submit" class="btn-danger-mini">Excluir</button>
           </form>
         </td>
@@ -2058,6 +2095,13 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         }
         .arquivo-badge.pdf { background:#dbeafe; color:#1d4ed8; }
         .arquivo-badge.xml { background:#dcfce7; color:#15803d; }
+        .arquivo-badge.completo { min-width:82px; background:#dcfce7; color:#15803d; }
+        .arquivo-nome small { display:block; color:#64748b; font-size:11px; font-weight:600; margin-top:4px; }
+        .conciliacao-status { display:inline-flex; padding:6px 9px; border-radius:999px; font-size:11px; font-weight:900; background:#f1f5f9; color:#475569; }
+        .conciliacao-status.completo { background:#dcfce7; color:#166534; }
+        .conciliacao-status.aguardando_xml, .conciliacao-status.aguardando_pdf { background:#fef3c7; color:#92400e; }
+        .conciliacao-status.comprovante { background:#dbeafe; color:#1d4ed8; }
+        .conciliacao-status.duplicado, .conciliacao-status.arquivo_ausente { background:#fee2e2; color:#991b1b; }
         .arquivo-actions {
           display:flex;
           gap:7px;
@@ -2090,6 +2134,8 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           color:#64748b;
           font-weight:700;
         }
+        .filter-alert { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px; padding:14px 16px; border:1px solid #fbbf24; background:#fffbeb; color:#78350f; border-radius:14px; font-weight:700; }
+        .filter-note { margin-bottom:14px; padding:11px 14px; border:1px solid #bfdbfe; background:#eff6ff; color:#1e3a8a; border-radius:12px; font-weight:700; }
       </style>
     </head>
     <body class="dm-global-page">
@@ -2114,6 +2160,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
           ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
 
+          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1">Mostrar todos os arquivos</a></div>` : ''}
+          ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1">Remover filtro</a></div>` : ''}
+
           ${!modoSelecao ? `
             <div class="upload-panel">
               <form class="upload-form" method="POST" action="/arquivo/importar" enctype="multipart/form-data">
@@ -2122,8 +2171,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                 <button class="btn-green" type="submit">Buscar e importar arquivo</button>
               </form>
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
-                Ao importar, o sistema renomeia automaticamente para o padrão operacional da PlennaTec e deixa disponível para uso no Novo Lançamento.
+                Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
               </p>
+              ${pendentesAnalise ? `<form method="POST" action="/arquivo/reprocessar" style="margin-top:12px"><button class="dm-menu-btn" type="submit">Analisar acervo (${pendentesAnalise} pendentes)</button></form>` : ''}
             </div>
           ` : ''}
 
@@ -2132,10 +2182,10 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
               <thead>
                 <tr>
                   <th>Tipo</th>
-                  <th>Nome PlennaTec</th>
-                  <th>Nome Original</th>
-                  <th>Tamanho</th>
-                  <th>Importado</th>
+                  <th>Documento</th>
+                  <th>CNPJ/CPF</th>
+                  <th>Valor</th>
+                  <th>Conciliação</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -2431,6 +2481,223 @@ async function arquivoAutoRenomearDepoisUpload(id) {
   if (typeof renomearArquivoFilaFisicoERegistro === 'function') {
     await renomearArquivoFilaFisicoERegistro(id, novoNome);
   }
+}
+
+function arquivoConciliacaoSomenteDigitos(valor) {
+  return String(valor || '').replace(/\D/g, '');
+}
+
+function arquivoConciliacaoExtrairChave(...fontes) {
+  for (const fonte of fontes) {
+    const texto = String(fonte || '');
+    const prioridades = [
+      /(?:Id|id)=["'](?:NFS|NFe|CTe)?(\d{44,60})["']/i,
+      /(?:chave(?:\s+de\s+acesso)?|chNFSe|chNFe|chCTe)[^0-9]{0,40}(\d(?:[ .-]?\d){43,59})/i,
+      /(?:^|\D)(\d{44}|\d{50})(?:\D|$)/
+    ];
+
+    for (const expressao of prioridades) {
+      const encontrado = texto.match(expressao);
+      const chave = arquivoConciliacaoSomenteDigitos(encontrado && encontrado[1]);
+      if (chave.length === 44 || chave.length === 50) return chave;
+    }
+  }
+  return '';
+}
+
+function arquivoConciliacaoDataIso(valor) {
+  const texto = String(valor || '').trim();
+  const iso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = texto.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return null;
+}
+
+function arquivoConciliacaoValorNumero(valor) {
+  let texto = String(valor || '').replace(/[^\d,.-]/g, '').trim();
+  if (!texto) return null;
+  if (texto.includes(',') && texto.includes('.')) texto = texto.replace(/\./g, '').replace(',', '.');
+  else if (texto.includes(',')) texto = texto.replace(',', '.');
+  const numero = Number(texto);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function arquivoConciliacaoMetadadosXml(xml) {
+  const texto = String(xml || '');
+  const blocoEmitente =
+    (texto.match(/<(?:\w+:)?emit[^>]*>([\s\S]*?)<\/(?:\w+:)?emit>/i) || [])[1] ||
+    (texto.match(/<(?:\w+:)?prest[^>]*>([\s\S]*?)<\/(?:\w+:)?prest>/i) || [])[1] ||
+    (texto.match(/<(?:\w+:)?Prestador[^>]*>([\s\S]*?)<\/(?:\w+:)?Prestador>/i) || [])[1] ||
+    texto;
+
+  const cnpjCpf = arquivoConciliacaoSomenteDigitos(
+    arquivoAutoFindTag(blocoEmitente, ['CNPJ', 'CPF', 'Cnpj', 'Cpf'])
+  );
+  const fornecedor =
+    arquivoAutoFindTag(blocoEmitente, ['xNome', 'RazaoSocial', 'RazaoSocialPrestador', 'Nome', 'NomeFantasia']) ||
+    arquivoAutoFindTag(texto, ['xNome', 'RazaoSocialPrestador', 'RazaoSocial']);
+  const numero = arquivoAutoFindTag(texto, ['nNF', 'nNFSe', 'NumeroNFe', 'NumeroNfse', 'NumeroNFS-e', 'Numero']);
+  const data = arquivoAutoFindTag(texto, ['dhEmi', 'dEmi', 'DataEmissao', 'DataEmissaoNfse', 'Competencia']);
+  const valor = arquivoAutoFindTag(texto, ['vNF', 'vLiq', 'ValorLiquidoNfse', 'ValorServicos', 'ValorTotal', 'Valor']);
+  const tipoDocumento = /<(?:\w+:)?(?:infNFSe|NFSe|DPS)[\s>]/i.test(texto)
+    ? 'NFEs Serviço'
+    : /<(?:\w+:)?infNFe[\s>]/i.test(texto) ? 'NFe Produto' : '';
+
+  return {
+    chave: arquivoConciliacaoExtrairChave(texto),
+    cnpjCpf: cnpjCpf.length === 11 || cnpjCpf.length === 14 ? cnpjCpf : '',
+    fornecedor: arquivoAutoNormText(fornecedor),
+    numero: arquivoAutoNormText(numero),
+    tipoDocumento,
+    data: arquivoConciliacaoDataIso(data),
+    valor: arquivoConciliacaoValorNumero(valor)
+  };
+}
+
+async function arquivoConciliacaoTextoPdf(filePath) {
+  let parser;
+  try {
+    parser = new PDFParse({ data: fs.readFileSync(filePath) });
+    const resultado = await parser.getText();
+    return String(resultado && resultado.text || '');
+  } catch (error) {
+    return '';
+  } finally {
+    if (parser) {
+      try { await parser.destroy(); } catch (error) {}
+    }
+  }
+}
+
+async function analisarArquivoFilaParaConciliacao(id, { lerPdf = true } = {}) {
+  await ensureArquivoFilaTable();
+  const resultado = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
+  const arquivo = resultado.rows[0];
+  if (!arquivo || arquivo.status !== 'DISPONIVEL') return null;
+
+  const filePath = getUploadFilePath(arquivo.nome_arquivo);
+  if (!filePath || !fs.existsSync(filePath)) {
+    await pool.query(`UPDATE arquivo_fila SET analise_status = 'ARQUIVO_AUSENTE', analisado_em = NOW() WHERE id = $1`, [id]);
+    return null;
+  }
+
+  const buffer = fs.readFileSync(filePath);
+  const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+  let metadados = {};
+
+  if (arquivo.tipo === 'XML') {
+    metadados = arquivoConciliacaoMetadadosXml(buffer.toString('utf8'));
+    metadados.chave = metadados.chave || arquivoConciliacaoExtrairChave(arquivo.chave_origem, arquivo.nome_original, arquivo.nome_arquivo);
+  } else {
+    const chaveNome = arquivoConciliacaoExtrairChave(arquivo.chave_origem, arquivo.nome_original, arquivo.nome_arquivo);
+    const textoPdf = !chaveNome && lerPdf ? await arquivoConciliacaoTextoPdf(filePath) : '';
+    metadados = { chave: chaveNome || arquivoConciliacaoExtrairChave(textoPdf) };
+  }
+
+  const duplicado = await pool.query(`
+    SELECT id FROM arquivo_fila
+    WHERE id <> $1 AND tipo = $2 AND hash_sha256 = $3
+      AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
+    ORDER BY id LIMIT 1
+  `, [id, arquivo.tipo, hash]);
+
+  const fiscal = arquivo.tipo === 'XML' || !!metadados.chave;
+  const analiseStatus = duplicado.rows[0]
+    ? 'DUPLICADO'
+    : fiscal ? (arquivo.tipo === 'XML' ? 'AGUARDANDO_PDF' : 'AGUARDANDO_XML') : 'COMPROVANTE';
+
+  await pool.query(`
+    UPDATE arquivo_fila
+    SET documento_classe = $1,
+        chave_fiscal = $2,
+        cnpj_cpf = COALESCE($3, cnpj_cpf),
+        fornecedor = COALESCE($4, fornecedor),
+        numero_documento = COALESCE($5, numero_documento),
+        tipo_documento_detectado = COALESCE($6, tipo_documento_detectado),
+        data_documento = COALESCE($7, data_documento),
+        valor_documento = COALESCE($8, valor_documento),
+        hash_sha256 = $9,
+        analise_status = $10,
+        analisado_em = NOW(),
+        metadados = COALESCE(metadados, '{}'::jsonb) || $11::jsonb
+    WHERE id = $12
+  `, [
+    fiscal ? 'FISCAL' : 'COMPROVANTE',
+    metadados.chave || null,
+    metadados.cnpjCpf || null,
+    metadados.fornecedor || null,
+    metadados.numero || null,
+    metadados.tipoDocumento || null,
+    metadados.data || null,
+    metadados.valor,
+    hash,
+    analiseStatus,
+    JSON.stringify({ conciliacao: { chaveFiscal: metadados.chave || '', duplicadoDe: duplicado.rows[0]?.id || null } }),
+    id
+  ]);
+
+  return { id, fiscal, chave: metadados.chave || '', analiseStatus };
+}
+
+async function conciliarArquivoFilaDisponiveis() {
+  await ensureArquivoFilaTable();
+  const resultado = await pool.query(`
+    SELECT * FROM arquivo_fila
+    WHERE status = 'DISPONIVEL' AND chave_fiscal IS NOT NULL AND chave_fiscal <> ''
+    ORDER BY id
+  `);
+
+  const grupos = new Map();
+  for (const arquivo of resultado.rows) {
+    if (!grupos.has(arquivo.chave_fiscal)) grupos.set(arquivo.chave_fiscal, { pdfs: [], xmls: [] });
+    const grupo = grupos.get(arquivo.chave_fiscal);
+    if (arquivo.tipo === 'PDF') grupo.pdfs.push(arquivo);
+    if (arquivo.tipo === 'XML') grupo.xmls.push(arquivo);
+  }
+
+  for (const grupo of grupos.values()) {
+    const pdf = grupo.pdfs.find(item => item.analise_status !== 'DUPLICADO');
+    const xml = grupo.xmls.find(item => item.analise_status !== 'DUPLICADO');
+    if (!pdf || !xml) continue;
+
+    const cnpjCpf = xml.cnpj_cpf || pdf.cnpj_cpf || null;
+    const fornecedor = xml.fornecedor || pdf.fornecedor || null;
+    const numero = xml.numero_documento || pdf.numero_documento || null;
+    const tipoDocumento = xml.tipo_documento_detectado || pdf.tipo_documento_detectado || null;
+    const data = xml.data_documento || pdf.data_documento || null;
+    const valor = xml.valor_documento || pdf.valor_documento || null;
+
+    await pool.query(`
+      UPDATE arquivo_fila
+      SET par_id = CASE WHEN id = $1 THEN $2 ELSE $1 END,
+          documento_classe = 'FISCAL', analise_status = 'COMPLETO',
+          cnpj_cpf = $3, fornecedor = $4, numero_documento = $5,
+          tipo_documento_detectado = $6, data_documento = $7, valor_documento = $8
+      WHERE id IN ($1, $2)
+    `, [pdf.id, xml.id, cnpjCpf, fornecedor, numero, tipoDocumento, data, valor]);
+  }
+}
+
+async function reprocessarArquivoFila({ limitePdf = 30, somentePendentes = true } = {}) {
+  await ensureArquivoFilaTable();
+  const resultado = await pool.query(`
+    SELECT id, tipo FROM arquivo_fila
+    WHERE status = 'DISPONIVEL'
+      ${somentePendentes ? `AND analisado_em IS NULL` : ''}
+    ORDER BY CASE WHEN tipo = 'XML' THEN 0 ELSE 1 END, id
+  `);
+
+  let pdfsLidos = 0;
+  let processados = 0;
+  for (const arquivo of resultado.rows) {
+    if (arquivo.tipo === 'PDF' && pdfsLidos >= limitePdf) continue;
+    await analisarArquivoFilaParaConciliacao(arquivo.id, { lerPdf: true });
+    if (arquivo.tipo === 'PDF') pdfsLidos += 1;
+    processados += 1;
+  }
+  await conciliarArquivoFilaDisponiveis();
+  return { processados, pdfsLidos };
 }
 
 function arquivoAutoEscapeHtml(v) {
@@ -15236,6 +15503,53 @@ router.post(
 // ROTAS — MÓDULO ARQUIVO OPERACIONAL LIMPO
 // =====================================================
 
+function montarDocumentosConciliadosArquivo(linhas, selecionar = '') {
+  const porId = new Map(linhas.map(item => [Number(item.id), item]));
+  const visitados = new Set();
+  const documentos = [];
+
+  for (const arquivo of linhas) {
+    const id = Number(arquivo.id);
+    if (visitados.has(id)) continue;
+
+    const par = arquivo.par_id ? porId.get(Number(arquivo.par_id)) : null;
+    if (par) {
+      visitados.add(id);
+      visitados.add(Number(par.id));
+      const pdf = arquivo.tipo === 'PDF' ? arquivo : par.tipo === 'PDF' ? par : null;
+      const xml = arquivo.tipo === 'XML' ? arquivo : par.tipo === 'XML' ? par : null;
+      if (pdf && xml) {
+        documentos.push({
+          ...pdf,
+          pdf_id: pdf.id,
+          xml_id: xml.id,
+          tipo: selecionar === 'xml' ? 'XML' : 'PDF',
+          analise_status: 'COMPLETO',
+          cnpj_cpf: xml.cnpj_cpf || pdf.cnpj_cpf,
+          fornecedor: xml.fornecedor || pdf.fornecedor,
+          numero_documento: xml.numero_documento || pdf.numero_documento,
+          tipo_documento_detectado: xml.tipo_documento_detectado || pdf.tipo_documento_detectado,
+          data_documento: xml.data_documento || pdf.data_documento,
+          valor_documento: xml.valor_documento || pdf.valor_documento,
+          chave_fiscal: xml.chave_fiscal || pdf.chave_fiscal
+        });
+        continue;
+      }
+    }
+
+    visitados.add(id);
+    documentos.push({
+      ...arquivo,
+      pdf_id: arquivo.tipo === 'PDF' ? arquivo.id : null,
+      xml_id: arquivo.tipo === 'XML' ? arquivo.id : null
+    });
+  }
+
+  if (selecionar === 'pdf') return documentos.filter(item => item.pdf_id);
+  if (selecionar === 'xml') return documentos.filter(item => item.xml_id);
+  return documentos;
+}
+
 router.get('/arquivo', protegerRota, async (req, res) => {
   try {
     await ensureArquivoFilaTable();
@@ -15245,36 +15559,41 @@ router.get('/arquivo', protegerRota, async (req, res) => {
     const arquivoPdfId = String(req.query.arquivo_pdf_id || '').trim();
     const arquivoXmlId = String(req.query.arquivo_xml_id || '').trim();
     const editarLancamentoId = String(req.query.editar_lancamento_id || '').trim();
-
-    const params = [];
-    let where = `WHERE status = 'DISPONIVEL'`;
-
-    if (selecionar === 'pdf') {
-      params.push('PDF');
-      where += ` AND tipo = $${params.length}`;
-    }
-
-    if (selecionar === 'xml') {
-      params.push('XML');
-      where += ` AND tipo = $${params.length}`;
-    }
+    const cnpjFiltro = arquivoConciliacaoSomenteDigitos(req.query.cnpj_filtro || '');
+    const mostrarTodos = String(req.query.mostrar_todos || '') === '1';
 
     const result = await pool.query(`
       SELECT *
       FROM arquivo_fila
-      ${where}
+      WHERE status = 'DISPONIVEL'
       ORDER BY criado_em DESC, id DESC
-    `, params);
+    `);
+    const pendentesResult = await pool.query(`
+      SELECT COUNT(*)::int AS total FROM arquivo_fila
+      WHERE status = 'DISPONIVEL' AND analisado_em IS NULL
+    `);
+
+    let arquivos = montarDocumentosConciliadosArquivo(result.rows, selecionar);
+    let filtroSemResultado = false;
+    if (cnpjFiltro && !mostrarTodos) {
+      const filtrados = arquivos.filter(item => arquivoConciliacaoSomenteDigitos(item.cnpj_cpf) === cnpjFiltro);
+      filtroSemResultado = filtrados.length === 0;
+      arquivos = filtrados;
+    }
 
     res.send(renderArquivoFilaPage({
-      arquivos: result.rows,
+      arquivos,
       mensagem: req.query.ok || '',
       erro: req.query.erro || '',
       selecionar,
       rotinaId,
       arquivoPdfId,
       arquivoXmlId,
-      editarLancamentoId
+      editarLancamentoId,
+      cnpjFiltro,
+      mostrarTodos,
+      filtroSemResultado,
+      pendentesAnalise: Number(pendentesResult.rows[0]?.total || 0)
     }));
   } catch (error) {
     res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
@@ -15304,10 +15623,28 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
 
       if (insertedArquivo.rows[0]) {
         await arquivoAutoRenomearDepoisUpload(insertedArquivo.rows[0].id);
+        await analisarArquivoFilaParaConciliacao(insertedArquivo.rows[0].id, { lerPdf: true });
       }
     }
 
-    res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e renomeado(s) com sucesso.`)}`);
+    await conciliarArquivoFilaDisponiveis();
+
+    res.redirect(`/arquivo?ok=${encodeURIComponent(`${files.length} arquivo(s) importado(s) e analisado(s) com sucesso.`)}`);
+  } catch (error) {
+    res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
+  }
+});
+
+router.post('/arquivo/reprocessar', protegerRota, async (req, res) => {
+  try {
+    const resultado = await reprocessarArquivoFila({ limitePdf: 30, somentePendentes: true });
+    const restantes = await pool.query(`
+      SELECT COUNT(*)::int AS total FROM arquivo_fila
+      WHERE status = 'DISPONIVEL' AND analisado_em IS NULL
+    `);
+    const pendentes = Number(restantes.rows[0]?.total || 0);
+    const complemento = pendentes ? ` Ainda restam ${pendentes}; clique novamente para continuar.` : ' Acervo concluído.';
+    res.redirect(`/arquivo?ok=${encodeURIComponent(`${resultado.processados} arquivo(s) analisado(s).${complemento}`)}`);
   } catch (error) {
     res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
   }
@@ -15332,6 +15669,16 @@ router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
         nome_original: arquivo.nome_original,
         nome_arquivo: arquivo.nome_arquivo,
         tipo: arquivo.tipo,
+        documento_classe: arquivo.documento_classe,
+        analise_status: arquivo.analise_status,
+        chave_fiscal: arquivo.chave_fiscal,
+        cnpj_cpf: arquivo.cnpj_cpf,
+        fornecedor: arquivo.fornecedor,
+        numero_documento: arquivo.numero_documento,
+        tipo_documento_detectado: arquivo.tipo_documento_detectado,
+        data_documento: arquivo.data_documento,
+        valor_documento: arquivo.valor_documento,
+        par_id: arquivo.par_id,
         viewUrl: `/arquivo/ver/${arquivo.id}`,
         downloadUrl: `/uploads/${encodeURIComponent(arquivo.nome_arquivo)}`,
         tamanho_bytes: arquivo.tamanho_bytes
@@ -15413,15 +15760,25 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
     const query = new URLSearchParams();
     if (rotinaId) query.set('rotina_id', rotinaId);
 
+    let arquivoPareado = null;
+    if (arquivo.par_id) {
+      arquivoPareado = await getArquivoFilaDisponivel(
+        Number(arquivo.par_id),
+        destino === 'pdf' ? 'XML' : 'PDF'
+      );
+    }
+
     if (destino === 'pdf') {
       query.set('arquivo_pdf_id', String(id));
-      if (arquivoXmlIdAtual) query.set('arquivo_xml_id', arquivoXmlIdAtual);
+      if (arquivoPareado) query.set('arquivo_xml_id', String(arquivoPareado.id));
+      else if (arquivoXmlIdAtual) query.set('arquivo_xml_id', arquivoXmlIdAtual);
       query.set('abrir_pdf_arquivo', '1');
     }
 
     if (destino === 'xml') {
       query.set('arquivo_xml_id', String(id));
-      if (arquivoPdfIdAtual) query.set('arquivo_pdf_id', arquivoPdfIdAtual);
+      if (arquivoPareado) query.set('arquivo_pdf_id', String(arquivoPareado.id));
+      else if (arquivoPdfIdAtual) query.set('arquivo_pdf_id', arquivoPdfIdAtual);
       // Ao escolher XML, não reabre o pop-up de PDF.
       // A etapa do XML é apenas anexar o XML ao lançamento.
     }
@@ -15638,12 +15995,15 @@ router.post('/arquivo/:id/excluir', protegerRota, async (req, res) => {
     const id = Number(req.params.id);
     if (Number.isFinite(id)) {
       await ensureArquivoFilaTable();
+      const atual = await pool.query(`SELECT par_id FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
+      const ids = [id];
+      if (atual.rows[0]?.par_id) ids.push(Number(atual.rows[0].par_id));
       await pool.query(`
         UPDATE arquivo_fila
         SET status = 'EXCLUIDO',
             usado_em = NOW()
-        WHERE id = $1
-      `, [id]);
+        WHERE id = ANY($1::int[])
+      `, [ids]);
     }
 
     res.redirect('/arquivo?ok=Arquivo removido da fila.');
@@ -17426,7 +17786,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
                   <a
                     class="btn-buscar-arquivo-xml"
-                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}"
+                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}"
                   >Buscar XML no Arquivo</a>
                   <span id="xmlArquivoSelecionadoChip" class="arquivo-selecionado-chip" style="display:none;"></span>
                   <div class="field-hint">Anexe o XML para salvar junto com o lançamento e disponibilizar para download depois.</div>
@@ -17463,7 +17823,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <a
                 id="buscarPdfArquivoBtn"
                 class="btn-buscar-arquivo-fila"
-                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}"
+                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}"
               >Buscar PDF no Arquivo</a>
             </div>
 
@@ -17572,6 +17932,23 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             if (abrirAutomatico) {
               abrirCopiarDoPDF();
+            }
+
+            function preencherCampoArquivo(id, valor) {
+              var campo = document.getElementById(id);
+              if (campo && valor !== null && valor !== undefined && String(valor) !== '') campo.value = valor;
+            }
+
+            preencherCampoArquivo('pdf_numero_documento', arquivo.numero_documento || '');
+            preencherCampoArquivo('pdf_tipo_documento', arquivo.tipo_documento_detectado || '');
+            preencherCampoArquivo('pdf_data_despesa', arquivo.data_documento ? String(arquivo.data_documento).slice(0, 10) : '');
+            preencherCampoArquivo('pdf_cnpj_cpf', arquivo.cnpj_cpf || '');
+            preencherCampoArquivo('pdf_fornecedor', arquivo.fornecedor || '');
+            if (arquivo.valor_documento !== null && arquivo.valor_documento !== undefined && arquivo.valor_documento !== '') {
+              var valorArquivo = Number(arquivo.valor_documento);
+              preencherCampoArquivo('pdf_valor', Number.isFinite(valorArquivo)
+                ? valorArquivo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                : arquivo.valor_documento);
             }
 
             var viewer = document.getElementById('pdfCopyViewer');
@@ -30049,6 +30426,8 @@ async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
   if (id) {
     const nomeFinal = nfseMontarNomeArquivoXml(meta, id);
     await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+    await analisarArquivoFilaParaConciliacao(id, { lerPdf: false });
+    await conciliarArquivoFilaDisponiveis();
   }
 
   return { importado: true, duplicado: false };
@@ -30166,6 +30545,8 @@ async function nfseImportarPdfArquivoFila({ cfg, chave, meta, item }) {
   if (id) {
     const nomeFinal = nfseMontarNomeArquivoPdf(meta, id);
     await renomearArquivoFilaFisicoERegistro(id, nomeFinal);
+    await analisarArquivoFilaParaConciliacao(id, { lerPdf: true });
+    await conciliarArquivoFilaDisponiveis();
   }
 
   return { importado: true, duplicado: false, indisponivel: false, invalido: false };
