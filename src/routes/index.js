@@ -1869,7 +1869,7 @@ function formatXmlParaHtmlVisual(xml) {
   return escapeHtmlGlobal(formatted);
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0 } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0 } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -1891,6 +1891,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
     if (arquivoPdfId) usarParams.set('arquivo_pdf_id', arquivoPdfId);
     if (arquivoXmlId) usarParams.set('arquivo_xml_id', arquivoXmlId);
     if (editarLancamentoId) usarParams.set('editar_lancamento_id', editarLancamentoId);
+    if (retornoFiltros) usarParams.set('retorno_filtros', retornoFiltros);
 
     const idSelecao = modoSelecao === 'xml' ? (a.xml_id || a.id) : (a.pdf_id || a.id);
     const usarBtn = modoSelecao
@@ -1936,7 +1937,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
   }).join('');
 
   const navVoltar = modoSelecao
-    ? `<a class="dm-menu-btn" href="/novo${rotinaId ? `?rotina_id=${encodeURIComponent(rotinaId)}` : ''}">Voltar ao lançamento</a>`
+    ? `<a class="dm-menu-btn" href="/novo?${new URLSearchParams({ ...(rotinaId ? { rotina_id: rotinaId } : {}), ...(retornoFiltros ? { retorno_filtros: retornoFiltros } : {}) }).toString()}">Voltar ao lançamento</a>`
     : `<a class="dm-menu-btn" href="/dashboard">Voltar para o Painel</a>`;
 
   return `
@@ -2077,12 +2078,12 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           font-size:12px;
           text-transform:uppercase;
         }
-        th:nth-child(1), td:nth-child(1) { width:70px; text-align:center; }
+        th:nth-child(1), td:nth-child(1) { width:96px; min-width:96px; text-align:center; overflow:visible; }
         th:nth-child(2), td:nth-child(2) { width:32%; }
         th:nth-child(3), td:nth-child(3) { width:26%; }
         th:nth-child(4), td:nth-child(4) { width:120px; }
-        th:nth-child(5), td:nth-child(5) { width:110px; }
-        th:nth-child(6), td:nth-child(6) { width:310px; }
+        th:nth-child(5), td:nth-child(5) { width:145px; min-width:145px; overflow:visible; }
+        th:nth-child(6), td:nth-child(6) { width:310px; min-width:310px; overflow:visible; }
         .arquivo-badge {
           display:inline-flex;
           align-items:center;
@@ -2095,9 +2096,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         }
         .arquivo-badge.pdf { background:#dbeafe; color:#1d4ed8; }
         .arquivo-badge.xml { background:#dcfce7; color:#15803d; }
-        .arquivo-badge.completo { min-width:82px; background:#dcfce7; color:#15803d; }
+        .arquivo-badge.completo { min-width:76px; padding:0 8px; font-size:10px; background:#dcfce7; color:#15803d; }
         .arquivo-nome small { display:block; color:#64748b; font-size:11px; font-weight:600; margin-top:4px; }
-        .conciliacao-status { display:inline-flex; padding:6px 9px; border-radius:999px; font-size:11px; font-weight:900; background:#f1f5f9; color:#475569; }
+        .conciliacao-status { display:inline-flex; align-items:center; justify-content:center; max-width:100%; padding:6px 8px; border-radius:999px; font-size:10px; line-height:1.1; font-weight:900; white-space:normal; text-align:center; background:#f1f5f9; color:#475569; }
         .conciliacao-status.completo { background:#dcfce7; color:#166534; }
         .conciliacao-status.aguardando_xml, .conciliacao-status.aguardando_pdf { background:#fef3c7; color:#92400e; }
         .conciliacao-status.comprovante { background:#dbeafe; color:#1d4ed8; }
@@ -2106,8 +2107,11 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           display:flex;
           gap:7px;
           align-items:center;
-          justify-content:flex-start;
+          justify-content:flex-end;
+          min-width:310px;
+          overflow:visible;
         }
+        .arquivo-actions > * { flex:0 0 auto; }
         .arquivo-actions form { margin:0; }
 
         .table-wrap table { table-layout: auto !important; min-width: 1180px; }
@@ -2160,8 +2164,8 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
           ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
 
-          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1">Mostrar todos os arquivos</a></div>` : ''}
-          ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1">Remover filtro</a></div>` : ''}
+          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Mostrar todos os arquivos</a></div>` : ''}
+          ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Remover filtro</a></div>` : ''}
 
           ${!modoSelecao ? `
             <div class="upload-panel">
@@ -15559,6 +15563,7 @@ router.get('/arquivo', protegerRota, async (req, res) => {
     const arquivoPdfId = String(req.query.arquivo_pdf_id || '').trim();
     const arquivoXmlId = String(req.query.arquivo_xml_id || '').trim();
     const editarLancamentoId = String(req.query.editar_lancamento_id || '').trim();
+    const retornoFiltros = String(req.query.retorno_filtros || '').trim();
     const cnpjFiltro = arquivoConciliacaoSomenteDigitos(req.query.cnpj_filtro || '');
     const mostrarTodos = String(req.query.mostrar_todos || '') === '1';
 
@@ -15590,6 +15595,7 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       arquivoPdfId,
       arquivoXmlId,
       editarLancamentoId,
+      retornoFiltros,
       cnpjFiltro,
       mostrarTodos,
       filtroSemResultado,
@@ -15745,6 +15751,7 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
     const arquivoPdfIdAtual = String(req.query.arquivo_pdf_id || '').trim();
     const arquivoXmlIdAtual = String(req.query.arquivo_xml_id || '').trim();
     const editarLancamentoId = String(req.query.editar_lancamento_id || '').trim();
+    const retornoFiltros = String(req.query.retorno_filtros || '').trim();
 
     if (!Number.isFinite(id) || !['pdf', 'xml'].includes(destino)) {
       return res.redirect('/arquivo?erro=Seleção inválida.');
@@ -15759,6 +15766,7 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
 
     const query = new URLSearchParams();
     if (rotinaId) query.set('rotina_id', rotinaId);
+    if (retornoFiltros) query.set('retorno_filtros', retornoFiltros);
 
     let arquivoPareado = null;
     if (arquivo.par_id) {
@@ -16866,7 +16874,16 @@ router.post('/documentos/gerar-lancamento/:id', async (req, res) => {
     
 router.get('/novo', async (req, res) => {
   try {
-    const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '' } = req.query;
+    const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '', retorno_filtros = '' } = req.query;
+    const retornoRecebido = new URLSearchParams(String(retorno_filtros || ''));
+    const retornoSeguro = new URLSearchParams();
+    const retornoFornecedor = String(retornoRecebido.get('fornecedor') || '').trim();
+    const retornoStatus = String(retornoRecebido.get('status') || '').trim();
+    const retornoDia = normalizarDiaVencimento(retornoRecebido.get('dia_vencimento') || '');
+    if (retornoFornecedor) retornoSeguro.set('fornecedor', retornoFornecedor);
+    if (['PENDENTE', 'FEITO', 'N/A'].includes(retornoStatus)) retornoSeguro.set('status', retornoStatus);
+    if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
+    const retornoFiltros = retornoSeguro.toString();
 
     const categoriasResult = await pool.query(`
       SELECT
@@ -17705,6 +17722,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             <form id="novoLancamentoForm" method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
+              <input type="hidden" name="retorno_filtros" value="${escapeHtmlGlobal(retornoFiltros)}">
               <input type="hidden" id="arquivo_pdf_id" name="arquivo_pdf_id" value="${arquivo_pdf_id || ''}">
               <input type="hidden" id="arquivo_xml_id" name="arquivo_xml_id" value="${arquivo_xml_id || ''}">
 
@@ -17786,7 +17804,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
                   <a
                     class="btn-buscar-arquivo-xml"
-                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}"
+                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}"
                   >Buscar XML no Arquivo</a>
                   <span id="xmlArquivoSelecionadoChip" class="arquivo-selecionado-chip" style="display:none;"></span>
                   <div class="field-hint">Anexe o XML para salvar junto com o lançamento e disponibilizar para download depois.</div>
@@ -17795,7 +17813,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               <div class="actions">
                 <button type="submit">Salvar</button>
-                <a class="btn-secondary" href="/rotina-despesas">Voltar para Lista de Contas à pagar</a>
+                <a class="btn-secondary" href="/rotina-despesas${retornoFiltros ? `?${retornoFiltros}` : ''}">Voltar para Lista de Contas à pagar</a>
               </div>
             </form>
           </div>
@@ -17823,7 +17841,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <a
                 id="buscarPdfArquivoBtn"
                 class="btn-buscar-arquivo-fila"
-                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}"
+                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}"
               >Buscar PDF no Arquivo</a>
             </div>
 
@@ -18336,6 +18354,7 @@ router.post(
         tipo_pagamento,
         categoria_id,
         rotina_id,
+        retorno_filtros,
         arquivo_pdf_id,
         arquivo_xml_id
       } = req.body;
@@ -18393,7 +18412,16 @@ router.post(
 
 const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
-        return res.redirect(`/rotina-despesas#rotina-${rotinaOrigem}`);
+        const retornoRecebido = new URLSearchParams(String(retorno_filtros || ''));
+        const retornoSeguro = new URLSearchParams();
+        const retornoFornecedor = String(retornoRecebido.get('fornecedor') || '').trim();
+        const retornoStatus = String(retornoRecebido.get('status') || '').trim();
+        const retornoDia = normalizarDiaVencimento(retornoRecebido.get('dia_vencimento') || '');
+        if (retornoFornecedor) retornoSeguro.set('fornecedor', retornoFornecedor);
+        if (['PENDENTE', 'FEITO', 'N/A'].includes(retornoStatus)) retornoSeguro.set('status', retornoStatus);
+        if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
+        const sufixoRetorno = retornoSeguro.toString() ? `?${retornoSeguro.toString()}` : '';
+        return res.redirect(`/rotina-despesas${sufixoRetorno}#rotina-${rotinaOrigem}`);
       }
 
       res.redirect('/lancamentos');
@@ -22973,6 +23001,11 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
+    const retornoFiltrosParams = new URLSearchParams();
+    if (fornecedorFiltro) retornoFiltrosParams.set('fornecedor', fornecedorFiltro);
+    if (statusFiltro) retornoFiltrosParams.set('status', statusFiltro);
+    if (diaVencimentoFiltro) retornoFiltrosParams.set('dia_vencimento', diaVencimentoFiltro);
+    const retornoFiltros = retornoFiltrosParams.toString();
 
     const fornecedoresResult = await pool.query(`
       SELECT DISTINCT fornecedor
@@ -23119,7 +23152,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
           <td class="col-acoes col-rot-acoes">
             <div class="acoes-wrap">
-              <a class="icon-btn" href="/novo?rotina_id=${r.id}" title="Novo lançamento">➕</a>
+              <a class="icon-btn" href="/novo?${new URLSearchParams({ rotina_id: String(r.id), ...(retornoFiltros ? { retorno_filtros: retornoFiltros } : {}) }).toString()}" title="Novo lançamento">➕</a>
               <a class="icon-btn" href="/rotina-despesas/editar/${r.id}" title="Editar">✏️</a>
               <a class="icon-btn" href="/rotina-despesas/excluir/${r.id}" title="Excluir" onclick="return confirm('Deseja excluir este item da rotina?')">🗑️</a>
             </div>
