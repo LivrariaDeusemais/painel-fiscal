@@ -30435,6 +30435,7 @@ function nfseResultadoSemDocumento(resultado) {
 
 async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
   const dadosXml = arquivoConciliacaoMetadadosXml(xml);
+  const numeroDocumento = dadosXml.numero || meta.numero || '';
   const jaExiste = await pool.query(`
     SELECT id
     FROM arquivo_fila
@@ -30446,14 +30447,34 @@ async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
         OR (
           $2 <> '' AND $3 <> '' AND $4::date IS NOT NULL
           AND REGEXP_REPLACE(COALESCE(cnpj_cpf, ''), '[^0-9]', '', 'g') = $2
-          AND COALESCE(numero_documento, '') = $3
+          AND COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(numero_documento, ''), '^0+', ''), ''), '0')
+            = COALESCE(NULLIF(REGEXP_REPLACE($3, '^0+', ''), ''), '0')
           AND data_documento = $4::date
         )
       )
     LIMIT 1
-  `, [chave, dadosXml.cnpjCpf || '', dadosXml.numero || meta.numero || '', dadosXml.data]);
+  `, [chave, dadosXml.cnpjCpf || '', numeroDocumento, dadosXml.data]);
 
   if (jaExiste.rows[0]) return { importado: false, duplicado: true };
+
+  const jaFoiLancado = await pool.query(`
+    SELECT id
+    FROM lancamentos
+    WHERE $1 <> ''
+      AND $2 <> ''
+      AND $3::date IS NOT NULL
+      AND $4::numeric IS NOT NULL
+      AND REGEXP_REPLACE(COALESCE(cnpj_cpf, ''), '[^0-9]', '', 'g') = $1
+      AND COALESCE(NULLIF(REGEXP_REPLACE(COALESCE(numero_documento, ''), '^0+', ''), ''), '0')
+        = COALESCE(NULLIF(REGEXP_REPLACE($2, '^0+', ''), ''), '0')
+      AND COALESCE(data_documento, data_despesa, data) = $3::date
+      AND ABS(COALESCE(valor, 0) - $4::numeric) <= 0.01
+    LIMIT 1
+  `, [dadosXml.cnpjCpf || '', numeroDocumento, dadosXml.data, dadosXml.valor]);
+
+  if (jaFoiLancado.rows[0]) {
+    return { importado: false, duplicado: true, lancamentoId: jaFoiLancado.rows[0].id };
+  }
 
   const nomeInicial = gerarNomeUnicoArquivoFila(`nfse-nacional-${chave.slice(-12) || Date.now()}.xml`);
   const caminhoInicial = path.join(uploadsDir, nomeInicial);
