@@ -39,7 +39,7 @@ const zlib = require('zlib');
 
 // CONFIG UPLOAD
 
-const uploadsDir = '/uploads';
+const uploadsDir = process.env.UPLOADS_DIR || '/uploads';
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -2040,6 +2040,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           flex-wrap:wrap;
         }
         .portal-import-btn { margin-left:auto; }
+        .fiscal-import-link { flex:0 0 auto; }
         input[type=file] {
           border:1px solid #d6e2ec;
           border-radius:12px;
@@ -2190,7 +2191,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                 <strong>Importar arquivos PDF/XML</strong>
                 <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
                 <button class="btn-green" type="submit">Importar arquivos selecionados</button>
-                ${podeImportarNfse ? '<a class="btn-green portal-import-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>' : ''}
+                ${podeImportarNfse ? '<a class="btn-green portal-import-btn fiscal-import-link" href="/nfse-nacional">Portal Contribuinte</a><a class="btn-green fiscal-import-link" href="/nfpaulistana">NF Paulistana</a><a class="btn-green fiscal-import-link" href="/sefaz">SEFAZ</a>' : ''}
               </form>
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
                 Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
@@ -30795,6 +30796,8 @@ function renderNfseNacionalPage(req, { teste = null, ok = '', erro = '', periodo
     <nav class="nav">
       <a href="/dashboard">Voltar para o Painel</a>
       <a href="/arquivo">Arquivo</a>
+      <a href="/nfpaulistana">Nota Fiscal Paulistana</a>
+      <a href="/sefaz">SEFAZ</a>
       <a href="/logout">Sair</a>
     </nav>
     ${ok ? `<div class="alert ok">${escapeHtmlGlobal(ok)}</div>` : ''}

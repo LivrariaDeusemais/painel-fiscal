@@ -5,6 +5,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const routes = require('./routes');
+const integracoesFiscaisRoutes = require('./routes/integracoes-fiscais');
 
 
 const app = express();
@@ -21,7 +22,7 @@ app.use(session({
 }));
 
 // 🔧 GARANTIR QUE A PASTA UPLOADS EXISTA (ESSENCIAL NO RENDER)
-const uploadsDir = '/uploads';
+const uploadsDir = process.env.UPLOADS_DIR || '/uploads';
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -43,6 +44,7 @@ app.get('/', (req, res) => {
 });
 
 // Rotas do sistema
+app.use('/', integracoesFiscaisRoutes);
 app.use('/', routes);
 
 // Start servidor
