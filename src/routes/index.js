@@ -2139,6 +2139,12 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           font-weight:700;
         }
         .filter-alert { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px; padding:14px 16px; border:1px solid #fbbf24; background:#fffbeb; color:#78350f; border-radius:14px; font-weight:700; }
+        .filter-alert-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+        .btn-return-mini { color:#166534; background:#fff; border-color:#86efac; }
+        @media(max-width:760px) {
+          .filter-alert { align-items:flex-start; flex-direction:column; }
+          .filter-alert-actions { width:100%; justify-content:flex-start; }
+        }
         .filter-note { margin-bottom:14px; padding:11px 14px; border:1px solid #bfdbfe; background:#eff6ff; color:#1e3a8a; border-radius:12px; font-weight:700; }
       </style>
     </head>
@@ -2164,7 +2170,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
           ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
 
-          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Mostrar todos os arquivos</a></div>` : ''}
+          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><div class="filter-alert-actions"><a class="btn-soft-mini btn-return-mini" href="/rotina-despesas${retornoFiltros ? `?${escapeHtmlGlobal(retornoFiltros)}` : ''}">Voltar para Contas a Pagar</a><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Mostrar todos os arquivos</a></div></div>` : ''}
           ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Remover filtro</a></div>` : ''}
 
           ${!modoSelecao ? `
@@ -17512,9 +17518,11 @@ body {
           }
           .pdf-copy-panel {
             position: absolute;
-            top: 72px;
+            top: 168px;
             right: 42px;
             width: min(470px, calc(100vw - 38px));
+            max-height: calc(100vh - 188px);
+            overflow-y: auto;
             background: rgba(255,255,255,.96);
             border: 2px solid #00B050;
             border-radius: 14px;
@@ -17595,7 +17603,7 @@ body {
           }
           @media(max-width: 760px) {
             .pdf-copy-viewer-wrap { inset: 8px; }
-            .pdf-copy-panel { top: 58px; left: 14px; right: auto; width: calc(100vw - 28px); }
+            .pdf-copy-panel { top: 126px; left: 14px; right: auto; width: calc(100vw - 28px); max-height:calc(100vh - 140px); }
             .pdf-copy-grid { grid-template-columns: 1fr; }
           }
 
@@ -18028,8 +18036,10 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           function abrirCopiarDoPDF() {
             var modal = document.getElementById('pdfCopyModal');
             if (!modal) return;
+            if (modal.parentElement !== document.body) document.body.appendChild(modal);
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
             carregarCamposAtuaisNoPopupPDF();
           }
 
@@ -18038,6 +18048,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             if (!modal) return;
             modal.classList.remove('active');
             modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
           }
 
           function carregarPDFManual(event) {
@@ -18157,8 +18168,9 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               var evento = e.touches ? e.touches[0] : e;
               var maxLeft = window.innerWidth - panel.offsetWidth - 8;
               var maxTop = window.innerHeight - panel.offsetHeight - 8;
+              var minTop = window.innerWidth <= 760 ? 126 : 168;
               var left = Math.max(8, Math.min(maxLeft, evento.clientX - offsetX));
-              var top = Math.max(8, Math.min(maxTop, evento.clientY - offsetY));
+              var top = Math.max(minTop, Math.min(maxTop, evento.clientY - offsetY));
               panel.style.left = left + 'px';
               panel.style.top = top + 'px';
             }
