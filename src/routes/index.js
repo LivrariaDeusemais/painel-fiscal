@@ -1925,12 +1925,14 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         <td>${valor}</td>
         <td><span class="conciliacao-status ${statusClass}">${statusLabel}</span></td>
         <td class="arquivo-actions">
-          ${arquivosLinks || `<a class="btn-soft-mini" href="/arquivo/ver/${idAcao}" target="_blank">Abrir</a>`}
-          ${a.analise_status === 'COMPROVANTE' ? `<a class="btn-soft-mini" href="/arquivo/renomear/${idAcao}">Renomear</a>` : ''}
-          ${usarBtn}
-          <form method="POST" action="/arquivo/${idAcao}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
-            <button type="submit" class="btn-danger-mini">Excluir</button>
-          </form>
+          <div class="arquivo-actions-inner">
+            ${arquivosLinks || `<a class="btn-soft-mini" href="/arquivo/ver/${idAcao}" target="_blank">Abrir</a>`}
+            ${a.analise_status === 'COMPROVANTE' ? `<a class="btn-soft-mini" href="/arquivo/renomear/${idAcao}">Renomear</a>` : ''}
+            ${usarBtn}
+            <form method="POST" action="/arquivo/${idAcao}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
+              <button type="submit" class="btn-danger-mini">Excluir</button>
+            </form>
+          </div>
         </td>
       </tr>
     `;
@@ -2104,15 +2106,19 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .conciliacao-status.comprovante { background:#dbeafe; color:#1d4ed8; }
         .conciliacao-status.duplicado, .conciliacao-status.arquivo_ausente { background:#fee2e2; color:#991b1b; }
         .arquivo-actions {
+          text-align:right;
+          min-width:310px;
+          overflow:visible;
+        }
+        .arquivo-actions-inner {
           display:flex;
           gap:7px;
           align-items:center;
           justify-content:flex-end;
-          min-width:310px;
-          overflow:visible;
+          width:100%;
         }
-        .arquivo-actions > * { flex:0 0 auto; }
-        .arquivo-actions form { margin:0; }
+        .arquivo-actions-inner > * { flex:0 0 auto; }
+        .arquivo-actions-inner form { margin:0; }
 
         .table-wrap table { table-layout: auto !important; min-width: 1180px; }
         th:nth-child(2), td:nth-child(2) {
