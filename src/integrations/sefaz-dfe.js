@@ -224,13 +224,18 @@ async function executarConsultaDistribuicao(envelope, config) {
   const soap = await xml2js.parseStringPromise(resposta.body, { explicitArray: false, trim: true });
   const retorno = primeiro(obterValorRecursivo(soap, 'retDistDFeInt'));
   if (!retorno) throw new Error('A SEFAZ não retornou a estrutura de distribuição esperada.');
+  const codigo = campo(retorno, 'cStat');
+  const motivo = campo(retorno, 'xMotivo');
+  if (!['137', '138'].includes(codigo)) {
+    throw new Error(`SEFAZ ${codigo || 'sem código'}: ${motivo || 'resposta não reconhecida'}.`);
+  }
   const lote = primeiro(obterValorRecursivo(retorno, 'loteDistDFeInt')) || {};
   const docs = array(obterValorRecursivo(lote, 'docZip'));
   const documentos = [];
   for (const doc of docs) documentos.push(await mapearDocumentoZip(doc));
   return {
-    codigo: campo(retorno, 'cStat'),
-    motivo: campo(retorno, 'xMotivo'),
+    codigo,
+    motivo,
     ultimoNsu: campo(retorno, 'ultNSU'),
     maxNsu: campo(retorno, 'maxNSU'),
     documentos

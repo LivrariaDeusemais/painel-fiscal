@@ -333,6 +333,15 @@ function normalizarLista(valor) {
   return Array.isArray(valor) ? valor : [valor];
 }
 
+function mensagemErroFiscal(error, fallback) {
+  const mensagem = String(error?.message || '').replace(/\s+/g, ' ').trim();
+  if (!mensagem) return fallback;
+  if (/ENOENT|EACCES|private key|asn1|pkcs|senha|password|passphrase/i.test(mensagem)) {
+    return `${fallback} O certificado digital precisa ser verificado pelo administrador.`;
+  }
+  return `${fallback} Detalhe: ${mensagem.slice(0, 280)}`;
+}
+
 function renderPagina(req, { ok = '', erro = '', dataInicial = '', dataFinal = '' } = {}) {
   const cfg = obterConfigNfPaulistana();
   const disponivel = !!cfg.certPath && !!cfg.certPassword && cfg.cnpj.length === 14;
@@ -392,7 +401,7 @@ router.post('/nfpaulistana/importar', protegerIntegracao, async (req, res) => {
   } catch (error) {
     console.error('Erro na integração Nota Fiscal Paulistana:', error);
     res.status(502).send(renderPagina(req, {
-      erro: 'Não foi possível concluir a consulta à Nota Fiscal Paulistana. Tente novamente ou contate o administrador.',
+      erro: mensagemErroFiscal(error, 'Não foi possível concluir a consulta à Nota Fiscal Paulistana.'),
       dataInicial,
       dataFinal
     }));
@@ -403,6 +412,7 @@ function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = 
   const cfg = obterConfigSefaz();
   const disponivel = !!cfg.certPath && !!cfg.certPassword && cfg.cnpj.length === 14;
   const resumos = consulta?.documentos || [];
+  const diagnostico = consulta ? `SEFAZ ${consulta.codigo || '-'}: ${consulta.motivo || 'sem mensagem'} | NSU ${consulta.ultimoNsuNovo || '0'} de ${consulta.maxNsu || '0'}` : '';
   const linhasResumos = resumos.map((item, index) => `
     <tr>
       <td><input class="check" type="checkbox" name="chaves" value="${escapeHtml(item.chave)}" id="resumo-${index}"></td>
@@ -433,7 +443,7 @@ function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = 
   <nav class="nav"><a href="/dashboard">Voltar para o Painel</a><a href="/arquivo">Arquivo</a><a href="/nfpaulistana">Nota Fiscal Paulistana</a><a href="/logout">Sair</a></nav>
   ${ok ? `<div class="alert ok">${escapeHtml(ok)}</div>` : ''}${erro ? `<div class="alert err">${escapeHtml(erro)}</div>` : ''}${!disponivel ? '<div class="alert warn">A integração ainda precisa ser configurada pelo administrador.</div>' : ''}
   <section class="card"><h2>Consultar próximo lote</h2><p>Cada consulta apresenta até 50 resumos sem armazenar XMLs. O NSU só avança quando você concluir a análise do lote.</p><form method="post" action="/sefaz/consultar"><button class="btn" type="submit" ${disponivel ? '' : 'disabled'}>Consultar próximo lote</button></form></section>
-  ${consulta ? `<section class="card"><h2>Lote consultado</h2><p>Marque somente as notas que deseja analisar. Ao concluir, as não selecionadas serão descartadas sem ocupar armazenamento.</p><form method="post" action="/sefaz/processar-lote"><div class="table-wrap"><table><thead><tr><th></th><th>Fornecedor</th><th>Emissão</th><th>Valor</th><th>Chave</th></tr></thead><tbody>${linhasResumos || '<tr><td colspan="5">Nenhum resumo novo neste lote.</td></tr>'}</tbody></table></div><div class="actions"><button class="btn" type="submit">Analisar selecionadas e concluir lote</button><button class="btn secondary" name="descartarTudo" value="1" type="submit">Descartar lote sem importar</button></div></form></section>` : ''}
+  ${consulta ? `<section class="card"><h2>Lote consultado</h2><p>${escapeHtml(diagnostico)}</p><p>Marque somente as notas que deseja analisar. Ao concluir, as não selecionadas serão descartadas sem ocupar armazenamento.</p><form method="post" action="/sefaz/processar-lote"><div class="table-wrap"><table><thead><tr><th></th><th>Fornecedor</th><th>Emissão</th><th>Valor</th><th>Chave</th></tr></thead><tbody>${linhasResumos || '<tr><td colspan="5">Nenhum resumo novo neste lote.</td></tr>'}</tbody></table></div><div class="actions"><button class="btn" type="submit">Analisar selecionadas e concluir lote</button><button class="btn secondary" name="descartarTudo" value="1" type="submit">Descartar lote sem importar</button></div></form></section>` : ''}
   <section class="card"><h2>Notas classificadas</h2><p>Somente notas marcadas abaixo serão enviadas para a tela Arquivo. Consumo vem pré-selecionado; estoque e revisão exigem decisão manual.</p><form method="post" action="/sefaz/importar"><div class="table-wrap"><table><thead><tr><th></th><th>Fornecedor</th><th>Emissão</th><th>Valor</th><th>Classificação</th><th>Situação</th></tr></thead><tbody>${linhasCandidatas || '<tr><td colspan="6">Nenhuma nota aguardando decisão.</td></tr>'}</tbody></table></div><div class="actions"><button class="btn" type="submit" ${candidatas.length ? '' : 'disabled'}>Importar selecionadas para Arquivo</button><button class="btn secondary" formaction="/sefaz/reanalisar" type="submit" ${candidatas.length ? '' : 'disabled'}>Atualizar XMLs pendentes</button><button class="btn secondary" formaction="/sefaz/ignorar" type="submit" ${candidatas.length ? '' : 'disabled'} onclick="return confirm('Descartar as notas selecionadas sem guardar arquivos?')">Ignorar selecionadas</button></div></form></section>
   </main></body></html>`;
 }
@@ -473,16 +483,27 @@ router.post('/sefaz/consultar', protegerIntegracao, async (req, res) => {
       }
     }
 
-    req.session.sefazConsultaAtual = {
+    const consultaAtual = {
       ultimoNsuAnterior: ultimoNsu,
       ultimoNsuNovo: resultado.ultimoNsu || ultimoNsu,
       maxNsu: resultado.maxNsu || '',
+      codigo: resultado.codigo,
+      motivo: resultado.motivo,
       documentos: resumos
     };
-    await responderSefaz(req, res, { ok: `${resumos.length} resumo(s) aguardando seleção. ${duplicadas} já existente(s) e ${descartadas} retorno(s) ou documento(s) não aplicável(is) foram ignorados.` });
+    const semDecisao = resumos.length === 0;
+    if (semDecisao) {
+      await salvarUltimoNsuSefaz(consultaAtual.ultimoNsuNovo);
+      req.session.sefazConsultaAtual = null;
+    } else {
+      req.session.sefazConsultaAtual = consultaAtual;
+    }
+    const statusSefaz = `SEFAZ ${resultado.codigo}: ${resultado.motivo}. NSU ${resultado.ultimoNsu || '0'} de ${resultado.maxNsu || '0'}.`;
+    const orientacao = semDecisao && resultado.ultimoNsu !== resultado.maxNsu ? ' Este lote foi concluído automaticamente; consulte o próximo.' : '';
+    await responderSefaz(req, res, { ok: `${statusSefaz} ${resumos.length} resumo(s) aguardando seleção. ${duplicadas} já existente(s) e ${descartadas} retorno(s) ou documento(s) não aplicável(is) foram ignorados.${orientacao}` });
   } catch (error) {
     console.error('Erro ao consultar SEFAZ:', error);
-    await responderSefaz(req, res, { erro: 'Não foi possível consultar a SEFAZ. Tente novamente ou contate o administrador.' });
+    await responderSefaz(req, res, { erro: mensagemErroFiscal(error, 'Não foi possível consultar a SEFAZ.') });
   }
 });
 

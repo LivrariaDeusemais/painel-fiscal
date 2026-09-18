@@ -24,7 +24,11 @@ function obterCredenciaisA1(caminho, senha = '') {
   ];
   const certBags = pkcs12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] || [];
   const keyBag = keyBags.find(item => item.key);
-  const certBag = certBags.find(item => item.cert);
+  const certBag = keyBag && certBags.find(item => {
+    const publicKey = item.cert?.publicKey;
+    const privateKey = keyBag.key;
+    return publicKey?.n && privateKey?.n && publicKey.n.equals(privateKey.n);
+  }) || certBags.find(item => item.cert);
 
   if (!keyBag || !certBag) {
     throw new Error('O certificado A1 não contém chave privada e certificado utilizáveis.');
