@@ -127,6 +127,21 @@ dist
 
 # yarn v3
 .pnp.*
+
+
+.env
+.env.*
+
+*.zip
+*.pdf
+*.xml
+*.mp4
+*.psd*.zip
+*.pdf
+*.xml
+*.mp4
+*.psd
+
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
