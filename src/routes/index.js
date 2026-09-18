@@ -2038,6 +2038,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           align-items:center;
           flex-wrap:wrap;
         }
+        .portal-import-btn { margin-left:auto; }
         input[type=file] {
           border:1px solid #d6e2ec;
           border-radius:12px;
@@ -2150,6 +2151,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         @media(max-width:760px) {
           .filter-alert { align-items:flex-start; flex-direction:column; }
           .filter-alert-actions { width:100%; justify-content:flex-start; }
+          .upload-form > * { width:100%; }
+          .portal-import-btn { margin-left:0; }
+          input[type=file] { min-width:0; }
         }
         .filter-note { margin-bottom:14px; padding:11px 14px; border:1px solid #bfdbfe; background:#eff6ff; color:#1e3a8a; border-radius:12px; font-weight:700; }
       </style>
@@ -2170,7 +2174,6 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           <a class="dm-menu-btn" href="/rotina-despesas">Contas à Pagar</a>
           <a class="dm-menu-btn" href="/categorias">Categorias</a>
           <a class="dm-menu-btn" href="/espaco-contador">Espaço do Contador</a>
-          <a class="dm-menu-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>
         </div>
 
         <div class="content-card">
@@ -2185,7 +2188,8 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
               <form class="upload-form" method="POST" action="/arquivo/importar" enctype="multipart/form-data">
                 <strong>Importar arquivos PDF/XML</strong>
                 <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
-                <button class="btn-green" type="submit">Buscar e importar arquivo</button>
+                <button class="btn-green" type="submit">Importar arquivos selecionados</button>
+                <a class="btn-green portal-import-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>
               </form>
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
                 Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
