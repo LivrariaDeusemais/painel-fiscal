@@ -227,7 +227,9 @@ async function executarConsultaDistribuicao(envelope, config) {
   const codigo = campo(retorno, 'cStat');
   const motivo = campo(retorno, 'xMotivo');
   if (!['137', '138'].includes(codigo)) {
-    throw new Error(`SEFAZ ${codigo || 'sem código'}: ${motivo || 'resposta não reconhecida'}.`);
+    const error = new Error(`SEFAZ ${codigo || 'sem código'}: ${motivo || 'resposta não reconhecida'}.`);
+    error.codigoFiscal = codigo;
+    throw error;
   }
   const lote = primeiro(obterValorRecursivo(retorno, 'loteDistDFeInt')) || {};
   const docs = array(obterValorRecursivo(lote, 'docZip'));

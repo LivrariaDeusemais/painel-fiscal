@@ -90,6 +90,17 @@ function grupo(objeto, nome) {
   return chave ? primeiro(objeto[chave]) || {} : {};
 }
 
+async function extrairFalhaSoap(xml) {
+  try {
+    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false, trim: true });
+    return texto(obterValorRecursivo(parsed, 'faultstring')) ||
+      texto(obterValorRecursivo(parsed, 'Text')) ||
+      texto(obterValorRecursivo(parsed, 'Message')) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
 function mapearNota(nota) {
   const chaveNfe = grupo(nota, 'ChaveNFe');
   const prestador = grupo(nota, 'CPFCNPJPrestador');
@@ -132,7 +143,10 @@ async function consultarPaginaNfPaulistana({ dataInicial, dataFinal, pagina = 1,
     }
   });
 
-  if (!resposta.ok) throw new Error(`Nota Fiscal Paulistana retornou HTTP ${resposta.statusCode}.`);
+  if (!resposta.ok) {
+    const falha = await extrairFalhaSoap(resposta.body);
+    throw new Error(`Nota Fiscal Paulistana retornou HTTP ${resposta.statusCode}${falha ? `: ${falha}` : ''}.`);
+  }
   const soap = await xml2js.parseStringPromise(resposta.body, { explicitArray: false, trim: true });
   const retornoXml = texto(obterValorRecursivo(soap, 'ConsultaNFeRecebidasResult'));
   if (!retornoXml) throw new Error('A Prefeitura não retornou o XML da consulta.');

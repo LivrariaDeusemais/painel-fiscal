@@ -76,9 +76,11 @@ async function ensureSefazTables() {
     CREATE TABLE IF NOT EXISTS fiscal_integracao_estado (
       fonte VARCHAR(40) PRIMARY KEY,
       ultimo_nsu TEXT NOT NULL DEFAULT '0',
+      bloqueado_ate TIMESTAMP,
       atualizado_em TIMESTAMP DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE fiscal_integracao_estado ADD COLUMN IF NOT EXISTS bloqueado_ate TIMESTAMP`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS sefaz_candidatas (
       chave VARCHAR(44) PRIMARY KEY,
@@ -141,6 +143,24 @@ async function salvarUltimoNsuSefaz(ultimoNsu) {
     VALUES ('SEFAZ_NFE', $1, NOW())
     ON CONFLICT (fonte) DO UPDATE SET ultimo_nsu = EXCLUDED.ultimo_nsu, atualizado_em = NOW()
   `, [String(ultimoNsu || '0')]);
+}
+
+async function obterBloqueioSefaz() {
+  await ensureSefazTables();
+  const result = await pool.query(`SELECT bloqueado_ate FROM fiscal_integracao_estado WHERE fonte = 'SEFAZ_NFE'`);
+  const bloqueadoAte = result.rows[0]?.bloqueado_ate;
+  return bloqueadoAte && new Date(bloqueadoAte) > new Date() ? new Date(bloqueadoAte) : null;
+}
+
+async function bloquearConsultaSefaz(minutos = 60) {
+  const result = await pool.query(`
+    INSERT INTO fiscal_integracao_estado (fonte, ultimo_nsu, bloqueado_ate, atualizado_em)
+    VALUES ('SEFAZ_NFE', '0', NOW() + ($1 * INTERVAL '1 minute'), NOW())
+    ON CONFLICT (fonte) DO UPDATE
+      SET bloqueado_ate = NOW() + ($1 * INTERVAL '1 minute'), atualizado_em = NOW()
+    RETURNING bloqueado_ate
+  `, [minutos]);
+  return new Date(result.rows[0].bloqueado_ate);
 }
 
 async function chaveFiscalJaExiste(chave) {
@@ -408,9 +428,11 @@ router.post('/nfpaulistana/importar', protegerIntegracao, async (req, res) => {
   }
 });
 
-function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = null } = {}) {
+function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = null, bloqueadoAte = null } = {}) {
   const cfg = obterConfigSefaz();
   const disponivel = !!cfg.certPath && !!cfg.certPassword && cfg.cnpj.length === 14;
+  const consultaBloqueada = bloqueadoAte && new Date(bloqueadoAte) > new Date();
+  const horarioLiberacao = consultaBloqueada ? new Date(bloqueadoAte).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';
   const resumos = consulta?.documentos || [];
   const diagnostico = consulta ? `SEFAZ ${consulta.codigo || '-'}: ${consulta.motivo || 'sem mensagem'} | NSU ${consulta.ultimoNsuNovo || '0'} de ${consulta.maxNsu || '0'}` : '';
   const linhasResumos = resumos.map((item, index) => `
@@ -442,7 +464,7 @@ function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = 
   <section class="top"><div><h1>Caixa de Entrada SEFAZ</h1><p>Consulte NF-e destinadas à empresa e importe somente as despesas aprovadas.</p></div><div class="user">${escapeHtml(req.session.usuario.nome)}<span>${escapeHtml(req.session.usuario.perfil)}</span></div></section>
   <nav class="nav"><a href="/dashboard">Voltar para o Painel</a><a href="/arquivo">Arquivo</a><a href="/nfpaulistana">Nota Fiscal Paulistana</a><a href="/logout">Sair</a></nav>
   ${ok ? `<div class="alert ok">${escapeHtml(ok)}</div>` : ''}${erro ? `<div class="alert err">${escapeHtml(erro)}</div>` : ''}${!disponivel ? '<div class="alert warn">A integração ainda precisa ser configurada pelo administrador.</div>' : ''}
-  <section class="card"><h2>Consultar próximo lote</h2><p>Cada consulta apresenta até 50 resumos sem armazenar XMLs. O NSU só avança quando você concluir a análise do lote.</p><form method="post" action="/sefaz/consultar"><button class="btn" type="submit" ${disponivel ? '' : 'disabled'}>Consultar próximo lote</button></form></section>
+  <section class="card"><h2>Consultar próximo lote</h2><p>Cada consulta apresenta até 50 resumos sem armazenar XMLs. O NSU só avança quando você concluir a análise do lote.</p>${consultaBloqueada ? `<div class="alert warn">A SEFAZ bloqueou temporariamente novas consultas. Tente novamente após ${escapeHtml(horarioLiberacao)}.</div>` : ''}<form method="post" action="/sefaz/consultar"><button class="btn" type="submit" ${disponivel && !consultaBloqueada ? '' : 'disabled'}>Consultar próximo lote</button></form></section>
   ${consulta ? `<section class="card"><h2>Lote consultado</h2><p>${escapeHtml(diagnostico)}</p><p>Marque somente as notas que deseja analisar. Ao concluir, as não selecionadas serão descartadas sem ocupar armazenamento.</p><form method="post" action="/sefaz/processar-lote"><div class="table-wrap"><table><thead><tr><th></th><th>Fornecedor</th><th>Emissão</th><th>Valor</th><th>Chave</th></tr></thead><tbody>${linhasResumos || '<tr><td colspan="5">Nenhum resumo novo neste lote.</td></tr>'}</tbody></table></div><div class="actions"><button class="btn" type="submit">Analisar selecionadas e concluir lote</button><button class="btn secondary" name="descartarTudo" value="1" type="submit">Descartar lote sem importar</button></div></form></section>` : ''}
   <section class="card"><h2>Notas classificadas</h2><p>Somente notas marcadas abaixo serão enviadas para a tela Arquivo. Consumo vem pré-selecionado; estoque e revisão exigem decisão manual.</p><form method="post" action="/sefaz/importar"><div class="table-wrap"><table><thead><tr><th></th><th>Fornecedor</th><th>Emissão</th><th>Valor</th><th>Classificação</th><th>Situação</th></tr></thead><tbody>${linhasCandidatas || '<tr><td colspan="6">Nenhuma nota aguardando decisão.</td></tr>'}</tbody></table></div><div class="actions"><button class="btn" type="submit" ${candidatas.length ? '' : 'disabled'}>Importar selecionadas para Arquivo</button><button class="btn secondary" formaction="/sefaz/reanalisar" type="submit" ${candidatas.length ? '' : 'disabled'}>Atualizar XMLs pendentes</button><button class="btn secondary" formaction="/sefaz/ignorar" type="submit" ${candidatas.length ? '' : 'disabled'} onclick="return confirm('Descartar as notas selecionadas sem guardar arquivos?')">Ignorar selecionadas</button></div></form></section>
   </main></body></html>`;
@@ -450,7 +472,8 @@ function renderSefazPage(req, { candidatas = [], ok = '', erro = '', consulta = 
 
 async function responderSefaz(req, res, extras = {}) {
   const candidatas = await listarCandidatasSefaz();
-  res.send(renderSefazPage(req, { candidatas, consulta: req.session.sefazConsultaAtual || null, ...extras }));
+  const bloqueadoAte = await obterBloqueioSefaz();
+  res.send(renderSefazPage(req, { candidatas, bloqueadoAte, consulta: req.session.sefazConsultaAtual || null, ...extras }));
 }
 
 router.get('/sefaz', protegerIntegracao, async (req, res) => {
@@ -462,6 +485,10 @@ router.post('/sefaz/consultar', protegerIntegracao, async (req, res) => {
   try {
     await ensureArquivoFila();
     await ensureSefazTables();
+    const bloqueadoAte = await obterBloqueioSefaz();
+    if (bloqueadoAte) {
+      return responderSefaz(req, res, { erro: `A SEFAZ permite nova tentativa após ${bloqueadoAte.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.` });
+    }
     const ultimoNsu = await obterUltimoNsuSefaz();
     const resultado = await consultarDistribuicao({ ultimoNsu });
     const resumos = [];
@@ -494,6 +521,7 @@ router.post('/sefaz/consultar', protegerIntegracao, async (req, res) => {
     const semDecisao = resumos.length === 0;
     if (semDecisao) {
       await salvarUltimoNsuSefaz(consultaAtual.ultimoNsuNovo);
+      if (resultado.codigo === '137') await bloquearConsultaSefaz(60);
       req.session.sefazConsultaAtual = null;
     } else {
       req.session.sefazConsultaAtual = consultaAtual;
@@ -503,6 +531,7 @@ router.post('/sefaz/consultar', protegerIntegracao, async (req, res) => {
     await responderSefaz(req, res, { ok: `${statusSefaz} ${resumos.length} resumo(s) aguardando seleção. ${duplicadas} já existente(s) e ${descartadas} retorno(s) ou documento(s) não aplicável(is) foram ignorados.${orientacao}` });
   } catch (error) {
     console.error('Erro ao consultar SEFAZ:', error);
+    if (error.codigoFiscal === '656') await bloquearConsultaSefaz(60);
     await responderSefaz(req, res, { erro: mensagemErroFiscal(error, 'Não foi possível consultar a SEFAZ.') });
   }
 });
