@@ -1869,7 +1869,7 @@ function formatXmlParaHtmlVisual(xml) {
   return escapeHtmlGlobal(formatted);
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0 } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -2013,6 +2013,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           border-color:#00a84f;
           box-shadow:0 10px 22px rgba(0,168,79,.16);
         }
+        .btn-green { font-family:Arial,Helvetica,sans-serif; font-size:13px; }
         .btn-soft-mini, .btn-green-mini, .btn-danger-mini {
           height:30px;
           padding:0 10px;
@@ -2189,7 +2190,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                 <strong>Importar arquivos PDF/XML</strong>
                 <input type="file" name="arquivos" accept=".pdf,.xml,application/pdf,text/xml,application/xml" multiple required>
                 <button class="btn-green" type="submit">Importar arquivos selecionados</button>
-                <a class="btn-green portal-import-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>
+                ${podeImportarNfse ? '<a class="btn-green portal-import-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>' : ''}
               </form>
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
                 Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
@@ -15616,7 +15617,8 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       cnpjFiltro,
       mostrarTodos,
       filtroSemResultado,
-      pendentesAnalise: Number(pendentesResult.rows[0]?.total || 0)
+      pendentesAnalise: Number(pendentesResult.rows[0]?.total || 0),
+      podeImportarNfse: ['ADMIN', 'USUARIO'].includes(req.session?.usuario?.perfil)
     }));
   } catch (error) {
     res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
@@ -30742,145 +30744,102 @@ async function importarNfseNacionalParaArquivo({ nsu = '', dataInicial = '', dat
   return { teste, periodo, lotesConsultados, ultimoNsu, importados, duplicados, pdfImportados, pdfDuplicados, pdfIndisponiveis, foraPeriodo, ignorados, erros };
 }
 
-function renderNfseNacionalAdminPage(req, { teste = null, ok = '', erro = '', periodo = null } = {}) {
+function renderNfseNacionalPage(req, { teste = null, ok = '', erro = '', periodo = null } = {}) {
   const cfg = getNfseConfig();
   const periodoAtual = {
     dataInicial: periodo?.dataInicial || req.body?.dataInicial || nfseDataInputPadrao(-30),
     dataFinal: periodo?.dataFinal || req.body?.dataFinal || nfseDataInputPadrao(0),
     maxLotes: String(req.body?.maxLotes || '12')
   };
-  const statusItem = (label, ativo, detalhe = '') => `
-    <li class="${ativo ? 'ok' : 'bad'}">
-      <strong>${escapeHtmlGlobal(label)}</strong>
-      <span>${ativo ? 'OK' : 'Pendente'}${detalhe ? ` - ${escapeHtmlGlobal(detalhe)}` : ''}</span>
-    </li>
-  `;
-
-  const testeHtml = teste ? `
-    <section class="card full">
-      <h2>Resultado do teste</h2>
-      ${teste.pendencias?.length ? `<div class="alert warn">${teste.pendencias.map(escapeHtmlGlobal).join('<br>')}</div>` : ''}
-      <div class="result-grid">
-        <div><strong>URL testada</strong><span>${escapeHtmlGlobal(teste.url || '-')}</span></div>
-        <div><strong>NSU</strong><span>${escapeHtmlGlobal(teste.nsuConsulta || '0')}</span></div>
-        <div><strong>Status HTTP</strong><span>${escapeHtmlGlobal(teste.resultado?.statusCode || '-')}</span></div>
-        <div><strong>Tempo</strong><span>${teste.resultado?.tempoMs ? `${teste.resultado.tempoMs} ms` : '-'}</span></div>
-      </div>
-      ${teste.resultado?.ok ? `<div class="alert ok">Conexão realizada. Próximo passo: interpretar o retorno e preparar a importação para a tela Arquivo.</div>` : ''}
-      ${teste.resultado?.erro ? `<div class="alert err">${escapeHtmlGlobal(teste.resultado.erro)}</div>` : ''}
-      ${teste.resultado?.bodyResumo ? `<pre>${escapeHtmlGlobal(teste.resultado.bodyResumo)}</pre>` : ''}
-    </section>
-  ` : '';
+  const integracaoDisponivel = cfg.certExists && cfg.certPasswordSet && cfg.cnpj.length === 14 && !!cfg.apiBase;
+  const testeHtml = teste
+    ? teste.resultado?.ok
+      ? '<div class="alert ok">Conexão com o Portal Contribuinte realizada com sucesso.</div>'
+      : '<div class="alert err">Não foi possível acessar o Portal Contribuinte. Tente novamente ou contate o administrador.</div>'
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NFS-e Nacional - PlennaTec</title>
+  <title>Importar XML do Portal Contribuinte - PlennaTec</title>
   <style>
     body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#baf2cf 0%,#f8fafc 42%,#eef2f7 100%);color:#172033;min-height:100vh;}
     .shell{width:min(1450px,calc(100vw - 48px));margin:18px auto 28px;}
+    *{box-sizing:border-box;}
     .top,.nav,.card{background:rgba(255,255,255,.92);border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);}
     .top{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 24px;margin-bottom:14px;}
-    h1{margin:0 0 6px;font-size:30px;} h2{margin:0 0 10px;font-size:20px;} p{color:#52627a;font-weight:700;line-height:1.42;}
+    h1{margin:0 0 6px;font-size:30px;} h2{margin:0 0 8px;font-size:22px;} p{color:#52627a;font-weight:700;line-height:1.42;}
     .user{font-weight:900;color:#00B050;text-align:right;}.user span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-top:4px;}
     .nav{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:16px;}
     .nav a{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640!important;border:1px solid #d7eadf;}
-    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-bottom:16px;}.card{padding:22px;}.card.full{grid-column:1/-1;}
-    ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:9px;}li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border-radius:13px;border:1px solid #e2e8f0;background:#f8fafc;}li.ok{background:#f0fdf4;border-color:#bbf7d0;}li.bad{background:#fff7ed;border-color:#fed7aa;}li span{font-size:12px;font-weight:900;color:#475569;text-align:right;}
-    label{display:block;font-weight:900;margin:0 0 7px;color:#334155;}input{height:42px;border:1px solid #dbe7df;border-radius:12px;padding:0 12px;font-weight:800;width:210px;max-width:100%;}
-    .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}.form-row input[type="date"]{width:160px;}
-    .btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}
-    .alert{padding:14px 16px;border-radius:14px;margin:12px 0;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}
-    .result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0;}.result-grid div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;}.result-grid strong{display:block;font-size:12px;color:#64748b;text-transform:uppercase;margin-bottom:5px;}.result-grid span{font-weight:850;overflow-wrap:anywhere;}
-    pre{white-space:pre-wrap;overflow:auto;max-height:360px;background:#0f172a;color:#dbeafe;border-radius:14px;padding:16px;font-size:12px;line-height:1.45;}
-    code{background:#eef2f7;border:1px solid #dbe7df;border-radius:8px;padding:2px 6px;font-weight:900;color:#0f172a;}
-    .divider{height:1px;background:#e2e8f0;margin:18px 0;}
-    @media(max-width:900px){.shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid,.result-grid{grid-template-columns:1fr}.user{text-align:left}}
+    .card{padding:26px;}.import-card{max-width:920px;margin:0 auto;}
+    .intro{margin:0 0 22px;max-width:720px;}
+    label{display:block;font-weight:900;margin:0 0 7px;color:#334155;}input{height:46px;border:1px solid #dbe7df;border-radius:12px;padding:0 12px;font:800 14px Arial,Helvetica,sans-serif;width:210px;max-width:100%;background:#fff;}
+    .form-row{display:grid;grid-template-columns:repeat(2,minmax(0,210px));gap:14px;margin-bottom:20px;}
+    .form-row input[type="date"]{width:100%;}
+    .btn{min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font:900 14px Arial,Helvetica,sans-serif;padding:0 20px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}
+    .btn:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed;}
+    .note{display:flex;align-items:flex-start;gap:10px;margin-top:20px;padding:14px 16px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:14px;color:#166534;font-size:13px;font-weight:800;line-height:1.4;}
+    .alert{padding:14px 16px;border-radius:14px;margin:0 0 14px;font-weight:800;line-height:1.4;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}
+    @media(max-width:900px){.shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.user{text-align:left}.form-row{grid-template-columns:1fr}.form-row>div,input,.btn{width:100%;}.card{padding:20px;}}
   </style>
 </head>
 <body>
   <main class="shell">
     <section class="top">
-      <div><h1>NFS-e Nacional</h1><p>Diagnóstico seguro para consultar NFS-e recebidas via API oficial, sem armazenar certificado no código.</p></div>
+      <div><h1>Importar XML do Portal Contribuinte</h1><p>Consulte as NFS-e recebidas e importe os XMLs diretamente para a tela Arquivo.</p></div>
       <div class="user">${escapeHtmlGlobal(req.session.usuario?.nome || 'ADMIN')}<span>${escapeHtmlGlobal(req.session.usuario?.perfil || 'ADMIN')}</span></div>
     </section>
     <nav class="nav">
       <a href="/dashboard">Voltar para o Painel</a>
       <a href="/arquivo">Arquivo</a>
-      <a href="/backup">Backup</a>
       <a href="/logout">Sair</a>
     </nav>
     ${ok ? `<div class="alert ok">${escapeHtmlGlobal(ok)}</div>` : ''}
     ${erro ? `<div class="alert err">${escapeHtmlGlobal(erro)}</div>` : ''}
-    <section class="grid">
-      <article class="card">
-        <h2>Checklist Render</h2>
-        <p>Configure estes itens no serviço do Render. O PlennaTec apenas lê os secrets em runtime.</p>
-        <ul>
-          ${statusItem('Secret File do certificado', cfg.certExists, cfg.certExists ? `${cfg.certPath} (${formatBytesPlennaTec(cfg.certSize)})` : cfg.certPath)}
-          ${statusItem('Senha do certificado', cfg.certPasswordSet, 'NFSE_CERT_PASSWORD')}
-          ${statusItem('CNPJ da empresa', cfg.cnpj.length === 14, cfg.cnpj ? cfg.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : 'NFSE_CNPJ')}
-          ${statusItem('Base da API', !!cfg.apiBase, cfg.apiBase)}
-          ${statusItem('Endpoint PDF/DANFSe', cfg.danfseUrlTemplates.length > 0, cfg.danfseUrlTemplates.length ? `${cfg.danfseUrlTemplates.length} configurado(s)` : 'NFSE_DANFSE_URL_TEMPLATE ou NFSE_DANFSE_URL_TEMPLATES')}
-        </ul>
-      </article>
-      <article class="card">
-        <h2>Teste de conexão</h2>
-        <p>Este teste consulta a API com certificado A1. Ele não importa arquivos e não grava XML/PDF.</p>
-        <form method="post" action="/nfse-nacional/testar">
-          <label for="nsu">NSU inicial</label>
-          <input id="nsu" name="nsu" value="${escapeHtmlGlobal(cfg.nsuInicial)}" inputmode="numeric" />
-          <div style="height:14px"></div>
-          <button class="btn" type="submit">Testar conexão</button>
-        </form>
-        <div class="divider"></div>
-        <p>Depois que o teste estiver OK, importe os XMLs e PDFs/DANFSe oficiais disponibilizados pela API para a tela Arquivo. Para baixar DANFSe por serviço externo, configure o endpoint HTTPS em <code>NFSE_DANFSE_URL_TEMPLATE</code>. O sistema ignora automaticamente notas já importadas pela chave de acesso.</p>
+    ${testeHtml}
+    <section class="card import-card">
+        <h2>Período da consulta</h2>
+        <p class="intro">Informe o período de emissão das notas que deseja localizar. Os XMLs encontrados serão enviados para a tela Arquivo.</p>
+        ${!integracaoDisponivel ? '<div class="alert warn">A importação está temporariamente indisponível. Entre em contato com o administrador do sistema.</div>' : ''}
         <form method="post" action="/nfse-nacional/importar">
-          <input type="hidden" name="nsu" value="${escapeHtmlGlobal(teste?.nsuConsulta || cfg.nsuInicial)}" />
+          <input type="hidden" name="nsu" value="${escapeHtmlGlobal(cfg.nsuInicial)}" />
+          <input type="hidden" name="maxLotes" value="${escapeHtmlGlobal(periodoAtual.maxLotes)}" />
           <div class="form-row">
             <div>
               <label for="dataInicial">Data inicial</label>
-              <input id="dataInicial" name="dataInicial" type="date" value="${escapeHtmlGlobal(periodoAtual.dataInicial)}" />
+              <input id="dataInicial" name="dataInicial" type="date" value="${escapeHtmlGlobal(periodoAtual.dataInicial)}" required />
             </div>
             <div>
               <label for="dataFinal">Data final</label>
-              <input id="dataFinal" name="dataFinal" type="date" value="${escapeHtmlGlobal(periodoAtual.dataFinal)}" />
-            </div>
-            <div>
-              <label for="maxLotes">Lotes máximos</label>
-              <input id="maxLotes" name="maxLotes" type="number" min="1" max="40" value="${escapeHtmlGlobal(periodoAtual.maxLotes)}" />
+              <input id="dataFinal" name="dataFinal" type="date" value="${escapeHtmlGlobal(periodoAtual.dataFinal)}" required />
             </div>
           </div>
-          <button class="btn" type="submit">Importar XMLs/PDFs oficiais para Arquivo</button>
+          <button class="btn" type="submit" ${integracaoDisponivel ? '' : 'disabled'}>Buscar e importar XMLs</button>
         </form>
-      </article>
-      <article class="card full">
-        <h2>Como configurar no Render</h2>
-        <p>Entre no serviço do PlennaTec no Render, abra <strong>Environment</strong>, adicione um <strong>Secret File</strong> com o nome <code>certificado-deusemais.pfx</code> e depois adicione as variáveis <code>NFSE_CERT_PASSWORD</code> e <code>NFSE_CNPJ</code>. O caminho padrão esperado é <code>/etc/secrets/certificado-deusemais.pfx</code>.</p>
-      </article>
-      ${testeHtml}
+        <div class="note">Notas já existentes não serão duplicadas. Ao finalizar, acesse a tela Arquivo para consultar os documentos importados.</div>
     </section>
   </main>
 </body>
 </html>`;
 }
 
-router.get('/nfse-nacional', protegerRota, somenteAdmin, (req, res) => {
-  res.send(renderNfseNacionalAdminPage(req));
+router.get('/nfse-nacional', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
+  res.send(renderNfseNacionalPage(req));
 });
 
-router.post('/nfse-nacional/testar', protegerRota, somenteAdmin, async (req, res) => {
+router.post('/nfse-nacional/testar', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
     const teste = await testarNfseNacionalConexao({ nsu: req.body.nsu });
-    res.send(renderNfseNacionalAdminPage(req, { teste }));
+    res.send(renderNfseNacionalPage(req, { teste }));
   } catch (error) {
-    res.send(renderNfseNacionalAdminPage(req, { erro: 'Erro ao testar NFS-e Nacional: ' + error.message }));
+    res.send(renderNfseNacionalPage(req, { erro: 'Não foi possível acessar o Portal Contribuinte. Tente novamente ou contate o administrador.' }));
   }
 });
 
-router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, res) => {
+router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
     const resultado = await importarNfseNacionalParaArquivo({
       nsu: req.body.nsu,
@@ -30890,25 +30849,19 @@ router.post('/nfse-nacional/importar', protegerRota, somenteAdmin, async (req, r
     });
     const partes = [
       `${resultado.importados} XML(s) importado(s) para a tela Arquivo`,
-      `${resultado.duplicados} XML(s) já existia(m) e não foi/foram duplicado(s)`,
-      `${resultado.pdfImportados || 0} PDF/DANFSe importado(s) para a tela Arquivo`,
-      `${resultado.pdfDuplicados || 0} PDF/DANFSe já existia(m) e não foi/foram duplicado(s)`,
-      `${resultado.pdfIndisponiveis || 0} PDF/DANFSe não disponibilizado(s) pela API`,
-      `${resultado.foraPeriodo} fora do período escolhido`,
-      `${resultado.ignorados} ignorado(s)`,
-      `${resultado.lotesConsultados} lote(s) consultado(s)`,
-      `último NSU ${resultado.ultimoNsu || '0'}`
+      `${resultado.duplicados} XML(s) já existente(s), sem duplicação`,
+      `${resultado.foraPeriodo} documento(s) fora do período escolhido`,
+      `${resultado.ignorados} documento(s) sem XML disponível`
     ];
 
     const erros = resultado.erros?.filter(Boolean) || [];
-    res.send(renderNfseNacionalAdminPage(req, {
-      teste: resultado.teste,
+    res.send(renderNfseNacionalPage(req, {
       periodo: resultado.periodo,
       ok: erros.length ? '' : partes.join('. ') + '.',
-      erro: erros.length ? `${partes.join('. ')}. Pendências: ${erros.join(' | ')}` : ''
+      erro: erros.length ? `${partes.join('. ')}. Parte da consulta não pôde ser concluída. Tente novamente ou contate o administrador.` : ''
     }));
   } catch (error) {
-    res.send(renderNfseNacionalAdminPage(req, { erro: 'Erro ao importar NFS-e Nacional: ' + error.message }));
+    res.send(renderNfseNacionalPage(req, { erro: 'Não foi possível concluir a importação. Tente novamente ou contate o administrador.' }));
   }
 });
 
