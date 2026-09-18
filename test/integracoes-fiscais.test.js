@@ -32,7 +32,7 @@ test('monta pedido da Nota Fiscal Paulistana por período', () => {
     pagina: 2
   });
   assert.match(xml, /<PedidoConsultaNFePeriodo/);
-  assert.match(xml, /<Cabecalho Versao="2">/);
+  assert.match(xml, /<Cabecalho xmlns="" Versao="2">/);
   assert.match(xml, /<CNPJ>18862388000103<\/CNPJ>/);
   assert.match(xml, /<dtInicio>2026-09-01<\/dtInicio>/);
   assert.match(xml, /<NumeroPagina>2<\/NumeroPagina>/);

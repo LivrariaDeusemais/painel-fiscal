@@ -32,7 +32,7 @@ function obterConfigNfPaulistana(env = process.env) {
 function montarPedidoConsulta({ cnpj, dataInicial, dataFinal, pagina = 1, versaoSchema = '2' }) {
   return `<?xml version="1.0" encoding="utf-8"?>` +
     `<PedidoConsultaNFePeriodo xmlns="${NAMESPACE}">` +
-    `<Cabecalho Versao="${versaoSchema}">` +
+    `<Cabecalho xmlns="" Versao="${versaoSchema}">` +
     `<CPFCNPJRemetente><CNPJ>${escaparXml(cnpj)}</CNPJ></CPFCNPJRemetente>` +
     `<CPFCNPJ><CNPJ>${escaparXml(cnpj)}</CNPJ></CPFCNPJ>` +
     `<dtInicio>${escaparXml(dataInicial)}</dtInicio>` +
