@@ -2170,6 +2170,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           <a class="dm-menu-btn" href="/rotina-despesas">Contas à Pagar</a>
           <a class="dm-menu-btn" href="/categorias">Categorias</a>
           <a class="dm-menu-btn" href="/espaco-contador">Espaço do Contador</a>
+          <a class="dm-menu-btn" href="/nfse-nacional">Importar XML do Portal Contribuinte</a>
         </div>
 
         <div class="content-card">
