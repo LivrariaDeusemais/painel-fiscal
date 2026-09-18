@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const zlib = require('zlib');
 const {
   SOAP_ACTION_CONSULTA_RECEBIDAS,
+  obterConfigNfPaulistana,
   montarPedidoConsulta,
   montarEnvelopeSoap
 } = require('../src/integrations/nfpaulistana');
@@ -39,6 +40,7 @@ test('monta pedido da Nota Fiscal Paulistana por período', () => {
   assert.match(envelope, /<ConsultaNFeRecebidasRequest/);
   assert.match(envelope, /<VersaoSchema>2<\/VersaoSchema>/);
   assert.equal(SOAP_ACTION_CONSULTA_RECEBIDAS, 'http://www.prefeitura.sp.gov.br/nfe/ws/consultaNFeRecebidas');
+  assert.equal(obterConfigNfPaulistana({}).endpoint, 'https://nfews.prefeitura.sp.gov.br/lotenfe.asmx');
 });
 
 test('monta consultas SEFAZ sem persistir documentos', () => {

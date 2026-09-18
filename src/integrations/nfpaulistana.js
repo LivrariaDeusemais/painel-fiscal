@@ -21,7 +21,7 @@ function somenteDigitos(valor = '') {
 
 function obterConfigNfPaulistana(env = process.env) {
   return {
-    endpoint: env.NFPAULISTANA_ENDPOINT || 'https://nfe.prefeitura.sp.gov.br/ws/lotenfe.asmx',
+    endpoint: env.NFPAULISTANA_ENDPOINT || 'https://nfews.prefeitura.sp.gov.br/lotenfe.asmx',
     certPath: env.NFPAULISTANA_CERT_PATH || env.NFSE_CERT_PATH || '/etc/secrets/certificado-deusemais.pfx',
     certPassword: env.NFPAULISTANA_CERT_PASSWORD || env.NFSE_CERT_PASSWORD || '',
     cnpj: somenteDigitos(env.NFPAULISTANA_CNPJ || env.NFSE_CNPJ || ''),
