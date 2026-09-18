@@ -4,6 +4,7 @@ const { assinarDocumentoInteiro } = require('./xml-assinatura');
 const { requisitarHttps } = require('./https-certificado');
 
 const NAMESPACE = 'http://www.prefeitura.sp.gov.br/nfe';
+const SOAP_ACTION_CONSULTA_RECEBIDAS = `${NAMESPACE}/ws/consultaNFeRecebidas`;
 
 function escaparXml(valor = '') {
   return String(valor)
@@ -20,17 +21,18 @@ function somenteDigitos(valor = '') {
 
 function obterConfigNfPaulistana(env = process.env) {
   return {
-    endpoint: env.NFPAULISTANA_ENDPOINT || 'https://nfews.prefeitura.sp.gov.br/lotenfe.asmx',
+    endpoint: env.NFPAULISTANA_ENDPOINT || 'https://nfe.prefeitura.sp.gov.br/ws/lotenfe.asmx',
     certPath: env.NFPAULISTANA_CERT_PATH || env.NFSE_CERT_PATH || '/etc/secrets/certificado-deusemais.pfx',
     certPassword: env.NFPAULISTANA_CERT_PASSWORD || env.NFSE_CERT_PASSWORD || '',
-    cnpj: somenteDigitos(env.NFPAULISTANA_CNPJ || env.NFSE_CNPJ || '')
+    cnpj: somenteDigitos(env.NFPAULISTANA_CNPJ || env.NFSE_CNPJ || ''),
+    versaoSchema: String(env.NFPAULISTANA_SCHEMA_VERSION || '2') === '1' ? '1' : '2'
   };
 }
 
-function montarPedidoConsulta({ cnpj, dataInicial, dataFinal, pagina = 1 }) {
+function montarPedidoConsulta({ cnpj, dataInicial, dataFinal, pagina = 1, versaoSchema = '2' }) {
   return `<?xml version="1.0" encoding="utf-8"?>` +
     `<PedidoConsultaNFePeriodo xmlns="${NAMESPACE}">` +
-    `<Cabecalho Versao="1">` +
+    `<Cabecalho Versao="${versaoSchema}">` +
     `<CPFCNPJRemetente><CNPJ>${escaparXml(cnpj)}</CNPJ></CPFCNPJRemetente>` +
     `<CPFCNPJ><CNPJ>${escaparXml(cnpj)}</CNPJ></CPFCNPJ>` +
     `<dtInicio>${escaparXml(dataInicial)}</dtInicio>` +
@@ -44,10 +46,10 @@ function montarEnvelopeSoap(xmlAssinado) {
   return `<?xml version="1.0" encoding="utf-8"?>` +
     `<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">` +
     `<soap:Body>` +
-    `<ConsultaNFeRecebidas xmlns="${NAMESPACE}">` +
-    `<VersaoSchema>1</VersaoSchema>` +
-    `<MensagemXML><![CDATA[${xmlAssinado}]]></MensagemXML>` +
-    `</ConsultaNFeRecebidas>` +
+    `<ConsultaNFeRecebidasRequest xmlns="${NAMESPACE}">` +
+    `<VersaoSchema>${xmlAssinado.versaoSchema}</VersaoSchema>` +
+    `<MensagemXML><![CDATA[${xmlAssinado.xml}]]></MensagemXML>` +
+    `</ConsultaNFeRecebidasRequest>` +
     `</soap:Body>` +
     `</soap:Envelope>`;
 }
@@ -129,9 +131,9 @@ function mapearNota(nota) {
 async function consultarPaginaNfPaulistana({ dataInicial, dataFinal, pagina = 1, config = obterConfigNfPaulistana() }) {
   if (!config.cnpj || config.cnpj.length !== 14) throw new Error('CNPJ da Nota Fiscal Paulistana não configurado.');
   const credenciais = obterCredenciaisA1(config.certPath, config.certPassword);
-  const pedido = montarPedidoConsulta({ cnpj: config.cnpj, dataInicial, dataFinal, pagina });
+  const pedido = montarPedidoConsulta({ cnpj: config.cnpj, dataInicial, dataFinal, pagina, versaoSchema: config.versaoSchema });
   const assinado = assinarDocumentoInteiro(pedido, credenciais, 'Cabecalho');
-  const envelope = montarEnvelopeSoap(assinado);
+  const envelope = montarEnvelopeSoap({ xml: assinado, versaoSchema: config.versaoSchema });
   const resposta = await requisitarHttps({
     url: config.endpoint,
     pfx: credenciais.pfx,
@@ -139,7 +141,7 @@ async function consultarPaginaNfPaulistana({ dataInicial, dataFinal, pagina = 1,
     body: envelope,
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
-      SOAPAction: `"${NAMESPACE}/ConsultaNFeRecebidas"`
+      SOAPAction: `"${SOAP_ACTION_CONSULTA_RECEBIDAS}"`
     }
   });
 
@@ -148,7 +150,7 @@ async function consultarPaginaNfPaulistana({ dataInicial, dataFinal, pagina = 1,
     throw new Error(`Nota Fiscal Paulistana retornou HTTP ${resposta.statusCode}${falha ? `: ${falha}` : ''}.`);
   }
   const soap = await xml2js.parseStringPromise(resposta.body, { explicitArray: false, trim: true });
-  const retornoXml = texto(obterValorRecursivo(soap, 'ConsultaNFeRecebidasResult'));
+  const retornoXml = texto(obterValorRecursivo(soap, 'RetornoXML'));
   if (!retornoXml) throw new Error('A Prefeitura não retornou o XML da consulta.');
   const retorno = await xml2js.parseStringPromise(retornoXml, { explicitArray: false, trim: true });
   const raiz = primeiro(obterValorRecursivo(retorno, 'RetornoConsulta')) || retorno;
@@ -174,6 +176,7 @@ async function consultarPaginaNfPaulistana({ dataInicial, dataFinal, pagina = 1,
 }
 
 module.exports = {
+  SOAP_ACTION_CONSULTA_RECEBIDAS,
   obterConfigNfPaulistana,
   montarPedidoConsulta,
   montarEnvelopeSoap,
