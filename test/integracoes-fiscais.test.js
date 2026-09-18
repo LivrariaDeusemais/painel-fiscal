@@ -4,6 +4,7 @@ const zlib = require('zlib');
 const {
   SOAP_ACTION_CONSULTA_RECEBIDAS,
   obterConfigNfPaulistana,
+  mapearNota,
   montarPedidoConsulta,
   montarEnvelopeSoap
 } = require('../src/integrations/nfpaulistana');
@@ -41,6 +42,17 @@ test('monta pedido da Nota Fiscal Paulistana por período', () => {
   assert.match(envelope, /<VersaoSchema>2<\/VersaoSchema>/);
   assert.equal(SOAP_ACTION_CONSULTA_RECEBIDAS, 'http://www.prefeitura.sp.gov.br/nfe/ws/consultaNFeRecebidas');
   assert.equal(obterConfigNfPaulistana({}).endpoint, 'https://nfews.prefeitura.sp.gov.br/lotenfe.asmx');
+});
+
+test('preserva valor monetário da Nota Fiscal Paulistana', () => {
+  const nota = mapearNota({
+    ChaveNFe: { NumeroNFe: '994228221', CodigoVerificacao: 'ABCD1234', InscricaoPrestador: '47530006' },
+    CPFCNPJPrestador: { CNPJ: '15436940000103' },
+    RazaoSocialPrestador: 'AMAZON SERVICOS DE VAREJO DO BRASIL LTDA.',
+    DataEmissaoNFe: '2026-09-04',
+    ValorServicos: '31.94'
+  });
+  assert.equal(nota.valor, 31.94);
 });
 
 test('monta consultas SEFAZ sem persistir documentos', () => {

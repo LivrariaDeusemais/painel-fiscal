@@ -110,7 +110,7 @@ function mapearNota(nota) {
   const numero = campo(chaveNfe, 'NumeroNFe');
   const codigoVerificacao = campo(chaveNfe, 'CodigoVerificacao');
   const inscricaoPrestador = campo(chaveNfe, 'InscricaoPrestador');
-  const valorCentavos = Number(campo(nota, 'ValorServicos') || 0);
+  const valorServicos = Number(campo(nota, 'ValorServicos') || 0);
   const chaveMunicipal = [cnpjPrestador, inscricaoPrestador, numero, codigoVerificacao].filter(Boolean).join(':');
 
   return {
@@ -121,7 +121,7 @@ function mapearNota(nota) {
     codigoVerificacao,
     fornecedor: campo(nota, 'RazaoSocialPrestador'),
     dataEmissao: campo(nota, 'DataEmissaoNFe'),
-    valor: Number.isFinite(valorCentavos) ? valorCentavos / 100 : 0,
+    valor: Number.isFinite(valorServicos) ? valorServicos : 0,
     discriminacao: campo(nota, 'Discriminacao'),
     status: campo(nota, 'StatusNFe'),
     dados: nota
@@ -180,5 +180,6 @@ module.exports = {
   obterConfigNfPaulistana,
   montarPedidoConsulta,
   montarEnvelopeSoap,
+  mapearNota,
   consultarPaginaNfPaulistana
 };

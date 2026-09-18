@@ -219,7 +219,7 @@ async function listarCandidatasSefaz() {
   return result.rows;
 }
 
-async function notaPaulistanaJaExiste(nota) {
+async function localizarNotaPaulistanaExistente(nota) {
   const data = String(nota.dataEmissao || '').slice(0, 10) || null;
   const result = await pool.query(`
     SELECT id
@@ -237,12 +237,44 @@ async function notaPaulistanaJaExiste(nota) {
       )
     LIMIT 1
   `, [nota.chaveMunicipal, nota.cnpjPrestador, nota.numero, data, nota.valor]);
-  return !!result.rows[0];
+  return result.rows[0] || null;
+}
+
+async function atualizarNotaPaulistanaExistente(id, nota) {
+  const data = String(nota.dataEmissao || '').slice(0, 10) || null;
+  await pool.query(`
+    UPDATE arquivo_fila
+    SET cnpj_cpf = $2,
+        fornecedor = $3,
+        numero_documento = $4,
+        data_documento = $5,
+        valor_documento = $6,
+        metadados = COALESCE(metadados, '{}'::jsonb) || $7::jsonb,
+        analisado_em = NOW()
+    WHERE id = $1
+  `, [
+    id,
+    nota.cnpjPrestador,
+    nota.fornecedor,
+    nota.numero,
+    data,
+    nota.valor,
+    JSON.stringify({
+      numero: nota.numero,
+      codigoVerificacao: nota.codigoVerificacao,
+      inscricaoPrestador: nota.inscricaoPrestador,
+      discriminacao: nota.discriminacao
+    })
+  ]);
 }
 
 async function importarNotaPaulistana(nota) {
   if (!nota.xml || !nota.numero || !nota.cnpjPrestador) return { importada: false, ignorada: true };
-  if (await notaPaulistanaJaExiste(nota)) return { importada: false, duplicada: true };
+  const existente = await localizarNotaPaulistanaExistente(nota);
+  if (existente) {
+    await atualizarNotaPaulistanaExistente(existente.id, nota);
+    return { importada: false, duplicada: true, atualizada: true };
+  }
   if (!await reservarChaveFiscal(nota.chaveMunicipal, 'NFSE', 'NFSE_PAULISTANA')) return { importada: false, duplicada: true };
 
   const data = String(nota.dataEmissao || '').slice(0, 10) || null;
@@ -416,7 +448,7 @@ router.post('/nfpaulistana/importar', protegerIntegracao, async (req, res) => {
       pagina += 1;
     }
 
-    const ok = `${importadas} XML(s) novo(s) importado(s) para Arquivo. ${duplicadas} nota(s) já existente(s) ignorada(s). ${ignoradas} documento(s) sem dados suficientes.`;
+    const ok = `${importadas} XML(s) novo(s) importado(s) para Arquivo. ${duplicadas} nota(s) já existente(s) conferida(s) e atualizada(s), sem duplicação. ${ignoradas} documento(s) sem dados suficientes.`;
     res.send(renderPagina(req, { ok, dataInicial, dataFinal }));
   } catch (error) {
     console.error('Erro na integração Nota Fiscal Paulistana:', error);

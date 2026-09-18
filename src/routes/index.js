@@ -30434,15 +30434,24 @@ function nfseResultadoSemDocumento(resultado) {
 }
 
 async function nfseImportarXmlArquivoFila({ chave, xml, meta, item }) {
+  const dadosXml = arquivoConciliacaoMetadadosXml(xml);
   const jaExiste = await pool.query(`
     SELECT id
     FROM arquivo_fila
-    WHERE origem = 'NFSE_NACIONAL'
-      AND tipo = 'XML'
-      AND chave_origem = $1
+    WHERE tipo = 'XML'
       AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
+      AND (
+        chave_origem = $1
+        OR chave_fiscal = $1
+        OR (
+          $2 <> '' AND $3 <> '' AND $4::date IS NOT NULL
+          AND REGEXP_REPLACE(COALESCE(cnpj_cpf, ''), '[^0-9]', '', 'g') = $2
+          AND COALESCE(numero_documento, '') = $3
+          AND data_documento = $4::date
+        )
+      )
     LIMIT 1
-  `, [chave]);
+  `, [chave, dadosXml.cnpjCpf || '', dadosXml.numero || meta.numero || '', dadosXml.data]);
 
   if (jaExiste.rows[0]) return { importado: false, duplicado: true };
 
