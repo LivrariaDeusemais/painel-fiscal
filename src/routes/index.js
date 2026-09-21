@@ -2078,9 +2078,11 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .alert-error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
         .table-wrap {
           width:100%;
+          max-height:calc(100vh - 250px);
           overflow:auto;
           border:1px solid #dce7ef;
           border-radius:16px;
+          position:relative;
         }
         table {
           width:100%;
@@ -2102,6 +2104,10 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           color:#334155;
           font-size:12px;
           text-transform:uppercase;
+          position:sticky;
+          top:0;
+          z-index:3;
+          box-shadow:0 1px 0 #dce7ef;
         }
         th:nth-child(1), td:nth-child(1) { width:96px; min-width:96px; text-align:center; overflow:visible; }
         th:nth-child(2), td:nth-child(2) { width:32%; }
@@ -2173,6 +2179,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .btn-return-mini { color:#166534; background:#fff; border-color:#86efac; }
         @media(max-width:760px) {
           .arquivo-filtros { grid-template-columns:1fr; }
+          .table-wrap { max-height:70vh; }
           .filter-alert { align-items:flex-start; flex-direction:column; }
           .filter-alert-actions { width:100%; justify-content:flex-start; }
           .upload-form > * { width:100%; }
@@ -15847,7 +15854,7 @@ router.get('/arquivo/espelho/:id', protegerRota, async (req, res) => {
     if (!arquivo || !filePath || !fs.existsSync(filePath)) return res.status(404).send('<pre>XML não encontrado.</pre>');
     const dados = arquivoEspelhoDadosXml(fs.readFileSync(filePath, 'utf8'), arquivo);
     const campo = (rotulo, valor) => valor !== '' && valor != null ? `<div><small>${escapeHtmlGlobal(rotulo)}</small><strong>${escapeHtmlGlobal(valor)}</strong></div>` : '';
-    res.send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Espelho do XML</title><style>body{margin:0;padding:24px;font-family:Arial;color:#0f172a;background:#f8fafc}header{display:flex;justify-content:space-between;gap:20px;align-items:start;border-bottom:2px solid #00a84f;padding-bottom:16px}h1{margin:0;font-size:24px}p{color:#64748b}.aviso{padding:10px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.grid div{background:#fff;border:1px solid #dce7ef;padding:11px;border-radius:6px;min-height:55px}.grid small{display:block;color:#64748b;text-transform:uppercase;font-size:10px;font-weight:800;margin-bottom:5px}.wide{grid-column:span 3}.actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#f8fafc;padding:14px 0}button{border:1px solid #cbd5e1;border-radius:8px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#00a84f;color:#fff;border-color:#00a84f}@media(max-width:700px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body><header><div><h1>Espelho do XML - ${escapeHtmlGlobal(dados.tipo)}</h1><p>${escapeHtmlGlobal(dados.fornecedor || 'Documento fiscal')}</p></div><strong>${escapeHtmlGlobal(dados.numero || '')}</strong></header><p class="aviso">Documento auxiliar gerado pelo PlennaTec. Não substitui o documento fiscal oficial.</p><section class="grid">${campo('Fornecedor',dados.fornecedor)}${campo('Nome fantasia',dados.fantasia)}${campo('CNPJ/CPF',dados.cnpj)}${campo('Endereço',dados.endereco)}${campo('Emissão',arquivoDataBr(dados.emissao))}${campo('Competência',dados.competencia)}${campo('Tomador',dados.tomador)}${campo('CNPJ/CPF do tomador',dados.tomadorCnpj)}${campo('Município de emissão',dados.municipioEmissao)}${campo('Município da prestação',dados.municipioPrestacao)}${campo('Código do serviço',dados.codigoServico)}${campo('NBS',dados.nbs)}${campo('CNAE',dados.cnae)}${campo('Origem',dados.origem)}${campo('Chave',dados.chave)}${dados.descricao ? `<div class="wide"><small>Descrição</small><strong>${escapeHtmlGlobal(dados.descricao)}</strong></div>` : ''}${campo('Valor',Number(dados.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}))}</section><div class="actions"><button type="button" onclick="parent.document.getElementById('xmlEspelho').close()">Fechar</button><form method="post" action="/arquivo/espelho/${arquivo.id}/usar" target="_top"><button class="primary" type="submit">Usar este espelho</button></form></div></body></html>`);
+    res.send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Espelho do XML</title><style>body{margin:0;padding:24px;font-family:Arial;color:#0f172a;background:#f8fafc}header{display:flex;justify-content:space-between;gap:20px;align-items:start;border-bottom:2px solid #00a84f;padding-bottom:16px}h1{margin:0;font-size:24px}p{color:#64748b}.aviso{padding:10px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.grid div{background:#fff;border:1px solid #dce7ef;padding:11px;border-radius:6px;min-height:55px}.grid small{display:block;color:#64748b;text-transform:uppercase;font-size:10px;font-weight:800;margin-bottom:5px}.wide{grid-column:span 3}.actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#f8fafc;padding:14px 0}button{border:1px solid #cbd5e1;border-radius:8px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#00a84f;color:#fff;border-color:#00a84f}@media(max-width:700px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}@media print{body{padding:0;background:#fff}.actions{display:none}.grid div{break-inside:avoid}header{break-after:avoid}}</style></head><body><header><div><h1>Espelho do XML - ${escapeHtmlGlobal(dados.tipo)}</h1><p>${escapeHtmlGlobal(dados.fornecedor || 'Documento fiscal')}</p></div><strong>${escapeHtmlGlobal(dados.numero || '')}</strong></header><p class="aviso">Documento auxiliar gerado pelo PlennaTec. Não substitui o documento fiscal oficial.</p><section class="grid">${campo('Fornecedor',dados.fornecedor)}${campo('Nome fantasia',dados.fantasia)}${campo('CNPJ/CPF',dados.cnpj)}${campo('Endereço',dados.endereco)}${campo('Emissão',arquivoDataBr(dados.emissao))}${campo('Competência',dados.competencia)}${campo('Tomador',dados.tomador)}${campo('CNPJ/CPF do tomador',dados.tomadorCnpj)}${campo('Município de emissão',dados.municipioEmissao)}${campo('Município da prestação',dados.municipioPrestacao)}${campo('Código do serviço',dados.codigoServico)}${campo('NBS',dados.nbs)}${campo('CNAE',dados.cnae)}${campo('Origem',dados.origem)}${campo('Chave',dados.chave)}${dados.descricao ? `<div class="wide"><small>Descrição</small><strong>${escapeHtmlGlobal(dados.descricao)}</strong></div>` : ''}${campo('Valor',Number(dados.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}))}</section><div class="actions"><button type="button" onclick="parent.document.getElementById('xmlEspelho').close()">Fechar</button><button type="button" onclick="window.print()">Imprimir</button><form method="post" action="/arquivo/espelho/${arquivo.id}/usar" target="_top"><button class="primary" type="submit">Usar este espelho</button></form></div></body></html>`);
   } catch (error) { res.status(500).send(`<pre>Erro ao montar espelho:\n${escapeHtmlGlobal(error.message)}</pre>`); }
 });
 
