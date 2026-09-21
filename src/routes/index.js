@@ -36,6 +36,7 @@ const archiver = require('archiver');
 const { spawn } = require('child_process');
 const https = require('https');
 const zlib = require('zlib');
+const PDFDocument = require('pdfkit');
 
 // CONFIG UPLOAD
 
@@ -1869,7 +1870,20 @@ function formatXmlParaHtmlVisual(xml) {
   return escapeHtmlGlobal(formatted);
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false } = {}) {
+function arquivoDataIso(valor) {
+  if (!valor) return '';
+  if (valor instanceof Date && !Number.isNaN(valor.getTime())) return valor.toISOString().slice(0, 10);
+  return arquivoConciliacaoDataIso(String(valor)) || '';
+}
+
+function arquivoDataBr(valor) {
+  const iso = arquivoDataIso(valor);
+  if (!iso) return '-';
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false, filtros = {}, pagina = 1, totalPaginas = 1, totalItens = 0 } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -1913,7 +1927,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
       : '-';
     const arquivosLinks = [
       a.pdf_id ? `<a class="btn-soft-mini" href="/arquivo/ver/${a.pdf_id}" target="_blank">PDF</a>` : '',
-      a.xml_id ? `<a class="btn-soft-mini" href="/arquivo/ver/${a.xml_id}" target="_blank">XML</a>` : ''
+      a.xml_id ? `<button class="btn-soft-mini arquivo-eye" type="button" title="Visualizar dados do XML" aria-label="Visualizar dados do XML" data-espelho="/arquivo/espelho/${a.xml_id}">&#128065;</button><a class="btn-soft-mini" href="/arquivo/ver/${a.xml_id}" target="_blank">XML</a>` : ''
     ].filter(Boolean).join('');
     const idAcao = a.pdf_id || a.xml_id || a.id;
 
@@ -1922,6 +1936,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         <td>${badge}</td>
         <td class="arquivo-nome"><strong>${escapeHtmlGlobal(documento)}</strong><small>${escapeHtmlGlobal(a.chave_fiscal ? `Chave ${a.chave_fiscal}` : (a.nome_original || ''))}</small></td>
         <td>${escapeHtmlGlobal(a.cnpj_cpf || '-')}</td>
+        <td>${arquivoDataBr(a.data_documento)}</td>
         <td>${valor}</td>
         <td><span class="conciliacao-status ${statusClass}">${statusLabel}</span></td>
         <td class="arquivo-actions">
@@ -2026,6 +2041,11 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           border-color:#fecaca;
         }
         .content-card { padding: 20px; }
+        .arquivo-filtros { display:grid; grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr)) auto auto; gap:10px; align-items:end; margin-bottom:16px; }
+        .arquivo-filtros label { display:grid; gap:5px; color:#334155; font-size:12px; font-weight:800; }
+        .arquivo-filtros input, .arquivo-filtros select { height:42px; border:1px solid #d6e2ec; border-radius:10px; padding:0 11px; background:#fff; font:inherit; }
+        .arquivo-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; color:#475569; font-size:13px; font-weight:700; }
+        .arquivo-pagination div { display:flex; gap:8px; }
         .upload-panel {
           border: 1px dashed #9ecfb2;
           background: #f5fff8;
@@ -2086,9 +2106,10 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         th:nth-child(1), td:nth-child(1) { width:96px; min-width:96px; text-align:center; overflow:visible; }
         th:nth-child(2), td:nth-child(2) { width:32%; }
         th:nth-child(3), td:nth-child(3) { width:26%; }
-        th:nth-child(4), td:nth-child(4) { width:120px; }
-        th:nth-child(5), td:nth-child(5) { width:145px; min-width:145px; overflow:visible; }
-        th:nth-child(6), td:nth-child(6) { width:310px; min-width:310px; overflow:visible; }
+        th:nth-child(4), td:nth-child(4) { width:115px; }
+        th:nth-child(5), td:nth-child(5) { width:120px; }
+        th:nth-child(6), td:nth-child(6) { width:145px; min-width:145px; overflow:visible; }
+        th:nth-child(7), td:nth-child(7) { width:330px; min-width:330px; overflow:visible; }
         .arquivo-badge {
           display:inline-flex;
           align-items:center;
@@ -2123,7 +2144,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .arquivo-actions-inner > * { flex:0 0 auto; }
         .arquivo-actions-inner form { margin:0; }
 
-        .table-wrap table { table-layout: auto !important; min-width: 1180px; }
+        .table-wrap table { table-layout: auto !important; min-width: 1280px; }
         th:nth-child(2), td:nth-child(2) {
           width: auto !important;
           min-width: 420px !important;
@@ -2151,6 +2172,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .filter-alert-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
         .btn-return-mini { color:#166534; background:#fff; border-color:#86efac; }
         @media(max-width:760px) {
+          .arquivo-filtros { grid-template-columns:1fr; }
           .filter-alert { align-items:flex-start; flex-direction:column; }
           .filter-alert-actions { width:100%; justify-content:flex-start; }
           .upload-form > * { width:100%; }
@@ -2200,6 +2222,15 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             </div>
           ` : ''}
 
+          <form class="arquivo-filtros" method="GET" action="/arquivo">
+            <label>Fornecedor, CNPJ ou documento<input name="busca" value="${escapeHtmlGlobal(filtros.busca || '')}" placeholder="Digite para localizar"></label>
+            <label>Data inicial<input type="date" name="data_inicio" value="${escapeHtmlGlobal(filtros.dataInicio || '')}"></label>
+            <label>Data final<input type="date" name="data_fim" value="${escapeHtmlGlobal(filtros.dataFim || '')}"></label>
+            <label>Conciliação<select name="conciliacao"><option value="">Todos</option>${['COMPLETO','AGUARDANDO_XML','AGUARDANDO_PDF','COMPROVANTE','DUPLICADO','ARQUIVO_AUSENTE'].map(status => `<option value="${status}" ${filtros.conciliacao === status ? 'selected' : ''}>${({COMPLETO:'Completo',AGUARDANDO_XML:'Aguardando XML',AGUARDANDO_PDF:'Aguardando PDF',COMPROVANTE:'Comprovante comum',DUPLICADO:'Possível duplicado',ARQUIVO_AUSENTE:'Arquivo ausente'})[status]}</option>`).join('')}</select></label>
+            <button class="btn-green" type="submit">Filtrar</button>
+            <a class="dm-menu-btn" href="/arquivo">Limpar</a>
+          </form>
+
           <div class="table-wrap">
             <table>
               <thead>
@@ -2207,18 +2238,22 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                   <th>Tipo</th>
                   <th>Documento</th>
                   <th>CNPJ/CPF</th>
+                  <th>Emissão</th>
                   <th>Valor</th>
                   <th>Conciliação</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                ${linhas || `<tr><td colspan="6"><div class="empty">Nenhum arquivo disponível na fila.</div></td></tr>`}
+                ${linhas || `<tr><td colspan="7"><div class="empty">Nenhum arquivo encontrado.</div></td></tr>`}
               </tbody>
             </table>
           </div>
+          <div class="arquivo-pagination"><span>${totalItens} documento(s) - página ${pagina} de ${totalPaginas}</span><div>${pagina > 1 ? `<a class="btn-soft-mini" href="?${new URLSearchParams({ ...filtros.query, pagina: pagina - 1 }).toString()}">Anterior</a>` : ''}${pagina < totalPaginas ? `<a class="btn-soft-mini" href="?${new URLSearchParams({ ...filtros.query, pagina: pagina + 1 }).toString()}">Próxima</a>` : ''}</div></div>
         </div>
       </div>
+      <dialog id="xmlEspelho" style="width:min(1100px,94vw);height:88vh;padding:0;border:0;border-radius:12px;box-shadow:0 24px 70px rgba(15,23,42,.3)"><iframe title="Espelho do XML" style="width:100%;height:100%;border:0"></iframe></dialog>
+      <script>document.addEventListener('click',function(e){const b=e.target.closest('[data-espelho]');if(!b)return;const d=document.getElementById('xmlEspelho');d.querySelector('iframe').src=b.dataset.espelho;d.showModal();});</script>
     </body>
     </html>
   `;
@@ -15585,6 +15620,11 @@ router.get('/arquivo', protegerRota, async (req, res) => {
     const retornoFiltros = String(req.query.retorno_filtros || '').trim();
     const cnpjFiltro = arquivoConciliacaoSomenteDigitos(req.query.cnpj_filtro || '');
     const mostrarTodos = String(req.query.mostrar_todos || '') === '1';
+    const busca = String(req.query.busca || '').trim();
+    const dataInicio = arquivoConciliacaoDataIso(req.query.data_inicio || '');
+    const dataFim = arquivoConciliacaoDataIso(req.query.data_fim || '');
+    const conciliacao = String(req.query.conciliacao || '').trim().toUpperCase();
+    const paginaSolicitada = Math.max(1, Number.parseInt(req.query.pagina, 10) || 1);
 
     const result = await pool.query(`
       SELECT *
@@ -15604,6 +15644,27 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       filtroSemResultado = filtrados.length === 0;
       arquivos = filtrados;
     }
+    if (busca) {
+      const termo = busca.toLocaleLowerCase('pt-BR');
+      const digitos = arquivoConciliacaoSomenteDigitos(busca);
+      arquivos = arquivos.filter(item => [item.fornecedor, item.numero_documento, item.nome_original]
+        .some(valor => String(valor || '').toLocaleLowerCase('pt-BR').includes(termo)) ||
+        (digitos && arquivoConciliacaoSomenteDigitos(item.cnpj_cpf).includes(digitos)));
+    }
+    if (dataInicio) arquivos = arquivos.filter(item => arquivoDataIso(item.data_documento) >= dataInicio);
+    if (dataFim) arquivos = arquivos.filter(item => arquivoDataIso(item.data_documento) && arquivoDataIso(item.data_documento) <= dataFim);
+    if (conciliacao) arquivos = arquivos.filter(item => String(item.analise_status || '').toUpperCase() === conciliacao);
+
+    const totalItens = arquivos.length;
+    const porPagina = 50;
+    const totalPaginas = Math.max(1, Math.ceil(totalItens / porPagina));
+    const pagina = Math.min(paginaSolicitada, totalPaginas);
+    arquivos = arquivos.slice((pagina - 1) * porPagina, pagina * porPagina);
+    const queryFiltros = {};
+    if (busca) queryFiltros.busca = busca;
+    if (dataInicio) queryFiltros.data_inicio = dataInicio;
+    if (dataFim) queryFiltros.data_fim = dataFim;
+    if (conciliacao) queryFiltros.conciliacao = conciliacao;
 
     res.send(renderArquivoFilaPage({
       arquivos,
@@ -15619,7 +15680,11 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       mostrarTodos,
       filtroSemResultado,
       pendentesAnalise: Number(pendentesResult.rows[0]?.total || 0),
-      podeImportarNfse: ['ADMIN', 'USUARIO'].includes(req.session?.usuario?.perfil)
+      podeImportarNfse: ['ADMIN', 'USUARIO'].includes(req.session?.usuario?.perfil),
+      filtros: { busca, dataInicio, dataFim, conciliacao, query: queryFiltros },
+      pagina,
+      totalPaginas,
+      totalItens
     }));
   } catch (error) {
     res.status(500).send(`<pre>Erro ao abrir Arquivo:\n${error.message}</pre>`);
@@ -15713,6 +15778,95 @@ router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
   }
+});
+
+function arquivoEspelhoDadosXml(xml, arquivo = {}) {
+  const texto = String(xml || '');
+  const bloco = (nome) => (texto.match(new RegExp(`<(?:\\w+:)?${nome}[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?${nome}>`, 'i')) || [])[1] || '';
+  const tag = (fonte, nomes) => {
+    for (const nome of nomes) {
+      const valor = arquivoAutoFindTag(fonte || texto, [nome]);
+      if (valor) return arquivoAutoNormText(valor);
+    }
+    return '';
+  };
+  const emit = bloco('emit') || bloco('prest') || bloco('PrestadorServico');
+  const toma = bloco('toma') || bloco('tomador') || bloco('TomadorServico');
+  const serv = bloco('serv') || bloco('Servico');
+  const endEmit = (emit.match(/<(?:\w+:)?(?:enderEmit|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderEmit|end|Endereco)>/i) || [])[1] || emit;
+  const endereco = [tag(endEmit, ['xLgr', 'Endereco']), tag(endEmit, ['nro', 'Numero']), tag(endEmit, ['xBairro', 'Bairro']), tag(endEmit, ['xMun', 'Cidade']), tag(endEmit, ['UF'])].filter(Boolean).join(', ');
+  return {
+    tipo: /<(?:\w+:)?infNFe[\s>]/i.test(texto) ? 'NF-e' : 'NFS-e',
+    numero: arquivo.numero_documento || tag(texto, ['nNFSe', 'nNF', 'NumeroNFe', 'Numero']),
+    chave: arquivo.chave_fiscal || arquivoConciliacaoExtrairChave(texto),
+    emissao: arquivoDataIso(arquivo.data_documento) || arquivoConciliacaoDataIso(tag(texto, ['dhEmi', 'dEmi', 'DataEmissao', 'dhProc'])),
+    competencia: tag(texto, ['dCompet', 'Competencia']),
+    fornecedor: arquivo.fornecedor || tag(emit, ['xNome', 'RazaoSocial', 'Nome']),
+    cnpj: arquivo.cnpj_cpf || tag(emit, ['CNPJ', 'CPF', 'Cnpj']),
+    fantasia: tag(emit, ['xFant', 'NomeFantasia']),
+    endereco,
+    tomador: tag(toma, ['xNome', 'RazaoSocial', 'Nome']),
+    tomadorCnpj: tag(toma, ['CNPJ', 'CPF', 'Cnpj']),
+    municipioEmissao: tag(texto, ['xLocEmi', 'MunicipioEmissao']),
+    municipioPrestacao: tag(texto, ['xLocPrestacao', 'MunicipioPrestacao']),
+    descricao: tag(serv, ['xDescServ', 'Discriminacao', 'xProd', 'Descricao']),
+    codigoServico: tag(serv, ['cTribNac', 'ItemListaServico', 'CodigoTributacaoMunicipio']),
+    nbs: tag(serv, ['cNBS', 'NBS']),
+    cnae: tag(serv, ['CNAE', 'CodigoCnae']),
+    valor: arquivo.valor_documento ?? arquivoConciliacaoValorNumero(tag(texto, ['vLiq', 'vNF', 'ValorLiquidoNfse', 'ValorServicos'])),
+    iss: tag(texto, ['vISSQN', 'ValorIss']),
+    origem: arquivo.origem || ''
+  };
+}
+
+function arquivoEspelhoPdfBuffer(dados) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 42, info: { Title: `Espelho ${dados.tipo} ${dados.numero}` } });
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+    const linha = (rotulo, valor) => { if (valor !== '' && valor != null) doc.font('Helvetica-Bold').text(`${rotulo}: `, { continued: true }).font('Helvetica').text(String(valor)); };
+    doc.font('Helvetica-Bold').fontSize(18).fillColor('#0f172a').text(`ESPELHO DO XML - ${dados.tipo}`);
+    doc.font('Helvetica').fontSize(9).fillColor('#b42318').text('Documento auxiliar gerado pelo PlennaTec. Nao substitui o documento fiscal oficial.');
+    doc.moveDown().strokeColor('#cbd5e1').moveTo(42, doc.y).lineTo(553, doc.y).stroke().moveDown();
+    doc.fillColor('#111827').fontSize(10);
+    linha('Fornecedor', dados.fornecedor); linha('Nome fantasia', dados.fantasia); linha('CNPJ/CPF', dados.cnpj); linha('Endereco', dados.endereco);
+    doc.moveDown(); linha('Numero', dados.numero); linha('Emissao', arquivoDataBr(dados.emissao)); linha('Competencia', dados.competencia); linha('Chave', dados.chave);
+    doc.moveDown(); linha('Tomador', dados.tomador); linha('CNPJ/CPF do tomador', dados.tomadorCnpj); linha('Municipio de emissao', dados.municipioEmissao); linha('Municipio da prestacao', dados.municipioPrestacao);
+    doc.moveDown(); linha('Descricao', dados.descricao); linha('Codigo do servico', dados.codigoServico); linha('NBS', dados.nbs); linha('CNAE', dados.cnae); linha('ISS', dados.iss);
+    doc.moveDown(); doc.font('Helvetica-Bold').fontSize(15).text(`Valor: ${Number(dados.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+    doc.end();
+  });
+}
+
+router.get('/arquivo/espelho/:id', protegerRota, async (req, res) => {
+  try {
+    const arquivo = await getArquivoFilaDisponivel(Number(req.params.id), 'XML');
+    const filePath = arquivo && getUploadFilePath(arquivo.nome_arquivo);
+    if (!arquivo || !filePath || !fs.existsSync(filePath)) return res.status(404).send('<pre>XML não encontrado.</pre>');
+    const dados = arquivoEspelhoDadosXml(fs.readFileSync(filePath, 'utf8'), arquivo);
+    const campo = (rotulo, valor) => valor !== '' && valor != null ? `<div><small>${escapeHtmlGlobal(rotulo)}</small><strong>${escapeHtmlGlobal(valor)}</strong></div>` : '';
+    res.send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Espelho do XML</title><style>body{margin:0;padding:24px;font-family:Arial;color:#0f172a;background:#f8fafc}header{display:flex;justify-content:space-between;gap:20px;align-items:start;border-bottom:2px solid #00a84f;padding-bottom:16px}h1{margin:0;font-size:24px}p{color:#64748b}.aviso{padding:10px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.grid div{background:#fff;border:1px solid #dce7ef;padding:11px;border-radius:6px;min-height:55px}.grid small{display:block;color:#64748b;text-transform:uppercase;font-size:10px;font-weight:800;margin-bottom:5px}.wide{grid-column:span 3}.actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#f8fafc;padding:14px 0}button{border:1px solid #cbd5e1;border-radius:8px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#00a84f;color:#fff;border-color:#00a84f}@media(max-width:700px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body><header><div><h1>Espelho do XML - ${escapeHtmlGlobal(dados.tipo)}</h1><p>${escapeHtmlGlobal(dados.fornecedor || 'Documento fiscal')}</p></div><strong>${escapeHtmlGlobal(dados.numero || '')}</strong></header><p class="aviso">Documento auxiliar gerado pelo PlennaTec. Não substitui o documento fiscal oficial.</p><section class="grid">${campo('Fornecedor',dados.fornecedor)}${campo('Nome fantasia',dados.fantasia)}${campo('CNPJ/CPF',dados.cnpj)}${campo('Endereço',dados.endereco)}${campo('Emissão',arquivoDataBr(dados.emissao))}${campo('Competência',dados.competencia)}${campo('Tomador',dados.tomador)}${campo('CNPJ/CPF do tomador',dados.tomadorCnpj)}${campo('Município de emissão',dados.municipioEmissao)}${campo('Município da prestação',dados.municipioPrestacao)}${campo('Código do serviço',dados.codigoServico)}${campo('NBS',dados.nbs)}${campo('CNAE',dados.cnae)}${campo('Origem',dados.origem)}${campo('Chave',dados.chave)}${dados.descricao ? `<div class="wide"><small>Descrição</small><strong>${escapeHtmlGlobal(dados.descricao)}</strong></div>` : ''}${campo('Valor',Number(dados.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}))}</section><div class="actions"><button type="button" onclick="parent.document.getElementById('xmlEspelho').close()">Fechar</button><form method="post" action="/arquivo/espelho/${arquivo.id}/usar" target="_top"><button class="primary" type="submit">Usar este espelho</button></form></div></body></html>`);
+  } catch (error) { res.status(500).send(`<pre>Erro ao montar espelho:\n${escapeHtmlGlobal(error.message)}</pre>`); }
+});
+
+router.post('/arquivo/espelho/:id/usar', protegerRota, async (req, res) => {
+  try {
+    const arquivo = await getArquivoFilaDisponivel(Number(req.params.id), 'XML');
+    const filePath = arquivo && getUploadFilePath(arquivo.nome_arquivo);
+    if (!arquivo || !filePath || !fs.existsSync(filePath)) throw new Error('XML não encontrado.');
+    const existente = await pool.query("SELECT id FROM arquivo_fila WHERE par_id=$1 AND tipo='PDF' AND status='DISPONIVEL' LIMIT 1", [arquivo.id]);
+    if (existente.rows[0]) return res.redirect('/arquivo?ok=' + encodeURIComponent('Este XML já possui um PDF conciliado.'));
+    const dados = arquivoEspelhoDadosXml(fs.readFileSync(filePath, 'utf8'), arquivo);
+    const buffer = await arquivoEspelhoPdfBuffer(dados);
+    const nome = gerarNomeUnicoArquivoFila(`espelho-${arquivo.numero_documento || arquivo.id}.pdf`);
+    const caminho = path.join(uploadsDir, nome);
+    fs.writeFileSync(caminho, buffer);
+    const inserted = await pool.query(`INSERT INTO arquivo_fila (nome_original,nome_arquivo,tipo,caminho,tamanho_bytes,status,origem,chave_origem,metadados,documento_classe,chave_fiscal,cnpj_cpf,fornecedor,numero_documento,tipo_documento_detectado,data_documento,valor_documento,analise_status,par_id,analisado_em) VALUES ($1,$2,'PDF',$3,$4,'DISPONIVEL','ESPELHO_XML',$5,$6,'FISCAL',$7,$8,$9,$10,$11,$12,$13,'COMPLETO',$14,NOW()) RETURNING id`, [`Espelho do XML ${arquivo.numero_documento || arquivo.id}`, nome, caminho, buffer.length, arquivo.chave_fiscal || arquivo.chave_origem, { espelhoGerado: true, xmlId: arquivo.id }, arquivo.chave_fiscal, arquivo.cnpj_cpf, arquivo.fornecedor, arquivo.numero_documento, arquivo.tipo_documento_detectado, arquivo.data_documento, arquivo.valor_documento, arquivo.id]);
+    await pool.query("UPDATE arquivo_fila SET par_id=$1, analise_status='COMPLETO' WHERE id=$2", [inserted.rows[0].id, arquivo.id]);
+    res.redirect('/arquivo?ok=' + encodeURIComponent('Espelho criado e conciliado com o XML.'));
+  } catch (error) { res.redirect('/arquivo?erro=' + encodeURIComponent(error.message)); }
 });
 
 router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
