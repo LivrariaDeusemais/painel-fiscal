@@ -17654,10 +17654,13 @@ body {
             display: none;
             position: fixed;
             inset: 0;
-            z-index: 99999;
+            z-index: 2147483646;
             background: rgba(15, 23, 42, 0.88);
           }
           .pdf-copy-modal.active { display: block; }
+          body.pdf-copy-open .dm-global-header-shell {
+            z-index: 1 !important;
+          }
           .pdf-copy-viewer-wrap {
             position: absolute;
             inset: 14px;
@@ -18194,6 +18197,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             if (modal.parentElement !== document.body) document.body.appendChild(modal);
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('pdf-copy-open');
             document.body.style.overflow = 'hidden';
             carregarCamposAtuaisNoPopupPDF();
           }
@@ -18203,6 +18207,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             if (!modal) return;
             modal.classList.remove('active');
             modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('pdf-copy-open');
             document.body.style.overflow = '';
           }
 
