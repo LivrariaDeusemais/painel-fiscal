@@ -5714,8 +5714,15 @@ function renderGlobalHeader(req, config = {}) {
   const isAdmin = usuario.perfil === 'ADMIN';
   const paginasSemNovoLancamento = ['usuarios', 'categorias', 'documentos', 'espaco-contador', 'alertas-vencimentos'];
   const ocultarNovoLancamento = paginasSemNovoLancamento.includes(paginaAtual);
+  const primaryActions = Array.isArray(config.primaryActions) ? config.primaryActions : [];
   const menuBase = [
     ...(!ocultarNovoLancamento ? [{ key: 'novo', href: config.primaryHref || '/novo', label: config.primaryLabel || '+ Novo lançamento', primary: true }] : []),
+    ...primaryActions.map((item, index) => ({
+      key: item.key || `primary-action-${index}`,
+      href: item.href || '#',
+      label: item.label || '',
+      primary: true
+    })),
     { key: 'dashboard', href: '/dashboard', label: 'Voltar para o Painel', primary: ocultarNovoLancamento },
     { key: 'rotina-despesas', href: '/rotina-despesas', label: 'Contas à Pagar' },
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
@@ -15802,10 +15809,15 @@ function arquivoEspelhoDadosXml(xml, arquivo = {}) {
   const toma = bloco('toma') || bloco('tomador') || bloco('TomadorServico');
   const tomaDocumento = bloco('CPFCNPJTomador');
   const serv = bloco('serv') || bloco('Servico');
-  const endEmit = (emit.match(/<(?:\w+:)?(?:enderEmit|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderEmit|end|Endereco)>/i) || [])[1] || emit;
-  const endToma = (toma.match(/<(?:\w+:)?(?:enderToma|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderToma|end|Endereco)>/i) || [])[1] || toma;
-  const endereco = [tag(endEmit, ['xLgr', 'Endereco']), tag(endEmit, ['nro', 'Numero']), tag(endEmit, ['xBairro', 'Bairro']), tag(endEmit, ['xMun', 'Cidade']), tag(endEmit, ['UF'])].filter(Boolean).join(', ');
-  const enderecoTomador = [tag(endToma, ['xLgr', 'Endereco']), tag(endToma, ['nro', 'Numero']), tag(endToma, ['xBairro', 'Bairro']), tag(endToma, ['xMun', 'Cidade']), tag(endToma, ['UF'])].filter(Boolean).join(', ');
+  const endEmit = bloco('EnderecoPrestador') || bloco('enderEmit') || (emit.match(/<(?:\w+:)?(?:enderNac|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderNac|end|Endereco)>/i) || [])[1] || '';
+  const endToma = bloco('EnderecoTomador') || bloco('enderToma') || (toma.match(/<(?:\w+:)?(?:enderNac|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderNac|end|Endereco)>/i) || [])[1] || '';
+  const montarEndereco = fonte => {
+    if (!fonte) return '';
+    const logradouro = [tag(fonte, ['TipoLogradouro'], false), tag(fonte, ['xLgr', 'Logradouro'], false)].filter(Boolean).join(' ');
+    return [logradouro, tag(fonte, ['nro', 'NumeroEndereco', 'Numero'], false), tag(fonte, ['ComplementoEndereco', 'xCpl', 'Complemento'], false), tag(fonte, ['xBairro', 'Bairro'], false), tag(fonte, ['xMun', 'Cidade'], false), tag(fonte, ['UF'], false), tag(fonte, ['CEP'], false)].filter(Boolean).join(', ');
+  };
+  const endereco = montarEndereco(endEmit);
+  const enderecoTomador = montarEndereco(endToma);
   return {
     tipo: /<(?:\w+:)?infNFe[\s>]/i.test(texto) ? 'NF-e' : 'NFS-e',
     numero: arquivo.numero_documento || tag(texto, ['nNFSe', 'nNF', 'NumeroNFe', 'Numero']),
@@ -17087,7 +17099,7 @@ router.post('/documentos/gerar-lancamento/:id', async (req, res) => {
     
 router.get('/novo', async (req, res) => {
   try {
-    const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '', retorno_filtros = '' } = req.query;
+    const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '', abrir_preencher_pdf = '', retorno_filtros = '' } = req.query;
     const retornoRecebido = new URLSearchParams(String(retorno_filtros || ''));
     const retornoSeguro = new URLSearchParams();
     const retornoFornecedor = String(retornoRecebido.get('fornecedor') || '').trim();
@@ -17637,58 +17649,7 @@ body {
   .charts-grid { grid-template-columns: 1fr !important; }
 }
 /* ===== FIM AJUSTE FINAL VERDE + WINDOWS RESPONSIVO ===== */
-
-
-
-          .nf-paste-box {
-            margin: 16px 0 18px;
-            padding: 16px;
-            border-radius: 16px;
-            border: 1px solid #dce3ec;
-            background: rgba(255,255,255,0.76);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-          }
-          .nf-paste-box h3 {
-            margin: 0 0 6px;
-            font-size: 15px;
-            color: #101828;
-          }
-          .nf-paste-box p {
-            margin: 0 0 12px;
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.35;
-          }
-          .nf-paste-box textarea {
-            width: 100%;
-            min-height: 112px;
-            resize: vertical;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            font-size: 13px;
-            font-family: Arial, sans-serif;
-            background: rgba(255,255,255,0.94);
-          }
-          .nf-paste-actions {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-          }
-          .nf-paste-msg {
-            font-size: 12px;
-            font-weight: 700;
-          }
-          .nf-paste-msg.ok { color: #047857; }
-          .nf-paste-msg.warn { color: #92400e; }
-
-          /* ===== COPIAR DO PDF - MODAL COM POP-UP FLUTUANTE ===== */
-          .pdf-copy-btn {
-            background: linear-gradient(135deg, #0f766e, #059669) !important;
-            color: #ffffff !important;
-          }
+          /* ===== PREENCHER DO PDF - MODAL COM POP-UP FLUTUANTE ===== */
           .pdf-copy-modal {
             display: none;
             position: fixed;
@@ -17923,16 +17884,8 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             ${origemInfo}
 
-            <div class="nf-paste-box">
-              <h3>📋 Colar conteúdo da NF</h3>
-              <p>Abra o PDF da nota, selecione tudo, copie e cole aqui. Depois clique em preencher. Se não reconhecer, preencha manualmente.</p>
-              <textarea id="texto_nf_colado" placeholder="Cole aqui o texto copiado da NF..."></textarea>
-              <div class="nf-paste-actions">
-                <button type="button" onclick="preencherPorTextoNF()">Preencher automaticamente</button>
-                <button type="button" class="pdf-copy-btn" onclick="abrirCopiarDoPDF()">📄 Copiar do PDF</button>
-                <button type="button" class="btn-secondary" onclick="limparTextoNF()">Limpar texto</button>
-                <span id="nf_paste_msg" class="nf-paste-msg"></span>
-              </div>
+            <div class="actions" style="margin:16px 0 18px;">
+              <button type="button" onclick="abrirCopiarDoPDF()">Preencher do PDF</button>
             </div>
 
             <form id="novoLancamentoForm" method="POST" action="/novo" enctype="multipart/form-data">
@@ -18047,7 +18000,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
           <div id="pdfCopyPanel" class="pdf-copy-panel">
             <div id="pdfCopyDragHandle" class="pdf-copy-panel-header">
-              <strong>Preencher</strong>
+              <strong>Preencher do PDF</strong>
               <button type="button" class="pdf-copy-close" onclick="fecharCopiarDoPDF()" title="Fechar">×</button>
             </div>
 
@@ -18198,12 +18151,6 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               );
             }
 
-            var msg = document.getElementById('nf_paste_msg');
-            if (msg) {
-              msg.className = 'nf-paste-msg ok';
-              msg.textContent = 'PDF carregado do Arquivo. Preencha os dados no pop-up e salve.';
-            }
-
             var pdfInputFinal = document.getElementById('anexo_pdf') || document.querySelector('input[name="anexo_pdf"]');
             if (pdfInputFinal && !document.getElementById('pdfArquivoSelecionadoChipFinal')) {
               var chipFinal = document.createElement('span');
@@ -18236,6 +18183,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             restaurarRascunhoNovoLancamentoDepoisArquivo();
             carregarPdfDoArquivoFilaSeExistir();
             carregarXmlDoArquivoFilaSeExistir();
+            if ('${abrir_preencher_pdf || ''}' === '1') abrirCopiarDoPDF();
           });
 
 
@@ -18333,13 +18281,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             var pdfAnexado = anexarPDFSelecionadoNoFormulario();
 
             fecharCopiarDoPDF();
-            var msg = document.getElementById('nf_paste_msg');
-            if (msg) {
-              msg.className = pdfAnexado ? 'nf-paste-msg ok' : 'nf-paste-msg';
-              msg.textContent = pdfAnexado
-                ? 'Dados enviados e PDF anexado automaticamente.'
-                : 'Dados enviados. Nenhum PDF foi selecionado no popup.';
-            }
+            return pdfAnexado;
           }
 
           function limparCamposCopiarDoPDF() {
@@ -18395,157 +18337,6 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             document.addEventListener('touchend', parar);
           })();
 
-          function somenteDigitosNF(valor) {
-            return String(valor || '').replace(/\\D/g, '');
-          }
-
-          function formatarCnpjNF(valor) {
-            var d = somenteDigitosNF(valor);
-            if (d.length !== 14) return valor || '';
-            return d.replace(/^(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})$/, '$1.$2.$3/$4-$5');
-          }
-
-          function normalizarTextoNF(texto) {
-            return String(texto || '')
-              .replace(/\\r/g, '\\n')
-              .replace(/[\\t ]+/g, ' ')
-              .replace(/\\n{2,}/g, '\\n')
-              .trim();
-          }
-
-          function pegarPrimeiroMatch(texto, regexes) {
-            for (var i = 0; i < regexes.length; i++) {
-              var m = texto.match(regexes[i]);
-              if (m && m[1]) return String(m[1]).trim();
-            }
-            return '';
-          }
-
-          function extrairFornecedorNF(texto) {
-            var linhas = normalizarTextoNF(texto).split(/\\n/).map(function(l) { return l.trim(); }).filter(Boolean);
-            var meuCnpj = '18862388000103';
-            var empresaRegex = /(LTDA\\.?|S\\.A\\.?|\\bSA\\b|EIRELI|\\bME\\b|EPP)/i;
-            var ignorar = /(PLENNATEC|TOMADOR|DESTINAT[ÁA]RIO|ADQUIRENTE|CPF\\/CNPJ|CNPJ\\/CPF|ENDERE[ÇC]O|MUNIC[ÍI]PIO|INSCRI[ÇC][ÃA]O|NOTA FISCAL|SECRETARIA|PREFEITURA)/i;
-
-            for (var i = 0; i < linhas.length; i++) {
-              var linha = linhas[i];
-              if (/PRESTADOR|EMITENTE/i.test(linha)) {
-                for (var j = i + 1; j < Math.min(i + 16, linhas.length); j++) {
-                  var cand = linhas[j];
-                  var dig = somenteDigitosNF(cand);
-                  if (dig === meuCnpj) continue;
-                  if (empresaRegex.test(cand) && !ignorar.test(cand)) return cand;
-                }
-              }
-            }
-
-            for (var k = 0; k < linhas.length; k++) {
-              var l = linhas[k];
-              if (empresaRegex.test(l) && !ignorar.test(l)) return l;
-            }
-            return '';
-          }
-
-          function extrairDadosNFColada(textoOriginal) {
-            var texto = normalizarTextoNF(textoOriginal);
-            var plano = texto.replace(/\\s+/g, ' ');
-            var dados = {};
-
-            var cnpjs = plano.match(/[0-9]{2}\\.?[0-9]{3}\\.?[0-9]{3}\\/?[0-9]{4}-?[0-9]{2}/g) || [];
-            for (var i = 0; i < cnpjs.length; i++) {
-              if (somenteDigitosNF(cnpjs[i]) !== '18862388000103') {
-                dados.cnpj_cpf = formatarCnpjNF(cnpjs[i]);
-                break;
-              }
-            }
-
-            dados.numero_documento = pegarPrimeiroMatch(texto, [
-              /N[úu]mero\\s+da\\s+Nota\\s*\\n\\s*(\\d{3,})/i,
-              /N[úu]mero\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{3,})/i,
-              /N[úu]mero\\s+da\\s+DPS\\s*\\n\\s*(\\d{3,})/i,
-              /N[ºo\\.]*\\s*(?:da\\s*)?(?:NF|NFS-?e|Nota)\\D{0,30}(\\d{3,})/i,
-              /RPS\\s*N[ºo\\.]*\\s*(\\d{3,})/i
-            ]) || pegarPrimeiroMatch(plano, [
-              /N[úu]mero\\s+da\\s+Nota\\D{0,80}(\\d{3,})/i,
-              /N[úu]mero\\s+da\\s+NFS-?e\\D{0,80}(\\d{3,})/i,
-              /N[ºo\\.]*\\s*(?:da\\s*)?(?:NF|NFS-?e|Nota)\\D{0,30}(\\d{3,})/i
-            ]);
-
-            var valor = pegarPrimeiroMatch(plano, [
-              /VALOR\\s+TOTAL\\s+DO\\s+SERVI[ÇC]O\\s*=\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /VALOR\\s+TOTAL\\s+DA\\s+NOTA\\s*=\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /VALOR\\s+TOTAL\\s+COBRADO\\s*=\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /VALOR\\s+TOTAL\\s+DA\\s+NFS-?E\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /Valor\\s+L[íi]quido\\s+da\\s+NFS-?e\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i,
-              /Valor\\s+do\\s+Servi[çc]o\\s*R\\$\\s*([\\d\\.]+,\\d{2})/i
-            ]);
-            if (!valor) {
-              var valores = plano.match(/R\\$\\s*[\\d\\.]+,\\d{2}/g) || [];
-              if (valores.length) valor = valores[valores.length - 1].replace(/R\\$\\s*/i, '').trim();
-            }
-            dados.valor = valor;
-
-            var dataBR = pegarPrimeiroMatch(texto, [
-              /Data\\s+e\\s+Hora\\s+de\\s+Emiss[ãa]o\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /Data\\s+e\\s+Hora\\s+da\\s+emiss[ãa]o\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /Compet[êe]ncia\\s+da\\s+NFS-?e\\s*\\n\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /emitido\\s+em\\s+(\\d{2}\\/\\d{2}\\/\\d{4})/i
-            ]) || pegarPrimeiroMatch(plano, [
-              /Data\\s+e\\s+Hora\\s+de\\s+Emiss[ãa]o\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /Data\\s+e\\s+Hora\\s+da\\s+emiss[ãa]o\\s+da\\s+NFS-?e\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i,
-              /Compet[êe]ncia\\s+da\\s+NFS-?e\\D{0,50}(\\d{2}\\/\\d{2}\\/\\d{4})/i
-            ]);
-            if (dataBR) {
-              var partes = dataBR.split('/');
-              dados.data_despesa = partes[2] + '-' + partes[1] + '-' + partes[0];
-            }
-
-            dados.fornecedor = extrairFornecedorNF(texto);
-            dados.tipo_documento = /NFS-?e|NOTA FISCAL ELETR[ÔO]NICA DE SERVI[ÇC]OS|DANFSe/i.test(texto)
-              ? 'NFEs Serviço'
-              : 'NFe Produto';
-
-            return dados;
-          }
-
-          function setCampoNF(id, valor) {
-            var el = document.getElementById(id);
-            if (el && valor) el.value = valor;
-          }
-
-          function preencherPorTextoNF() {
-            var texto = document.getElementById('texto_nf_colado').value || '';
-            var msg = document.getElementById('nf_paste_msg');
-            if (!texto.trim()) {
-              msg.className = 'nf-paste-msg warn';
-              msg.textContent = 'Cole o texto da NF antes de preencher.';
-              return;
-            }
-
-            var dados = extrairDadosNFColada(texto);
-            var encontrou = 0;
-            ['tipo_documento','numero_documento','data_despesa','valor','fornecedor','cnpj_cpf'].forEach(function(campo) {
-              if (dados[campo]) {
-                setCampoNF(campo, dados[campo]);
-                encontrou++;
-              }
-            });
-
-            if (encontrou >= 2) {
-              msg.className = 'nf-paste-msg ok';
-              msg.textContent = 'Campos preenchidos. Confira antes de salvar.';
-            } else {
-              msg.className = 'nf-paste-msg warn';
-              msg.textContent = 'Texto não reconhecido. Preencha manualmente.';
-            }
-          }
-
-          function limparTextoNF() {
-            document.getElementById('texto_nf_colado').value = '';
-            var msg = document.getElementById('nf_paste_msg');
-            msg.className = 'nf-paste-msg';
-            msg.textContent = '';
-          }
         </script>
 </body>
       </html>
@@ -23371,7 +23162,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
 
           <td class="col-acoes col-rot-acoes">
             <div class="acoes-wrap">
-              <a class="icon-btn" href="/novo?${new URLSearchParams({ rotina_id: String(r.id), ...(retornoFiltros ? { retorno_filtros: retornoFiltros } : {}) }).toString()}" title="Novo lançamento">➕</a>
+              <a class="icon-btn" href="/novo?${new URLSearchParams({ rotina_id: String(r.id), abrir_preencher_pdf: '1', ...(retornoFiltros ? { retorno_filtros: retornoFiltros } : {}) }).toString()}" title="Preencher do PDF">➕</a>
               <a class="icon-btn" href="/rotina-despesas/editar/${r.id}" title="Editar">✏️</a>
               <a class="icon-btn" href="/rotina-despesas/excluir/${r.id}" title="Excluir" onclick="return confirm('Deseja excluir este item da rotina?')">🗑️</a>
             </div>
@@ -24579,7 +24370,10 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         subtitulo: 'Controle operacional das despesas mensais, status, vencimentos e competência.',
         paginaAtual: 'rotina-despesas',
         primaryHref: '/rotina-despesas/novo',
-        primaryLabel: '+ Novo item',
+        primaryLabel: 'Nova Conta',
+        primaryActions: [
+          { key: 'novo-lancamento-avulso', href: '/novo', label: 'Novo Lançamento +' }
+        ],
         extraActions: `
           <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
             <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Zerar Status</button>
