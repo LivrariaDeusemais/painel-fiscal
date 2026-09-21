@@ -15790,15 +15790,17 @@ router.get('/arquivo/api/:id', protegerRota, async (req, res) => {
 function arquivoEspelhoDadosXml(xml, arquivo = {}) {
   const texto = String(xml || '');
   const bloco = (nome) => (texto.match(new RegExp(`<(?:\\w+:)?${nome}[^>]*>([\\s\\S]*?)<\\/(?:\\w+:)?${nome}>`, 'i')) || [])[1] || '';
-  const tag = (fonte, nomes) => {
+  const tag = (fonte, nomes, usarTextoCompleto = true) => {
+    const origemBusca = fonte || (usarTextoCompleto ? texto : '');
     for (const nome of nomes) {
-      const valor = arquivoAutoFindTag(fonte || texto, [nome]);
+      const valor = arquivoAutoFindTag(origemBusca, [nome]);
       if (valor) return arquivoAutoNormText(valor);
     }
     return '';
   };
   const emit = bloco('emit') || bloco('prest') || bloco('PrestadorServico');
   const toma = bloco('toma') || bloco('tomador') || bloco('TomadorServico');
+  const tomaDocumento = bloco('CPFCNPJTomador');
   const serv = bloco('serv') || bloco('Servico');
   const endEmit = (emit.match(/<(?:\w+:)?(?:enderEmit|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderEmit|end|Endereco)>/i) || [])[1] || emit;
   const endToma = (toma.match(/<(?:\w+:)?(?:enderToma|end|Endereco)[^>]*>([\s\S]*?)<\/(?:\w+:)?(?:enderToma|end|Endereco)>/i) || [])[1] || toma;
@@ -15819,10 +15821,9 @@ function arquivoEspelhoDadosXml(xml, arquivo = {}) {
     email: tag(emit, ['email', 'Email']),
     telefone: tag(emit, ['fone', 'Telefone']),
     endereco,
-    tomador: tag(toma, ['xNome', 'RazaoSocial', 'Nome']),
-    tomadorCnpj: tag(toma, ['CNPJ', 'CPF', 'Cnpj']),
-    tomadorEmail: tag(toma, ['email', 'Email']),
-    tomadorTelefone: tag(toma, ['fone', 'Telefone']),
+    tomador: tag(toma, ['xNome', 'RazaoSocial', 'Nome'], false) || tag(texto, ['RazaoSocialTomador', 'NomeTomador']),
+    tomadorCnpj: tag(toma, ['CNPJ', 'CPF', 'Cnpj'], false) || tag(tomaDocumento, ['CNPJ', 'CPF'], false) || tag(texto, ['CNPJTomador', 'CPFTomador']),
+    tomadorTelefone: tag(toma, ['fone', 'Telefone'], false) || tag(texto, ['TelefoneTomador']),
     enderecoTomador,
     municipioEmissao: tag(texto, ['xLocEmi', 'MunicipioEmissao']),
     municipioPrestacao: tag(texto, ['xLocPrestacao', 'MunicipioPrestacao']),
@@ -15862,8 +15863,8 @@ function arquivoEspelhoPdfBuffer(dados) {
     doc.font('Helvetica-Bold').fontSize(17).fillColor('#0f172a').text(`ESPELHO DO XML - ${dados.tipo}`, 42, 38);
     doc.font('Helvetica').fontSize(8).fillColor('#b42318').text('Documento auxiliar gerado pelo PlennaTec. Nao substitui o documento fiscal oficial.', 42, 61);
     secao('Dados da nota fiscal'); campos([['Numero', dados.numero], ['Emissao', arquivoDataBr(dados.emissao)], ['Tipo', dados.tipo], ['Serie', dados.serie], ['Competencia', dados.competencia], ['Origem', dados.origem], ['Natureza / finalidade', dados.natureza], ['Municipio de emissao', dados.municipioEmissao], ['Municipio da prestacao', dados.municipioPrestacao]]);
-    secao('Fornecedor'); campos([['Razao social', dados.fornecedor], ['Nome fantasia', dados.fantasia], ['CNPJ/CPF', dados.cnpj], ['Inscricao municipal', dados.inscricao], ['Telefone', dados.telefone], ['E-mail', dados.email], ['Endereco', dados.endereco]]);
-    secao('Tomador'); campos([['Razao social', dados.tomador], ['CNPJ/CPF', dados.tomadorCnpj], ['Telefone', dados.tomadorTelefone], ['E-mail', dados.tomadorEmail], ['Endereco', dados.enderecoTomador]]);
+    secao('Fornecedor'); campos([['Razao social', dados.fornecedor], ['Nome fantasia', dados.fantasia], ['CNPJ/CPF', dados.cnpj], ['Inscricao municipal', dados.inscricao], ['Telefone', dados.telefone], ['Endereco', dados.endereco]]);
+    secao('Tomador'); campos([['Razao social', dados.tomador], ['CNPJ/CPF', dados.tomadorCnpj], ['Telefone', dados.tomadorTelefone], ['Endereco', dados.enderecoTomador]]);
     secao('Servico prestado'); campos([['Codigo do servico', dados.codigoServico], ['NBS', dados.nbs], ['CNAE', dados.cnae], ['Descricao', dados.descricao]]);
     secao('Valores e tributos'); campos([['Valor total', moeda(dados.valor)], ['Valor dos servicos', moeda(dados.valorServico)], ['Valor liquido', moeda(dados.valorLiquido)], ['Base de calculo', moeda(dados.baseCalculo)], ['Aliquota', dados.aliquota], ['ISS', moeda(dados.iss)], ['Retencoes', moeda(dados.retencoes)]]);
     secao('Chave de acesso'); campos([['Chave', dados.chave]]);
@@ -15881,8 +15882,8 @@ router.get('/arquivo/espelho/:id', protegerRota, async (req, res) => {
     const campo = (rotulo, valor, classe = '') => valor !== '' && valor != null && valor !== '-' ? `<div class="campo ${classe}"><small>${escapeHtmlGlobal(rotulo)}</small><strong>${escapeHtmlGlobal(valor)}</strong></div>` : '';
     const secao = (titulo, conteudo) => conteudo ? `<section><h2>${escapeHtmlGlobal(titulo)}</h2><div class="grid">${conteudo}</div></section>` : '';
     const nota = [campo('Número da NF',dados.numero),campo('Data de emissão',arquivoDataBr(dados.emissao)),campo('Tipo de NF',dados.tipo),campo('Série',dados.serie),campo('Competência',dados.competencia),campo('Origem',dados.origem),campo('Natureza / finalidade',dados.natureza),campo('Município de emissão',dados.municipioEmissao),campo('Município da prestação',dados.municipioPrestacao)].join('');
-    const fornecedor = [campo('Razão social',dados.fornecedor),campo('Nome fantasia',dados.fantasia),campo('CNPJ/CPF',dados.cnpj),campo('Inscrição municipal',dados.inscricao),campo('Telefone',dados.telefone),campo('E-mail',dados.email),campo('Endereço',dados.endereco,'wide')].join('');
-    const tomador = [campo('Razão social',dados.tomador),campo('CNPJ/CPF',dados.tomadorCnpj),campo('Telefone',dados.tomadorTelefone),campo('E-mail',dados.tomadorEmail),campo('Endereço',dados.enderecoTomador,'wide')].join('');
+    const fornecedor = [campo('Razão social',dados.fornecedor),campo('Nome fantasia',dados.fantasia),campo('CNPJ/CPF',dados.cnpj),campo('Inscrição municipal',dados.inscricao),campo('Telefone',dados.telefone),campo('Endereço',dados.endereco,'wide')].join('');
+    const tomador = [campo('Razão social',dados.tomador),campo('CNPJ/CPF',dados.tomadorCnpj),campo('Telefone',dados.tomadorTelefone),campo('Endereço',dados.enderecoTomador,'wide')].join('');
     const servico = [campo('Código do serviço',dados.codigoServico),campo('NBS',dados.nbs),campo('CNAE',dados.cnae),campo('Descrição dos serviços',dados.descricao,'wide')].join('');
     const valores = [campo('Valor total',moeda(dados.valor),'destaque'),campo('Valor dos serviços',moeda(dados.valorServico)),campo('Valor líquido',moeda(dados.valorLiquido)),campo('Base de cálculo',moeda(dados.baseCalculo)),campo('Alíquota',dados.aliquota),campo('ISS',moeda(dados.iss)),campo('Retenções',moeda(dados.retencoes))].join('');
     res.send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Espelho do XML</title><style>*{box-sizing:border-box}body{margin:0;padding:24px;font-family:Arial;color:#0f172a;background:#f8fafc}header{display:flex;justify-content:space-between;gap:20px;align-items:start;border-bottom:2px solid #00a84f;padding-bottom:14px}h1{margin:0;font-size:24px}header p{margin:5px 0;color:#64748b}.aviso{padding:9px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:7px;font-weight:700}section{margin-top:12px;break-inside:avoid}h2{margin:0;padding:7px 10px;background:#eaf7ef;color:#166534;font-size:12px;text-transform:uppercase;border:1px solid #b7dfc5}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-left:1px solid #d6e2ec}.campo{background:#fff;border-right:1px solid #d6e2ec;border-bottom:1px solid #d6e2ec;padding:9px;min-height:54px;overflow-wrap:anywhere}.campo small{display:block;color:#64748b;text-transform:uppercase;font-size:9px;font-weight:800;margin-bottom:4px}.campo strong{font-size:13px}.campo.wide{grid-column:span 3}.campo.destaque strong{font-size:18px;color:#166534}.actions{display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#f8fafc;padding:14px 0}button{border:1px solid #cbd5e1;border-radius:8px;padding:11px 16px;font-weight:800;cursor:pointer}.primary{background:#00a84f;color:#fff;border-color:#00a84f}@media(max-width:700px){.grid{grid-template-columns:1fr}.campo.wide{grid-column:auto}}@media print{@page{size:A4;margin:10mm}body{padding:0;background:#fff}.actions{display:none}header{break-after:avoid}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.campo.wide{grid-column:span 3}h1{font-size:19px}.aviso{font-size:10px}}</style></head><body><header><div><h1>Espelho do XML - ${escapeHtmlGlobal(dados.tipo)}</h1><p>Documento fiscal ${escapeHtmlGlobal(dados.numero || '')}</p></div></header><p class="aviso">Documento auxiliar gerado pelo PlennaTec. Não substitui o documento fiscal oficial.</p>${secao('Dados da nota fiscal',nota)}${secao('Dados do fornecedor',fornecedor)}${secao('Dados do tomador',tomador)}${secao('Serviço prestado',servico)}${secao('Valores e tributos',valores)}${secao('Chave de acesso',campo('Chave',dados.chave,'wide'))}<div class="actions"><button type="button" onclick="parent.document.getElementById('xmlEspelho').close()">Fechar</button><button type="button" onclick="window.print()">Imprimir</button><form method="post" action="/arquivo/espelho/${arquivo.id}/usar" target="_top"><button class="primary" type="submit">Usar este espelho</button></form></div></body></html>`);
