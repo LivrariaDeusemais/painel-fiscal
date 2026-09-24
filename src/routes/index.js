@@ -31251,6 +31251,113 @@ function renderTabelaPrecosPage(req, { resumo = null, itens = [], feedback = nul
   return renderPremiumAdminShell(req, { titulo: 'Tabela de Preços', subtitulo: 'Precificação e comparação de preços por marketplace.', paginaAtual: 'ferramentas-ia' }, content);
 }
 
+function tabelaPrecosFeedbackHtml(feedback, className = 'tph-alert') {
+  if (feedback?.erro) return `<div class="${className} err">${escapeHtmlGlobal(feedback.erro)}</div>`;
+  if (feedback?.mensagem) return `<div class="${className} ok">${escapeHtmlGlobal(feedback.mensagem)}</div>`;
+  return '';
+}
+
+function renderTabelaPrecosHub(req, resumo = null, feedback = null) {
+  const links = resumo?.links || [];
+  const totalVinculos = links.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const cards = [
+    ['Regras por marketplace', 'Comissões, impostos, despesas, descontos e margens.', '/ferramentas-ia/tabela-precos/regras', 'Configurar regras'],
+    ['Atualizar base de dados', 'Cadastro geral de produtos e vínculos do Bling.', '/ferramentas-ia/tabela-precos/base', 'Atualizar dados'],
+    ['Fretes e Tarifas por faixa', 'Faixas de peso, preço, frete e tarifas variáveis.', '/ferramentas-ia/tabela-precos/fretes', 'Consultar faixas'],
+    ['Simular Promoções', 'Avalie preço promocional, crédito do marketplace e margem.', '/ferramentas-ia/tabela-precos/promocoes', 'Abrir simulador'],
+    ['Tabela por Marketplace', 'Compare preços, custos, margem e estoque em toda a largura da tela.', '/ferramentas-ia/tabela-precos/tabela', 'Abrir tabela']
+  ].map(([title, description, href, action], index) => `<article class="tph-card ${index === 4 ? 'featured' : ''}">
+    <div class="tph-card-index">${String(index + 1).padStart(2, '0')}</div>
+    <h2>${title}</h2><p>${description}</p><a href="${href}">${action}</a>
+  </article>`).join('');
+  const content = `<style>
+    .tph-shell{display:grid;gap:16px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+    .tph-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.tph-stat{padding:16px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tph-stat span{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.tph-stat strong{display:block;margin-top:7px;font-size:22px;color:#172033}.tph-stat small{display:block;margin-top:4px;color:#64748b;font-weight:700}
+    .tph-heading{padding:4px 2px}.tph-heading h2{margin:0 0 5px!important}.tph-heading p{margin:0;color:#64748b;font-weight:700}.tph-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tph-card{min-height:190px;padding:22px;border:1px solid #dce7e1;border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:flex-start}.tph-card.featured{grid-column:1/-1;min-height:170px;border-left:4px solid #00a64c}.tph-card-index{width:34px;height:30px;display:grid;place-items:center;border-radius:7px;background:#eaf8f0;color:#008f3a;font-size:10px;font-weight:900}.tph-card h2{margin:18px 0 6px!important;color:#172033}.tph-card p{margin:0 0 18px;color:#64748b;font-weight:700;line-height:1.45}.tph-card a{margin-top:auto;min-height:38px;padding:0 14px;border-radius:7px;background:#009640;color:#fff!important;text-decoration:none;display:inline-flex;align-items:center;font-weight:900}
+    @media(max-width:820px){.tph-stats,.tph-grid{grid-template-columns:1fr}.tph-card.featured{grid-column:auto}}
+  </style><div class="tph-shell">${tabelaPrecosFeedbackHtml(feedback)}
+    <section class="tph-stats"><div class="tph-stat"><span>Produtos do Bling</span><strong>${Number(resumo?.products?.total || 0).toLocaleString('pt-BR')}</strong><small>cadastro geral</small></div><div class="tph-stat"><span>Vínculos importados</span><strong>${totalVinculos.toLocaleString('pt-BR')}</strong><small>${links.length} marketplaces</small></div><div class="tph-stat"><span>Regras ativas</span><strong>${(resumo?.rules || []).filter(item => item.ativo).length}</strong><small>canais configurados</small></div></section>
+    <div class="tph-heading"><h2>Funções da Tabela de Preços</h2><p>Escolha a área que deseja consultar ou atualizar.</p></div><section class="tph-grid">${cards}</section>
+  </div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Tabela de Preços', subtitulo: 'Precificação e comparação de preços por marketplace.', paginaAtual: 'ferramentas-ia' }, content);
+}
+
+function renderTabelaBasePage(req, resumo = null, feedback = null) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
+  const linkMap = new Map((resumo?.links || []).map(item => [item.marketplace, item]));
+  const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}">${escapeHtmlGlobal(item)}</option>`).join('');
+  const statusRows = marketplaces.map(item => `<tr><td><strong>${escapeHtmlGlobal(item)}</strong></td><td>${Number(linkMap.get(item)?.total || 0).toLocaleString('pt-BR')}</td><td>${linkMap.get(item)?.atualizado_em ? new Date(linkMap.get(item).atualizado_em).toLocaleString('pt-BR') : 'Ainda não importado'}</td></tr>`).join('');
+  const content = `<style>
+    .tpb-shell{display:grid;gap:16px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}.tpb-back{color:#087334!important;text-decoration:none;font-weight:900}.tpb-band{padding:20px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpb-band h2{margin:0 0 5px!important}.tpb-band>p{margin:0 0 18px;color:#64748b;font-weight:700}.tpb-imports{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tpb-import{padding:16px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;display:grid;gap:12px}.tpb-import strong,.tpb-import small{display:block}.tpb-import small{margin-top:4px;color:#64748b}.tpb-import input,.tpb-import select{width:100%}.tpb-import button{justify-self:start}.tpb-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}.tpb-scroll table{min-width:650px}.tpb-note{padding:16px;border-left:4px solid #94a3b8;background:#f8fafc;color:#475569;font-weight:700}.tpb-note a{color:#087334!important}.tpb-disabled{opacity:.68}@media(max-width:800px){.tpb-imports{grid-template-columns:1fr}}
+  </style><div class="tpb-shell">${tabelaPrecosFeedbackHtml(feedback)}<div><a class="tpb-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a></div>
+    <section class="tpb-band"><h2>Atualizar bases do Bling</h2><p>Substitua cada base pela exportação completa mais recente.</p>${isAdmin ? `<div class="tpb-imports">
+      <form class="tpb-import" method="post" action="/ferramentas-ia/tabela-precos/base" enctype="multipart/form-data"><div><strong>Cadastro geral de produtos</strong><small>Excel XLS ou XLSX completo exportado pelo Bling.</small></div><input type="file" name="base" accept=".xls,.xlsx" required><button type="submit">Importar produtos</button></form>
+      <form class="tpb-import" method="post" action="/ferramentas-ia/tabela-precos/vinculos" enctype="multipart/form-data"><div><strong>Vínculos do marketplace</strong><small>CSV da multiloja do Bling.</small></div><select name="marketplace" required><option value="">Selecione o marketplace</option>${options}</select><input type="file" name="vinculos" accept=".csv" required><button type="submit">Importar vínculos</button></form>
+    </div>` : '<div class="tpb-note">Somente administradores podem substituir as bases.</div>'}</section>
+    <section class="tpb-band"><h2>Situação das bases</h2><p>Produtos cadastrados: <strong>${Number(resumo?.products?.total || 0).toLocaleString('pt-BR')}</strong></p><div class="tpb-scroll"><table><thead><tr><th>Marketplace</th><th>Vínculos</th><th>Última importação</th></tr></thead><tbody>${statusRows}</tbody></table></div></section>
+  </div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Atualizar Base de Dados', subtitulo: 'Produtos e vínculos exportados pelo Bling.', paginaAtual: 'ferramentas-ia' }, content);
+}
+
+function renderTabelaRulesPage(req, rules = [], feedback = null) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const inputPercent = value => (Number(value || 0) * 100).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
+  const inputMoney = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const rows = rules.map((rule, index) => {
+    const formId = `rule-page-${index}`;
+    const field = (name, value, fixed = false) => isAdmin ? `<input form="${formId}" name="${name}" value="${escapeHtmlGlobal(fixed ? inputMoney(value) : inputPercent(value))}" inputmode="decimal">` : escapeHtmlGlobal(fixed ? inputMoney(value) : inputPercent(value));
+    return `<tr><td><strong>${escapeHtmlGlobal(rule.marketplace)}</strong></td><td>${isAdmin ? `<input form="${formId}" type="checkbox" name="ativo" ${rule.ativo ? 'checked' : ''}>` : (rule.ativo ? 'Sim' : 'Não')}</td><td>${field('comissao', rule.comissao)}</td><td>${field('imposto', rule.imposto)}</td><td>${field('adm', rule.adm)}</td><td>${field('ads', rule.ads)}</td><td>${field('cartao', rule.cartao)}</td><td>${field('frete_percentual', rule.frete_percentual)}</td><td>${field('taxa_fixa', rule.taxa_fixa, true)}</td><td>${field('frete_fixo', rule.frete_fixo, true)}</td><td>${field('desconto', rule.desconto)}</td><td>${field('margem_minima', rule.margem_minima)}</td><td>${field('saldo_minimo', rule.saldo_minimo, true)}</td><td>${isAdmin ? `<form id="${formId}" method="post" action="/ferramentas-ia/tabela-precos/regras/${encodeURIComponent(rule.marketplace)}"><button type="submit">Salvar</button></form>` : ''}</td></tr>`;
+  }).join('');
+  const content = `<style>
+    .tpr-shell{display:grid;gap:16px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}.tpr-back{color:#087334!important;text-decoration:none;font-weight:900}.tpr-band{padding:20px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpr-band h2{margin:0 0 5px!important}.tpr-band p{margin:0 0 16px;color:#64748b;font-weight:700}.tpr-scroll{overflow:auto;max-height:68vh;border:1px solid #e2e8f0;border-radius:7px}.tpr-table{min-width:1710px!important}.tpr-table th{position:sticky;top:0;z-index:2;background:#f1f5f9!important;white-space:nowrap}.tpr-table td{white-space:nowrap}.tpr-table th:first-child,.tpr-table td:first-child{width:155px;min-width:155px}.tpr-table th:nth-child(2),.tpr-table td:nth-child(2){width:55px;text-align:center}.tpr-table input:not([type=checkbox]){width:92px!important;min-width:92px!important;box-sizing:border-box}.tpr-table form{margin:0}.tpr-table button{white-space:nowrap}
+  </style><div class="tpr-shell">${tabelaPrecosFeedbackHtml(feedback)}<div><a class="tpr-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a></div><section class="tpr-band"><h2>Regras por marketplace</h2><p>Todos os percentuais e valores fixos usados pelo motor de precificação.</p><div class="tpr-scroll"><table class="tpr-table"><thead><tr><th>Marketplace</th><th>Ativo</th><th>Comissão %</th><th>Imposto %</th><th>ADM %</th><th>ADS %</th><th>Cartão %</th><th>Frete %</th><th>Taxa fixa R$</th><th>Frete fixo R$</th><th>Desconto %</th><th>Margem %</th><th>Saldo R$</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section></div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Regras por Marketplace', subtitulo: 'Parâmetros gerais usados em cada canal.', paginaAtual: 'ferramentas-ia' }, content);
+}
+
+function renderTabelaWideShell(req, innerHtml) {
+  const usuario = req.session.usuario || {};
+  const nome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
+  const perfil = escapeHtmlGlobal(usuario.perfil || '');
+  const nav = [
+    ['Tabela por Marketplace', '/ferramentas-ia/tabela-precos/tabela'], ['Painel', '/ferramentas-ia/tabela-precos'],
+    ['Regras', '/ferramentas-ia/tabela-precos/regras'],
+    ['Base de dados', '/ferramentas-ia/tabela-precos/base'], ['Fretes e tarifas', '/ferramentas-ia/tabela-precos/fretes'],
+    ['Simular promoções', '/ferramentas-ia/tabela-precos/promocoes']
+  ].map(([label, href]) => `<a href="${href}">${label}</a>`).join('');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tabela por Marketplace - PlennaTec</title><style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f2f6f8}.tpw-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dce7e1;box-shadow:0 5px 18px rgba(15,23,42,.07)}.tpw-top{height:70px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.tpw-brand{display:flex;align-items:center;gap:12px;min-width:230px}.tpw-brand img{width:42px;height:42px;object-fit:contain}.tpw-brand strong{display:block;font-size:19px}.tpw-brand span{display:block;margin-top:3px;color:#64748b;font-size:11px;font-weight:700}.tpw-user{text-align:right}.tpw-user strong{display:block;color:#009640;font-size:13px}.tpw-user span{font-size:10px;color:#64748b;font-weight:900}.tpw-nav{min-height:45px;padding:0 22px;display:flex;align-items:center;gap:5px;border-top:1px solid #edf2f7;overflow:auto}.tpw-nav a{height:32px;padding:0 12px;border-radius:7px;color:#334155;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;font-size:12px;font-weight:900}.tpw-nav a:hover{background:#eaf8f0;color:#087334}.tpw-nav a:first-child{background:#009640;color:#fff}.tpw-main{padding:16px 18px 22px}.tpw-alert{margin-bottom:12px;padding:12px 14px;border:1px solid;border-radius:8px;font-size:12px;font-weight:800}.tpw-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpw-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}@media(max-width:720px){.tpw-top{height:auto;padding:12px}.tpw-user{display:none}.tpw-nav{padding:7px 12px}.tpw-main{padding:10px}}
+  </style></head><body><header class="tpw-header"><div class="tpw-top"><div class="tpw-brand"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec"><div><strong>Tabela por Marketplace</strong><span>Precificação e comparação completa</span></div></div><div class="tpw-user"><strong>${nome}</strong><span>${perfil}</span></div></div><nav class="tpw-nav">${nav}</nav></header><main class="tpw-main">${innerHtml}</main></body></html>`;
+}
+
+function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback = null, filtros = {} } = {}) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
+  const selected = (name, value) => filtros[name] === value ? 'selected' : '';
+  const money = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const percent = value => value == null || !Number.isFinite(Number(value)) ? '-' : `${(Number(value) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
+  const number = value => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+  const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}" ${selected('marketplace', item)}>${escapeHtmlGlobal(item)}</option>`).join('');
+  const rows = itens.slice(0, 200).map(item => {
+    const ok = item.result?.status === 'OK';
+    const name = item.row.produto_nome || item.row.nome || 'Produto não localizado';
+    const current = item.published || {};
+    const currentDetails = current.details || {};
+    const next = item.result?.details || {};
+    const difference = ok ? Number(item.result.finalPrice) - Number(current.liquidPrice || 0) : null;
+    return `<tr><td class="g-base"><strong>${escapeHtmlGlobal(item.row.marketplace)}</strong></td><td class="g-base"><strong>${escapeHtmlGlobal(item.row.sku)}</strong><small>${escapeHtmlGlobal(item.row.id_loja || '')}</small></td><td class="g-base product" title="${escapeHtmlGlobal(name)}">${escapeHtmlGlobal(name)}</td><td class="g-base">${number(item.row.estoque)}</td><td class="g-base">${money(current.grossPrice)}</td><td class="g-base">${percent(current.discount)}</td><td class="g-base">${money(current.liquidPrice)}</td><td class="g-base">${current.details ? percent(currentDetails.margin) : '-'}</td><td class="g-new">${ok ? money(item.result.finalPrice) : '-'}</td><td class="g-cost">${ok ? money(next.freight) : '-'}</td><td class="g-cost">${ok ? money(next.fixedFee) : '-'}</td><td class="g-cost">${ok ? money(next.commissionValue) : '-'}</td><td class="g-cost">${ok ? money(next.cardValue) : '-'}</td><td class="g-receive">${ok ? money(next.marketplaceReceivable) : '-'}</td><td class="g-cost">${ok ? money(next.adsValue) : '-'}</td><td class="g-cost">${ok ? money(next.costValue) : '-'}</td><td class="g-cost">${ok ? money(next.adminValue) : '-'}</td><td class="g-cost">${ok ? money(next.taxValue) : '-'}</td><td class="g-cost">${ok ? money(next.totalCosts) : '-'}</td><td class="g-result">${ok ? money(next.netProfit) : '-'}</td><td class="g-result">${ok ? percent(next.margin) : '-'}</td><td class="g-result ${difference != null && difference < 0 ? 'negative' : ''}">${difference == null ? '-' : money(difference)}</td><td class="g-base"><span class="status ${ok ? 'ok' : 'warn'}">${ok ? 'Pronto' : escapeHtmlGlobal(item.result?.reason || 'Revisar')}</span></td></tr>`;
+  }).join('');
+  const content = `${tabelaPrecosFeedbackHtml(feedback, 'tpw-alert')}<style>
+    .tpt-tools{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px}.tpt-title h1{margin:0 0 4px;font-size:22px}.tpt-title p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tpt-filter{display:grid;grid-template-columns:190px minmax(230px,360px) 190px auto auto;gap:8px;align-items:end}.tpt-filter label{display:grid;gap:4px;color:#475569;font-size:10px;font-weight:900}.tpt-filter input,.tpt-filter select{height:36px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:0 9px;font:700 11px Arial}.tpt-btn{height:36px;padding:0 13px;border:1px solid #009640;border-radius:7px;background:#009640;color:#fff!important;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font:900 11px Arial;white-space:nowrap}.tpt-btn.soft{background:#fff;color:#087334!important}.tpt-scroll{height:calc(100vh - 235px);min-height:420px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.tpt-table{min-width:2570px;width:100%;border-collapse:separate;border-spacing:0;font-size:10px}.tpt-table th{position:sticky;top:0;z-index:5;padding:10px 9px;border-bottom:1px solid #cbd5e1;text-align:left;white-space:nowrap;font-size:9px;text-transform:uppercase;color:#334155}.tpt-table td{height:44px;padding:8px 9px;border-bottom:1px solid rgba(148,163,184,.3);white-space:nowrap;font-weight:700}.tpt-table td small{display:block;margin-top:3px;color:#64748b}.tpt-table .product{max-width:265px;overflow:hidden;text-overflow:ellipsis;cursor:help}.g-base{background:#f2f2f2}.g-new,.g-cost{background:#e4f2de}.g-receive{background:#dbe7ed}.g-result{background:#dceff7}.tpt-table th.g-base{background:#e8e8e8}.tpt-table th.g-new,.tpt-table th.g-cost{background:#dceed5}.tpt-table th.g-receive{background:#d0dfe6}.tpt-table th.g-result{background:#cfeaf6}.negative{color:#b91c1c}.status{display:inline-block;max-width:170px;overflow:hidden;text-overflow:ellipsis;padding:5px 8px;border-radius:999px;font-size:9px;text-transform:uppercase}.status.ok{background:#dcfce7;color:#166534}.status.warn{background:#ffedd5;color:#9a3412}.tpt-note{margin:9px 0 0;color:#64748b;font-size:11px;font-weight:700}@media(max-width:1120px){.tpt-tools{align-items:stretch;flex-direction:column}.tpt-filter{grid-template-columns:1fr 1fr 1fr auto auto}.tpt-scroll{height:calc(100vh - 290px)}}@media(max-width:760px){.tpt-filter{grid-template-columns:1fr 1fr}.tpt-filter label:nth-child(2){grid-column:1/-1}.tpt-scroll{height:calc(100vh - 360px)}}
+  </style><div class="tpt-tools"><div class="tpt-title"><h1>Preço praticado x novo preço calculado</h1><p>Valores de custo são calculados sobre o Novo Líquido.</p></div><form class="tpt-filter" method="get" action="/ferramentas-ia/tabela-precos/tabela"><label>Marketplace<select name="marketplace"><option value="">Todos</option>${options}</select></label><label>SKU ou produto<input name="produto" value="${escapeHtmlGlobal(filtros.produto || '')}" placeholder="SKU ou descrição"></label><label>Estoque<select name="estoque"><option value="">Todos</option><option value="positive" ${selected('estoque', 'positive')}>Maior que zero</option><option value="nonpositive" ${selected('estoque', 'nonpositive')}>Igual ou menor que zero</option></select></label><button class="tpt-btn" type="submit">Filtrar</button><a class="tpt-btn soft" href="/ferramentas-ia/tabela-precos/tabela">Limpar</a></form></div>${isAdmin && filtros.marketplace ? `<div style="margin-bottom:10px"><a class="tpt-btn" href="/ferramentas-ia/tabela-precos/exportar/${encodeURIComponent(filtros.marketplace)}">Exportar ${escapeHtmlGlobal(filtros.marketplace)}</a></div>` : ''}${itens.length ? `<div class="tpt-scroll"><table class="tpt-table"><thead><tr><th class="g-base">Marketplace</th><th class="g-base">SKU / anúncio</th><th class="g-base">Produto</th><th class="g-base">Estoque</th><th class="g-base">Preço Bruto Publicado</th><th class="g-base">Desc.</th><th class="g-base">Preço Liq. Publicado</th><th class="g-base">Margem</th><th class="g-new">Novo Líquido</th><th class="g-cost">Frete</th><th class="g-cost">Taxa por pedido</th><th class="g-cost">Comissão Valor</th><th class="g-cost">TX Cartão</th><th class="g-receive">Receber do MKP</th><th class="g-cost">ADS</th><th class="g-cost">CMV</th><th class="g-cost">ADM</th><th class="g-cost">Imposto</th><th class="g-cost">Total custos</th><th class="g-result">Lucro Líquido</th><th class="g-result">Margem Líquida</th><th class="g-result">Dif. R$ Líquidos</th><th class="g-base">Status</th></tr></thead><tbody>${rows}</tbody></table></div><p class="tpt-note">${itens.length > 200 ? `Exibindo os primeiros 200 de ${itens.length.toLocaleString('pt-BR')} resultados. Refine os filtros para reduzir a lista.` : `${itens.length.toLocaleString('pt-BR')} resultado(s). Passe o mouse sobre o produto para ler a descrição completa.`}</p>` : '<p class="tpt-note">Nenhum vínculo encontrado para os filtros informados.</p>'}`;
+  return renderTabelaWideShell(req, content);
+}
+
+function renderTabelaPromocoesPage(req) {
+  const content = `<style>.tpp-shell{max-width:920px;display:grid;gap:16px}.tpp-back{color:#087334!important;text-decoration:none;font-weight:900}.tpp-stage{padding:24px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpp-stage span{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eaf8f0;color:#087334;font-size:10px;font-weight:900;text-transform:uppercase}.tpp-stage h2{margin:17px 0 8px!important}.tpp-stage p{margin:0;color:#64748b;line-height:1.5;font-weight:700}.tpp-list{margin:18px 0 0;padding-left:19px;color:#334155;line-height:1.8;font-weight:700}</style><div class="tpp-shell"><a class="tpp-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a><section class="tpp-stage"><span>Próxima etapa</span><h2>Simulador de Promoções</h2><p>Esta área receberá a simulação de preço ao cliente, crédito concedido pelo marketplace, margem final e validade da campanha.</p><ul class="tpp-list"><li>Comparação com o preço praticado.</li><li>Crédito do marketplace tratado como ganho da campanha.</li><li>Registro da validade e dos dias restantes.</li><li>Aprovação restrita ao administrador.</li></ul></section></div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Simular Promoções', subtitulo: 'Análise de campanhas e margem por marketplace.', paginaAtual: 'ferramentas-ia' }, content);
+}
+
 function renderTabelaFretesPage(req, rows, feedback = null) {
   const isAdmin = req.session.usuario?.perfil === 'ADMIN';
   const number = value => value == null ? '' : Number(value).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
@@ -31259,8 +31366,15 @@ function renderTabelaFretesPage(req, rows, feedback = null) {
     if (!groups.has(row.marketplace)) groups.set(row.marketplace, []);
     groups.get(row.marketplace).push(row);
   }
+  const typeLabels = {
+    frete_preco: 'Frete por faixa de preço',
+    frete_peso_preco: 'Frete por peso e faixa de preço',
+    frete_peso: 'Frete por faixa de peso',
+    tarifa_preco: 'Tarifas por faixa de preço'
+  };
   const sections = [...groups.entries()].map(([marketplace, items]) => {
-    const lines = items.map((row, index) => {
+    let previousType = '';
+    const lines = items.map(row => {
       const id = `frete-${row.id}`;
       const field = (name, value, percentage = false) => {
         const display = name === 'faixa' ? String(value || '') : number(percentage ? Number(value || 0) * 100 : value);
@@ -31268,12 +31382,15 @@ function renderTabelaFretesPage(req, rows, feedback = null) {
           ? `<input form="${id}" name="${name}" value="${escapeHtmlGlobal(display)}">`
           : escapeHtmlGlobal(display);
       };
-      return `<tr><td>${field('faixa', row.label)}</td><td>${field('peso_min', row.weightMin)}</td><td>${field('peso_max', row.weightMax)}</td><td>${field('preco_min', row.priceMin)}</td><td>${field('preco_max', row.priceMax)}</td><td>${field('valor', row.value)}</td><td>${field('comissao', row.commission, true)}</td><td>${field('ads', row.ads, true)}</td><td>${field('frete_percentual', row.freightPercent, true)}</td><td>${field('taxa_fixa', row.fixedFee)}</td><td>${isAdmin ? `<form id="${id}" method="post" action="/ferramentas-ia/tabela-precos/fretes/${row.id}"><button>Salvar</button></form>` : ''}</td></tr>`;
+      const divider = row.type !== previousType
+        ? `<tr class="tf-type"><th colspan="11">${escapeHtmlGlobal(typeLabels[row.type] || row.type)}</th></tr>` : '';
+      previousType = row.type;
+      return `${divider}<tr><td>${field('faixa', row.label)}</td><td>${field('peso_min', row.weightMin)}</td><td>${field('peso_max', row.weightMax)}</td><td>${field('preco_min', row.priceMin)}</td><td>${field('preco_max', row.priceMax)}</td><td>${field('valor', row.value)}</td><td>${field('comissao', row.commission, true)}</td><td>${field('ads', row.ads, true)}</td><td>${field('frete_percentual', row.freightPercent, true)}</td><td>${field('taxa_fixa', row.fixedFee)}</td><td>${isAdmin ? `<form id="${id}" method="post" action="/ferramentas-ia/tabela-precos/fretes/${row.id}"><button>Salvar</button></form>` : ''}</td></tr>`;
     }).join('');
-    return `<section class="tf-section"><h2>${escapeHtmlGlobal(marketplace)}</h2><div class="tf-scroll"><table><thead><tr><th>Faixa</th><th>Peso mín. kg</th><th>Peso máx. kg</th><th>Preço mín. R$</th><th>Preço máx. R$</th><th>Frete R$</th><th>Comissão %</th><th>ADS %</th><th>Frete %</th><th>Taxa fixa R$</th><th></th></tr></thead><tbody>${lines}</tbody></table></div></section>`;
+    return `<details class="tf-section"><summary><strong>${escapeHtmlGlobal(marketplace)}</strong><span><span class="more">Ver mais</span><span class="less">Ver menos</span><i aria-hidden="true"></i></span></summary><div class="tf-scroll"><table class="tf-table"><thead><tr><th>Faixa</th><th>Peso mín. kg</th><th>Peso máx. kg</th><th>Preço mín. R$</th><th>Preço máx. R$</th><th>Frete R$</th><th>Comissão %</th><th>ADS %</th><th>Frete %</th><th>Taxa fixa R$</th><th></th></tr></thead><tbody>${lines}</tbody></table></div></details>`;
   }).join('');
   const feedbackHtml = feedback?.erro ? `<div class="tf-alert err">${escapeHtmlGlobal(feedback.erro)}</div>` : feedback?.mensagem ? `<div class="tf-alert ok">${escapeHtmlGlobal(feedback.mensagem)}</div>` : '';
-  const content = `<style>.tf-shell{display:grid;gap:15px;max-width:1480px}.tf-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.tf-top p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tf-top a{padding:10px 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;text-decoration:none;font-size:11px;font-weight:900}.tf-section{padding:18px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tf-section h2{margin:0 0 12px;font-size:17px;color:#172033}.tf-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}table{width:100%;min-width:1280px;border-collapse:collapse}th{padding:9px;background:#f1f5f9;text-align:left;color:#475569;font-size:9px;text-transform:uppercase}td{padding:7px;border-top:1px solid #e2e8f0}input{width:105px;height:32px;border:1px solid #cbd5e1;border-radius:6px;padding:0 7px;font:700 10px Arial}td:first-child input{width:180px}button{height:32px;border:0;border-radius:6px;background:#009640;color:#fff;font:900 10px Arial;padding:0 11px;cursor:pointer}.tf-alert{padding:12px;border:1px solid;border-radius:7px;font-size:12px;font-weight:800}.tf-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tf-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}</style><div class="tf-shell">${feedbackHtml}<div class="tf-top"><p>Atualize aqui as faixas sempre que um marketplace alterar fretes ou tarifas variáveis.</p><a href="/ferramentas-ia/tabela-precos">Voltar para Tabela de Preços</a></div>${sections}</div>`;
+  const content = `<style>.tf-shell{display:grid;gap:13px;max-width:1480px}.tf-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.tf-top p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tf-top a{padding:10px 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;text-decoration:none;font-size:11px;font-weight:900}.tf-section{border:1px solid #dce7e1;border-radius:8px;background:#fff;overflow:hidden}.tf-section summary{height:58px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none}.tf-section summary::-webkit-details-marker{display:none}.tf-section summary>strong{font-size:16px}.tf-section summary>span{display:flex;align-items:center;gap:10px;color:#087334;font-size:11px;font-weight:900}.tf-section summary i{width:9px;height:9px;border-right:2px solid #087334;border-bottom:2px solid #087334;transform:rotate(45deg);transition:transform .18s}.tf-section .less{display:none}.tf-section[open] summary{border-bottom:1px solid #e2e8f0}.tf-section[open] .more{display:none}.tf-section[open] .less{display:inline}.tf-section[open] summary i{transform:rotate(225deg)}.tf-scroll{max-height:68vh;overflow:auto}.tf-table{width:100%;min-width:1280px;border-collapse:collapse}.tf-table thead th{position:sticky;top:0;z-index:3;padding:9px;background:#f1f5f9!important;text-align:left;color:#475569;font-size:9px;text-transform:uppercase;white-space:nowrap}.tf-table td{padding:7px;border-top:1px solid #e2e8f0}.tf-table input{width:105px!important;min-width:105px!important;height:32px;border:1px solid #cbd5e1;border-radius:6px;padding:0 7px;font:700 10px Arial}.tf-table td:first-child input{width:180px!important}.tf-table button{height:32px;border:0;border-radius:6px;background:#009640;color:#fff;font:900 10px Arial;padding:0 11px;cursor:pointer}.tf-table .tf-type th{padding:8px 10px!important;border-top:5px solid #fff!important;background:#eaf3ee!important;color:#436253!important;font-size:9px!important;text-transform:uppercase!important}.tf-alert{padding:12px;border:1px solid;border-radius:7px;font-size:12px;font-weight:800}.tf-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tf-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}</style><div class="tf-shell">${feedbackHtml}<div class="tf-top"><p>Expanda um marketplace para atualizar suas faixas de frete e tarifas variáveis.</p><a href="/ferramentas-ia/tabela-precos">Voltar ao painel</a></div>${sections || '<p>Nenhuma faixa cadastrada.</p>'}</div>`;
   return renderPremiumAdminShell(req, { titulo: 'Fretes e Tarifas', subtitulo: 'Faixas utilizadas pelo motor de precificação.', paginaAtual: 'ferramentas-ia' }, content);
 }
 
@@ -31393,18 +31510,58 @@ router.get('/ferramentas-ia/tabela-precos', protegerRota, permitirPerfis('ADMIN'
   try {
     await tabelaPrecosService.ensureTables(pool);
     const resumo = await tabelaPrecosService.overview(pool);
-    const permitidos = new Set(resumo.rules.map(item => item.marketplace));
+    res.send(renderTabelaPrecosHub(req, resumo, feedback));
+  } catch (error) {
+    res.send(renderTabelaPrecosHub(req, null, feedback || { erro: `Tabela de Preços indisponível: ${error.message}` }));
+  }
+});
+
+router.get('/ferramentas-ia/tabela-precos/base', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.tabelaPrecosFeedback || null;
+  delete req.session.tabelaPrecosFeedback;
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    res.send(renderTabelaBasePage(req, await tabelaPrecosService.overview(pool), feedback));
+  } catch (error) {
+    res.send(renderTabelaBasePage(req, null, feedback || { erro: `Bases indisponíveis: ${error.message}` }));
+  }
+});
+
+router.get('/ferramentas-ia/tabela-precos/regras', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.tabelaPrecosFeedback || null;
+  delete req.session.tabelaPrecosFeedback;
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const resumo = await tabelaPrecosService.overview(pool);
+    res.send(renderTabelaRulesPage(req, resumo.rules, feedback));
+  } catch (error) {
+    res.send(renderTabelaRulesPage(req, [], feedback || { erro: `Regras indisponíveis: ${error.message}` }));
+  }
+});
+
+router.get('/ferramentas-ia/tabela-precos/tabela', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.tabelaPrecosFeedback || null;
+  delete req.session.tabelaPrecosFeedback;
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const resumo = await tabelaPrecosService.overview(pool);
+    const permitidos = new Set(resumo.rules.map(item => item.marketplace).filter(item => item !== 'Bling'));
     const marketplace = permitidos.has(req.query.marketplace) ? req.query.marketplace : '';
     const produto = String(req.query.produto || '').trim().slice(0, 120);
+    const estoque = ['positive', 'nonpositive'].includes(req.query.estoque) ? req.query.estoque : '';
     const itens = resumo.links.length
-      ? await tabelaPrecosService.marketplaceRows(pool, { marketplace, search: produto })
+      ? await tabelaPrecosService.marketplaceRows(pool, { marketplace, search: produto, stock: estoque })
       : [];
-    res.send(renderTabelaPrecosPage(req, { resumo, itens, feedback, filtros: { marketplace, produto } }));
+    res.send(renderTabelaMarketplacePage(req, { resumo, itens, feedback, filtros: { marketplace, produto, estoque } }));
   } catch (error) {
-    res.send(renderTabelaPrecosPage(req, {
-      feedback: feedback || { erro: `Tabela de Preços indisponível: ${error.message}` }
+    res.send(renderTabelaMarketplacePage(req, {
+      feedback: feedback || { erro: `Tabela indisponível: ${error.message}` }
     }));
   }
+});
+
+router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
+  res.send(renderTabelaPromocoesPage(req));
 });
 
 router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('base'), async (req, res) => {
@@ -31424,7 +31581,7 @@ router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, re
   } finally {
     removerArquivoTemporario(req.file);
   }
-  res.redirect('/ferramentas-ia/tabela-precos');
+  res.redirect('/ferramentas-ia/tabela-precos/base');
 });
 
 router.post('/ferramentas-ia/tabela-precos/vinculos', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('vinculos'), async (req, res) => {
@@ -31445,7 +31602,7 @@ router.post('/ferramentas-ia/tabela-precos/vinculos', protegerRota, somenteAdmin
   } finally {
     removerArquivoTemporario(req.file);
   }
-  res.redirect('/ferramentas-ia/tabela-precos');
+  res.redirect('/ferramentas-ia/tabela-precos/base');
 });
 
 router.post('/ferramentas-ia/tabela-precos/regras/:marketplace', protegerRota, somenteAdmin, async (req, res) => {
@@ -31458,7 +31615,7 @@ router.post('/ferramentas-ia/tabela-precos/regras/:marketplace', protegerRota, s
   } catch (error) {
     req.session.tabelaPrecosFeedback = { erro: `Não foi possível atualizar a regra: ${error.message}` };
   }
-  res.redirect('/ferramentas-ia/tabela-precos');
+  res.redirect('/ferramentas-ia/tabela-precos/regras');
 });
 
 router.get('/ferramentas-ia/tabela-precos/fretes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
@@ -31506,7 +31663,7 @@ router.get('/ferramentas-ia/tabela-precos/exportar/:marketplace', protegerRota, 
     return res.send(csv);
   } catch (error) {
     req.session.tabelaPrecosFeedback = { erro: `Não foi possível exportar: ${error.message}` };
-    return res.redirect('/ferramentas-ia/tabela-precos');
+    return res.redirect('/ferramentas-ia/tabela-precos/tabela');
   }
 });
 

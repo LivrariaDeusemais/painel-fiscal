@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const {
   DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
+  calculateAtPrice,
   calculateMarketplace,
   standardizeEqualProducts
 } = require('./pricing');
@@ -305,6 +306,8 @@ async function marketplaceRows(pool, filters = {}) {
     values.push(`%${String(filters.search).trim()}%`);
     conditions.push(`(v.sku ILIKE $${values.length} OR p.nome ILIKE $${values.length} OR v.nome ILIKE $${values.length})`);
   }
+  if (filters.stock === 'positive') conditions.push(`COALESCE(p.estoque, 0) > 0`);
+  if (filters.stock === 'nonpositive') conditions.push(`COALESCE(p.estoque, 0) <= 0`);
   const [ruleResult, dynamicRules, result] = await Promise.all([
     pool.query(`SELECT * FROM tabela_preco_regras WHERE ativo = TRUE`),
     freightRules(pool),
@@ -325,7 +328,22 @@ async function marketplaceRows(pool, filters = {}) {
       result: rule ? calculateMarketplace(product, rule, dynamicRules) : { status: 'Revisar', reason: 'Marketplace sem regra ativa.' }
     };
   });
-  return standardizeEqualProducts(calculated, dynamicRules);
+  return standardizeEqualProducts(calculated, dynamicRules).map(item => {
+    const grossPublished = Number(item.row.preco_atual) || 0;
+    const promotionalPublished = Number(item.row.preco_promocional) || 0;
+    const liquidPublished = promotionalPublished > 0 ? promotionalPublished : grossPublished;
+    return {
+      ...item,
+      published: {
+        grossPrice: grossPublished,
+        discount: grossPublished > 0 ? Math.max(0, 1 - (liquidPublished / grossPublished)) : 0,
+        liquidPrice: liquidPublished,
+        details: item.rule && liquidPublished > 0 && item.product.cost > 0 && item.product.weight > 0
+          ? calculateAtPrice(item.product, item.rule, liquidPublished, dynamicRules)
+          : null
+      }
+    };
+  });
 }
 
 async function mercadoLivreRows(pool) {

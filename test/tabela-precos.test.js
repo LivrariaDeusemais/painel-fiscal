@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   MARKETPLACE_RULES,
   attractivePriceAtOrAbove,
+  calculateAtPrice,
   calculateMarketplace,
   calculateMercadoLivre,
   standardizeEqualProducts
@@ -55,6 +56,22 @@ test('exige revisão quando o produto fica fora das faixas de frete', () => {
   const result = calculateMarketplace({ cost: 50, weight: 5.5 }, rule);
   assert.equal(result.status, 'Revisar');
   assert.match(result.reason, /fora das faixas/);
+});
+
+test('detalha todos os custos monetários calculados sobre o preço líquido', () => {
+  const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'TikTok');
+  const details = calculateAtPrice({ cost: 50, weight: 0.5 }, rule, 100, []);
+  assert.equal(details.freight, 6);
+  assert.equal(details.fixedFee, 6);
+  assert.equal(details.commissionValue, 6);
+  assert.equal(details.adsValue, 13);
+  assert.equal(details.adminValue, 3);
+  assert.equal(details.taxValue, 5);
+  assert.equal(details.costValue, 50);
+  assert.equal(details.marketplaceReceivable, 82);
+  assert.equal(details.totalCosts, 89);
+  assert.equal(details.netProfit, 11);
+  assert.equal(details.margin, 0.11);
 });
 
 test('padroniza produtos com mesmo custo e faixa de peso', () => {

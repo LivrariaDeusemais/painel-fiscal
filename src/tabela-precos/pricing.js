@@ -106,13 +106,40 @@ function dynamicForPrice(marketplace, price, weight, rows) {
 
 function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES) {
   const dynamic = dynamicForPrice(rule.marketplace, price, numberOrZero(product.weight), dynamicRules);
-  const percent = ['commission', 'tax', 'admin', 'ads', 'card', 'freightPercent']
-    .reduce((sum, key) => sum + numberOrZero(rule[key]), 0)
-    + dynamic.commission + dynamic.ads + dynamic.freightPercent;
+  const commissionRate = numberOrZero(rule.commission) + dynamic.commission;
+  const cardRate = numberOrZero(rule.card);
+  const adsRate = numberOrZero(rule.ads) + dynamic.ads;
+  const adminRate = numberOrZero(rule.admin);
+  const taxRate = numberOrZero(rule.tax);
+  const freightRate = numberOrZero(rule.freightPercent) + dynamic.freightPercent;
+  const percent = commissionRate + cardRate + adsRate + adminRate + taxRate + freightRate;
   const fixedFee = numberOrZero(rule.fixedFee) + dynamic.fixedFee;
-  const freight = numberOrZero(rule.fixedFreight) + dynamic.freight;
-  const netProfit = price * (1 - percent) - numberOrZero(product.cost) - fixedFee - freight;
-  return { percent, fixedFee, freight, netProfit, margin: price > 0 ? netProfit / price : 0 };
+  const freight = numberOrZero(rule.fixedFreight) + dynamic.freight + (price * freightRate);
+  const commissionValue = price * commissionRate;
+  const cardValue = price * cardRate;
+  const adsValue = price * adsRate;
+  const adminValue = price * adminRate;
+  const taxValue = price * taxRate;
+  const costValue = numberOrZero(product.cost);
+  const marketplaceReceivable = price - freight - fixedFee - commissionValue - cardValue;
+  const totalCosts = freight + fixedFee + commissionValue + cardValue + adsValue
+    + costValue + adminValue + taxValue;
+  const netProfit = price - totalCosts;
+  return {
+    percent,
+    fixedFee,
+    freight,
+    commissionValue,
+    cardValue,
+    marketplaceReceivable,
+    adsValue,
+    costValue,
+    adminValue,
+    taxValue,
+    totalCosts,
+    netProfit,
+    margin: price > 0 ? netProfit / price : 0
+  };
 }
 
 function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULES) {
@@ -151,7 +178,7 @@ function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULE
     status: 'OK', finalPrice,
     grossPrice: discount > 0 ? finalPrice / (1 - discount) : finalPrice,
     discount, freight: details.freight, fixedFee: details.fixedFee,
-    netProfit: details.netProfit, margin: details.margin,
+    netProfit: details.netProfit, margin: details.margin, details,
     weightBand: weightBandLabel(product.weight)
   };
 }
@@ -180,7 +207,7 @@ function standardizeEqualProducts(items, dynamicRules = DEFAULT_DYNAMIC_RULES) {
         ...item.result, finalPrice,
         grossPrice: discount > 0 ? finalPrice / (1 - discount) : finalPrice,
         freight: details.freight, fixedFee: details.fixedFee,
-        netProfit: details.netProfit, margin: details.margin
+        netProfit: details.netProfit, margin: details.margin, details
       }
     };
   });
