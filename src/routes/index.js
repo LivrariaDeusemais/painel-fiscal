@@ -31170,117 +31170,111 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
   }, content);
 }
 
-function renderTabelaPrecosPage(req, { resumo = null, itens = [], feedback = null } = {}) {
+function renderTabelaPrecosPage(req, { resumo = null, itens = [], feedback = null, filtros = {} } = {}) {
   const isAdmin = req.session.usuario?.perfil === 'ADMIN';
-  const produtos = Number(resumo?.products?.total || 0);
-  const vinculoMl = (resumo?.links || []).find(item => item.marketplace === 'Mercado Livre');
-  const totalVinculos = Number(vinculoMl?.total || 0);
-  const totalSkus = Number(vinculoMl?.skus || 0);
+  const links = resumo?.links || [];
+  const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
+  const totalVinculos = links.reduce((sum, item) => sum + Number(item.total || 0), 0);
   const prontos = itens.filter(item => item.result?.status === 'OK');
   const revisar = itens.length - prontos.length;
-  const formatoMoeda = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const formatoPercentual = value => `${(Number(value || 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 4 })}%`;
-  const inputPercentual = value => (Number(value || 0) * 100).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
-  const inputMoeda = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  const dataImportacao = value => value ? new Date(value).toLocaleString('pt-BR') : 'Ainda não importado';
-  const feedbackHtml = feedback?.erro
-    ? `<div class="tp-alert tp-alert-error" role="alert">${escapeHtmlGlobal(feedback.erro)}</div>`
-    : feedback?.mensagem
-      ? `<div class="tp-alert tp-alert-ok" role="status">${escapeHtmlGlobal(feedback.mensagem)}</div>`
-      : '';
+  const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const percent = value => `${(Number(value || 0) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 4 })}%`;
+  const inputPercent = value => (Number(value || 0) * 100).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
+  const inputMoney = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const selected = value => filtros.marketplace === value ? 'selected' : '';
+  const feedbackHtml = feedback?.erro ? `<div class="tp-alert err">${escapeHtmlGlobal(feedback.erro)}</div>`
+    : feedback?.mensagem ? `<div class="tp-alert ok">${escapeHtmlGlobal(feedback.mensagem)}</div>` : '';
+  const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}" ${selected(item)}>${escapeHtmlGlobal(item)}</option>`).join('');
+  const importOptions = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}">${escapeHtmlGlobal(item)}</option>`).join('');
 
-  const importacaoHtml = isAdmin ? `
-    <section class="tp-band">
-      <div class="tp-heading"><div><span>Dados de origem</span><h2>Atualizar bases do Bling</h2></div></div>
-      <div class="tp-import-grid">
-        <form method="post" action="/ferramentas-ia/tabela-precos/base" enctype="multipart/form-data">
-          <div><strong>Cadastro geral de produtos</strong><small>Excel XLS ou XLSX exportado pelo Bling</small></div>
-          <input type="file" name="base" accept=".xls,.xlsx" required>
-          <button type="submit">Importar produtos</button>
-        </form>
-        <form method="post" action="/ferramentas-ia/tabela-precos/vinculos/mercado-livre" enctype="multipart/form-data">
-          <div><strong>Vínculos do Mercado Livre</strong><small>CSV de produtos vinculados à multiloja</small></div>
-          <input type="file" name="vinculos" accept=".csv,text/csv" required>
-          <button type="submit">Importar vínculos</button>
-        </form>
-      </div>
-    </section>` : '';
-
-  const regrasHtml = (resumo?.rules || []).map(regra => {
-    const campos = [
-      ['comissao', 'Comissão %'], ['imposto', 'Imposto %'], ['adm', 'ADM %'], ['ads', 'ADS %'],
-      ['cartao', 'Cartão %'], ['frete_percentual', 'Frete %'], ['desconto', 'Desconto desejado %'],
-      ['margem_minima', 'Margem mínima %']
-    ].map(([nome, rotulo]) => `<label><span>${rotulo}</span><input name="${nome}" inputmode="decimal" value="${escapeHtmlGlobal(inputPercentual(regra[nome]))}"></label>`).join('');
-    const valoresFixos = [
-      ['taxa_fixa', 'Taxa fixa R$'], ['frete_fixo', 'Frete fixo R$'], ['saldo_minimo', 'Saldo mínimo R$']
-    ].map(([nome, rotulo]) => `<label><span>${rotulo}</span><input name="${nome}" inputmode="decimal" value="${escapeHtmlGlobal(inputMoeda(regra[nome]))}"></label>`).join('');
-    return `
-      <details class="tp-rule">
-        <summary><strong>${escapeHtmlGlobal(regra.marketplace)}</strong><span>${formatoPercentual(regra.comissao)} comissão · ${formatoPercentual(regra.frete_percentual)} frete · ${formatoPercentual(regra.margem_minima)} margem mínima</span></summary>
-        ${isAdmin ? `<form method="post" action="/ferramentas-ia/tabela-precos/regras/${encodeURIComponent(regra.marketplace)}">
-          <label class="tp-toggle"><input type="checkbox" name="ativo" ${regra.ativo ? 'checked' : ''}><span>Regra ativa</span></label>
-          <div class="tp-rule-grid">${campos}${valoresFixos}</div>
-          <div class="tp-actions"><button type="submit">Salvar regra</button></div>
-        </form>` : '<p>Somente administradores podem alterar as regras.</p>'}
-      </details>`;
-  }).join('');
-
-  const linhasHtml = itens.slice(0, 100).map(item => {
-    const atual = Number(item.row.preco_atual || 0);
-    const novo = Number(item.result?.grossPrice || 0);
-    const diferenca = novo - atual;
-    const status = item.result?.status === 'OK' ? 'Pronto' : 'Revisar';
+  const ruleRows = (resumo?.rules || []).map((rule, index) => {
+    const formId = `regra-${index}`;
+    const field = (name, value, fixed = false) => isAdmin
+      ? `<input form="${formId}" name="${name}" value="${escapeHtmlGlobal(fixed ? inputMoney(value) : inputPercent(value))}" inputmode="decimal">`
+      : escapeHtmlGlobal(fixed ? inputMoney(value) : inputPercent(value));
     return `<tr>
-      <td><strong>${escapeHtmlGlobal(item.row.sku)}</strong><small>${escapeHtmlGlobal(item.row.id_loja || '')}</small></td>
-      <td>${escapeHtmlGlobal(item.row.produto_nome || item.row.nome || 'Produto não localizado')}</td>
-      <td>${formatoMoeda(atual)}</td>
-      <td>${item.result?.status === 'OK' ? formatoMoeda(item.result.finalPrice) : '-'}</td>
-      <td>${item.result?.status === 'OK' ? formatoMoeda(novo) : '-'}</td>
-      <td class="${diferenca >= 0 ? 'tp-up' : 'tp-down'}">${item.result?.status === 'OK' ? formatoMoeda(diferenca) : '-'}</td>
-      <td>${item.result?.status === 'OK' ? formatoPercentual(item.result.margin) : escapeHtmlGlobal(item.result?.reason || '-')}</td>
-      <td><span class="tp-status ${status === 'Pronto' ? 'ok' : 'warn'}">${status}</span></td>
+      <td><strong>${escapeHtmlGlobal(rule.marketplace)}</strong>${rule.marketplace === 'Shopee' ? '<small>Tarifas por faixa</small>' : ''}</td>
+      <td>${isAdmin ? `<input form="${formId}" type="checkbox" name="ativo" ${rule.ativo ? 'checked' : ''}>` : (rule.ativo ? 'Sim' : 'Não')}</td>
+      <td>${field('comissao', rule.comissao)}</td><td>${field('imposto', rule.imposto)}</td><td>${field('adm', rule.adm)}</td>
+      <td>${field('ads', rule.ads)}</td><td>${field('cartao', rule.cartao)}</td><td>${field('frete_percentual', rule.frete_percentual)}</td>
+      <td>${field('taxa_fixa', rule.taxa_fixa, true)}</td><td>${field('frete_fixo', rule.frete_fixo, true)}</td>
+      <td>${field('desconto', rule.desconto)}</td><td>${field('margem_minima', rule.margem_minima)}</td><td>${field('saldo_minimo', rule.saldo_minimo, true)}</td>
+      <td>${isAdmin ? `<form id="${formId}" method="post" action="/ferramentas-ia/tabela-precos/regras/${encodeURIComponent(rule.marketplace)}"><button type="submit">Salvar</button></form>` : ''}</td>
     </tr>`;
   }).join('');
 
-  const content = `
-    <style>
-      .tp-shell{display:grid;gap:16px;max-width:1440px}.tp-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tp-alert-ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tp-alert-error{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
-      .tp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tp-stat{padding:16px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tp-stat span{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.tp-stat strong{display:block;margin-top:7px;color:#172033;font-size:20px}.tp-stat small{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:700}
-      .tp-band{padding:20px;border:1px solid #dce7e1;border-radius:8px;background:#fff;box-shadow:0 9px 24px rgba(15,23,42,.05)}.tp-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.tp-heading span{color:#008f3a;font-size:10px;font-weight:900;text-transform:uppercase}.tp-heading h2{margin:3px 0 0;color:#172033;font-size:19px}.tp-heading p{margin:5px 0 0;color:#64748b;font-size:12px;font-weight:700}
-      .tp-import-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tp-import-grid form{display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.3fr) auto;align-items:center;gap:12px;padding:14px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc}.tp-import-grid strong,.tp-import-grid small{display:block}.tp-import-grid small{margin-top:4px;color:#64748b;font-size:10px;font-weight:700}.tp-import-grid input{min-width:0}.tp-import-grid button,.tp-actions button,.tp-export{min-height:40px;padding:0 15px;border:0;border-radius:8px;background:#009640;color:#fff!important;font:900 12px Arial,sans-serif;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-      .tp-rules{display:grid;gap:8px}.tp-rule{border:1px solid #e2e8f0;border-radius:7px;background:#fff}.tp-rule summary{display:flex;justify-content:space-between;gap:14px;padding:13px 15px;cursor:pointer}.tp-rule summary span{color:#64748b;font-size:11px;font-weight:700}.tp-rule form,.tp-rule>p{padding:0 15px 15px}.tp-rule-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.tp-rule label{display:grid;gap:5px}.tp-rule label span{color:#475569;font-size:10px;font-weight:900}.tp-rule input:not([type=checkbox]){width:100%;height:38px;border:1px solid #cbd5e1;border-radius:7px;padding:0 10px;font:700 12px Arial,sans-serif}.tp-toggle{display:flex!important;grid-auto-flow:column;justify-content:start;align-items:center;margin-bottom:12px}.tp-actions{display:flex;justify-content:flex-end;margin-top:12px}
-      .tp-table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}.tp-table{width:100%;border-collapse:collapse;min-width:1050px}.tp-table th{padding:10px;background:#f1f5f9;color:#475569;text-align:left;font-size:10px;text-transform:uppercase}.tp-table td{padding:10px;border-top:1px solid #e2e8f0;color:#172033;font-size:11px;font-weight:700}.tp-table td small{display:block;margin-top:3px;color:#64748b}.tp-up{color:#166534!important}.tp-down{color:#b91c1c!important}.tp-status{padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase}.tp-status.ok{background:#dcfce7;color:#166534}.tp-status.warn{background:#ffedd5;color:#9a3412}.tp-footnote{margin:12px 0 0;color:#64748b;font-size:11px;font-weight:700}.tp-placeholder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tp-placeholder div{padding:15px;border:1px dashed #cbd5e1;border-radius:7px;background:#f8fafc}.tp-placeholder strong{display:block;color:#172033}.tp-placeholder span{display:block;margin-top:5px;color:#64748b;font-size:11px;font-weight:700}
-      @media(max-width:1100px){.tp-stats{grid-template-columns:repeat(2,1fr)}.tp-import-grid{grid-template-columns:1fr}.tp-rule-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.tp-stats,.tp-import-grid,.tp-placeholder,.tp-rule-grid{grid-template-columns:1fr}.tp-import-grid form{grid-template-columns:1fr}.tp-rule summary{flex-direction:column}.tp-heading{flex-direction:column}.tp-export{width:100%}}
-    </style>
-    <div class="tp-shell">
-      ${feedbackHtml}
-      <section class="tp-stats">
-        <div class="tp-stat"><span>Produtos do Bling</span><strong>${produtos.toLocaleString('pt-BR')}</strong><small>${escapeHtmlGlobal(dataImportacao(resumo?.products?.atualizado_em))}</small></div>
-        <div class="tp-stat"><span>Anúncios Mercado Livre</span><strong>${totalVinculos.toLocaleString('pt-BR')}</strong><small>${totalSkus.toLocaleString('pt-BR')} SKUs únicos</small></div>
-        <div class="tp-stat"><span>Prontos para exportar</span><strong>${prontos.length.toLocaleString('pt-BR')}</strong><small>preços calculados</small></div>
-        <div class="tp-stat"><span>Precisam de revisão</span><strong>${revisar.toLocaleString('pt-BR')}</strong><small>custo ou peso ausente</small></div>
-      </section>
-      ${importacaoHtml}
-      <section class="tp-band">
-        <div class="tp-heading"><div><span>Configuração</span><h2>Regras por marketplace</h2><p>O frete percentual e o frete fixo em reais são parâmetros separados.</p></div></div>
-        <div class="tp-rules">${regrasHtml}</div>
-      </section>
-      <section class="tp-band">
-        <div class="tp-heading"><div><span>Mercado Livre</span><h2>Preço praticado x novo preço calculado</h2><p>O preço bruto vai para a coluna E e a coluna F será exportada com zero.</p></div>${isAdmin && prontos.length && !revisar ? '<a class="tp-export" href="/ferramentas-ia/tabela-precos/exportar/mercado-livre">Exportar CSV do Bling</a>' : ''}</div>
-        ${itens.length ? `<div class="tp-table-wrap"><table class="tp-table"><thead><tr><th>SKU / anúncio</th><th>Produto</th><th>Bruto atual</th><th>Venda calculada</th><th>Novo bruto</th><th>Diferença</th><th>Margem</th><th>Status</th></tr></thead><tbody>${linhasHtml}</tbody></table></div><p class="tp-footnote">${itens.length > 100 ? `Exibindo os primeiros 100 de ${itens.length.toLocaleString('pt-BR')} anúncios. O arquivo exportado inclui todos.` : `Exibindo ${itens.length.toLocaleString('pt-BR')} anúncios.`}</p>` : '<p class="tp-footnote">Importe o cadastro geral e os vínculos do Mercado Livre para calcular os novos preços.</p>'}
-      </section>
-      <section class="tp-band">
-        <div class="tp-heading"><div><span>Próximas etapas</span><h2>Decisão comercial</h2></div></div>
-        <div class="tp-placeholder"><div><strong>Ajuste manual e confirmação</strong><span>Simular outro preço por SKU, recalcular a margem e registrar o preço realmente aplicado.</span></div><div><strong>Simulador de promoções</strong><span>Considerar o crédito do marketplace, validade da campanha e alertas de encerramento.</span></div></div>
-      </section>
-    </div>`;
+  const rows = itens.slice(0, 200).map(item => {
+    const current = Number(item.row.preco_atual || 0);
+    const gross = Number(item.result?.grossPrice || 0);
+    const difference = gross - current;
+    const name = item.row.produto_nome || item.row.nome || 'Produto não localizado';
+    const ok = item.result?.status === 'OK';
+    return `<tr>
+      <td><strong>${escapeHtmlGlobal(item.row.marketplace)}</strong></td>
+      <td><strong>${escapeHtmlGlobal(item.row.sku)}</strong><small>${escapeHtmlGlobal(item.row.id_loja || '')}</small></td>
+      <td class="tp-product" title="${escapeHtmlGlobal(name)}">${escapeHtmlGlobal(name)}</td>
+      <td>${Number(item.row.estoque || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+      <td>${money(current)}</td><td>${ok ? money(item.result.finalPrice) : '-'}</td><td>${ok ? money(gross) : '-'}</td>
+      <td class="${difference >= 0 ? 'up' : 'down'}">${ok ? money(difference) : '-'}</td>
+      <td>${ok ? percent(item.result.margin) : escapeHtmlGlobal(item.result?.reason || '-')}</td>
+      <td><span class="tp-status ${ok ? 'ok' : 'warn'}">${ok ? 'Pronto' : 'Revisar'}</span></td>
+    </tr>`;
+  }).join('');
 
-  return renderPremiumAdminShell(req, {
-    titulo: 'Tabela de Preços',
-    subtitulo: 'Precificação e comparação de preços por marketplace.',
-    paginaAtual: 'ferramentas-ia'
-  }, content);
+  const content = `<style>
+    .tp-shell{display:grid;gap:16px;max-width:1480px}.tp-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tp-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tp-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+    .tp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tp-stat,.tp-band{border:1px solid #dce7e1;border-radius:8px;background:#fff}.tp-stat{padding:16px}.tp-stat span{display:block;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase}.tp-stat strong{display:block;margin-top:7px;color:#172033;font-size:20px}.tp-stat small{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:700}.tp-band{padding:20px;box-shadow:0 9px 24px rgba(15,23,42,.05)}
+    .tp-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.tp-heading>div>span{color:#008f3a;font-size:10px;font-weight:900;text-transform:uppercase}.tp-heading h2{margin:3px 0 0;color:#172033;font-size:19px}.tp-heading p{margin:5px 0 0;color:#64748b;font-size:12px;font-weight:700}.tp-actions{display:flex;gap:8px;flex-wrap:wrap}.tp-btn,.tp-band button{min-height:38px;padding:0 13px;border:1px solid #009640;border-radius:7px;background:#009640;color:#fff!important;font:900 11px Arial,sans-serif;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.tp-btn.soft{background:#fff;color:#087334!important;border-color:#b8d8c5}
+    .tp-import{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tp-import form{display:grid;grid-template-columns:minmax(170px,1fr) minmax(190px,1fr) auto;align-items:center;gap:10px;padding:13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px}.tp-import strong,.tp-import small{display:block}.tp-import small{margin-top:3px;color:#64748b;font-size:10px}.tp-import input,.tp-import select,.tp-filter input,.tp-filter select{min-width:0;height:39px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:0 9px;font:700 11px Arial,sans-serif}.tp-import input[type=file]{height:auto;padding:8px}
+    .tp-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}.tp-table{width:100%;border-collapse:collapse;min-width:1240px}.tp-table.rules{min-width:1480px}.tp-table th{padding:9px;background:#f1f5f9;color:#475569;text-align:left;font-size:9px;text-transform:uppercase;white-space:nowrap}.tp-table td{padding:9px;border-top:1px solid #e2e8f0;color:#172033;font-size:10px;font-weight:700;white-space:nowrap}.tp-table td small{display:block;margin-top:3px;color:#64748b}.tp-table input:not([type=checkbox]){width:72px;height:32px;border:1px solid #cbd5e1;border-radius:6px;padding:0 7px;font:700 10px Arial,sans-serif}.tp-table form{margin:0}.tp-product{max-width:250px;overflow:hidden;text-overflow:ellipsis;cursor:help}.up{color:#166534!important}.down{color:#b91c1c!important}.tp-status{padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase}.tp-status.ok{background:#dcfce7;color:#166534}.tp-status.warn{background:#ffedd5;color:#9a3412}
+    .tp-filter{display:grid;grid-template-columns:220px minmax(260px,1fr) auto auto;gap:9px;align-items:end;margin-bottom:14px}.tp-filter label{display:grid;gap:5px;color:#475569;font-size:10px;font-weight:900}.tp-note{margin:11px 0 0;color:#64748b;font-size:11px;font-weight:700}
+    @media(max-width:1000px){.tp-stats{grid-template-columns:repeat(2,1fr)}.tp-import{grid-template-columns:1fr}.tp-filter{grid-template-columns:1fr 1fr}}@media(max-width:680px){.tp-stats,.tp-filter{grid-template-columns:1fr}.tp-import form{grid-template-columns:1fr}.tp-heading{flex-direction:column}.tp-actions,.tp-btn{width:100%}}
+  </style><div class="tp-shell">${feedbackHtml}
+    <section class="tp-stats">
+      <div class="tp-stat"><span>Produtos do Bling</span><strong>${Number(resumo?.products?.total || 0).toLocaleString('pt-BR')}</strong><small>cadastro geral</small></div>
+      <div class="tp-stat"><span>Vínculos importados</span><strong>${totalVinculos.toLocaleString('pt-BR')}</strong><small>${links.length} marketplaces</small></div>
+      <div class="tp-stat"><span>Resultados exibidos</span><strong>${itens.length.toLocaleString('pt-BR')}</strong><small>${prontos.length.toLocaleString('pt-BR')} calculados</small></div>
+      <div class="tp-stat"><span>Precisam de revisão</span><strong>${revisar.toLocaleString('pt-BR')}</strong><small>nos filtros atuais</small></div>
+    </section>
+    ${isAdmin ? `<section class="tp-band"><div class="tp-heading"><div><span>Dados de origem</span><h2>Atualizar bases do Bling</h2></div></div><div class="tp-import">
+      <form method="post" action="/ferramentas-ia/tabela-precos/base" enctype="multipart/form-data"><div><strong>Cadastro geral de produtos</strong><small>Excel XLS ou XLSX completo</small></div><input type="file" name="base" accept=".xls,.xlsx" required><button>Importar produtos</button></form>
+      <form method="post" action="/ferramentas-ia/tabela-precos/vinculos" enctype="multipart/form-data"><div><strong>Vínculos do marketplace</strong><small>CSV da multiloja do Bling</small></div><div><select name="marketplace" required><option value="">Selecione</option>${importOptions}</select><input type="file" name="vinculos" accept=".csv" required></div><button>Importar vínculos</button></form>
+    </div></section>` : ''}
+    <section class="tp-band"><div class="tp-heading"><div><span>Configuração</span><h2>Regras por marketplace</h2><p>Todos os percentuais e valores fixos usados no cálculo.</p></div><div class="tp-actions"><a class="tp-btn soft" href="/ferramentas-ia/tabela-precos/fretes">Fretes e tarifas por faixa</a></div></div>
+      <div class="tp-scroll"><table class="tp-table rules"><thead><tr><th>Marketplace</th><th>Ativo</th><th>Comissão %</th><th>Imposto %</th><th>ADM %</th><th>ADS %</th><th>Cartão %</th><th>Frete %</th><th>Taxa fixa R$</th><th>Frete fixo R$</th><th>Desconto %</th><th>Margem %</th><th>Saldo R$</th><th></th></tr></thead><tbody>${ruleRows}</tbody></table></div>
+    </section>
+    <section class="tp-band"><div class="tp-heading"><div><span>Comparação</span><h2>Preço praticado x novo preço calculado</h2><p>Pesquise um SKU ou produto para comparar todos os marketplaces.</p></div><div class="tp-actions">${isAdmin && filtros.marketplace ? `<a class="tp-btn" href="/ferramentas-ia/tabela-precos/exportar/${encodeURIComponent(filtros.marketplace)}">Exportar ${escapeHtmlGlobal(filtros.marketplace)}</a>` : ''}</div></div>
+      <form class="tp-filter" method="get"><label>Marketplace<select name="marketplace"><option value="">Todos os marketplaces</option>${options}</select></label><label>SKU ou produto<input name="produto" value="${escapeHtmlGlobal(filtros.produto || '')}" placeholder="Ex.: B1606 ou Bíblia da Pregadora"></label><button type="submit">Filtrar</button><a class="tp-btn soft" href="/ferramentas-ia/tabela-precos">Limpar</a></form>
+      ${itens.length ? `<div class="tp-scroll"><table class="tp-table"><thead><tr><th>Marketplace</th><th>SKU / anúncio</th><th>Produto</th><th>Estoque</th><th>Preço atual</th><th>Venda calculada</th><th>Novo bruto</th><th>Diferença</th><th>Margem</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div><p class="tp-note">${itens.length > 200 ? `Exibindo os primeiros 200 de ${itens.length.toLocaleString('pt-BR')} resultados. Refine os filtros para ver um produto específico.` : `${itens.length.toLocaleString('pt-BR')} resultado(s). Passe o mouse sobre o produto para ver a descrição completa.`}</p>` : '<p class="tp-note">Nenhum vínculo encontrado para os filtros informados.</p>'}
+    </section>
+  </div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Tabela de Preços', subtitulo: 'Precificação e comparação de preços por marketplace.', paginaAtual: 'ferramentas-ia' }, content);
+}
+
+function renderTabelaFretesPage(req, rows, feedback = null) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const number = value => value == null ? '' : Number(value).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
+  const groups = new Map();
+  for (const row of rows) {
+    if (!groups.has(row.marketplace)) groups.set(row.marketplace, []);
+    groups.get(row.marketplace).push(row);
+  }
+  const sections = [...groups.entries()].map(([marketplace, items]) => {
+    const lines = items.map((row, index) => {
+      const id = `frete-${row.id}`;
+      const field = (name, value, percentage = false) => {
+        const display = name === 'faixa' ? String(value || '') : number(percentage ? Number(value || 0) * 100 : value);
+        return isAdmin
+          ? `<input form="${id}" name="${name}" value="${escapeHtmlGlobal(display)}">`
+          : escapeHtmlGlobal(display);
+      };
+      return `<tr><td>${field('faixa', row.label)}</td><td>${field('peso_min', row.weightMin)}</td><td>${field('peso_max', row.weightMax)}</td><td>${field('preco_min', row.priceMin)}</td><td>${field('preco_max', row.priceMax)}</td><td>${field('valor', row.value)}</td><td>${field('comissao', row.commission, true)}</td><td>${field('ads', row.ads, true)}</td><td>${field('frete_percentual', row.freightPercent, true)}</td><td>${field('taxa_fixa', row.fixedFee)}</td><td>${isAdmin ? `<form id="${id}" method="post" action="/ferramentas-ia/tabela-precos/fretes/${row.id}"><button>Salvar</button></form>` : ''}</td></tr>`;
+    }).join('');
+    return `<section class="tf-section"><h2>${escapeHtmlGlobal(marketplace)}</h2><div class="tf-scroll"><table><thead><tr><th>Faixa</th><th>Peso mín. kg</th><th>Peso máx. kg</th><th>Preço mín. R$</th><th>Preço máx. R$</th><th>Frete R$</th><th>Comissão %</th><th>ADS %</th><th>Frete %</th><th>Taxa fixa R$</th><th></th></tr></thead><tbody>${lines}</tbody></table></div></section>`;
+  }).join('');
+  const feedbackHtml = feedback?.erro ? `<div class="tf-alert err">${escapeHtmlGlobal(feedback.erro)}</div>` : feedback?.mensagem ? `<div class="tf-alert ok">${escapeHtmlGlobal(feedback.mensagem)}</div>` : '';
+  const content = `<style>.tf-shell{display:grid;gap:15px;max-width:1480px}.tf-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.tf-top p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tf-top a{padding:10px 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;text-decoration:none;font-size:11px;font-weight:900}.tf-section{padding:18px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tf-section h2{margin:0 0 12px;font-size:17px;color:#172033}.tf-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}table{width:100%;min-width:1280px;border-collapse:collapse}th{padding:9px;background:#f1f5f9;text-align:left;color:#475569;font-size:9px;text-transform:uppercase}td{padding:7px;border-top:1px solid #e2e8f0}input{width:105px;height:32px;border:1px solid #cbd5e1;border-radius:6px;padding:0 7px;font:700 10px Arial}td:first-child input{width:180px}button{height:32px;border:0;border-radius:6px;background:#009640;color:#fff;font:900 10px Arial;padding:0 11px;cursor:pointer}.tf-alert{padding:12px;border:1px solid;border-radius:7px;font-size:12px;font-weight:800}.tf-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tf-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}</style><div class="tf-shell">${feedbackHtml}<div class="tf-top"><p>Atualize aqui as faixas sempre que um marketplace alterar fretes ou tarifas variáveis.</p><a href="/ferramentas-ia/tabela-precos">Voltar para Tabela de Preços</a></div>${sections}</div>`;
+  return renderPremiumAdminShell(req, { titulo: 'Fretes e Tarifas', subtitulo: 'Faixas utilizadas pelo motor de precificação.', paginaAtual: 'ferramentas-ia' }, content);
 }
 
 function renderFerramentaEmPreparacao(req, ferramenta) {
@@ -31399,10 +31393,13 @@ router.get('/ferramentas-ia/tabela-precos', protegerRota, permitirPerfis('ADMIN'
   try {
     await tabelaPrecosService.ensureTables(pool);
     const resumo = await tabelaPrecosService.overview(pool);
-    const itens = resumo.links.some(item => item.marketplace === 'Mercado Livre')
-      ? await tabelaPrecosService.mercadoLivreRows(pool)
+    const permitidos = new Set(resumo.rules.map(item => item.marketplace));
+    const marketplace = permitidos.has(req.query.marketplace) ? req.query.marketplace : '';
+    const produto = String(req.query.produto || '').trim().slice(0, 120);
+    const itens = resumo.links.length
+      ? await tabelaPrecosService.marketplaceRows(pool, { marketplace, search: produto })
       : [];
-    res.send(renderTabelaPrecosPage(req, { resumo, itens, feedback }));
+    res.send(renderTabelaPrecosPage(req, { resumo, itens, feedback, filtros: { marketplace, produto } }));
   } catch (error) {
     res.send(renderTabelaPrecosPage(req, {
       feedback: feedback || { erro: `Tabela de Preços indisponível: ${error.message}` }
@@ -31430,16 +31427,18 @@ router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, re
   res.redirect('/ferramentas-ia/tabela-precos');
 });
 
-router.post('/ferramentas-ia/tabela-precos/vinculos/mercado-livre', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('vinculos'), async (req, res) => {
+router.post('/ferramentas-ia/tabela-precos/vinculos', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('vinculos'), async (req, res) => {
   try {
-    if (!req.file || path.extname(req.file.originalname).toLowerCase() !== '.csv') {
-      throw new Error('Selecione o relatório de vínculos do Mercado Livre no formato CSV.');
-    }
     await tabelaPrecosService.ensureTables(pool);
+    const regra = await pool.query('SELECT marketplace FROM tabela_preco_regras WHERE marketplace = $1 AND marketplace <> $2', [req.body.marketplace, 'Bling']);
+    if (!regra.rows[0]) throw new Error('Selecione um marketplace válido.');
+    if (!req.file || path.extname(req.file.originalname).toLowerCase() !== '.csv') {
+      throw new Error('Selecione o relatório de vínculos no formato CSV.');
+    }
     const resultado = await tabelaPrecosService.runParser('links', req.file.path);
-    await tabelaPrecosService.importLinks(pool, 'Mercado Livre', resultado.links);
+    await tabelaPrecosService.importLinks(pool, req.body.marketplace, resultado.links);
     req.session.tabelaPrecosFeedback = {
-      mensagem: `Vínculos do Mercado Livre atualizados. ${Number(resultado.count || 0).toLocaleString('pt-BR')} anúncios importados.`
+      mensagem: `Vínculos de ${req.body.marketplace} atualizados. ${Number(resultado.count || 0).toLocaleString('pt-BR')} anúncios importados.`
     };
   } catch (error) {
     req.session.tabelaPrecosFeedback = { erro: `Não foi possível importar os vínculos: ${error.message}` };
@@ -31462,19 +31461,48 @@ router.post('/ferramentas-ia/tabela-precos/regras/:marketplace', protegerRota, s
   res.redirect('/ferramentas-ia/tabela-precos');
 });
 
-router.get('/ferramentas-ia/tabela-precos/exportar/mercado-livre', protegerRota, somenteAdmin, async (req, res) => {
+router.get('/ferramentas-ia/tabela-precos/fretes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.tabelaFretesFeedback || null;
+  delete req.session.tabelaFretesFeedback;
   try {
     await tabelaPrecosService.ensureTables(pool);
-    const itens = await tabelaPrecosService.mercadoLivreRows(pool);
-    if (!itens.length) throw new Error('Importe primeiro os vínculos do Mercado Livre.');
+    const rows = await tabelaPrecosService.freightRules(pool);
+    res.send(renderTabelaFretesPage(req, rows, feedback));
+  } catch (error) {
+    res.send(renderTabelaFretesPage(req, [], feedback || { erro: `Fretes indisponíveis: ${error.message}` }));
+  }
+});
+
+router.post('/ferramentas-ia/tabela-precos/fretes/:id', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const row = await pool.query('SELECT id, marketplace FROM tabela_preco_fretes WHERE id = $1', [req.params.id]);
+    if (!row.rows[0]) throw new Error('Faixa não encontrada.');
+    await tabelaPrecosService.updateFreight(pool, req.params.id, req.body || {});
+    req.session.tabelaFretesFeedback = { mensagem: `Faixa de ${row.rows[0].marketplace} atualizada.` };
+  } catch (error) {
+    req.session.tabelaFretesFeedback = { erro: `Não foi possível atualizar a faixa: ${error.message}` };
+  }
+  res.redirect('/ferramentas-ia/tabela-precos/fretes');
+});
+
+router.get('/ferramentas-ia/tabela-precos/exportar/:marketplace', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const regra = await pool.query('SELECT marketplace FROM tabela_preco_regras WHERE marketplace = $1 AND marketplace <> $2', [req.params.marketplace, 'Bling']);
+    if (!regra.rows[0]) throw new Error('Marketplace não encontrado.');
+    const marketplace = regra.rows[0].marketplace;
+    const itens = await tabelaPrecosService.marketplaceRows(pool, { marketplace });
+    if (!itens.length) throw new Error(`Importe primeiro os vínculos de ${marketplace}.`);
     const pendentes = itens.filter(item => item.result?.status !== 'OK');
     if (pendentes.length) {
       throw new Error(`${pendentes.length} anúncio(s) ainda precisam de revisão por falta de custo ou peso.`);
     }
-    const csv = tabelaPrecosService.mercadoLivreCsv(itens);
+    const csv = tabelaPrecosService.marketplaceCsv(itens);
     const hoje = new Date().toISOString().slice(0, 10);
+    const nome = marketplace.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="Mercado_Livre_precos_${hoje}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${nome}_precos_${hoje}.csv"`);
     return res.send(csv);
   } catch (error) {
     req.session.tabelaPrecosFeedback = { erro: `Não foi possível exportar: ${error.message}` };

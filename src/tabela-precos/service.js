@@ -1,8 +1,9 @@
 const path = require('path');
 const { spawn } = require('child_process');
 const {
+  DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
-  calculateMercadoLivre,
+  calculateMarketplace,
   standardizeEqualProducts
 } = require('./pricing');
 
@@ -43,7 +44,9 @@ function runParser(command, file) {
   });
 }
 
-async function ensureTables(pool) {
+let tablesReady = null;
+
+async function initializeTables(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tabela_preco_produtos (
       sku TEXT PRIMARY KEY,
@@ -96,15 +99,102 @@ async function ensureTables(pool) {
       atualizado_em TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
-  for (const rule of MARKETPLACE_RULES) {
-    await pool.query(`
-      INSERT INTO tabela_preco_regras
-        (marketplace, comissao, imposto, adm, ads, cartao, frete_percentual, taxa_fixa, frete_fixo, desconto, margem_minima, saldo_minimo)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-      ON CONFLICT (marketplace) DO NOTHING
-    `, [rule.marketplace, rule.commission, rule.tax, rule.admin, rule.ads, rule.card, rule.freightPercent,
-      rule.fixedFee, rule.fixedFreight, rule.discount, rule.minMargin, rule.minProfit]);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tabela_preco_fretes (
+      id BIGSERIAL PRIMARY KEY,
+      marketplace TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      ordem INTEGER NOT NULL,
+      faixa TEXT,
+      peso_min NUMERIC(15,6),
+      peso_max NUMERIC(15,6),
+      preco_min NUMERIC(15,4),
+      preco_max NUMERIC(15,4),
+      valor NUMERIC(15,4) NOT NULL DEFAULT 0,
+      comissao NUMERIC(12,8) NOT NULL DEFAULT 0,
+      ads NUMERIC(12,8) NOT NULL DEFAULT 0,
+      frete_percentual NUMERIC(12,8) NOT NULL DEFAULT 0,
+      taxa_fixa NUMERIC(15,4) NOT NULL DEFAULT 0,
+      atualizado_em TIMESTAMP NOT NULL DEFAULT NOW(),
+      UNIQUE (marketplace, tipo, ordem)
+    )
+  `);
+  await pool.query(`
+    INSERT INTO tabela_preco_regras
+      (marketplace, comissao, imposto, adm, ads, cartao, frete_percentual, taxa_fixa, frete_fixo, desconto, margem_minima, saldo_minimo)
+    SELECT marketplace, commission, tax, admin, ads, card, freight_percent, fixed_fee,
+      fixed_freight, discount, min_margin, min_profit
+    FROM jsonb_to_recordset($1::jsonb) AS item(
+      marketplace TEXT, commission NUMERIC, tax NUMERIC, admin NUMERIC, ads NUMERIC,
+      card NUMERIC, freight_percent NUMERIC, fixed_fee NUMERIC, fixed_freight NUMERIC,
+      discount NUMERIC, min_margin NUMERIC, min_profit NUMERIC
+    )
+    ON CONFLICT (marketplace) DO NOTHING
+  `, [JSON.stringify(MARKETPLACE_RULES.map(rule => ({
+    marketplace: rule.marketplace,
+    commission: rule.commission,
+    tax: rule.tax,
+    admin: rule.admin,
+    ads: rule.ads,
+    card: rule.card,
+    freight_percent: rule.freightPercent,
+    fixed_fee: rule.fixedFee,
+    fixed_freight: rule.fixedFreight,
+    discount: rule.discount,
+    min_margin: rule.minMargin,
+    min_profit: rule.minProfit
+  })))]);
+  const freightDefaults = DEFAULT_DYNAMIC_RULES.map((row, index) => ({
+    marketplace: row.marketplace,
+    type: row.type,
+    order: index,
+    label: row.label || '',
+    weightMin: row.weightMin ?? null,
+    weightMax: row.weightMax ?? null,
+    priceMin: row.priceMin ?? null,
+    priceMax: row.priceMax ?? null,
+    value: row.value || 0,
+    commission: row.commission || 0,
+    ads: row.ads || 0,
+    freightPercent: row.freightPercent || 0,
+    fixedFee: row.fixedFee || 0
+  }));
+  await pool.query(`
+    INSERT INTO tabela_preco_fretes
+      (marketplace, tipo, ordem, faixa, peso_min, peso_max, preco_min, preco_max, valor, comissao, ads, frete_percentual, taxa_fixa)
+    SELECT marketplace, type, sort_order, label, weight_min, weight_max, price_min, price_max,
+      value, commission, ads, freight_percent, fixed_fee
+    FROM jsonb_to_recordset($1::jsonb) AS item(
+      marketplace TEXT, type TEXT, sort_order INTEGER, label TEXT,
+      weight_min NUMERIC, weight_max NUMERIC, price_min NUMERIC, price_max NUMERIC,
+      value NUMERIC, commission NUMERIC, ads NUMERIC, freight_percent NUMERIC, fixed_fee NUMERIC
+    )
+    ON CONFLICT (marketplace, tipo, ordem) DO NOTHING
+  `, [JSON.stringify(freightDefaults.map(row => ({
+    marketplace: row.marketplace,
+    type: row.type,
+    sort_order: row.order,
+    label: row.label,
+    weight_min: row.weightMin,
+    weight_max: row.weightMax,
+    price_min: row.priceMin,
+    price_max: row.priceMax,
+    value: row.value,
+    commission: row.commission,
+    ads: row.ads,
+    freight_percent: row.freightPercent,
+    fixed_fee: row.fixedFee
+  })))]);
+}
+
+function ensureTables(pool) {
+  if (!tablesReady) {
+    tablesReady = initializeTables(pool).catch(error => {
+      tablesReady = null;
+      throw error;
+    });
   }
+  return tablesReady;
 }
 
 async function importProducts(pool, products) {
@@ -112,14 +202,16 @@ async function importProducts(pool, products) {
   try {
     await client.query('BEGIN');
     await client.query('DELETE FROM tabela_preco_produtos');
-    for (const item of products) {
-      await client.query(`
-        INSERT INTO tabela_preco_produtos
-          (sku, bling_id, nome, marca, situacao, estoque, custo, preco_compra, peso, peso_bruto, preco_bling, ean)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-      `, [item.sku, item.bling_id, item.name, item.brand, item.status, item.stock, item.cost,
-        item.purchase_price, item.weight, item.gross_weight, item.bling_price, item.ean]);
-    }
+    await client.query(`
+      INSERT INTO tabela_preco_produtos
+        (sku, bling_id, nome, marca, situacao, estoque, custo, preco_compra, peso, peso_bruto, preco_bling, ean)
+      SELECT sku, bling_id, name, brand, status, stock, cost, purchase_price, weight, gross_weight, bling_price, ean
+      FROM jsonb_to_recordset($1::jsonb) AS item(
+        sku TEXT, bling_id TEXT, name TEXT, brand TEXT, status TEXT, stock NUMERIC,
+        cost NUMERIC, purchase_price NUMERIC, weight NUMERIC, gross_weight NUMERIC,
+        bling_price NUMERIC, ean TEXT
+      )
+    `, [JSON.stringify(products)]);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -134,14 +226,15 @@ async function importLinks(pool, marketplace, links) {
   try {
     await client.query('BEGIN');
     await client.query('DELETE FROM tabela_preco_vinculos WHERE marketplace = $1', [marketplace]);
-    for (const item of links) {
-      await client.query(`
-        INSERT INTO tabela_preco_vinculos
-          (marketplace, id_produto, id_loja, sku, nome, preco_atual, preco_promocional, dados)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      `, [marketplace, item.product_id, item.store_id, item.sku, item.name,
-        item.current_price, item.promotional_price, item.raw]);
-    }
+    await client.query(`
+      INSERT INTO tabela_preco_vinculos
+        (marketplace, id_produto, id_loja, sku, nome, preco_atual, preco_promocional, dados)
+      SELECT $1, product_id, store_id, sku, name, current_price, promotional_price, raw
+      FROM jsonb_to_recordset($2::jsonb) AS item(
+        product_id TEXT, store_id TEXT, sku TEXT, name TEXT,
+        current_price NUMERIC, promotional_price NUMERIC, raw JSONB
+      )
+    `, [marketplace, JSON.stringify(links)]);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -177,21 +270,66 @@ async function overview(pool) {
   return { products: products.rows[0], links: links.rows, rules: rules.rows };
 }
 
-async function mercadoLivreRows(pool) {
-  const ruleResult = await pool.query(`SELECT * FROM tabela_preco_regras WHERE marketplace = 'Mercado Livre' LIMIT 1`);
-  const rule = ruleResult.rows[0] ? databaseRule(ruleResult.rows[0]) : MARKETPLACE_RULES[2];
-  const result = await pool.query(`
+function databaseDynamicRule(row) {
+  return {
+    id: row.id,
+    marketplace: row.marketplace,
+    type: row.tipo,
+    order: Number(row.ordem),
+    label: row.faixa || '',
+    weightMin: row.peso_min == null ? null : Number(row.peso_min),
+    weightMax: row.peso_max == null ? null : Number(row.peso_max),
+    priceMin: row.preco_min == null ? null : Number(row.preco_min),
+    priceMax: row.preco_max == null ? null : Number(row.preco_max),
+    value: Number(row.valor),
+    commission: Number(row.comissao),
+    ads: Number(row.ads),
+    freightPercent: Number(row.frete_percentual),
+    fixedFee: Number(row.taxa_fixa)
+  };
+}
+
+async function freightRules(pool) {
+  const result = await pool.query(`SELECT * FROM tabela_preco_fretes ORDER BY marketplace, ordem`);
+  return result.rows.map(databaseDynamicRule);
+}
+
+async function marketplaceRows(pool, filters = {}) {
+  const values = [];
+  const conditions = [];
+  if (filters.marketplace) {
+    values.push(filters.marketplace);
+    conditions.push(`v.marketplace = $${values.length}`);
+  }
+  if (filters.search) {
+    values.push(`%${String(filters.search).trim()}%`);
+    conditions.push(`(v.sku ILIKE $${values.length} OR p.nome ILIKE $${values.length} OR v.nome ILIKE $${values.length})`);
+  }
+  const [ruleResult, dynamicRules, result] = await Promise.all([
+    pool.query(`SELECT * FROM tabela_preco_regras WHERE ativo = TRUE`),
+    freightRules(pool),
+    pool.query(`
     SELECT v.*, p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling
     FROM tabela_preco_vinculos v
     LEFT JOIN tabela_preco_produtos p ON p.sku = v.sku
-    WHERE v.marketplace = 'Mercado Livre'
-    ORDER BY v.sku, v.id
-  `);
+    ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
+    ORDER BY v.sku, v.marketplace, v.id
+  `, values)
+  ]);
+  const rules = new Map(ruleResult.rows.map(row => [row.marketplace, databaseRule(row)]));
   const calculated = result.rows.map(row => {
+    const rule = rules.get(row.marketplace);
     const product = { sku: row.sku, cost: Number(row.custo), weight: Number(row.peso) };
-    return { row, product, rule, result: row.custo && row.peso ? calculateMercadoLivre(product, rule) : { status: 'Revisar', reason: 'Produto sem custo ou peso.' } };
+    return {
+      row, product, rule,
+      result: rule ? calculateMarketplace(product, rule, dynamicRules) : { status: 'Revisar', reason: 'Marketplace sem regra ativa.' }
+    };
   });
-  return standardizeEqualProducts(calculated);
+  return standardizeEqualProducts(calculated, dynamicRules);
+}
+
+async function mercadoLivreRows(pool) {
+  return marketplaceRows(pool, { marketplace: 'Mercado Livre' });
 }
 
 function csvEscape(value) {
@@ -203,7 +341,7 @@ function formatCsvNumber(value) {
   return Number(value).toFixed(4).replace('.', ',');
 }
 
-function mercadoLivreCsv(items) {
+function marketplaceCsv(items) {
   const lines = [CSV_HEADERS.map(csvEscape).join(';')];
   for (const item of items) {
     if (item.result?.status !== 'OK') continue;
@@ -214,6 +352,8 @@ function mercadoLivreCsv(items) {
   }
   return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
+
+const mercadoLivreCsv = marketplaceCsv;
 
 async function updateRule(pool, marketplace, values) {
   const percent = key => (Number(String(values[key] || 0).replace(',', '.')) || 0) / 100;
@@ -229,13 +369,36 @@ async function updateRule(pool, marketplace, values) {
     money('frete_fixo'), percent('desconto'), percent('margem_minima'), money('saldo_minimo')]);
 }
 
+async function updateFreight(pool, id, values) {
+  const decimal = key => {
+    const raw = String(values[key] ?? '').trim();
+    if (!raw) return null;
+    const parsed = Number(raw.replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const percent = key => (decimal(key) || 0) / 100;
+  await pool.query(`
+    UPDATE tabela_preco_fretes SET
+      faixa=$2, peso_min=$3, peso_max=$4, preco_min=$5, preco_max=$6,
+      valor=$7, comissao=$8, ads=$9, frete_percentual=$10, taxa_fixa=$11,
+      atualizado_em=NOW()
+    WHERE id=$1
+  `, [id, values.faixa || '', decimal('peso_min'), decimal('peso_max'), decimal('preco_min'),
+    decimal('preco_max'), decimal('valor') || 0, percent('comissao'), percent('ads'),
+    percent('frete_percentual'), decimal('taxa_fixa') || 0]);
+}
+
 module.exports = {
   ensureTables,
   importProducts,
   importLinks,
+  freightRules,
+  marketplaceCsv,
+  marketplaceRows,
   mercadoLivreCsv,
   mercadoLivreRows,
   overview,
   runParser,
+  updateFreight,
   updateRule
 };

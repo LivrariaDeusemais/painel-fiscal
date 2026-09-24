@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   MARKETPLACE_RULES,
   attractivePriceAtOrAbove,
+  calculateMarketplace,
   calculateMercadoLivre,
   standardizeEqualProducts
 } = require('../src/tabela-precos/pricing');
@@ -29,6 +30,31 @@ test('reproduz exemplos validados do Mercado Livre', () => {
     assert.equal(result.freight, freight);
     assert.ok(Math.abs(result.grossPrice - grossPrice) < 1e-9);
   }
+});
+
+test('reproduz os preços principais dos oito canais da planilha', () => {
+  const expected = {
+    Bling: 209.9,
+    Tray: 282.9,
+    'Mercado Livre': 307.9,
+    Shopee: 319.9,
+    TikTok: 287.9,
+    Amazon: 272.9,
+    AliExpress: 267.9,
+    Magalu: 254.9
+  };
+  for (const rule of MARKETPLACE_RULES) {
+    const result = calculateMarketplace({ cost: 156.88, weight: 2.42 }, rule);
+    assert.equal(result.status, 'OK');
+    assert.equal(result.finalPrice, expected[rule.marketplace]);
+  }
+});
+
+test('exige revisão quando o produto fica fora das faixas de frete', () => {
+  const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'AliExpress');
+  const result = calculateMarketplace({ cost: 50, weight: 5.5 }, rule);
+  assert.equal(result.status, 'Revisar');
+  assert.match(result.reason, /fora das faixas/);
 });
 
 test('padroniza produtos com mesmo custo e faixa de peso', () => {

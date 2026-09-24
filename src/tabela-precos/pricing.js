@@ -9,33 +9,58 @@ const MARKETPLACE_RULES = [
   { marketplace: 'Magalu', commission: 0.18, tax: 0.05, admin: 0.03, ads: 0, card: 0, freightPercent: 0, fixedFee: 5, fixedFreight: 0, discount: 0.3, minMargin: 0.1, minProfit: 4 }
 ];
 
-const ML_PRICE_BANDS = [19, 49, 79, 100, 120, 150, 200, Infinity];
-const ML_FREIGHT_MATRIX = [
-  [2.82, 3.43, 4.07, 12.95, 14.95, 16.95, 19.05, 21.65],
-  [2.98, 3.48, 4.13, 13.85, 16.15, 18.15, 20.45, 23.25],
-  [3.02, 3.57, 4.22, 14.45, 16.85, 19.05, 21.35, 24.45],
-  [3.08, 3.68, 4.33, 14.75, 17.15, 19.45, 21.75, 25.45],
-  [3.13, 3.72, 4.38, 15.05, 17.65, 19.85, 22.25, 25.55],
-  [3.17, 4.33, 4.57, 16.45, 19.15, 21.65, 24.35, 27.05],
-  [3.22, 4.38, 4.88, 17.85, 20.75, 23.35, 26.35, 29.25],
-  [3.28, 4.42, 5.12, 19.75, 22.85, 26.05, 29.25, 32.45]
+const DEFAULT_DYNAMIC_RULES = [
+  { marketplace: 'Tray', type: 'frete_preco', priceMin: 0, priceMax: 64.99, value: 1, label: 'Até R$ 64,99' },
+  { marketplace: 'Tray', type: 'frete_preco', priceMin: 65, priceMax: null, value: 12, label: 'A partir de R$ 65,00' },
+  ...[
+    [0, 0.3, [2.82, 3.43, 4.07, 12.95, 14.95, 16.95, 19.05, 21.65], 'Até 0,3 kg'],
+    [0.300001, 0.5, [2.98, 3.48, 4.13, 13.85, 16.15, 18.15, 20.45, 23.25], 'De 0,3 a 0,5 kg'],
+    [0.500001, 1, [3.02, 3.57, 4.22, 14.45, 16.85, 19.05, 21.35, 24.45], 'De 0,5 a 1 kg'],
+    [1.000001, 1.5, [3.08, 3.68, 4.33, 14.75, 17.15, 19.45, 21.75, 25.45], 'De 1 a 1,5 kg'],
+    [1.500001, 2, [3.13, 3.72, 4.38, 15.05, 17.65, 19.85, 22.25, 25.55], 'De 1,5 a 2 kg'],
+    [2.000001, 3, [3.17, 4.33, 4.57, 16.45, 19.15, 21.65, 24.35, 27.05], 'De 2 a 3 kg'],
+    [3.000001, 4, [3.22, 4.38, 4.88, 17.85, 20.75, 23.35, 26.35, 29.25], 'De 3 a 4 kg'],
+    [4.000001, null, [3.28, 4.42, 5.12, 19.75, 22.85, 26.05, 29.25, 32.45], 'Acima de 4 kg']
+  ].flatMap(([weightMin, weightMax, values, label]) => values.map((value, index) => ({
+    marketplace: 'Mercado Livre', type: 'frete_peso_preco', weightMin, weightMax,
+    priceMin: [0, 19, 49, 79, 100, 120, 150, 200][index],
+    priceMax: [18.99, 48.99, 78.99, 99.99, 119.99, 149.99, 199.99, null][index],
+    value, label
+  }))),
+  ...[
+    [0, 79.99, 0.2, 4], [80, 99.99, 0.14, 16], [100, 199.99, 0.14, 20],
+    [200, 499.99, 0.14, 26], [500, null, 0.14, 26]
+  ].map(([priceMin, priceMax, commission, fixedFee]) => ({
+    marketplace: 'Shopee', type: 'tarifa_preco', priceMin, priceMax, commission,
+    fixedFee, ads: 0.1, freightPercent: 0.0035, value: 0.49,
+    label: priceMax == null ? `A partir de R$ ${priceMin}` : `R$ ${priceMin} a R$ ${priceMax}`
+  })),
+  ...[
+    [0, 29.99, 4.5], [30, 49.99, 6.5], [50, 78.99, 6.75]
+  ].map(([priceMin, priceMax, value]) => ({ marketplace: 'Amazon', type: 'frete_preco', priceMin, priceMax, value, label: `R$ ${priceMin} a R$ ${priceMax}` })),
+  ...[
+    [0, 0.25, [11.95, 13.95, 15.95, 17.95, 20.45], 'Até 0,25 kg'],
+    [0.250001, 0.5, [12.85, 15, 17.15, 19.3, 20.95], 'De 0,25 a 0,5 kg'],
+    [0.500001, 1, [13.45, 15.7, 17.95, 20.2, 21.95], 'De 0,5 a 1 kg'],
+    [1.000001, 2, [14, 16.35, 18.75, 21.1, 23.45], 'De 1 a 2 kg'],
+    [2.000001, 3, [14.95, 17.45, 19.95, 22.4, 24.45], 'De 2 a 3 kg'],
+    [3.000001, 4, [16.15, 18.85, 21.55, 24.2, 24.2], 'De 3 a 4 kg'],
+    [4.000001, null, [17, 19.9, 22.75, 25.6, 25.6], 'Acima de 4 kg']
+  ].flatMap(([weightMin, weightMax, values, label]) => values.map((value, index) => ({
+    marketplace: 'Amazon', type: 'frete_peso_preco', weightMin, weightMax,
+    priceMin: [79, 100, 120, 150, 200][index],
+    priceMax: [99.99, 119.99, 149.99, 199.99, null][index], value, label
+  }))),
+  ...[
+    [0, 0.3, 9.9, 'Até 0,3 kg'], [0.300001, 0.5, 9.95, 'De 0,3 a 0,5 kg'],
+    [0.500001, 1, 14.5, 'De 0,5 a 1 kg'], [1.000001, 2, 14.8, 'De 1 a 2 kg'],
+    [2.000001, 5, 18.39, 'De 2 a 5 kg']
+  ].map(([weightMin, weightMax, value, label]) => ({ marketplace: 'AliExpress', type: 'frete_peso', weightMin, weightMax, value, label }))
 ];
 
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function weightBandIndex(weight) {
-  const value = numberOrZero(weight);
-  if (value <= 0.3) return 0;
-  if (value <= 0.5) return 1;
-  if (value <= 1) return 2;
-  if (value <= 1.5) return 3;
-  if (value <= 2) return 4;
-  if (value <= 3) return 5;
-  if (value <= 4) return 6;
-  return 7;
 }
 
 function weightBandLabel(weight) {
@@ -60,104 +85,114 @@ function attractivePriceAtOrAbove(minimum) {
   return Math.round((decade + 12.9) * 100) / 100;
 }
 
-function totalPercent(rule) {
-  return ['commission', 'tax', 'admin', 'ads', 'card', 'freightPercent']
-    .reduce((sum, key) => sum + numberOrZero(rule[key]), 0);
+function within(value, minimum, maximum) {
+  return value >= numberOrZero(minimum) - 1e-9
+    && (maximum == null || value <= Number(maximum) + 1e-9);
 }
 
-function calculateCandidate(product, rule, freight) {
-  const cost = numberOrZero(product.cost);
-  const fixed = numberOrZero(rule.fixedFee) + numberOrZero(rule.fixedFreight) + numberOrZero(freight);
-  const percent = totalPercent(rule);
-  const marginDenominator = 1 - percent - numberOrZero(rule.minMargin);
-  const profitDenominator = 1 - percent;
-  if (cost <= 0 || marginDenominator <= 0 || profitDenominator <= 0) return null;
-
-  const minimumForMargin = (cost + fixed) / marginDenominator;
-  const minimumForProfit = (cost + fixed + numberOrZero(rule.minProfit)) / profitDenominator;
-  const minimum = Math.max(minimumForMargin, minimumForProfit);
-  const finalPrice = attractivePriceAtOrAbove(minimum);
-  return { finalPrice, minimum, freight: numberOrZero(freight) };
-}
-
-function bandContains(index, price) {
-  const lower = index === 0 ? 0 : ML_PRICE_BANDS[index - 1];
-  const upper = ML_PRICE_BANDS[index];
-  return price + 1e-9 >= lower && price < upper;
-}
-
-function calculateMercadoLivre(product, rule = MARKETPLACE_RULES[2]) {
-  const freightRow = ML_FREIGHT_MATRIX[weightBandIndex(product.weight)];
-  const candidates = freightRow.map((freight, index) => {
-    const candidate = calculateCandidate(product, rule, freight);
-    return candidate && bandContains(index, candidate.finalPrice) ? candidate : null;
-  }).filter(Boolean);
-
-  const result = candidates.sort((a, b) => a.finalPrice - b.finalPrice)[0]
-    || calculateCandidate(product, rule, freightRow[freightRow.length - 1]);
-  if (!result) return { status: 'Revisar', reason: 'Custo ou taxas inválidas.' };
-
-  const percent = totalPercent(rule);
-  const netProfit = result.finalPrice * (1 - percent)
-    - numberOrZero(product.cost)
-    - numberOrZero(rule.fixedFee)
-    - numberOrZero(rule.fixedFreight)
-    - result.freight;
-  const margin = result.finalPrice > 0 ? netProfit / result.finalPrice : 0;
-  const discount = numberOrZero(rule.discount);
-  const grossPrice = discount > 0 ? result.finalPrice / (1 - discount) : result.finalPrice;
-
+function dynamicForPrice(marketplace, price, weight, rows) {
+  const matching = rows.find(row => row.marketplace === marketplace
+    && within(price, row.priceMin, row.priceMax)
+    && within(weight, row.weightMin, row.weightMax));
+  if (!matching) return { freight: 0, commission: 0, ads: 0, freightPercent: 0, fixedFee: 0 };
   return {
-    status: netProfit + 1e-9 >= numberOrZero(rule.minProfit) && margin + 1e-9 >= numberOrZero(rule.minMargin) ? 'OK' : 'Revisar',
-    finalPrice: result.finalPrice,
-    grossPrice,
-    discount,
-    freight: result.freight,
-    netProfit,
-    margin,
+    freight: numberOrZero(matching.value),
+    commission: numberOrZero(matching.commission),
+    ads: numberOrZero(matching.ads),
+    freightPercent: numberOrZero(matching.freightPercent),
+    fixedFee: numberOrZero(matching.fixedFee)
+  };
+}
+
+function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+  const dynamic = dynamicForPrice(rule.marketplace, price, numberOrZero(product.weight), dynamicRules);
+  const percent = ['commission', 'tax', 'admin', 'ads', 'card', 'freightPercent']
+    .reduce((sum, key) => sum + numberOrZero(rule[key]), 0)
+    + dynamic.commission + dynamic.ads + dynamic.freightPercent;
+  const fixedFee = numberOrZero(rule.fixedFee) + dynamic.fixedFee;
+  const freight = numberOrZero(rule.fixedFreight) + dynamic.freight;
+  const netProfit = price * (1 - percent) - numberOrZero(product.cost) - fixedFee - freight;
+  return { percent, fixedFee, freight, netProfit, margin: price > 0 ? netProfit / price : 0 };
+}
+
+function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+  if (numberOrZero(product.cost) <= 0 || numberOrZero(product.weight) <= 0) {
+    return { status: 'Revisar', reason: 'Produto sem custo ou peso.' };
+  }
+  const marketplaceDynamic = dynamicRules.filter(row => row.marketplace === rule.marketplace);
+  const dynamicCandidates = marketplaceDynamic.filter(row => within(
+    numberOrZero(product.weight), row.weightMin, row.weightMax
+  ));
+  if (marketplaceDynamic.length && !dynamicCandidates.length) {
+    return { status: 'Revisar', reason: 'Produto fora das faixas de frete cadastradas.' };
+  }
+  const rows = marketplaceDynamic.length ? dynamicCandidates : [{}];
+  const candidates = rows.map(row => {
+    const percent = ['commission', 'tax', 'admin', 'ads', 'card', 'freightPercent']
+      .reduce((sum, key) => sum + numberOrZero(rule[key]), 0)
+      + numberOrZero(row.commission) + numberOrZero(row.ads) + numberOrZero(row.freightPercent);
+    const fixedFee = numberOrZero(rule.fixedFee) + numberOrZero(row.fixedFee);
+    const freight = numberOrZero(rule.fixedFreight) + numberOrZero(row.value);
+    const marginDenominator = 1 - percent - numberOrZero(rule.minMargin);
+    const profitDenominator = 1 - percent;
+    if (marginDenominator <= 0 || profitDenominator <= 0) return null;
+    const minimum = Math.max(
+      (numberOrZero(product.cost) + fixedFee + freight) / marginDenominator,
+      (numberOrZero(product.cost) + fixedFee + freight + numberOrZero(rule.minProfit)) / profitDenominator
+    );
+    const finalPrice = attractivePriceAtOrAbove(minimum);
+    if (!within(finalPrice, row.priceMin, row.priceMax)) return null;
+    return { finalPrice, details: calculateAtPrice(product, rule, finalPrice, dynamicRules) };
+  }).filter(Boolean).sort((a, b) => a.finalPrice - b.finalPrice);
+  if (!candidates.length) return { status: 'Revisar', reason: 'Não foi possível calcular com as regras atuais.' };
+  const { finalPrice, details } = candidates[0];
+  const discount = numberOrZero(rule.discount);
+  return {
+    status: 'OK', finalPrice,
+    grossPrice: discount > 0 ? finalPrice / (1 - discount) : finalPrice,
+    discount, freight: details.freight, fixedFee: details.fixedFee,
+    netProfit: details.netProfit, margin: details.margin,
     weightBand: weightBandLabel(product.weight)
   };
 }
 
-function standardizeEqualProducts(items) {
+function calculateMercadoLivre(product, rule = MARKETPLACE_RULES[2], dynamicRules = DEFAULT_DYNAMIC_RULES) {
+  return calculateMarketplace(product, rule, dynamicRules);
+}
+
+function standardizeEqualProducts(items, dynamicRules = DEFAULT_DYNAMIC_RULES) {
   const maximumByGroup = new Map();
   for (const item of items) {
     if (!item.result || item.result.status !== 'OK') continue;
-    const key = `${numberOrZero(item.product.cost).toFixed(2)}|${item.result.weightBand}`;
+    const key = `${item.rule.marketplace}|${numberOrZero(item.product.cost).toFixed(2)}|${item.result.weightBand}`;
     maximumByGroup.set(key, Math.max(maximumByGroup.get(key) || 0, item.result.finalPrice));
   }
-
   return items.map(item => {
     if (!item.result || item.result.status !== 'OK') return item;
-    const key = `${numberOrZero(item.product.cost).toFixed(2)}|${item.result.weightBand}`;
+    const key = `${item.rule.marketplace}|${numberOrZero(item.product.cost).toFixed(2)}|${item.result.weightBand}`;
     const finalPrice = maximumByGroup.get(key) || item.result.finalPrice;
     if (finalPrice === item.result.finalPrice) return item;
-    const rule = item.rule || MARKETPLACE_RULES[2];
-    const freight = ML_FREIGHT_MATRIX[weightBandIndex(item.product.weight)]
-      [ML_PRICE_BANDS.findIndex(upper => finalPrice < upper)];
-    const percent = totalPercent(rule);
-    const netProfit = finalPrice * (1 - percent) - numberOrZero(item.product.cost)
-      - numberOrZero(rule.fixedFee) - numberOrZero(rule.fixedFreight) - freight;
+    const details = calculateAtPrice(item.product, item.rule, finalPrice, dynamicRules);
+    const discount = numberOrZero(item.rule.discount);
     return {
       ...item,
       result: {
-        ...item.result,
-        finalPrice,
-        grossPrice: finalPrice / (1 - numberOrZero(rule.discount)),
-        freight,
-        netProfit,
-        margin: netProfit / finalPrice
+        ...item.result, finalPrice,
+        grossPrice: discount > 0 ? finalPrice / (1 - discount) : finalPrice,
+        freight: details.freight, fixedFee: details.fixedFee,
+        netProfit: details.netProfit, margin: details.margin
       }
     };
   });
 }
 
 module.exports = {
+  DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
-  ML_FREIGHT_MATRIX,
   attractivePriceAtOrAbove,
+  calculateAtPrice,
+  calculateMarketplace,
   calculateMercadoLivre,
   standardizeEqualProducts,
-  weightBandIndex,
   weightBandLabel
 };
