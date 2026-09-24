@@ -60,6 +60,97 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+const codificadorUpload = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
+
+function receberArquivoCodificador(campo) {
+  return (req, res, next) => {
+    codificadorUpload.single(campo)(req, res, error => {
+      if (!error) return next();
+      req.session.codificadorFeedback = {
+        erro: error.code === 'LIMIT_FILE_SIZE'
+          ? 'O arquivo excede o limite de 25 MB.'
+          : 'Não foi possível receber o arquivo enviado.'
+      };
+      return res.redirect('/ferramentas-ia/codificador');
+    });
+  };
+}
+
+const codificadorRoot = path.join(__dirname, '..', 'codificador');
+const codificadorCli = path.join(codificadorRoot, 'cli.py');
+const codificadorStorageDir = path.join(uploadsDir, 'codificador');
+const codificadorPython = process.env.CODIFICADOR_PYTHON || 'python3';
+const codificadorPythonPackages = path.join(__dirname, '..', '..', '.python-packages');
+
+function executarCodificador(argumentos) {
+  return new Promise((resolve, reject) => {
+    fs.mkdirSync(codificadorStorageDir, { recursive: true });
+    const processo = spawn(codificadorPython, [codificadorCli, ...argumentos], {
+      cwd: codificadorRoot,
+      env: {
+        ...process.env,
+        CODIFICADOR_STORAGE_DIR: codificadorStorageDir,
+        PYTHONPATH: [codificadorPythonPackages, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
+      }
+    });
+    let stdout = '';
+    let stderr = '';
+    let finalizado = false;
+
+    const timeout = setTimeout(() => {
+      if (finalizado) return;
+      finalizado = true;
+      processo.kill('SIGTERM');
+      reject(new Error('O processamento excedeu o tempo máximo de dois minutos.'));
+    }, 120000);
+
+    processo.stdout.on('data', chunk => {
+      stdout += chunk.toString();
+      if (stdout.length > 1024 * 1024) processo.kill('SIGTERM');
+    });
+    processo.stderr.on('data', chunk => {
+      stderr += chunk.toString();
+      if (stderr.length > 1024 * 1024) processo.kill('SIGTERM');
+    });
+    processo.on('error', error => {
+      clearTimeout(timeout);
+      if (finalizado) return;
+      finalizado = true;
+      reject(error);
+    });
+    processo.on('close', codigo => {
+      clearTimeout(timeout);
+      if (finalizado) return;
+      finalizado = true;
+      if (codigo !== 0) {
+        return reject(new Error(stderr.trim() || 'Não foi possível executar o Codificador.'));
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (error) {
+        reject(new Error('O Codificador retornou uma resposta inválida.'));
+      }
+    });
+  });
+}
+
+function removerArquivoTemporario(arquivo) {
+  if (!arquivo?.path) return;
+  fs.promises.unlink(arquivo.path).catch(() => {});
+}
+
+function registrarResultadoCodificador(req, resultado) {
+  const id = crypto.randomUUID();
+  if (!req.session.codificadorResultados) req.session.codificadorResultados = {};
+  req.session.codificadorResultados[id] = {
+    pdf: resultado.pdf || null,
+    excel: resultado.excel || null
+  };
+  return id;
+}
 
 function getUploadFilePath(filename) {
   if (!filename) return null;
@@ -4212,6 +4303,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'lancamentos', href:'/lancamentos', label:'▤ Comprovantes' },
     { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
+    { key:'ferramentas-ia', href:'/ferramentas-ia', label:'◇ Ferramentas IA' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
     ...(isAdmin ? [{ key:'alertas-vencimentos', href:'/alertas-vencimentos', label:'◌ Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
@@ -5728,6 +5820,7 @@ function renderGlobalHeader(req, config = {}) {
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
     { key: 'documentos', href: '/arquivo', label: 'Arquivo' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
+    { key: 'ferramentas-ia', href: '/ferramentas-ia', label: 'Ferramentas IA' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
     ...(isAdmin ? [{ key: 'alertas-vencimentos', href: '/alertas-vencimentos', label: 'Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
@@ -10215,6 +10308,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
             <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
+            <a class="premium-side-link" href="/ferramentas-ia"><span>◇</span>Ferramentas IA</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
             <a class="premium-side-link" href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
@@ -10267,6 +10361,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
           <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
+          <a class="nav-btn" href="/ferramentas-ia"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M5.6 5.6l12.8 12.8"/><path d="M18.4 5.6L5.6 18.4"/></svg></span>Ferramentas IA</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/alertas-vencimentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 15h4"/><path d="M8 18h8"/></svg></span>Vencimentos hoje</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -29032,6 +29127,7 @@ body.contador-premium-page .trash-history {
               <a href="/lancamentos"><span>▤</span>Comprovantes</a>
               <a href="/arquivo"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
+              <a href="/ferramentas-ia"><span>◇</span>Ferramentas IA</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
               ${isAdmin ? `<a href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>` : ''}
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
@@ -30850,6 +30946,324 @@ function renderNfseNacionalPage(req, { teste = null, ok = '', erro = '', periodo
 </body>
 </html>`;
 }
+
+function renderFerramentasIaPage(req) {
+  const content = `
+    <style>
+      .ai-tools-wrap{display:grid;gap:18px;}
+      .ai-tools-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:4px 2px 0;}
+      .ai-tools-heading h2{margin:0 0 6px;font-size:24px;color:#0f172a;}
+      .ai-tools-heading p{margin:0;color:#64748b;font-size:13px;font-weight:700;}
+      .ai-tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+      .ai-tool-card{display:flex;min-height:190px;flex-direction:column;padding:22px;border:1px solid #dce7e1;border-radius:8px;background:#fff;box-shadow:0 12px 28px rgba(15,23,42,.07);}
+      .ai-tool-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+      .ai-tool-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:8px;background:#eaf8f0;color:#008f3a;flex:0 0 auto;}
+      .ai-tool-icon svg{width:22px;height:22px;}
+      .ai-tool-status{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:900;text-transform:uppercase;}
+      .ai-tool-card h3{margin:18px 0 7px;font-size:18px;color:#172033;}
+      .ai-tool-card p{margin:0 0 18px;color:#64748b;font-size:13px;font-weight:700;line-height:1.45;}
+      .ai-tool-link{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;width:max-content;min-height:40px;padding:0 16px;border-radius:8px;background:#009640;color:#fff!important;text-decoration:none;font-size:12px;font-weight:900;}
+      .ai-tool-link:hover{background:#007f36;}
+      @media(max-width:820px){.ai-tools-grid{grid-template-columns:1fr;}.ai-tools-heading{align-items:flex-start;flex-direction:column;}}
+    </style>
+    <section class="ai-tools-wrap">
+      <div class="ai-tools-heading">
+        <div><h2>Ferramentas disponíveis</h2><p>Acesse os recursos internos da Deus é Mais.</p></div>
+      </div>
+      <div class="ai-tools-grid">
+        <article class="ai-tool-card">
+          <div class="ai-tool-card-header">
+            <span class="ai-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+            <span class="ai-tool-status">Disponível</span>
+          </div>
+          <h3>Codificador de NF e Orçamentos</h3>
+          <p>Codificação de documentos por fornecedor e geração dos arquivos finais.</p>
+          <a class="ai-tool-link" href="/ferramentas-ia/codificador">Abrir ferramenta</a>
+        </article>
+        <article class="ai-tool-card">
+          <div class="ai-tool-card-header">
+            <span class="ai-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M10 4v16"/><path d="M14 13h3"/><path d="M14 17h3"/></svg></span>
+            <span class="ai-tool-status">Próxima etapa</span>
+          </div>
+          <h3>Tabela de Preços</h3>
+          <p>Consulta e manutenção das tabelas comerciais da empresa.</p>
+          <a class="ai-tool-link" href="/ferramentas-ia/tabela-precos">Abrir ferramenta</a>
+        </article>
+      </div>
+    </section>
+  `;
+
+  return renderPremiumAdminShell(req, {
+    titulo: 'Ferramentas IA',
+    subtitulo: 'Recursos internos da Deus é Mais reunidos no PlennaTec.',
+    paginaAtual: 'ferramentas-ia'
+  }, content);
+}
+
+function renderCodificadorPage(req, { statusBase = null, feedback = null } = {}) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const resultado = feedback?.resultado || null;
+  const resultadoId = feedback?.resultadoId || '';
+  const faltantes = Array.isArray(resultado?.sem_correspondencia) ? resultado.sem_correspondencia : [];
+  const nomesFornecedores = {
+    sbb: 'SBB',
+    bv_books: 'BV Books',
+    cpp: 'CPP',
+    penkal: 'Penkal',
+    adib: 'ADIB / Inteligência Bíblica',
+    auto: 'Detecção automática'
+  };
+  const nomeFornecedor = nomesFornecedores[resultado?.fornecedor] || resultado?.fornecedor || '';
+  const nomeTipo = resultado?.tipo === 'orcamento' ? 'Orçamento' : resultado?.tipo === 'nf' ? 'NF / DANFE' : '';
+  const baseDescricao = statusBase
+    ? `${Number(statusBase.produtos || 0).toLocaleString('pt-BR')} produtos disponíveis`
+    : 'Não foi possível consultar a base neste momento';
+  const feedbackHtml = feedback?.erro
+    ? `<div class="cod-alert cod-alert-error" role="alert">${escapeHtmlGlobal(feedback.erro)}</div>`
+    : feedback?.mensagem
+      ? `<div class="cod-alert cod-alert-ok" role="status">${escapeHtmlGlobal(feedback.mensagem)}</div>`
+      : '';
+  const faltantesHtml = faltantes.length
+    ? `<div class="cod-pending"><strong>Itens sem correspondência na base</strong><div>${faltantes.map(item => `<span>${escapeHtmlGlobal(item)}</span>`).join('')}</div></div>`
+    : '<p class="cod-result-ok">Todos os itens encontrados possuem correspondência na base.</p>';
+  const resultadoHtml = resultado
+    ? `
+      <section class="cod-result" aria-live="polite">
+        <div class="cod-section-heading">
+          <div><span class="cod-kicker">Processamento concluído</span><h2>Arquivos prontos</h2></div>
+          <span class="cod-result-count">${Number(resultado.skus_aplicados || 0)} SKUs aplicados</span>
+        </div>
+        <dl class="cod-result-meta">
+          <div><dt>Fornecedor</dt><dd>${escapeHtmlGlobal(nomeFornecedor)}</dd></div>
+          <div><dt>Documento</dt><dd>${escapeHtmlGlobal(nomeTipo)}</dd></div>
+          <div><dt>Itens encontrados</dt><dd>${Number(resultado.itens_encontrados || 0)}</dd></div>
+        </dl>
+        ${faltantesHtml}
+        <div class="cod-downloads">
+          <a class="cod-btn cod-btn-primary" href="/ferramentas-ia/codificador/download/${encodeURIComponent(resultadoId)}/pdf">Baixar PDF codificado</a>
+          ${resultado.excel ? `<a class="cod-btn cod-btn-secondary" href="/ferramentas-ia/codificador/download/${encodeURIComponent(resultadoId)}/excel">Baixar Excel</a>` : ''}
+        </div>
+      </section>
+    `
+    : '';
+
+  const baseFormHtml = isAdmin
+    ? `
+      <form class="cod-form" method="post" action="/ferramentas-ia/codificador/base" enctype="multipart/form-data">
+        <label class="cod-field cod-field-grow">
+          <span>Excel exportado do Bling</span>
+          <input type="file" name="base" accept=".xlsx" required>
+        </label>
+        <div class="cod-form-actions">
+          <a class="cod-btn cod-btn-secondary" href="/ferramentas-ia/codificador/modelo">Baixar modelo padrão</a>
+          <button class="cod-btn cod-btn-primary" type="submit">Atualizar base</button>
+        </div>
+      </form>
+    `
+    : '<p class="cod-admin-note">A atualização da base está disponível para administradores.</p>';
+
+  const content = `
+    <style>
+      .cod-shell{display:grid;gap:16px;max-width:1100px;}
+      .cod-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800;}
+      .cod-alert-ok{background:#ecfdf3;border-color:#a7e8be;color:#166534;}
+      .cod-alert-error{background:#fff1f2;border-color:#fecdd3;color:#9f1239;}
+      .cod-section,.cod-result{padding:22px;border:1px solid #dce7e1;border-radius:8px;background:#fff;box-shadow:0 10px 26px rgba(15,23,42,.06);}
+      .cod-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px;}
+      .cod-section-heading h2{margin:3px 0 0;font-size:19px;color:#172033;}
+      .cod-kicker{color:#008f3a;font-size:10px;font-weight:900;text-transform:uppercase;}
+      .cod-base-status,.cod-result-count{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;background:#eaf8f0;color:#087334;font-size:10px;font-weight:900;white-space:nowrap;}
+      .cod-form{display:grid;gap:15px;}
+      .cod-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+      .cod-field{display:grid;gap:7px;min-width:0;}
+      .cod-field span{color:#334155;font-size:12px;font-weight:900;}
+      .cod-field input,.cod-field select{width:100%;height:44px;border:1px solid #cfd9e4;border-radius:8px;background:#fff;padding:0 12px;color:#172033;font:700 13px Arial,Helvetica,sans-serif;}
+      .cod-field input[type="file"]{height:auto;min-height:48px;padding:10px;}
+      .cod-form-actions,.cod-downloads{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+      .cod-btn{min-height:42px;padding:0 16px;border:1px solid transparent;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:900 12px Arial,Helvetica,sans-serif;cursor:pointer;}
+      .cod-btn-primary{background:#009640;color:#fff!important;border-color:#009640;}
+      .cod-btn-primary:hover{background:#007f36;}
+      .cod-btn-secondary{background:#f8fafc;color:#172033!important;border-color:#d5dee8;}
+      .cod-help,.cod-admin-note{margin:14px 0 0;color:#64748b;font-size:12px;font-weight:700;line-height:1.45;}
+      .cod-result{border-left:4px solid #00a84b;}
+      .cod-result-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 17px;}
+      .cod-result-meta div{padding:12px;background:#f8fafc;border:1px solid #e5eaf0;border-radius:7px;}
+      .cod-result-meta dt{margin:0 0 5px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;}
+      .cod-result-meta dd{margin:0;color:#172033;font-size:14px;font-weight:900;}
+      .cod-result-ok{margin:0 0 16px;color:#166534;font-size:13px;font-weight:800;}
+      .cod-pending{margin:0 0 17px;padding:13px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:12px;}
+      .cod-pending strong{display:block;margin-bottom:9px;}
+      .cod-pending div{display:flex;gap:7px;flex-wrap:wrap;}
+      .cod-pending span{padding:5px 8px;border-radius:6px;background:#fff;border:1px solid #fed7aa;font-weight:900;}
+      @media(max-width:760px){.cod-form-grid,.cod-result-meta{grid-template-columns:1fr;}.cod-section-heading{flex-direction:column;}.cod-form-actions,.cod-downloads{align-items:stretch;flex-direction:column;}.cod-btn{width:100%;}}
+    </style>
+    <div class="cod-shell">
+      ${feedbackHtml}
+      <section class="cod-section">
+        <div class="cod-section-heading">
+          <div><span class="cod-kicker">Base de produtos</span><h2>Atualizar códigos e SKUs</h2></div>
+          <span class="cod-base-status">${escapeHtmlGlobal(baseDescricao)}</span>
+        </div>
+        ${baseFormHtml}
+        <p class="cod-help">Use a planilha exportada do Bling preenchida conforme o modelo padrão. A integração automática será adicionada em uma próxima etapa.</p>
+      </section>
+      <section class="cod-section">
+        <div class="cod-section-heading">
+          <div><span class="cod-kicker">Processamento</span><h2>Codificar NF ou orçamento</h2></div>
+        </div>
+        <form class="cod-form" method="post" action="/ferramentas-ia/codificador/processar" enctype="multipart/form-data">
+          <label class="cod-field">
+            <span>PDF da NF ou orçamento</span>
+            <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+          </label>
+          <div class="cod-form-grid">
+            <label class="cod-field">
+              <span>Fornecedor</span>
+              <select name="fornecedor">
+                <option value="auto">Detectar automaticamente</option>
+                <option value="sbb">SBB</option>
+                <option value="bv_books">BV Books / BKJ1611</option>
+                <option value="cpp">CPP</option>
+                <option value="penkal">Penkal</option>
+                <option value="adib">ADIB / Inteligência Bíblica</option>
+              </select>
+            </label>
+            <label class="cod-field">
+              <span>Tipo de documento</span>
+              <select name="tipo">
+                <option value="auto">Detectar automaticamente</option>
+                <option value="nf">NF / DANFE</option>
+                <option value="orcamento">Orçamento</option>
+              </select>
+            </label>
+          </div>
+          <div class="cod-form-actions"><button class="cod-btn cod-btn-primary" type="submit">Codificar PDF</button></div>
+        </form>
+      </section>
+      ${resultadoHtml}
+    </div>
+  `;
+
+  return renderPremiumAdminShell(req, {
+    titulo: 'Codificador de NF e Orçamentos',
+    subtitulo: 'Codifique documentos de fornecedores usando os SKUs da Deus é Mais.',
+    paginaAtual: 'ferramentas-ia'
+  }, content);
+}
+
+function renderFerramentaEmPreparacao(req, ferramenta) {
+  const codificador = ferramenta === 'codificador';
+  const titulo = codificador ? 'Codificador de NF e Orçamentos' : 'Tabela de Preços';
+  const status = codificador ? 'Migração em preparação' : 'Próxima etapa';
+  const content = `
+    <style>
+      .tool-stage{max-width:760px;padding:28px;border:1px solid #dce7e1;border-radius:8px;background:#fff;box-shadow:0 12px 28px rgba(15,23,42,.07);}
+      .tool-stage-status{display:inline-flex;align-items:center;min-height:28px;padding:0 11px;border-radius:999px;background:#eaf8f0;color:#007f36;font-size:10px;font-weight:900;text-transform:uppercase;}
+      .tool-stage h2{margin:18px 0 8px;font-size:24px;color:#172033;}
+      .tool-stage p{margin:0 0 22px;color:#64748b;font-size:14px;font-weight:700;line-height:1.5;}
+      .tool-stage a{display:inline-flex;align-items:center;min-height:40px;padding:0 15px;border-radius:8px;background:#eef2f7;color:#172033!important;border:1px solid #dbe3ec;text-decoration:none;font-size:12px;font-weight:900;}
+    </style>
+    <section class="tool-stage">
+      <span class="tool-stage-status">${status}</span>
+      <h2>${titulo}</h2>
+      <p>Este acesso já está reservado no menu do PlennaTec.</p>
+      <a href="/ferramentas-ia">Voltar para Ferramentas IA</a>
+    </section>
+  `;
+
+  return renderPremiumAdminShell(req, {
+    titulo,
+    subtitulo: 'Ferramentas IA da Deus é Mais.',
+    paginaAtual: 'ferramentas-ia'
+  }, content);
+}
+
+router.get('/ferramentas-ia', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
+  res.send(renderFerramentasIaPage(req));
+});
+
+router.get('/ferramentas-ia/codificador', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.codificadorFeedback || null;
+  delete req.session.codificadorFeedback;
+  try {
+    const statusBase = await executarCodificador(['status']);
+    res.send(renderCodificadorPage(req, { statusBase, feedback }));
+  } catch (error) {
+    res.send(renderCodificadorPage(req, {
+      feedback: feedback || { erro: `Codificador indisponível: ${error.message}` }
+    }));
+  }
+});
+
+router.get('/ferramentas-ia/codificador/modelo', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  try {
+    const resultado = await executarCodificador(['modelo']);
+    return res.download(resultado.modelo, 'modelo_base_skus.xlsx');
+  } catch (error) {
+    req.session.codificadorFeedback = { erro: `Não foi possível gerar o modelo: ${error.message}` };
+    return res.redirect('/ferramentas-ia/codificador');
+  }
+});
+
+router.post('/ferramentas-ia/codificador/base', protegerRota, somenteAdmin, receberArquivoCodificador('base'), async (req, res) => {
+  try {
+    if (!req.file || path.extname(req.file.originalname).toLowerCase() !== '.xlsx') {
+      throw new Error('Selecione uma planilha Excel no formato XLSX.');
+    }
+    const resultado = await executarCodificador(['atualizar-base', '--arquivo', req.file.path]);
+    req.session.codificadorFeedback = {
+      mensagem: `Base atualizada com sucesso. ${Number(resultado.produtos || 0).toLocaleString('pt-BR')} produtos disponíveis.`
+    };
+  } catch (error) {
+    req.session.codificadorFeedback = { erro: `Não foi possível atualizar a base: ${error.message}` };
+  } finally {
+    removerArquivoTemporario(req.file);
+  }
+  res.redirect('/ferramentas-ia/codificador');
+});
+
+router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), receberArquivoCodificador('pdf'), async (req, res) => {
+  try {
+    if (!req.file || path.extname(req.file.originalname).toLowerCase() !== '.pdf') {
+      throw new Error('Selecione um documento no formato PDF.');
+    }
+    const fornecedores = new Set(['auto', 'sbb', 'bv_books', 'cpp', 'penkal', 'adib']);
+    const tipos = new Set(['auto', 'nf', 'orcamento']);
+    const fornecedor = fornecedores.has(req.body.fornecedor) ? req.body.fornecedor : 'auto';
+    const tipo = tipos.has(req.body.tipo) ? req.body.tipo : 'auto';
+    const resultado = await executarCodificador([
+      'processar',
+      '--arquivo', req.file.path,
+      '--fornecedor', fornecedor,
+      '--tipo', tipo
+    ]);
+    const resultadoId = registrarResultadoCodificador(req, resultado);
+    req.session.codificadorFeedback = { resultado, resultadoId };
+  } catch (error) {
+    req.session.codificadorFeedback = { erro: `Não foi possível processar o documento: ${error.message}` };
+  } finally {
+    removerArquivoTemporario(req.file);
+  }
+  res.redirect('/ferramentas-ia/codificador');
+});
+
+router.get('/ferramentas-ia/codificador/download/:id/:tipo', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
+  const resultado = req.session.codificadorResultados?.[req.params.id];
+  const tipo = req.params.tipo === 'excel' ? 'excel' : 'pdf';
+  const arquivo = resultado?.[tipo];
+  if (!arquivo) return res.status(404).send('<pre>Arquivo não encontrado ou acesso expirado.</pre>');
+
+  const caminho = path.resolve(arquivo);
+  const raizPermitida = path.resolve(codificadorStorageDir, 'outputs') + path.sep;
+  if (!caminho.startsWith(raizPermitida) || !fs.existsSync(caminho)) {
+    return res.status(404).send('<pre>Arquivo não encontrado ou acesso expirado.</pre>');
+  }
+  return res.download(caminho);
+});
+
+router.get('/ferramentas-ia/tabela-precos', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
+  res.send(renderFerramentaEmPreparacao(req, 'tabela-precos'));
+});
 
 router.get('/nfse-nacional', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
   res.send(renderNfseNacionalPage(req));

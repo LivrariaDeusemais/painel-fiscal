@@ -154,6 +154,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 node_modules/
+.python-packages/
+__pycache__/
+*.pyc
 .env
 uploads/
 .DS_Store

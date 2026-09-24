@@ -225,6 +225,8 @@
     "zip-stream": "^6.0.1"
   },
   "scripts": {
+    "start": "node src/server.js",
+    "postinstall": "python3 -m pip install --upgrade --target .python-packages -r requirements.txt",
     "test": "node --test"
   },
   "repository": {
