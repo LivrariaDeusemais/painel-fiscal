@@ -31359,6 +31359,11 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
     params.set('pagina', String(page));
     return `/ferramentas-ia/tabela-precos/tabela?${params.toString()}`;
   };
+  const exportParams = new URLSearchParams();
+  if (filtros.marketplace) exportParams.set('marketplace', filtros.marketplace);
+  if (filtros.produto) exportParams.set('produto', filtros.produto);
+  if (filtros.estoque) exportParams.set('estoque', filtros.estoque);
+  const completeExportUrl = `/ferramentas-ia/tabela-precos/exportar-completa?${exportParams.toString()}`;
   const visiblePages = [...new Set([1, currentPage - 2, currentPage - 1, currentPage, currentPage + 1, currentPage + 2, totalPages])]
     .filter(page => page >= 1 && page <= totalPages)
     .sort((a, b) => a - b);
@@ -31389,9 +31394,20 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
     .tpt-table{width:2570px;min-width:2570px;table-layout:fixed}.tpt-table.hide-green{width:1660px;min-width:1660px}.tpt-table.hide-description{width:2305px;min-width:2305px}.tpt-table.hide-green.hide-description{width:1395px;min-width:1395px}.tpt-table th,.tpt-table td{padding-left:7px;padding-right:7px;overflow:hidden;text-overflow:ellipsis}.tpt-table td small{overflow:hidden;text-overflow:ellipsis}.tpt-table th:nth-child(1),.tpt-table td:nth-child(1){width:125px}.tpt-table th:nth-child(2),.tpt-table td:nth-child(2){width:145px}.tpt-table th:nth-child(3),.tpt-table td:nth-child(3){width:265px}.tpt-table th:nth-child(4),.tpt-table td:nth-child(4){width:65px}.tpt-table th:nth-child(5),.tpt-table td:nth-child(5){width:125px}.tpt-table th:nth-child(6),.tpt-table td:nth-child(6){width:80px}.tpt-table th:nth-child(7),.tpt-table td:nth-child(7){width:125px}.tpt-table th:nth-child(8),.tpt-table td:nth-child(8){width:75px}.tpt-table th:nth-child(9),.tpt-table td:nth-child(9){width:105px}.tpt-table th:nth-child(10),.tpt-table td:nth-child(10){width:95px}.tpt-table th:nth-child(11),.tpt-table td:nth-child(11){width:105px}.tpt-table th:nth-child(12),.tpt-table td:nth-child(12){width:105px}.tpt-table th:nth-child(13),.tpt-table td:nth-child(13){width:90px}.tpt-table th:nth-child(14),.tpt-table td:nth-child(14){width:115px}.tpt-table th:nth-child(15),.tpt-table td:nth-child(15){width:85px}.tpt-table th:nth-child(16),.tpt-table td:nth-child(16){width:90px}.tpt-table th:nth-child(17),.tpt-table td:nth-child(17){width:85px}.tpt-table th:nth-child(18),.tpt-table td:nth-child(18){width:85px}.tpt-table th:nth-child(19),.tpt-table td:nth-child(19){width:105px}.tpt-table th:nth-child(20),.tpt-table td:nth-child(20){width:100px}.tpt-table th:nth-child(21),.tpt-table td:nth-child(21){width:105px}.tpt-table th:nth-child(22),.tpt-table td:nth-child(22){width:115px}.tpt-table th:nth-child(23),.tpt-table td:nth-child(23){width:115px}.tpt-table .sticky-market{left:0;width:125px;min-width:125px;max-width:125px}.tpt-table .sticky-sku{left:125px;width:145px;min-width:145px;max-width:145px}.status{max-width:100%}
   </style><div class="tpt-tools"><div class="tpt-title"><h1>Preço praticado x novo preço calculado</h1><p>O desconto da regra é aplicado ao preço bruto publicado quando não há preço promocional no vínculo.</p></div><form class="tpt-filter" method="get" action="/ferramentas-ia/tabela-precos/tabela"><label>Marketplace<select name="marketplace"><option value="">Todos</option>${options}</select></label><label>SKU ou produto<input name="produto" value="${escapeHtmlGlobal(filtros.produto || '')}" placeholder="SKU ou descrição"></label><label>Estoque<select name="estoque"><option value="">Todos</option><option value="positive" ${selected('estoque', 'positive')}>Maior que zero</option><option value="nonpositive" ${selected('estoque', 'nonpositive')}>Igual ou menor que zero</option></select></label><button class="tpt-btn" type="submit">Filtrar</button><a class="tpt-btn soft" href="/ferramentas-ia/tabela-precos/tabela">Limpar</a></form></div><div class="tpt-actions"><div class="tpt-column-controls"><label class="tpt-toggle"><input id="toggle-green" type="checkbox"> Esconder colunas verdes</label><label class="tpt-toggle"><input id="toggle-description" type="checkbox"> Esconder descrição</label></div>${isAdmin && filtros.marketplace ? `<a class="tpt-btn" href="/ferramentas-ia/tabela-precos/exportar/${encodeURIComponent(filtros.marketplace)}">Exportar ${escapeHtmlGlobal(filtros.marketplace)}</a>` : ''}</div>${itens.length ? `<div class="tpt-scroll"><table id="pricing-table" class="tpt-table"><thead><tr><th class="g-base sticky-market">Marketplace</th><th class="g-base sticky-sku">SKU / anúncio</th><th class="g-base col-product">Produto</th><th class="g-base">Estoque</th><th class="g-base">Preço Bruto Publicado</th><th class="g-base">Desc. aplicado</th><th class="g-base">Preço Liq. Publicado</th><th class="g-base">Margem</th><th class="g-new">Novo Líquido</th><th class="g-cost">Frete</th><th class="g-cost">Taxa por pedido</th><th class="g-cost">Comissão Valor</th><th class="g-cost">TX Cartão</th><th class="g-receive">Receber do MKP</th><th class="g-cost">ADS</th><th class="g-cost">CMV</th><th class="g-cost">ADM</th><th class="g-cost">Imposto</th><th class="g-cost">Total custos</th><th class="g-result">Lucro Líquido</th><th class="g-result">Margem Líquida</th><th class="g-result">Dif. R$ Líquidos</th><th class="g-base">Status</th></tr></thead><tbody>${rows}</tbody></table></div><p class="tpt-note">${itens.length > 200 ? `Exibindo os primeiros 200 de ${itens.length.toLocaleString('pt-BR')} resultados. Refine os filtros para reduzir a lista.` : `${itens.length.toLocaleString('pt-BR')} resultado(s). Passe o mouse sobre o produto para ler a descrição completa.`}</p><script>(()=>{const table=document.getElementById('pricing-table');const green=document.getElementById('toggle-green');const description=document.getElementById('toggle-description');if(!table)return;const apply=()=>{table.classList.toggle('hide-green',green.checked);table.classList.toggle('hide-description',description.checked);localStorage.setItem('plennatec-pricing-columns',JSON.stringify({green:green.checked,description:description.checked}));};try{const saved=JSON.parse(localStorage.getItem('plennatec-pricing-columns')||'{}');green.checked=!!saved.green;description.checked=!!saved.description;}catch{}green.addEventListener('change',apply);description.addEventListener('change',apply);apply();})();</script>` : '<p class="tpt-note">Nenhum vínculo encontrado para os filtros informados.</p>'}`;
   const pageEnd = Math.min(pageStart + pageItems.length, itens.length);
-  const contentWithGross = content
+  const cargaBlingButton = filtros.marketplace
+    ? `<a class="tpt-btn" href="/ferramentas-ia/tabela-precos/exportar/${encodeURIComponent(filtros.marketplace)}">Exportar ${escapeHtmlGlobal(filtros.marketplace)}</a>`
+    : '';
+  const exportButtons = isAdmin
+    ? `<div class="tpt-export-actions"><a class="tpt-btn soft" href="${completeExportUrl}">Exporta tabela completa</a>${filtros.marketplace ? `<a class="tpt-btn" href="/ferramentas-ia/tabela-precos/exportar/${encodeURIComponent(filtros.marketplace)}">Exportar ${escapeHtmlGlobal(filtros.marketplace)} - Carga Bling</a>` : ''}</div>`
+    : '';
+  let contentWithGross = content
     .replace('<th class="g-new">Novo Líquido</th>', '<th class="g-cost col-new-gross">Novo Bruto</th><th class="g-new">Novo Líquido</th>')
     .replace(`<tbody>${rows}</tbody>`, `<tbody>${rowsWithGross}</tbody>`);
+  if (isAdmin && filtros.marketplace) {
+    contentWithGross = contentWithGross.replace(cargaBlingButton, exportButtons);
+  } else if (isAdmin) {
+    contentWithGross = contentWithGross.replace('Esconder descrição</label></div></div>', `Esconder descrição</label></div>${exportButtons}</div>`);
+  }
   const pageContent = contentWithGross.replace(
     /Exibindo os primeiros 200 de [^<]+/,
     `Exibindo ${pageStart + 1} a ${pageEnd} de ${itens.length.toLocaleString('pt-BR')} resultados.`
@@ -31399,6 +31415,7 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
   const compactContent = `${pageContent}${pagination}<style>
     .tpt-table{width:2610px;min-width:2610px}.tpt-table.hide-green{width:1660px;min-width:1660px}.tpt-table.hide-description{width:2345px;min-width:2345px}.tpt-table.hide-green.hide-description{width:1395px;min-width:1395px}.tpt-table th:nth-child(9),.tpt-table td:nth-child(9){width:105px}.tpt-table th:nth-child(10),.tpt-table td:nth-child(10){width:105px}.tpt-table th:nth-child(11),.tpt-table td:nth-child(11){width:95px}.tpt-table th:nth-child(12),.tpt-table td:nth-child(12){width:105px}.tpt-table th:nth-child(13),.tpt-table td:nth-child(13){width:105px}.tpt-table th:nth-child(14),.tpt-table td:nth-child(14){width:90px}.tpt-table th:nth-child(15),.tpt-table td:nth-child(15){width:115px}.tpt-table th:nth-child(16),.tpt-table td:nth-child(16){width:85px}.tpt-table th:nth-child(17),.tpt-table td:nth-child(17){width:90px}.tpt-table th:nth-child(18),.tpt-table td:nth-child(18){width:85px}.tpt-table th:nth-child(19),.tpt-table td:nth-child(19){width:85px}.tpt-table th:nth-child(20),.tpt-table td:nth-child(20){width:105px}.tpt-table th:nth-child(21),.tpt-table td:nth-child(21){width:100px}.tpt-table th:nth-child(22),.tpt-table td:nth-child(22){width:105px}.tpt-table th:nth-child(23),.tpt-table td:nth-child(23){width:115px}.tpt-table th:nth-child(24),.tpt-table td:nth-child(24){width:115px}
     .tpt-pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;flex-wrap:wrap}.tpt-pagination a{min-width:34px;height:34px;padding:0 9px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#334155;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}.tpt-pagination a:hover,.tpt-pagination a.active{border-color:#009640;background:#009640;color:#fff}.tpt-pagination a.disabled{pointer-events:none;opacity:.45}.tpt-pagination>span:last-child{margin-left:7px;color:#64748b;font-size:11px;font-weight:800}.tpt-page-gap{padding:0 3px;color:#64748b;font-weight:900}
+    .tpt-export-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
   </style>`;
   return renderTabelaWideShell(req, compactContent);
 }
@@ -31708,6 +31725,126 @@ router.post('/ferramentas-ia/tabela-precos/fretes/:id', protegerRota, somenteAdm
     req.session.tabelaFretesFeedback = { erro: `Não foi possível atualizar a faixa: ${error.message}` };
   }
   res.redirect('/ferramentas-ia/tabela-precos/fretes');
+});
+
+router.get('/ferramentas-ia/tabela-precos/exportar-completa', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const resumo = await tabelaPrecosService.overview(pool);
+    const permitidos = new Set(resumo.rules.map(item => item.marketplace).filter(item => item !== 'Bling'));
+    const marketplace = permitidos.has(req.query.marketplace) ? req.query.marketplace : '';
+    const produto = String(req.query.produto || '').trim().slice(0, 120);
+    const estoque = ['positive', 'nonpositive'].includes(req.query.estoque) ? req.query.estoque : '';
+    const itens = await tabelaPrecosService.marketplaceRows(pool, { marketplace, search: produto, stock: estoque });
+    if (!itens.length) throw new Error('Nenhum item encontrado com os filtros informados.');
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'PlennaTec';
+    workbook.created = new Date();
+    const worksheet = workbook.addWorksheet('Conferência de preços', {
+      views: [{ state: 'frozen', ySplit: 1 }]
+    });
+    worksheet.columns = [
+      { header: 'Marketplace', key: 'marketplace', width: 18 },
+      { header: 'SKU', key: 'sku', width: 14 },
+      { header: 'Código do anúncio', key: 'anuncio', width: 24 },
+      { header: 'Produto', key: 'produto', width: 48 },
+      { header: 'Estoque', key: 'estoque', width: 11 },
+      { header: 'Preço Bruto Publicado', key: 'brutoPublicado', width: 22 },
+      { header: 'Desconto Aplicado', key: 'desconto', width: 18 },
+      { header: 'Preço Líquido Publicado', key: 'liquidoPublicado', width: 23 },
+      { header: 'Margem Atual', key: 'margemAtual', width: 15 },
+      { header: 'Novo Bruto', key: 'novoBruto', width: 16 },
+      { header: 'Novo Líquido', key: 'novoLiquido', width: 16 },
+      { header: 'Frete', key: 'frete', width: 14 },
+      { header: 'Taxa por Pedido', key: 'taxaPedido', width: 17 },
+      { header: 'Comissão Valor', key: 'comissao', width: 17 },
+      { header: 'TX Cartão', key: 'cartao', width: 14 },
+      { header: 'Receber do MKP', key: 'receberMarketplace', width: 18 },
+      { header: 'ADS', key: 'ads', width: 14 },
+      { header: 'CMV', key: 'cmv', width: 14 },
+      { header: 'ADM', key: 'adm', width: 14 },
+      { header: 'Imposto', key: 'imposto', width: 14 },
+      { header: 'Total Custos', key: 'totalCustos', width: 16 },
+      { header: 'Lucro Líquido', key: 'lucroLiquido', width: 16 },
+      { header: 'Margem Líquida', key: 'margemLiquida', width: 17 },
+      { header: 'Diferença R$ Líquidos', key: 'diferenca', width: 21 },
+      { header: 'Status', key: 'status', width: 32 }
+    ];
+
+    for (const item of itens) {
+      const ok = item.result?.status === 'OK';
+      const current = item.published || {};
+      const currentDetails = current.details || {};
+      const next = item.result?.details || {};
+      worksheet.addRow({
+        marketplace: item.row.marketplace,
+        sku: item.row.sku,
+        anuncio: item.row.id_loja || '',
+        produto: item.row.produto_nome || item.row.nome || '',
+        estoque: Number(item.row.estoque || 0),
+        brutoPublicado: Number(current.grossPrice || 0),
+        desconto: Number(current.discount || 0),
+        liquidoPublicado: Number(current.liquidPrice || 0),
+        margemAtual: current.details ? Number(currentDetails.margin || 0) : null,
+        novoBruto: ok ? Number(item.result.grossPrice) : null,
+        novoLiquido: ok ? Number(item.result.finalPrice) : null,
+        frete: ok ? Number(next.freight || 0) : null,
+        taxaPedido: ok ? Number(next.fixedFee || 0) : null,
+        comissao: ok ? Number(next.commissionValue || 0) : null,
+        cartao: ok ? Number(next.cardValue || 0) : null,
+        receberMarketplace: ok ? Number(next.marketplaceReceivable || 0) : null,
+        ads: ok ? Number(next.adsValue || 0) : null,
+        cmv: ok ? Number(next.costValue || 0) : null,
+        adm: ok ? Number(next.adminValue || 0) : null,
+        imposto: ok ? Number(next.taxValue || 0) : null,
+        totalCustos: ok ? Number(next.totalCosts || 0) : null,
+        lucroLiquido: ok ? Number(next.netProfit || 0) : null,
+        margemLiquida: ok ? Number(next.margin || 0) : null,
+        diferenca: ok ? Number(item.result.finalPrice) - Number(current.liquidPrice || 0) : null,
+        status: ok ? 'Pronto' : (item.result?.reason || 'Revisar')
+      });
+    }
+
+    worksheet.autoFilter = { from: 'A1', to: 'Y1' };
+    worksheet.getRow(1).height = 30;
+    worksheet.getRow(1).eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FF172033' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFB8C4D1' } } };
+    });
+    for (const columnNumber of [10, 12, 13, 14, 15, 17, 18, 19, 20, 21]) {
+      worksheet.getCell(1, columnNumber).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCEED5' } };
+    }
+    worksheet.getCell('K1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC7DDFB' } };
+    worksheet.getCell('P1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD0DFE6' } };
+    for (const columnNumber of [22, 23, 24]) {
+      worksheet.getCell(1, columnNumber).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCFEAF6' } };
+    }
+    for (const columnNumber of [6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24]) {
+      worksheet.getColumn(columnNumber).numFmt = 'R$ #,##0.00';
+    }
+    for (const columnNumber of [7, 9, 23]) worksheet.getColumn(columnNumber).numFmt = '0.00%';
+    worksheet.getColumn(5).numFmt = '#,##0.00';
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      row.alignment = { vertical: 'middle' };
+      row.getCell(4).alignment = { vertical: 'middle', wrapText: true };
+      row.getCell(25).alignment = { vertical: 'middle', wrapText: true };
+    });
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    const filtroNome = marketplace || 'todos_marketplaces';
+    const nome = filtroNome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="conferencia_precos_${nome}_${hoje}.xlsx"`);
+    await workbook.xlsx.write(res);
+    return res.end();
+  } catch (error) {
+    req.session.tabelaPrecosFeedback = { erro: `Não foi possível exportar a tabela completa: ${error.message}` };
+    return res.redirect('/ferramentas-ia/tabela-precos/tabela');
+  }
 });
 
 router.get('/ferramentas-ia/tabela-precos/exportar/:marketplace', protegerRota, somenteAdmin, async (req, res) => {
