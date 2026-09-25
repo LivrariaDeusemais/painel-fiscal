@@ -66,36 +66,67 @@ def parse_products(path):
 
     positions = {header: index for index, header in enumerate(headers)}
     products = []
+    issues = []
     seen = set()
-    for row in rows:
+    for row_number, row in enumerate(rows, start=2):
         sku = clean(row[positions["Código"]] if positions["Código"] < len(row) else "")
+        name_index = positions["Descrição"]
+        name = clean(row[name_index] if name_index < len(row) else "")
         if not sku:
+            if any(clean(cell) for cell in row):
+                issues.append({
+                    "row": row_number,
+                    "sku": "",
+                    "name": name,
+                    "reason": "Código/SKU não informado.",
+                })
             continue
         if sku in seen:
-            raise ValueError(f"SKU duplicado no cadastro geral: {sku}")
+            issues.append({
+                "row": row_number,
+                "sku": sku,
+                "name": name,
+                "reason": "SKU duplicado no cadastro geral; esta linha não foi importada.",
+            })
+            continue
         seen.add(sku)
 
         def value(header):
             index = positions.get(header)
             return row[index] if index is not None and index < len(row) else None
 
+        cost = number(value("Preço de custo"))
+        weight = number(value("Peso líquido (Kg)"))
+        reasons = []
+        if cost is None or cost <= 0:
+            reasons.append("Preço de custo ausente ou igual a zero")
+        if weight is None or weight <= 0:
+            reasons.append("Peso líquido ausente ou igual a zero")
+        if reasons:
+            issues.append({
+                "row": row_number,
+                "sku": sku,
+                "name": name,
+                "reason": "; ".join(reasons) + ".",
+            })
+
         products.append({
             "sku": sku,
             "bling_id": clean(value("ID")),
-            "name": clean(value("Descrição")),
+            "name": name,
             "brand": clean(value("Marca")),
             "status": clean(value("Situação")),
             "stock": number(value("Estoque")),
-            "cost": number(value("Preço de custo")),
+            "cost": cost,
             "purchase_price": number(value("Preço de Compra")),
-            "weight": number(value("Peso líquido (Kg)")),
+            "weight": weight,
             "gross_weight": number(value("Peso bruto (Kg)")),
             "bling_price": number(value("Preço")),
             "ean": clean(value("GTIN/EAN")),
         })
     if not products:
         raise ValueError("Nenhum produto com Código foi encontrado.")
-    return {"products": products, "count": len(products)}
+    return {"products": products, "count": len(products), "issues": issues}
 
 
 def parse_links(path):

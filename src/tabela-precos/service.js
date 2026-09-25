@@ -262,13 +262,44 @@ function databaseRule(row) {
   };
 }
 
+function publishedPrices(row, rule) {
+  const grossPrice = Number(row.preco_atual) || 0;
+  const promotionalPrice = Number(row.preco_promocional) || 0;
+  const configuredDiscount = Math.max(0, Math.min(0.99, Number(rule?.discount) || 0));
+  const discount = promotionalPrice > 0 && grossPrice > 0
+    ? Math.max(0, 1 - (promotionalPrice / grossPrice))
+    : configuredDiscount;
+  return {
+    grossPrice,
+    discount,
+    liquidPrice: promotionalPrice > 0 ? promotionalPrice : grossPrice * (1 - discount)
+  };
+}
+
 async function overview(pool) {
-  const [products, links, rules] = await Promise.all([
+  const [products, links, rules, issues] = await Promise.all([
     pool.query(`SELECT COUNT(*)::int AS total, MAX(importado_em) AS atualizado_em FROM tabela_preco_produtos`),
     pool.query(`SELECT marketplace, COUNT(*)::int AS total, COUNT(DISTINCT sku)::int AS skus, MAX(importado_em) AS atualizado_em FROM tabela_preco_vinculos GROUP BY marketplace ORDER BY marketplace`),
-    pool.query(`SELECT * FROM tabela_preco_regras ORDER BY marketplace`)
+    pool.query(`SELECT * FROM tabela_preco_regras ORDER BY marketplace`),
+    pool.query(`
+      SELECT NULL::int AS row, sku, nome AS name,
+        CONCAT_WS('; ',
+          CASE WHEN COALESCE(custo, 0) <= 0 THEN 'Preço de custo ausente ou igual a zero' END,
+          CASE WHEN COALESCE(peso, 0) <= 0 THEN 'Peso líquido ausente ou igual a zero' END
+        ) || '.' AS reason
+      FROM tabela_preco_produtos
+      WHERE COALESCE(custo, 0) <= 0 OR COALESCE(peso, 0) <= 0
+      UNION ALL
+      SELECT NULL::int, v.sku, MAX(v.nome),
+        'SKU vinculado em ' || STRING_AGG(DISTINCT v.marketplace, ', ' ORDER BY v.marketplace) || ' não localizado no cadastro geral.'
+      FROM tabela_preco_vinculos v
+      LEFT JOIN tabela_preco_produtos p ON p.sku = v.sku
+      WHERE p.sku IS NULL
+      GROUP BY v.sku
+      ORDER BY sku
+    `)
   ]);
-  return { products: products.rows[0], links: links.rows, rules: rules.rows };
+  return { products: products.rows[0], links: links.rows, rules: rules.rows, issues: issues.rows };
 }
 
 function databaseDynamicRule(row) {
@@ -329,17 +360,13 @@ async function marketplaceRows(pool, filters = {}) {
     };
   });
   return standardizeEqualProducts(calculated, dynamicRules).map(item => {
-    const grossPublished = Number(item.row.preco_atual) || 0;
-    const promotionalPublished = Number(item.row.preco_promocional) || 0;
-    const liquidPublished = promotionalPublished > 0 ? promotionalPublished : grossPublished;
+    const published = publishedPrices(item.row, item.rule);
     return {
       ...item,
       published: {
-        grossPrice: grossPublished,
-        discount: grossPublished > 0 ? Math.max(0, 1 - (liquidPublished / grossPublished)) : 0,
-        liquidPrice: liquidPublished,
-        details: item.rule && liquidPublished > 0 && item.product.cost > 0 && item.product.weight > 0
-          ? calculateAtPrice(item.product, item.rule, liquidPublished, dynamicRules)
+        ...published,
+        details: item.rule && published.liquidPrice > 0 && item.product.cost > 0 && item.product.weight > 0
+          ? calculateAtPrice(item.product, item.rule, published.liquidPrice, dynamicRules)
           : null
       }
     };
@@ -416,6 +443,7 @@ module.exports = {
   mercadoLivreCsv,
   mercadoLivreRows,
   overview,
+  publishedPrices,
   runParser,
   updateFreight,
   updateRule

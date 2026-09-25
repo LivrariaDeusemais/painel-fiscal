@@ -8,7 +8,7 @@ const {
   calculateMercadoLivre,
   standardizeEqualProducts
 } = require('../src/tabela-precos/pricing');
-const { mercadoLivreCsv } = require('../src/tabela-precos/service');
+const { mercadoLivreCsv, publishedPrices } = require('../src/tabela-precos/service');
 
 test('arredonda para os mesmos preços comerciais da planilha', () => {
   assert.equal(attractivePriceAtOrAbove(72.208), 72.9);
@@ -105,4 +105,23 @@ test('exporta o CSV do Bling preservando o vínculo e zerando a promoção', () 
 
   assert.ok(csv.startsWith('\uFEFFIdProduto;ID na Loja;Nome;Código;Preco;Preco Promocional;'));
   assert.match(csv, /123;MLB456;Produto teste;SKU1;142,7143;0;;;/);
+});
+
+test('aplica o desconto configurado quando o vínculo não possui preço promocional', () => {
+  const result = publishedPrices(
+    { preco_atual: 200, preco_promocional: 0 },
+    { discount: 0.3 }
+  );
+  assert.equal(result.grossPrice, 200);
+  assert.equal(result.discount, 0.3);
+  assert.equal(result.liquidPrice, 140);
+});
+
+test('prioriza o preço promocional praticado quando ele existe', () => {
+  const result = publishedPrices(
+    { preco_atual: 200, preco_promocional: 150 },
+    { discount: 0.3 }
+  );
+  assert.equal(result.discount, 0.25);
+  assert.equal(result.liquidPrice, 150);
 });
