@@ -8,7 +8,20 @@ const {
   calculateMercadoLivre,
   standardizeEqualProducts
 } = require('../src/tabela-precos/pricing');
-const { mercadoLivreCsv, publishedPrices } = require('../src/tabela-precos/service');
+const { costWeightGroup, mercadoLivreCsv, publishedPrices, weightRange } = require('../src/tabela-precos/service');
+
+test('classifica as faixas de peso do modelo da base de produtos', () => {
+  assert.equal(weightRange(0.3), 'ate 300g');
+  assert.equal(weightRange(0.5), '300g-500g');
+  assert.equal(weightRange(1), '500g-1kg');
+  assert.equal(weightRange(2), '1kg-2kg');
+  assert.equal(weightRange(2.42), '2kg-3kg');
+});
+
+test('monta o grupo de custo e peso conforme o modelo enviado', () => {
+  assert.equal(costWeightGroup(59.9, 1.16), '060|1kg-2kg');
+  assert.equal(costWeightGroup(156.88, 2.42), '157|2kg-3kg');
+});
 
 test('arredonda para os mesmos preços comerciais da planilha', () => {
   assert.equal(attractivePriceAtOrAbove(72.208), 72.9);

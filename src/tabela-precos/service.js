@@ -62,9 +62,11 @@ async function initializeTables(pool) {
       peso_bruto NUMERIC(15,4),
       preco_bling NUMERIC(15,4),
       ean TEXT,
+      status_validacao TEXT NOT NULL DEFAULT 'Validado',
       importado_em TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado'`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tabela_preco_vinculos (
       id BIGSERIAL PRIMARY KEY,
@@ -202,24 +204,107 @@ async function importProducts(pool, products) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('DELETE FROM tabela_preco_produtos');
+    const existing = await client.query(`SELECT COUNT(*)::int AS total FROM tabela_preco_produtos WHERE sku = ANY($1::text[])`, [products.map(item => item.sku)]);
     await client.query(`
       INSERT INTO tabela_preco_produtos
-        (sku, bling_id, nome, marca, situacao, estoque, custo, preco_compra, peso, peso_bruto, preco_bling, ean)
-      SELECT sku, bling_id, name, brand, status, stock, cost, purchase_price, weight, gross_weight, bling_price, ean
+        (sku, bling_id, nome, marca, situacao, estoque, custo, preco_compra, peso, peso_bruto, preco_bling, ean, status_validacao, importado_em)
+      SELECT sku, bling_id, name, brand, status, stock, cost, purchase_price, weight, gross_weight, bling_price, ean, 'Novo', NOW()
       FROM jsonb_to_recordset($1::jsonb) AS item(
         sku TEXT, bling_id TEXT, name TEXT, brand TEXT, status TEXT, stock NUMERIC,
         cost NUMERIC, purchase_price NUMERIC, weight NUMERIC, gross_weight NUMERIC,
         bling_price NUMERIC, ean TEXT
       )
+      ON CONFLICT (sku) DO UPDATE SET
+        bling_id=EXCLUDED.bling_id, nome=EXCLUDED.nome, marca=EXCLUDED.marca,
+        situacao=EXCLUDED.situacao, estoque=EXCLUDED.estoque, custo=EXCLUDED.custo,
+        preco_compra=EXCLUDED.preco_compra, peso=EXCLUDED.peso,
+        peso_bruto=EXCLUDED.peso_bruto, preco_bling=EXCLUDED.preco_bling,
+        ean=EXCLUDED.ean, importado_em=NOW()
     `, [JSON.stringify(products)]);
+    await client.query(`DELETE FROM tabela_preco_produtos WHERE NOT (sku = ANY($1::text[]))`, [products.map(item => item.sku)]);
     await client.query('COMMIT');
+    return {
+      imported: products.length,
+      newProducts: Math.max(0, products.length - Number(existing.rows[0]?.total || 0))
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+}
+
+function weightRange(weight) {
+  const value = Number(weight);
+  if (!Number.isFinite(value) || value <= 0) return '-';
+  if (value <= 0.3) return 'ate 300g';
+  if (value <= 0.5) return '300g-500g';
+  if (value <= 1) return '500g-1kg';
+  if (value <= 2) return '1kg-2kg';
+  if (value <= 3) return '2kg-3kg';
+  return 'acima de 3kg';
+}
+
+function costWeightGroup(cost, weight) {
+  const value = Number(cost);
+  const range = weightRange(weight);
+  if (!Number.isFinite(value) || value <= 0 || range === '-') return '-';
+  return `${String(Math.round(value)).padStart(3, '0')}|${range}`;
+}
+
+async function productRows(pool, filters = {}) {
+  const values = [];
+  const conditions = [];
+  if (filters.search) {
+    values.push(`%${String(filters.search).trim()}%`);
+    conditions.push(`(sku ILIKE $${values.length} OR nome ILIKE $${values.length} OR marca ILIKE $${values.length})`);
+  }
+  if (['Novo', 'Validado'].includes(filters.status)) {
+    values.push(filters.status);
+    conditions.push(`status_validacao = $${values.length}`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const pageSize = Math.min(200, Math.max(20, Number(filters.pageSize) || 100));
+  const page = Math.max(1, Number(filters.page) || 1);
+  const offset = (page - 1) * pageSize;
+  const countResult = await pool.query(`SELECT COUNT(*)::int AS total FROM tabela_preco_produtos ${where}`, values);
+  const result = await pool.query(`
+    SELECT sku, nome, marca, peso, custo, estoque, preco_bling, status_validacao
+    FROM tabela_preco_produtos
+    ${where}
+    ORDER BY sku
+    LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+  `, [...values, pageSize, offset]);
+  return {
+    rows: result.rows.map(row => ({
+      ...row,
+      faixa_peso: weightRange(row.peso),
+      grupo_custo_peso: costWeightGroup(row.custo, row.peso)
+    })),
+    total: Number(countResult.rows[0]?.total || 0),
+    page,
+    pageSize
+  };
+}
+
+async function updateProductCost(pool, sku, cost) {
+  const result = await pool.query(`
+    UPDATE tabela_preco_produtos SET custo=$2, importado_em=NOW()
+    WHERE sku=$1 RETURNING sku
+  `, [sku, cost]);
+  if (!result.rows[0]) throw new Error('Produto não encontrado.');
+}
+
+async function updateProductStatuses(pool, skus, status) {
+  const normalized = [...new Set((Array.isArray(skus) ? skus : [skus]).map(String).map(item => item.trim()).filter(Boolean))];
+  if (!normalized.length) throw new Error('Selecione pelo menos um produto.');
+  if (!['Novo', 'Validado'].includes(status)) throw new Error('Status inválido.');
+  const result = await pool.query(`
+    UPDATE tabela_preco_produtos SET status_validacao=$2
+    WHERE sku = ANY($1::text[])
+  `, [normalized, status]);
+  return result.rowCount;
 }
 
 async function importLinks(pool, marketplace, links) {
@@ -434,6 +519,7 @@ async function updateFreight(pool, id, values) {
 }
 
 module.exports = {
+  costWeightGroup,
   ensureTables,
   importProducts,
   importLinks,
@@ -443,8 +529,12 @@ module.exports = {
   mercadoLivreCsv,
   mercadoLivreRows,
   overview,
+  productRows,
   publishedPrices,
   runParser,
+  updateProductCost,
+  updateProductStatuses,
   updateFreight,
-  updateRule
+  updateRule,
+  weightRange
 };

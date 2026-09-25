@@ -31262,18 +31262,19 @@ function renderTabelaPrecosHub(req, resumo = null, feedback = null) {
   const totalVinculos = links.reduce((sum, item) => sum + Number(item.total || 0), 0);
   const cards = [
     ['Regras por marketplace', 'Comissões, impostos, despesas, descontos e margens.', '/ferramentas-ia/tabela-precos/regras', 'Configurar regras'],
-    ['Atualizar base de dados', 'Cadastro geral de produtos e vínculos do Bling.', '/ferramentas-ia/tabela-precos/base', 'Atualizar dados'],
+    ['Produtos - Base de dados', 'Cadastro geral, custos, estoque e validação dos produtos.', '/ferramentas-ia/tabela-precos/produtos', 'Abrir produtos'],
+    ['Vínculos dos Marketplaces', 'Importação dos vínculos da multiloja do Bling.', '/ferramentas-ia/tabela-precos/base', 'Atualizar vínculos'],
     ['Fretes e Tarifas por faixa', 'Faixas de peso, preço, frete e tarifas variáveis.', '/ferramentas-ia/tabela-precos/fretes', 'Consultar faixas'],
     ['Simular Promoções', 'Avalie preço promocional, crédito do marketplace e margem.', '/ferramentas-ia/tabela-precos/promocoes', 'Abrir simulador'],
     ['Tabela por Marketplace', 'Compare preços, custos, margem e estoque em toda a largura da tela.', '/ferramentas-ia/tabela-precos/tabela', 'Abrir tabela']
-  ].map(([title, description, href, action], index) => `<article class="tph-card ${index === 4 ? 'featured' : ''}">
+  ].map(([title, description, href, action], index) => `<article class="tph-card ${index === 5 ? 'featured' : ''}">
     <div class="tph-card-index">${String(index + 1).padStart(2, '0')}</div>
     <h2>${title}</h2><p>${description}</p><a href="${href}">${action}</a>
   </article>`).join('');
   const content = `<style>
     .tph-shell{display:grid;gap:12px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
     .tph-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tph-stat{padding:12px 14px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tph-stat span{display:block;color:#64748b;font-size:9px;font-weight:900;text-transform:uppercase}.tph-stat strong{display:inline-block;margin-top:5px;font-size:20px;color:#172033}.tph-stat small{margin-left:7px;color:#64748b;font-weight:700}
-    .tph-heading{padding:2px}.tph-heading h2{margin:0 0 3px!important;font-size:18px!important}.tph-heading p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tph-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.tph-card{min-height:178px;padding:15px;border:1px solid #dce7e1;border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:flex-start}.tph-card.featured{border-top:3px solid #00a64c}.tph-card-index{width:29px;height:25px;display:grid;place-items:center;border-radius:6px;background:#eaf8f0;color:#008f3a;font-size:9px;font-weight:900}.tph-card h2{margin:12px 0 5px!important;color:#172033;font-size:15px!important;line-height:1.2}.tph-card p{margin:0 0 12px;color:#64748b;font-size:11px;font-weight:700;line-height:1.35}.tph-card a{margin-top:auto;min-height:34px;padding:0 11px;border-radius:7px;background:#009640;color:#fff!important;text-decoration:none;display:inline-flex;align-items:center;font-size:10px;font-weight:900}
+    .tph-heading{padding:2px}.tph-heading h2{margin:0 0 3px!important;font-size:18px!important}.tph-heading p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tph-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.tph-card{min-height:178px;padding:15px;border:1px solid #dce7e1;border-radius:8px;background:#fff;display:flex;flex-direction:column;align-items:flex-start}.tph-card.featured{border-top:3px solid #00a64c}.tph-card-index{width:29px;height:25px;display:grid;place-items:center;border-radius:6px;background:#eaf8f0;color:#008f3a;font-size:9px;font-weight:900}.tph-card h2{margin:12px 0 5px!important;color:#172033;font-size:15px!important;line-height:1.2}.tph-card p{margin:0 0 12px;color:#64748b;font-size:11px;font-weight:700;line-height:1.35}.tph-card a{margin-top:auto;min-height:34px;padding:0 11px;border-radius:7px;background:#009640;color:#fff!important;text-decoration:none;display:inline-flex;align-items:center;font-size:10px;font-weight:900}
     @media(max-width:1250px){.tph-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:820px){.tph-stats,.tph-grid{grid-template-columns:1fr}}
   </style><div class="tph-shell">${tabelaPrecosFeedbackHtml(feedback)}
     <section class="tph-stats"><div class="tph-stat"><span>Produtos do Bling</span><strong>${Number(resumo?.products?.total || 0).toLocaleString('pt-BR')}</strong><small>cadastro geral</small></div><div class="tph-stat"><span>Vínculos importados</span><strong>${totalVinculos.toLocaleString('pt-BR')}</strong><small>${links.length} marketplaces</small></div><div class="tph-stat"><span>Regras ativas</span><strong>${(resumo?.rules || []).filter(item => item.ativo).length}</strong><small>canais configurados</small></div></section>
@@ -31288,24 +31289,15 @@ function renderTabelaBasePage(req, resumo = null, feedback = null) {
   const linkMap = new Map((resumo?.links || []).map(item => [item.marketplace, item]));
   const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}">${escapeHtmlGlobal(item)}</option>`).join('');
   const statusRows = marketplaces.map(item => `<tr><td><strong>${escapeHtmlGlobal(item)}</strong></td><td>${Number(linkMap.get(item)?.total || 0).toLocaleString('pt-BR')}</td><td>${linkMap.get(item)?.atualizado_em ? new Date(linkMap.get(item).atualizado_em).toLocaleString('pt-BR') : 'Ainda não importado'}</td></tr>`).join('');
-  const issueMap = new Map();
-  for (const issue of [...(feedback?.issues || []), ...(resumo?.issues || []), ...(resumo?.pricingIssues || [])]) {
-    const key = `${issue.sku || ''}|${issue.row || ''}|${issue.reason || ''}`;
-    if (!issueMap.has(key)) issueMap.set(key, issue);
-  }
-  const issues = [...issueMap.values()];
-  const issueRows = issues.slice(0, 300).map(issue => `<tr><td>${issue.row ? Number(issue.row).toLocaleString('pt-BR') : '-'}</td><td><strong>${escapeHtmlGlobal(issue.sku || 'Sem SKU')}</strong></td><td title="${escapeHtmlGlobal(issue.name || '')}">${escapeHtmlGlobal(issue.name || '-')}</td><td>${escapeHtmlGlobal(issue.reason || 'Revisar cadastro.')}</td></tr>`).join('');
   const content = `<style>
     .tpb-shell{display:grid;gap:16px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}.tpb-back{display:inline-flex;align-items:center;min-height:38px;padding:0 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;background:#fff;text-decoration:none;font-size:11px;font-weight:900}.tpb-band{padding:20px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpb-band h2{margin:0 0 5px!important}.tpb-band>p{margin:0 0 18px;color:#64748b;font-weight:700}.tpb-imports{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tpb-import{padding:16px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;display:grid;gap:12px}.tpb-import strong,.tpb-import small{display:block}.tpb-import small{margin-top:4px;color:#64748b}.tpb-import input,.tpb-import select{width:100%}.tpb-import button{justify-self:start}.tpb-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}.tpb-scroll table{min-width:650px}.tpb-issues{border-left:4px solid #dc8b16}.tpb-issues h2 span{display:inline-flex;margin-left:7px;padding:4px 7px;border-radius:999px;background:#fff1d6;color:#92400e;font-size:10px;vertical-align:middle}.tpb-issues table{width:100%;min-width:900px;table-layout:fixed}.tpb-issues col.issue-line{width:64px}.tpb-issues col.issue-sku{width:130px}.tpb-issues col.issue-product{width:38%}.tpb-issues th{position:sticky;top:0;background:#fff7e8!important}.tpb-issues th,.tpb-issues td{vertical-align:top;text-align:left}.tpb-issues td:nth-child(3){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tpb-issues td:nth-child(4){white-space:normal;overflow-wrap:anywhere;line-height:1.45}.tpb-note{padding:16px;border-left:4px solid #94a3b8;background:#f8fafc;color:#475569;font-weight:700}.tpb-note a{color:#087334!important}.tpb-disabled{opacity:.68}@media(max-width:800px){.tpb-imports{grid-template-columns:1fr}}
   </style><div class="tpb-shell">${tabelaPrecosFeedbackHtml(feedback)}<div><a class="tpb-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a></div>
-    <section class="tpb-band"><h2>Atualizar bases do Bling</h2><p>Substitua cada base pela exportação completa mais recente.</p>${isAdmin ? `<div class="tpb-imports">
-      <form class="tpb-import" method="post" action="/ferramentas-ia/tabela-precos/base" enctype="multipart/form-data"><div><strong>Cadastro geral de produtos</strong><small>Excel XLS ou XLSX completo exportado pelo Bling.</small></div><input type="file" name="base" accept=".xls,.xlsx" required><button type="submit">Importar produtos</button></form>
+    <section class="tpb-band"><h2>Vínculos dos Marketplaces</h2><p>Substitua o vínculo de cada canal pela exportação completa mais recente da multiloja do Bling.</p>${isAdmin ? `<div class="tpb-imports" style="grid-template-columns:minmax(0,720px)">
       <form class="tpb-import" method="post" action="/ferramentas-ia/tabela-precos/vinculos" enctype="multipart/form-data"><div><strong>Vínculos do marketplace</strong><small>CSV da multiloja do Bling.</small></div><select name="marketplace" required><option value="">Selecione o marketplace</option>${options}</select><input type="file" name="vinculos" accept=".csv" required><button type="submit">Importar vínculos</button></form>
-    </div>` : '<div class="tpb-note">Somente administradores podem substituir as bases.</div>'}</section>
-    ${issues.length ? `<section class="tpb-band tpb-issues"><h2>Itens que precisam de correção <span>${issues.length.toLocaleString('pt-BR')}</span></h2><p>Corrija estes itens no cadastro do Bling, gere uma nova planilha completa e importe novamente antes de exportar preços.</p><div class="tpb-scroll"><table><colgroup><col class="issue-line"><col class="issue-sku"><col class="issue-product"><col></colgroup><thead><tr><th>Linha</th><th>SKU</th><th>Produto</th><th>Motivo</th></tr></thead><tbody>${issueRows}</tbody></table></div>${issues.length > 300 ? `<p>Exibindo os primeiros 300 de ${issues.length.toLocaleString('pt-BR')} itens.</p>` : ''}</section>` : `<div class="tph-alert ok">Cadastro geral sem pendências de custo, peso ou vínculo.</div>`}
-    <section class="tpb-band"><h2>Situação das bases</h2><p>Produtos cadastrados: <strong>${Number(resumo?.products?.total || 0).toLocaleString('pt-BR')}</strong></p><div class="tpb-scroll"><table><thead><tr><th>Marketplace</th><th>Vínculos</th><th>Última importação</th></tr></thead><tbody>${statusRows}</tbody></table></div></section>
+    </div>` : '<div class="tpb-note">Somente administradores podem substituir os vínculos.</div>'}</section>
+    <section class="tpb-band"><h2>Situação dos vínculos</h2><div class="tpb-scroll"><table><thead><tr><th>Marketplace</th><th>Vínculos</th><th>Última importação</th></tr></thead><tbody>${statusRows}</tbody></table></div></section>
   </div>`;
-  return renderPremiumAdminShell(req, { titulo: 'Atualizar Base de Dados', subtitulo: 'Produtos e vínculos exportados pelo Bling.', paginaAtual: 'ferramentas-ia' }, content);
+  return renderPremiumAdminShell(req, { titulo: 'Vínculos dos Marketplaces', subtitulo: 'Anúncios vinculados pela multiloja do Bling.', paginaAtual: 'ferramentas-ia' }, content);
 }
 
 function renderTabelaRulesPage(req, rules = [], feedback = null) {
@@ -31323,19 +31315,68 @@ function renderTabelaRulesPage(req, rules = [], feedback = null) {
   return renderPremiumAdminShell(req, { titulo: 'Regras por Marketplace', subtitulo: 'Parâmetros gerais usados em cada canal.', paginaAtual: 'ferramentas-ia' }, content);
 }
 
-function renderTabelaWideShell(req, innerHtml) {
+function renderTabelaWideShell(req, innerHtml, options = {}) {
   const usuario = req.session.usuario || {};
   const nome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
   const perfil = escapeHtmlGlobal(usuario.perfil || '');
+  const currentPath = req.path;
+  const title = escapeHtmlGlobal(options.title || 'Tabela por Marketplace');
+  const subtitle = escapeHtmlGlobal(options.subtitle || 'Precificação e comparação completa');
   const nav = [
     ['Tabela por Marketplace', '/ferramentas-ia/tabela-precos/tabela'], ['Painel', '/ferramentas-ia/tabela-precos'],
     ['Regras', '/ferramentas-ia/tabela-precos/regras'],
-    ['Base de dados', '/ferramentas-ia/tabela-precos/base'], ['Fretes e tarifas', '/ferramentas-ia/tabela-precos/fretes'],
+    ['Produtos - Base de dados', '/ferramentas-ia/tabela-precos/produtos'],
+    ['Vínculos dos Marketplaces', '/ferramentas-ia/tabela-precos/base'], ['Fretes e tarifas', '/ferramentas-ia/tabela-precos/fretes'],
     ['Simular promoções', '/ferramentas-ia/tabela-precos/promocoes']
-  ].map(([label, href]) => `<a href="${href}">${label}</a>`).join('');
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tabela por Marketplace - PlennaTec</title><style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f2f6f8}.tpw-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dce7e1;box-shadow:0 5px 18px rgba(15,23,42,.07)}.tpw-top{height:70px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.tpw-brand{display:flex;align-items:center;gap:12px;min-width:230px}.tpw-brand img{width:42px;height:42px;object-fit:contain}.tpw-brand strong{display:block;font-size:19px}.tpw-brand span{display:block;margin-top:3px;color:#64748b;font-size:11px;font-weight:700}.tpw-user{text-align:right}.tpw-user strong{display:block;color:#009640;font-size:13px}.tpw-user span{font-size:10px;color:#64748b;font-weight:900}.tpw-nav{min-height:45px;padding:0 22px;display:flex;align-items:center;gap:5px;border-top:1px solid #edf2f7;overflow:auto}.tpw-nav a{height:32px;padding:0 12px;border-radius:7px;color:#334155;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;font-size:12px;font-weight:900}.tpw-nav a:hover{background:#eaf8f0;color:#087334}.tpw-nav a:first-child{background:#009640;color:#fff}.tpw-main{padding:16px 18px 22px}.tpw-alert{margin-bottom:12px;padding:12px 14px;border:1px solid;border-radius:8px;font-size:12px;font-weight:800}.tpw-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpw-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}@media(max-width:720px){.tpw-top{height:auto;padding:12px}.tpw-user{display:none}.tpw-nav{padding:7px 12px}.tpw-main{padding:10px}}
-  </style></head><body><header class="tpw-header"><div class="tpw-top"><div class="tpw-brand"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec"><div><strong>Tabela por Marketplace</strong><span>Precificação e comparação completa</span></div></div><div class="tpw-user"><strong>${nome}</strong><span>${perfil}</span></div></div><nav class="tpw-nav">${nav}</nav></header><main class="tpw-main">${innerHtml}</main></body></html>`;
+  ].map(([label, href]) => `<a class="${currentPath === href ? 'active' : ''}" href="${href}">${label}</a>`).join('');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} - PlennaTec</title><style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f2f6f8}.tpw-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dce7e1;box-shadow:0 5px 18px rgba(15,23,42,.07)}.tpw-top{height:70px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.tpw-brand{display:flex;align-items:center;gap:12px;min-width:230px}.tpw-brand img{width:42px;height:42px;object-fit:contain}.tpw-brand strong{display:block;font-size:19px}.tpw-brand span{display:block;margin-top:3px;color:#64748b;font-size:11px;font-weight:700}.tpw-user{text-align:right}.tpw-user strong{display:block;color:#009640;font-size:13px}.tpw-user span{font-size:10px;color:#64748b;font-weight:900}.tpw-nav{min-height:45px;padding:0 22px;display:flex;align-items:center;gap:5px;border-top:1px solid #edf2f7;overflow:auto}.tpw-nav a{height:32px;padding:0 12px;border-radius:7px;color:#334155;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;font-size:12px;font-weight:900}.tpw-nav a:hover{background:#eaf8f0;color:#087334}.tpw-nav a.active{background:#009640;color:#fff}.tpw-main{padding:16px 18px 22px}.tpw-alert{margin-bottom:12px;padding:12px 14px;border:1px solid;border-radius:8px;font-size:12px;font-weight:800}.tpw-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpw-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}@media(max-width:720px){.tpw-top{height:auto;padding:12px}.tpw-user{display:none}.tpw-nav{padding:7px 12px}.tpw-main{padding:10px}}
+  </style></head><body><header class="tpw-header"><div class="tpw-top"><div class="tpw-brand"><img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec"><div><strong>${title}</strong><span>${subtitle}</span></div></div><div class="tpw-user"><strong>${nome}</strong><span>${perfil}</span></div></div><nav class="tpw-nav">${nav}</nav></header><main class="tpw-main">${innerHtml}</main></body></html>`;
+}
+
+function renderTabelaProductsPage(req, { result = { rows: [], total: 0, page: 1, pageSize: 100 }, resumo = null, feedback = null, filters = {} } = {}) {
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const money = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const number = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+  const inputMoney = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const selected = value => filters.status === value ? 'selected' : '';
+  const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  const currentPage = Math.min(totalPages, Math.max(1, result.page));
+  const pageHref = page => {
+    const params = new URLSearchParams();
+    if (filters.search) params.set('busca', filters.search);
+    if (filters.status) params.set('status', filters.status);
+    params.set('pagina', String(page));
+    return `/ferramentas-ia/tabela-precos/produtos?${params.toString()}`;
+  };
+  const pageLinks = Array.from({ length: totalPages }, (_, index) => index + 1)
+    .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+    .map((page, index, pages) => `${index && page - pages[index - 1] > 1 ? '<span>…</span>' : ''}<a class="${page === currentPage ? 'active' : ''}" href="${pageHref(page)}">${page}</a>`).join('');
+  const pagination = totalPages > 1 ? `<nav class="tprod-pages"><a class="${currentPage === 1 ? 'disabled' : ''}" href="${currentPage === 1 ? '#' : pageHref(currentPage - 1)}">Anterior</a>${pageLinks}<a class="${currentPage === totalPages ? 'disabled' : ''}" href="${currentPage === totalPages ? '#' : pageHref(currentPage + 1)}">Próxima</a></nav>` : '';
+  const rowForms = [];
+  const rows = result.rows.map((row, index) => {
+    const costForm = `product-cost-${index}`;
+    const statusForm = `product-status-${index}`;
+    rowForms.push(`<form id="${costForm}" method="post" action="/ferramentas-ia/tabela-precos/produtos/custo"><input type="hidden" name="sku" value="${escapeHtmlGlobal(row.sku)}"><input type="hidden" name="return_to" value="${escapeHtmlGlobal(req.originalUrl)}"></form>`);
+    rowForms.push(`<form id="${statusForm}" method="post" action="/ferramentas-ia/tabela-precos/produtos/status"><input type="hidden" name="sku" value="${escapeHtmlGlobal(row.sku)}"><input type="hidden" name="return_to" value="${escapeHtmlGlobal(req.originalUrl)}"></form>`);
+    return `<tr><td class="check"><input form="bulk-products" type="checkbox" name="skus" value="${escapeHtmlGlobal(row.sku)}" aria-label="Selecionar ${escapeHtmlGlobal(row.sku)}"></td><td><strong>${escapeHtmlGlobal(row.sku)}</strong></td><td class="description" title="${escapeHtmlGlobal(row.nome || '')}">${escapeHtmlGlobal(row.nome || '-')}</td><td>${escapeHtmlGlobal(row.marca || '-')}</td><td>${number(row.peso)}</td><td>${escapeHtmlGlobal(row.faixa_peso)}</td><td>${isAdmin ? `<div class="cost-editor"><input form="${costForm}" name="custo" value="${escapeHtmlGlobal(inputMoney(row.custo))}" inputmode="decimal" aria-label="Custo de ${escapeHtmlGlobal(row.sku)}"><button form="${costForm}" type="submit">Salvar</button></div>` : money(row.custo)}</td><td>${number(row.estoque)}</td><td>${money(row.preco_bling)}</td><td><code>${escapeHtmlGlobal(row.grupo_custo_peso)}</code></td><td><div class="status-editor"><span class="badge ${row.status_validacao === 'Novo' ? 'new' : 'valid'}">${escapeHtmlGlobal(row.status_validacao)}</span>${isAdmin ? `<select form="${statusForm}" name="status" aria-label="Status de ${escapeHtmlGlobal(row.sku)}"><option value="Validado" ${row.status_validacao === 'Validado' ? 'selected' : ''}>Validado</option><option value="Novo" ${row.status_validacao === 'Novo' ? 'selected' : ''}>Novo</option></select><button form="${statusForm}" type="submit">Salvar</button>` : ''}</div></td></tr>`;
+  }).join('');
+  const issueMap = new Map();
+  for (const issue of [...(feedback?.issues || []), ...(resumo?.issues || [])]) {
+    const key = `${issue.sku || ''}|${issue.row || ''}|${issue.reason || ''}`;
+    if (!issueMap.has(key)) issueMap.set(key, issue);
+  }
+  const issues = [...issueMap.values()];
+  const issueRows = issues.slice(0, 300).map(issue => `<tr><td>${issue.row ? Number(issue.row).toLocaleString('pt-BR') : '-'}</td><td><strong>${escapeHtmlGlobal(issue.sku || 'Sem SKU')}</strong></td><td title="${escapeHtmlGlobal(issue.name || '')}">${escapeHtmlGlobal(issue.name || '-')}</td><td>${escapeHtmlGlobal(issue.reason || 'Revisar cadastro.')}</td></tr>`).join('');
+  const start = result.total ? (currentPage - 1) * result.pageSize + 1 : 0;
+  const end = Math.min(currentPage * result.pageSize, result.total);
+  const content = `${tabelaPrecosFeedbackHtml(feedback, 'tpw-alert')}<style>
+    .tprod-shell{display:grid;gap:12px}.tprod-card{padding:16px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tprod-import{display:flex;align-items:center;justify-content:space-between;gap:14px}.tprod-import h2,.tprod-title h1{margin:0 0 4px}.tprod-import p,.tprod-title p{margin:0;color:#64748b;font-size:11px;font-weight:700}.tprod-import form{display:flex;align-items:center;gap:8px}.tprod-import input[type=file]{max-width:330px;padding:8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.tprod-btn,.tprod-card button{min-height:34px;padding:0 11px;border:1px solid #009640;border-radius:7px;background:#009640;color:#fff;text-decoration:none;font:900 10px Arial;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}.tprod-btn.soft{background:#fff;color:#087334}.tprod-toolbar{display:flex;align-items:end;justify-content:space-between;gap:12px}.tprod-filter{display:grid;grid-template-columns:minmax(260px,440px) 170px auto auto;gap:8px;align-items:end}.tprod-filter label{display:grid;gap:4px;color:#475569;font-size:10px;font-weight:900}.tprod-filter input,.tprod-filter select,.tprod-bulk select{height:36px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:0 9px;font:700 11px Arial}.tprod-bulk{display:flex;align-items:center;gap:7px}.tprod-scroll{max-height:62vh;overflow:auto;border:1px solid #cbd5e1;border-radius:7px;background:#fff}.tprod-table{width:100%;min-width:1450px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:10px}.tprod-table th{position:sticky;top:0;z-index:3;padding:9px 7px;background:#eef3f5;border-bottom:1px solid #cbd5e1;text-align:left;color:#475569;text-transform:uppercase;font-size:9px;white-space:nowrap}.tprod-table td{padding:7px;border-bottom:1px solid #e2e8f0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tprod-table .check{width:42px;text-align:center}.tprod-table th:nth-child(2){width:105px}.tprod-table th:nth-child(3){width:310px}.tprod-table th:nth-child(4){width:130px}.tprod-table th:nth-child(5),.tprod-table th:nth-child(7),.tprod-table th:nth-child(8){width:95px}.tprod-table th:nth-child(6){width:105px}.tprod-table th:nth-child(9){width:125px}.tprod-table th:nth-child(10){width:145px}.tprod-table th:nth-child(11){width:255px}.cost-editor,.status-editor{display:flex;align-items:center;gap:5px}.cost-editor input{width:76px;height:30px;border:1px solid #cbd5e1;border-radius:6px;padding:0 6px;font:700 10px Arial}.cost-editor button,.status-editor button{min-height:30px}.status-editor select{height:30px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font:700 10px Arial}.badge{display:inline-flex;min-width:58px;justify-content:center;padding:5px 7px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase}.badge.valid{background:#dcfce7;color:#166534}.badge.new{background:#fff1d6;color:#92400e}.tprod-pages{display:flex;justify-content:center;align-items:center;gap:5px}.tprod-pages a{height:32px;min-width:32px;padding:0 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#334155;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}.tprod-pages a.active{background:#009640;border-color:#009640;color:#fff}.tprod-pages a.disabled{pointer-events:none;opacity:.45}.tprod-note{margin:0;color:#64748b;font-size:11px;font-weight:800}.tprod-issues{border-left:4px solid #dc8b16}.tprod-issues h2{margin:0 0 4px}.tprod-issues>p{margin:0 0 12px;color:#64748b;font-size:11px;font-weight:700}.tprod-issues .tprod-scroll{max-height:280px}.tprod-issues table{width:100%;min-width:900px;table-layout:fixed;border-collapse:collapse}.tprod-issues th{position:sticky;top:0;background:#fff7e8;padding:8px;text-align:left}.tprod-issues td{padding:8px;border-top:1px solid #e2e8f0;vertical-align:top}.tprod-issues th:nth-child(1){width:65px}.tprod-issues th:nth-child(2){width:125px}.tprod-issues th:nth-child(3){width:35%}.tprod-issues td:last-child{white-space:normal;overflow-wrap:anywhere}@media(max-width:900px){.tprod-import,.tprod-toolbar{align-items:stretch;flex-direction:column}.tprod-import form,.tprod-bulk{flex-wrap:wrap}.tprod-filter{grid-template-columns:1fr 1fr}}
+  </style><div class="tprod-shell"><section class="tprod-card tprod-import"><div><h2>Importar cadastro geral de produtos</h2><p>Use o arquivo XLS ou XLSX completo exportado pelo Bling.</p></div>${isAdmin ? `<form method="post" action="/ferramentas-ia/tabela-precos/base" enctype="multipart/form-data"><input type="file" name="base" accept=".xls,.xlsx" required><button type="submit">Importar produtos</button></form>` : '<p>Somente administradores podem importar produtos.</p>'}</section>
+  ${issues.length ? `<section class="tprod-card tprod-issues"><h2>Itens que precisam de correção</h2><p>${issues.length.toLocaleString('pt-BR')} pendência(s) encontrada(s). Corrija no Bling ou ajuste o custo diretamente na tabela quando for uma alteração pontual.</p><div class="tprod-scroll"><table><thead><tr><th>Linha</th><th>SKU</th><th>Produto</th><th>Motivo</th></tr></thead><tbody>${issueRows}</tbody></table></div></section>` : ''}
+  <section class="tprod-title"><h1>Produtos - Base de dados</h1><p>${result.total.toLocaleString('pt-BR')} produto(s) encontrados.</p></section><section class="tprod-toolbar"><form class="tprod-filter" method="get" action="/ferramentas-ia/tabela-precos/produtos"><label>SKU, descrição ou marca<input name="busca" value="${escapeHtmlGlobal(filters.search || '')}" placeholder="Pesquisar produto"></label><label>Status<select name="status"><option value="">Todos</option><option value="Novo" ${selected('Novo')}>Novo</option><option value="Validado" ${selected('Validado')}>Validado</option></select></label><button class="tprod-btn" type="submit">Filtrar</button><a class="tprod-btn soft" href="/ferramentas-ia/tabela-precos/produtos">Limpar</a></form>${isAdmin ? `<form id="bulk-products" class="tprod-bulk" method="post" action="/ferramentas-ia/tabela-precos/produtos/status-lote"><input type="hidden" name="return_to" value="${escapeHtmlGlobal(req.originalUrl)}"><select name="status" required><option value="Validado">Marcar como Validado</option><option value="Novo">Marcar como Novo</option></select><button type="submit">Aplicar aos selecionados</button></form>` : ''}</section>
+  <div class="tprod-scroll"><table class="tprod-table"><thead><tr><th class="check"><input id="select-all-products" type="checkbox" aria-label="Selecionar todos desta página"></th><th>SKU</th><th>Descrição</th><th>Marca</th><th>Peso kg</th><th>Faixa Peso</th><th>Custo R$</th><th>Estoque</th><th>Preço Bling Atual</th><th>Grupo Custo+Peso</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="11">Nenhum produto encontrado.</td></tr>'}</tbody></table></div><p class="tprod-note">Exibindo ${start.toLocaleString('pt-BR')} a ${end.toLocaleString('pt-BR')} de ${result.total.toLocaleString('pt-BR')} produtos.</p>${pagination}${rowForms.join('')}<script>(()=>{const all=document.getElementById('select-all-products');if(!all)return;all.addEventListener('change',()=>document.querySelectorAll('input[form="bulk-products"][name="skus"]').forEach(item=>{item.checked=all.checked;}));})();</script></div>`;
+  return renderTabelaWideShell(req, content, { title: 'Produtos - Base de dados', subtitle: 'Cadastro, custos, estoque e validação' });
 }
 
 function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback = null, filtros = {} } = {}) {
@@ -31594,18 +31635,27 @@ router.get('/ferramentas-ia/tabela-precos/base', protegerRota, permitirPerfis('A
   try {
     await tabelaPrecosService.ensureTables(pool);
     const resumo = await tabelaPrecosService.overview(pool);
-    const pricingRows = resumo.links.length ? await tabelaPrecosService.marketplaceRows(pool) : [];
-    resumo.pricingIssues = pricingRows
-      .filter(item => item.result?.status !== 'OK')
-      .map(item => ({
-        row: null,
-        sku: item.row.sku,
-        name: item.row.produto_nome || item.row.nome || '',
-        reason: `${item.row.marketplace}: ${item.result?.reason || 'Revisar cadastro.'}`
-      }));
     res.send(renderTabelaBasePage(req, resumo, feedback));
   } catch (error) {
     res.send(renderTabelaBasePage(req, null, feedback || { erro: `Bases indisponíveis: ${error.message}` }));
+  }
+});
+
+router.get('/ferramentas-ia/tabela-precos/produtos', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const feedback = req.session.tabelaPrecosFeedback || null;
+  delete req.session.tabelaPrecosFeedback;
+  const search = String(req.query.busca || '').trim().slice(0, 120);
+  const status = ['Novo', 'Validado'].includes(req.query.status) ? req.query.status : '';
+  const page = Math.max(1, Number.parseInt(req.query.pagina, 10) || 1);
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const [resumo, result] = await Promise.all([
+      tabelaPrecosService.overview(pool),
+      tabelaPrecosService.productRows(pool, { search, status, page, pageSize: 100 })
+    ]);
+    res.send(renderTabelaProductsPage(req, { result, resumo, feedback, filters: { search, status } }));
+  } catch (error) {
+    res.send(renderTabelaProductsPage(req, { feedback: feedback || { erro: `Produtos indisponíveis: ${error.message}` }, filters: { search, status } }));
   }
 });
 
@@ -31655,9 +31705,9 @@ router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, re
     }
     await tabelaPrecosService.ensureTables(pool);
     const resultado = await tabelaPrecosService.runParser('products', req.file.path);
-    await tabelaPrecosService.importProducts(pool, resultado.products);
+    const importSummary = await tabelaPrecosService.importProducts(pool, resultado.products);
     req.session.tabelaPrecosFeedback = {
-      mensagem: `Cadastro geral atualizado. ${Number(resultado.count || 0).toLocaleString('pt-BR')} produtos importados.${resultado.issues?.length ? ` ${Number(resultado.issues.length).toLocaleString('pt-BR')} item(ns) precisam de correção.` : ' Nenhuma pendência encontrada.'}`,
+      mensagem: `Cadastro geral atualizado. ${Number(resultado.count || 0).toLocaleString('pt-BR')} produtos importados e ${Number(importSummary.newProducts || 0).toLocaleString('pt-BR')} novo(s) identificado(s).${resultado.issues?.length ? ` ${Number(resultado.issues.length).toLocaleString('pt-BR')} item(ns) precisam de correção.` : ' Nenhuma pendência encontrada.'}`,
       issues: (resultado.issues || []).slice(0, 300)
     };
   } catch (error) {
@@ -31665,7 +31715,53 @@ router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, re
   } finally {
     removerArquivoTemporario(req.file);
   }
-  res.redirect('/ferramentas-ia/tabela-precos/base');
+  res.redirect('/ferramentas-ia/tabela-precos/produtos');
+});
+
+function tabelaProdutosReturnTo(value) {
+  const target = String(value || '');
+  return target.startsWith('/ferramentas-ia/tabela-precos/produtos')
+    ? target
+    : '/ferramentas-ia/tabela-precos/produtos';
+}
+
+router.post('/ferramentas-ia/tabela-precos/produtos/custo', protegerRota, somenteAdmin, async (req, res) => {
+  const returnTo = tabelaProdutosReturnTo(req.body.return_to);
+  try {
+    const raw = String(req.body.custo || '').trim();
+    const cost = Number(raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw);
+    if (!Number.isFinite(cost) || cost <= 0) throw new Error('Informe um preço de custo maior que zero.');
+    await tabelaPrecosService.ensureTables(pool);
+    await tabelaPrecosService.updateProductCost(pool, String(req.body.sku || '').trim(), cost);
+    req.session.tabelaPrecosFeedback = { mensagem: `Custo do SKU ${req.body.sku} atualizado para ${cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.` };
+  } catch (error) {
+    req.session.tabelaPrecosFeedback = { erro: `Não foi possível atualizar o custo: ${error.message}` };
+  }
+  res.redirect(returnTo);
+});
+
+router.post('/ferramentas-ia/tabela-precos/produtos/status', protegerRota, somenteAdmin, async (req, res) => {
+  const returnTo = tabelaProdutosReturnTo(req.body.return_to);
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    await tabelaPrecosService.updateProductStatuses(pool, req.body.sku, req.body.status);
+    req.session.tabelaPrecosFeedback = { mensagem: `Status do SKU ${req.body.sku} alterado para ${req.body.status}.` };
+  } catch (error) {
+    req.session.tabelaPrecosFeedback = { erro: `Não foi possível atualizar o status: ${error.message}` };
+  }
+  res.redirect(returnTo);
+});
+
+router.post('/ferramentas-ia/tabela-precos/produtos/status-lote', protegerRota, somenteAdmin, async (req, res) => {
+  const returnTo = tabelaProdutosReturnTo(req.body.return_to);
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const total = await tabelaPrecosService.updateProductStatuses(pool, req.body.skus, req.body.status);
+    req.session.tabelaPrecosFeedback = { mensagem: `${Number(total).toLocaleString('pt-BR')} produto(s) alterado(s) para ${req.body.status}.` };
+  } catch (error) {
+    req.session.tabelaPrecosFeedback = { erro: `Não foi possível atualizar os produtos selecionados: ${error.message}` };
+  }
+  res.redirect(returnTo);
 });
 
 router.post('/ferramentas-ia/tabela-precos/vinculos', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('vinculos'), async (req, res) => {
