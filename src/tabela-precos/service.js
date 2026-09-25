@@ -428,7 +428,8 @@ async function marketplaceRows(pool, filters = {}) {
     pool.query(`SELECT * FROM tabela_preco_regras WHERE ativo = TRUE`),
     freightRules(pool),
     pool.query(`
-    SELECT v.*, p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling
+    SELECT v.*, p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling,
+           p.status_validacao
     FROM tabela_preco_vinculos v
     LEFT JOIN tabela_preco_produtos p ON p.sku = v.sku
     ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
@@ -456,6 +457,17 @@ async function marketplaceRows(pool, filters = {}) {
       }
     };
   });
+}
+
+function priceReviewStatus(validationStatus, calculationStatus, difference) {
+  if (validationStatus === 'Novo') return 'Novo';
+  if (calculationStatus !== 'OK' || !Number.isFinite(Number(difference))) return 'Revisar';
+
+  const differenceInCents = Math.round(Number(difference) * 100);
+  if (differenceInCents === 0) return 'Manter preço';
+  if (differenceInCents > 100) return 'Reajustar';
+  if (differenceInCents < -100) return 'Abaixou';
+  return 'Analisar';
 }
 
 async function mercadoLivreRows(pool) {
@@ -529,6 +541,7 @@ module.exports = {
   mercadoLivreCsv,
   mercadoLivreRows,
   overview,
+  priceReviewStatus,
   productRows,
   publishedPrices,
   runParser,

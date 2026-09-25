@@ -8,7 +8,7 @@ const {
   calculateMercadoLivre,
   standardizeEqualProducts
 } = require('../src/tabela-precos/pricing');
-const { costWeightGroup, mercadoLivreCsv, publishedPrices, weightRange } = require('../src/tabela-precos/service');
+const { costWeightGroup, mercadoLivreCsv, priceReviewStatus, publishedPrices, weightRange } = require('../src/tabela-precos/service');
 
 test('classifica as faixas de peso do modelo da base de produtos', () => {
   assert.equal(weightRange(0.3), 'ate 300g');
@@ -137,4 +137,15 @@ test('prioriza o preço promocional praticado quando ele existe', () => {
   );
   assert.equal(result.discount, 0.25);
   assert.equal(result.liquidPrice, 150);
+});
+
+test('classifica o status de conferência pela validação e diferença líquida', () => {
+  assert.equal(priceReviewStatus('Novo', 'OK', 20), 'Novo');
+  assert.equal(priceReviewStatus('Validado', 'Revisar', null), 'Revisar');
+  assert.equal(priceReviewStatus('Validado', 'OK', 0), 'Manter preço');
+  assert.equal(priceReviewStatus('Validado', 'OK', 0.004), 'Manter preço');
+  assert.equal(priceReviewStatus('Validado', 'OK', 1), 'Analisar');
+  assert.equal(priceReviewStatus('Validado', 'OK', -1), 'Analisar');
+  assert.equal(priceReviewStatus('Validado', 'OK', 1.01), 'Reajustar');
+  assert.equal(priceReviewStatus('Validado', 'OK', -1.01), 'Abaixou');
 });
