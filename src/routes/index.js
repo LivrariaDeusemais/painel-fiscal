@@ -31511,9 +31511,11 @@ function renderTabelaPromocoesPage(req, model = {}) {
   const published = context.published || null;
   const configuredDiscount = Math.max(0, Math.min(0.99, Number(context.rule?.discount) || 0));
   const isNewPrice = values.modo !== 'promocao';
-  const requestedDiscountPercent = values.acrescimo_desconto === '' || values.acrescimo_desconto == null
-    ? configuredDiscount * 100
-    : Number(String(values.acrescimo_desconto).replace(',', '.')) || 0;
+  const requestedDiscountPercent = result && isNewPrice
+    ? Number(result.discount || 0) * 100
+    : values.acrescimo_desconto === '' || values.acrescimo_desconto == null
+      ? configuredDiscount * 100
+      : Number(String(values.acrescimo_desconto).replace(',', '.')) || 0;
   const hasSku = Boolean(values.sku);
   const productState = hasSku
     ? `<span class="tpc-product-state ${product ? 'found' : 'missing'}">${product ? 'Produto cadastrado' : 'Sem cadastro'}</span>`
@@ -31521,12 +31523,13 @@ function renderTabelaPromocoesPage(req, model = {}) {
   const statusClass = result?.status === 'Preço aprovado' ? 'approved'
     : result?.status === 'Aceitar temporariamente' ? 'temporary' : 'rejected';
   const marketplaceDiscountClass = result?.details.marketplaceCredit < 0 ? 'negative' : 'credit';
+  const displayedSalePrice = result ? Number(result.displayPrice ?? result.salePrice) : 0;
   const priceBreakdown = result && isNewPrice ? [
     ['Preço Líquido', money(result.salePrice), 'primary'],
     ['Acréscimo para desconto', percent(result.discount)],
     ['Preço Bruto publicar', money(result.grossPrice), 'gross']
   ] : result ? [
-    ['Novo Líquido', money(result.salePrice), 'primary']
+    ['Novo Líquido', money(displayedSalePrice), 'primary']
   ] : [];
   const breakdown = result ? [
     ...priceBreakdown,
@@ -31547,7 +31550,7 @@ function renderTabelaPromocoesPage(req, model = {}) {
   ].map(([label, value, className = '']) => `<tr class="${className}"><th>${label}</th><td>${value}</td></tr>`).join('') : '';
   const resultHtml = result ? `<section class="tpc-result">
     <div class="tpc-result-head ${statusClass}"><div><span>Resultado da simulação</span><h2>${escapeHtmlGlobal(result.status)}</h2></div><div class="tpc-result-margin"><small>Margem final</small><strong>${percent(result.details.margin)}</strong></div></div>
-    <div class="tpc-result-summary"><div><span>Preço atual</span><strong>${money(result.currentPrice)}</strong></div><div><span>Novo preço</span><strong>${money(result.salePrice)}</strong></div><div class="${marketplaceDiscountClass}"><span>Desconto no marketplace</span><strong>${money(result.details.marketplaceCredit)}</strong></div><div><span>Lucro líquido</span><strong>${money(result.details.netProfit)}</strong></div></div>
+    <div class="tpc-result-summary"><div><span>Preço atual</span><strong>${money(result.currentPrice)}</strong></div><div><span>Novo preço</span><strong>${money(displayedSalePrice)}</strong></div><div class="${marketplaceDiscountClass}"><span>Desconto no marketplace</span><strong>${money(result.details.marketplaceCredit)}</strong></div><div><span>Lucro líquido</span><strong>${money(result.details.netProfit)}</strong></div></div>
     <div class="tpc-breakdown"><table><tbody>${breakdown}</tbody></table></div>
   </section>` : `<section class="tpc-empty"><div class="tpc-empty-mark">R$</div><div><h2>Resultado da simulação</h2><p>Preencha os dados e calcule para visualizar custos, recebimento, lucro e margem.</p></div></section>`;
   const content = `<style>
@@ -31572,7 +31575,7 @@ function renderTabelaPromocoesPage(req, model = {}) {
         <div id="new-price-fields" class="tpc-grid tpc-mode-panel" ${isNewPrice ? '' : 'hidden'}>
           <label class="tpc-field"><span>Preço Líquido calculado</span><input id="price-liquid-display" value="${result && isNewPrice ? money(result.salePrice) : '-'}" data-liquid="${result && isNewPrice ? Number(result.salePrice) : 0}" readonly></label>
           <label class="tpc-field"><span>Acréscimo para desconto</span><div class="tpc-percent-input"><input id="price-discount-input" name="acrescimo_desconto" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(requestedDiscountPercent))}" ${isNewPrice ? 'required' : 'disabled'}><span>%</span></div></label>
-          <label class="tpc-field"><span>Preço Bruto publicar</span><input id="price-gross-display" value="${result && isNewPrice ? money(result.grossPrice) : '-'}" readonly></label>
+          <label class="tpc-field"><span>Preço Bruto publicar</span><div class="tpc-money-input"><span>R$</span><input id="price-gross-input" name="preco_bruto" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(result && isNewPrice ? result.grossPrice : values.preco_bruto))}" placeholder="0,00" ${isNewPrice ? '' : 'disabled'}></div></label>
         </div>
         <div id="promotion-fields" class="tpc-grid tpc-mode-panel" ${isNewPrice ? 'hidden' : ''}>
           <label class="tpc-field half"><span>Novo preço ao cliente</span><div class="tpc-money-input"><span>R$</span><input id="promotion-price-input" name="preco_valor" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(values.preco_valor))}" placeholder="0,00" ${isNewPrice ? 'disabled' : 'required'}></div></label>
@@ -31581,7 +31584,7 @@ function renderTabelaPromocoesPage(req, model = {}) {
       </section>
       <button id="price-calculator-load" type="submit" name="carregar" value="1" formnovalidate hidden></button>
       <div class="tpc-actions"><a class="tpc-btn soft" href="/ferramentas-ia/tabela-precos/promocoes">Limpar</a><button class="tpc-btn" type="submit" name="calcular" value="1">Calcular preço</button></div>
-    </form></section>${resultHtml}</div><script>(()=>{const form=document.getElementById('price-calculator-form');const sku=document.getElementById('price-calculator-sku');const marketplace=document.getElementById('price-calculator-marketplace');const load=document.getElementById('price-calculator-load');if(!form||!sku||!marketplace||!load)return;const normalized=value=>String(value||'').trim().toUpperCase();const loadProduct=()=>{if(!marketplace.value||!normalized(sku.value))return;const unchanged=normalized(sku.value)===normalized(sku.dataset.loadedSku)&&marketplace.value===form.dataset.loadedMarketplace;if(!unchanged)form.requestSubmit(load);};sku.addEventListener('keydown',event=>{if(event.key!=='Enter'&&event.key!=='Tab')return;if(event.key==='Enter')event.preventDefault();setTimeout(loadProduct,0);});marketplace.addEventListener('change',()=>{if(normalized(sku.value))form.requestSubmit(load);});const modes=[...form.querySelectorAll('input[name="modo"]')];const title=document.getElementById('price-condition-title');const newFields=document.getElementById('new-price-fields');const promotionFields=document.getElementById('promotion-fields');const promotionPrice=document.getElementById('promotion-price-input');const liquid=document.getElementById('price-liquid-display');const discountInput=document.getElementById('price-discount-input');const gross=document.getElementById('price-gross-display');const skuHelp=document.getElementById('price-sku-help');const parse=value=>{const number=Number(String(value||'').trim().replace(',','.'));return Number.isFinite(number)?number:0;};const formatMoney=value=>value>0?value.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'-';const updateGross=()=>{const price=parse(liquid.dataset.liquid);const discount=Math.max(0,Math.min(99.99,parse(discountInput.value)))/100;gross.value=formatMoney(discount>0?price/(1-discount):price);};const applyMode=()=>{const isNew=form.querySelector('input[name="modo"]:checked')?.value!=='promocao';title.textContent=isNew?'Preço de venda Líquido':'Nova condição';newFields.hidden=!isNew;promotionFields.hidden=isNew;discountInput.disabled=!isNew;discountInput.required=isNew;promotionPrice.disabled=isNew;promotionPrice.required=!isNew;sku.required=!isNew;skuHelp.textContent=isNew?'Opcional. Pressione Enter ou Tab somente se desejar buscar um produto cadastrado.':'Pressione Enter ou Tab para carregar os dados cadastrados.';updateGross();};modes.forEach(item=>item.addEventListener('change',applyMode));discountInput.addEventListener('input',updateGross);applyMode();})();</script>`;
+    </form></section>${resultHtml}</div><script>(()=>{const form=document.getElementById('price-calculator-form');const sku=document.getElementById('price-calculator-sku');const marketplace=document.getElementById('price-calculator-marketplace');const load=document.getElementById('price-calculator-load');if(!form||!sku||!marketplace||!load)return;const normalized=value=>String(value||'').trim().toUpperCase();const loadProduct=()=>{if(!marketplace.value||!normalized(sku.value))return;const unchanged=normalized(sku.value)===normalized(sku.dataset.loadedSku)&&marketplace.value===form.dataset.loadedMarketplace;if(!unchanged)form.requestSubmit(load);};sku.addEventListener('keydown',event=>{if(event.key!=='Enter'&&event.key!=='Tab')return;if(event.key==='Enter')event.preventDefault();setTimeout(loadProduct,0);});marketplace.addEventListener('change',()=>{if(normalized(sku.value))form.requestSubmit(load);});const modes=[...form.querySelectorAll('input[name="modo"]')];const title=document.getElementById('price-condition-title');const newFields=document.getElementById('new-price-fields');const promotionFields=document.getElementById('promotion-fields');const promotionPrice=document.getElementById('promotion-price-input');const liquid=document.getElementById('price-liquid-display');const discountInput=document.getElementById('price-discount-input');const gross=document.getElementById('price-gross-input');const skuHelp=document.getElementById('price-sku-help');const parse=value=>{const number=Number(String(value||'').trim().replace(',','.'));return Number.isFinite(number)?number:0;};const formatDecimal=value=>value>0?value.toLocaleString('pt-BR',{useGrouping:false,minimumFractionDigits:2,maximumFractionDigits:6}):'';const updateGross=()=>{const price=parse(liquid.dataset.liquid);const discount=Math.max(0,Math.min(99.99,parse(discountInput.value)))/100;gross.setCustomValidity('');gross.value=formatDecimal(discount>0?price/(1-discount):price);};const updateDiscount=()=>{const price=parse(liquid.dataset.liquid);const grossPrice=parse(gross.value);if(!(price>0))return;if(grossPrice<price){gross.setCustomValidity('O preço bruto não pode ser menor que o preço líquido calculado.');return;}gross.setCustomValidity('');discountInput.value=((1-(price/grossPrice))*100).toLocaleString('pt-BR',{useGrouping:false,maximumFractionDigits:6});};const applyMode=()=>{const isNew=form.querySelector('input[name="modo"]:checked')?.value!=='promocao';title.textContent=isNew?'Preço de venda Líquido':'Nova condição';newFields.hidden=!isNew;promotionFields.hidden=isNew;discountInput.disabled=!isNew;discountInput.required=isNew;gross.disabled=!isNew;promotionPrice.disabled=isNew;promotionPrice.required=!isNew;sku.required=!isNew;skuHelp.textContent=isNew?'Opcional. Pressione Enter ou Tab somente se desejar buscar um produto cadastrado.':'Pressione Enter ou Tab para carregar os dados cadastrados.';if(isNew&&!gross.value)updateGross();};modes.forEach(item=>item.addEventListener('change',applyMode));discountInput.addEventListener('input',updateGross);gross.addEventListener('input',updateDiscount);applyMode();})();</script>`;
   return renderTabelaWideShell(req, content, { title: 'Calculadora de preços', subtitle: 'Preço individual, promoção e margem por marketplace' });
 }
 
@@ -31833,10 +31836,14 @@ router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerf
     preco_tipo: 'valor',
     preco_valor: String(req.query.preco_valor || '').trim().slice(0, 30),
     acrescimo_desconto: String(req.query.acrescimo_desconto || '').trim().slice(0, 30),
+    preco_bruto: String(req.query.preco_bruto || '').trim().slice(0, 30),
     credito_tipo: req.query.credito_tipo === 'percentual' ? 'percentual' : 'valor',
     credito_valor: String(req.query.credito_valor || '').trim().slice(0, 30)
   };
-  if (req.query.carregar === '1' && req.query.calcular !== '1') values.acrescimo_desconto = '';
+  if (req.query.carregar === '1' && req.query.calcular !== '1') {
+    values.acrescimo_desconto = '';
+    values.preco_bruto = '';
+  }
   try {
     await tabelaPrecosService.ensureTables(pool);
     const overview = await tabelaPrecosService.overview(pool);
@@ -31854,6 +31861,7 @@ router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerf
       const currentPrice = context.published ? Number(context.published.liquidPrice) : null;
       const proposed = parseDecimal(values.preco_valor);
       const creditInput = parseDecimal(values.credito_valor) || 0;
+      const requestedGross = parseDecimal(values.preco_bruto);
       const discountPercent = values.acrescimo_desconto === ''
         ? Number(context.rule?.discount || 0) * 100
         : parseDecimal(values.acrescimo_desconto);
@@ -31863,7 +31871,7 @@ router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerf
       else if (!(cost > 0)) error = 'Informe um custo maior que zero.';
       else if (!(weight > 0)) error = 'Informe um peso maior que zero para calcular o frete.';
       else if (values.modo === 'promocao' && !(proposed > 0)) error = 'Informe o novo preço em reais.';
-      else if (values.modo === 'novo' && (discountPercent == null || discountPercent < 0 || discountPercent >= 100)) error = 'Informe um acréscimo para desconto entre 0% e 99,99%.';
+      else if (values.modo === 'novo' && !(requestedGross > 0) && (discountPercent == null || discountPercent < 0 || discountPercent >= 100)) error = 'Informe um acréscimo para desconto entre 0% e 99,99%.';
       if (!error) {
         const simulationProduct = { sku: values.sku || 'SIMULACAO', cost, weight };
         let salePrice;
@@ -31888,16 +31896,36 @@ router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerf
           );
         }
         if (!error) {
-          const discount = values.modo === 'novo' ? discountPercent / 100 : 0;
-          result = {
-            salePrice,
-            grossPrice: discount > 0 ? salePrice / (1 - discount) : salePrice,
-            discount,
-            currentPrice,
-            difference: currentPrice > 0 ? salePrice - currentPrice : null,
-            details,
-            status: tabelaPrecosService.priceSimulationStatus(details.margin)
-          };
+          let discount = 0;
+          let grossPrice = salePrice;
+          if (values.modo === 'novo' && requestedGross > 0) {
+            grossPrice = Math.round(requestedGross * 100) / 100;
+            if (grossPrice < salePrice) {
+              error = 'O preço bruto a publicar não pode ser menor que o preço líquido calculado.';
+            } else {
+              discount = 1 - (salePrice / grossPrice);
+            }
+          } else if (values.modo === 'novo') {
+            discount = discountPercent / 100;
+            grossPrice = discount > 0 ? salePrice / (1 - discount) : salePrice;
+          }
+          const displayPrice = values.modo === 'promocao'
+            ? salePrice + Math.min(0, Number(details.marketplaceCredit) || 0)
+            : salePrice;
+          if (error) {
+            result = null;
+          } else {
+            result = {
+              salePrice,
+              displayPrice,
+              grossPrice,
+              discount,
+              currentPrice,
+              difference: currentPrice > 0 ? displayPrice - currentPrice : null,
+              details,
+              status: tabelaPrecosService.priceSimulationStatus(details.margin)
+            };
+          }
         }
       }
     }
