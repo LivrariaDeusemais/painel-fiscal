@@ -38,6 +38,7 @@ const https = require('https');
 const zlib = require('zlib');
 const PDFDocument = require('pdfkit');
 const tabelaPrecosService = require('../tabela-precos/service');
+const { createOneDriveBackupService } = require('../services/onedrive-backup');
 
 // CONFIG UPLOAD
 
@@ -29925,7 +29926,8 @@ async function gerarBackupCompleto() {
       resolve({
         arquivo: path.basename(destino),
         tipo: 'ZIP',
-        aviso: [banco.aviso, arquivos.aviso].filter(Boolean).join(' | ')
+        aviso: [banco.aviso, arquivos.aviso].filter(Boolean).join(' | '),
+        intermediateFiles: [banco.arquivo, arquivos.arquivo]
       });
     });
     archive.on('error', err => reject(err));
@@ -29936,7 +29938,14 @@ async function gerarBackupCompleto() {
   });
 }
 
-function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
+const onedriveBackupService = createOneDriveBackupService({
+  pool,
+  backupDir,
+  generateCompleteBackup: gerarBackupCompleto
+});
+onedriveBackupService.startScheduler();
+
+function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '', onedrive = null } = {}) {
   limparBackupsAntigos();
   const backups = listarBackupsGerados();
   const linhas = backups.map(b => `
@@ -29948,6 +29957,24 @@ function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
     </tr>
   `).join('') || `<tr><td colspan="4" class="muted">Nenhum backup gerado ainda.</td></tr>`;
 
+  const oneDriveStatus = onedrive || { configured: false, missing: [], connected: false, running: false, retention: 4 };
+  const lastRun = oneDriveStatus.lastRun;
+  const statusLabel = oneDriveStatus.running || lastRun?.status === 'running'
+    ? 'Backup em andamento'
+    : lastRun?.status === 'success'
+      ? 'Último envio concluído'
+      : lastRun?.status === 'error'
+        ? 'Último envio com erro'
+        : 'Nenhum envio automático realizado';
+  const statusClass = oneDriveStatus.running || lastRun?.status === 'running'
+    ? 'warn'
+    : lastRun?.status === 'error' ? 'err' : 'ok';
+  const accountName = oneDriveStatus.account?.account_email || oneDriveStatus.account?.account_name || '';
+  const lastRunDate = lastRun?.started_at ? new Date(lastRun.started_at).toLocaleString('pt-BR') : '';
+  const setupMessage = oneDriveStatus.configured
+    ? ''
+    : `Configuração pendente no Render: ${(oneDriveStatus.missing || []).join(', ')}`;
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -29958,7 +29985,7 @@ function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
     body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#baf2cf 0%,#f8fafc 42%,#eef2f7 100%);color:#172033;min-height:100vh;}
     .backup-shell{width:min(1450px,calc(100vw - 48px));margin:18px auto 28px;}
     .top{display:flex;align-items:center;justify-content:space-between;gap:18px;background:rgba(255,255,255,.9);border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:18px 24px;margin-bottom:14px;}
-    .top h1{margin:0 0 6px;font-size:30px;letter-spacing:-.7px;}.top p{margin:0;color:#52627a;font-weight:700;}.user{font-weight:900;color:#00B050;text-align:right;}.user span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-top:4px;}.nav{display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:10px 14px;margin-bottom:16px;}.nav a{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640!important;border:1px solid #d7eadf;}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px;}.card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:22px;}.card h2{margin:0 0 8px;font-size:20px;}.card p{margin:0 0 16px;color:#52627a;font-weight:650;line-height:1.35;}.btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}.btn.secondary{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#172033;border:1px solid #dbe7df;}.alert{padding:14px 16px;border-radius:14px;margin-bottom:14px;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}.table-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:0;overflow:hidden;}table{width:100%;border-collapse:collapse;}th,td{padding:13px 16px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px;}th{background:#f8fafc;color:#334155;font-size:12px;text-transform:uppercase;}.btn-mini{height:32px;padding:0 12px;border-radius:9px;text-decoration:none;display:inline-flex;align-items:center;background:#f0fdf4;color:#008f3a!important;border:1px solid #bbf7d0;font-weight:900;}.muted{color:#64748b;}@media(max-width:900px){.backup-shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid{grid-template-columns:1fr}.user{text-align:left}}
+    .top h1{margin:0 0 6px;font-size:30px;letter-spacing:-.7px;}.top p{margin:0;color:#52627a;font-weight:700;}.user{font-weight:900;color:#00B050;text-align:right;}.user span{display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-top:4px;}.nav{display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:10px 14px;margin-bottom:16px;}.nav a{height:40px;padding:0 14px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#009640!important;border:1px solid #d7eadf;}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px;}.card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:22px;}.card h2{margin:0 0 8px;font-size:20px;}.card p{margin:0 0 16px;color:#52627a;font-weight:650;line-height:1.35;}.btn{height:44px;border:0;border-radius:12px;background:linear-gradient(135deg,#00B050,#009640);color:white;font-weight:900;padding:0 18px;cursor:pointer;box-shadow:0 12px 22px rgba(0,176,80,.18);}.btn.secondary{background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#172033;border:1px solid #dbe7df;}.alert{padding:14px 16px;border-radius:14px;margin-bottom:14px;font-weight:800;}.alert.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}.alert.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}.alert.warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;}.automation{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}.automation h2{margin:0 0 7px}.automation p{margin:3px 0;color:#52627a;font-weight:650}.automation-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}.automation .btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.automation .btn[disabled]{opacity:.55;cursor:not-allowed}.status-pill{display:inline-flex;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;margin-bottom:8px}.status-pill.ok{background:#dcfce7;color:#166534}.status-pill.warn{background:#fff7ed;color:#9a3412}.status-pill.err{background:#fee2e2;color:#991b1b}.table-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 18px 45px rgba(15,23,42,.08);padding:0;overflow:hidden;}table{width:100%;border-collapse:collapse;}th,td{padding:13px 16px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:13px;}th{background:#f8fafc;color:#334155;font-size:12px;text-transform:uppercase;}.btn-mini{height:32px;padding:0 12px;border-radius:9px;text-decoration:none;display:inline-flex;align-items:center;background:#f0fdf4;color:#008f3a!important;border:1px solid #bbf7d0;font-weight:900;}.muted{color:#64748b;}@media(max-width:900px){.backup-shell{width:calc(100vw - 24px)}.top{flex-direction:column;align-items:flex-start}.grid{grid-template-columns:1fr}.user{text-align:left}.automation{align-items:flex-start;flex-direction:column}.automation-actions{justify-content:flex-start}}
   </style>
 </head>
 <body>
@@ -29983,6 +30010,24 @@ function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
       <article class="card"><h2>Arquivos</h2><p>Compacta a pasta persistente /uploads com PDFs, XMLs, relatórios e arquivos do contador.</p><form method="post" action="/backup/arquivos"><button class="btn" type="submit">Gerar Backup dos Arquivos</button></form></article>
       <article class="card"><h2>Backup Completo</h2><p>Gera banco + arquivos e empacota tudo em um único ZIP para baixar e salvar no OneDrive.</p><form method="post" action="/backup/completo"><button class="btn" type="submit">Backup Completo</button></form></article>
     </section>
+    <section class="card automation">
+      <div>
+        <span class="status-pill ${statusClass}">${escapeHtmlGlobal(statusLabel)}</span>
+        <h2>Backup automático no OneDrive</h2>
+        <p>Todo domingo às 2h (Brasília), mantendo somente os ${Number(oneDriveStatus.retention || 4)} backups completos mais recentes.</p>
+        ${accountName ? `<p>Conta conectada: <strong>${escapeHtmlGlobal(accountName)}</strong></p>` : ''}
+        ${lastRunDate ? `<p>Última execução: ${escapeHtmlGlobal(lastRunDate)}${lastRun?.message ? ` — ${escapeHtmlGlobal(lastRun.message)}` : ''}</p>` : ''}
+        ${setupMessage ? `<p style="color:#9a3412">${escapeHtmlGlobal(setupMessage)}</p>` : ''}
+      </div>
+      <div class="automation-actions">
+        ${oneDriveStatus.connected
+          ? `<form method="post" action="/backup/onedrive/run"><button class="btn" type="submit" ${oneDriveStatus.running ? 'disabled' : ''}>Enviar backup agora</button></form>
+             <form method="post" action="/backup/onedrive/disconnect"><button class="btn secondary" type="submit">Desconectar</button></form>`
+          : oneDriveStatus.configured
+            ? `<a class="btn" href="/backup/onedrive/connect">Conectar OneDrive</a>`
+            : `<button class="btn" type="button" disabled>Configurar integração</button>`}
+      </div>
+    </section>
     <section class="table-card">
       <table>
         <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Gerado em</th><th>Ação</th></tr></thead>
@@ -29994,12 +30039,77 @@ function renderBackupAdminPage(req, { ok = '', erro = '', aviso = '' } = {}) {
 </html>`;
 }
 
-router.get('/backup', protegerRota, somenteAdmin, (req, res) => {
-  res.send(renderBackupAdminPage(req, {
-    ok: req.query.ok || '',
-    erro: req.query.erro || '',
-    aviso: req.query.aviso || ''
-  }));
+router.get('/backup', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const onedrive = await onedriveBackupService.status();
+    res.send(renderBackupAdminPage(req, {
+      ok: req.query.ok || '',
+      erro: req.query.erro || '',
+      aviso: req.query.aviso || '',
+      onedrive
+    }));
+  } catch (error) {
+    res.send(renderBackupAdminPage(req, {
+      ok: req.query.ok || '',
+      erro: req.query.erro || '',
+      aviso: `Não foi possível consultar o backup automático: ${error.message}`
+    }));
+  }
+});
+
+router.get('/backup/onedrive/connect', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const status = await onedriveBackupService.status();
+    if (!status.configured) {
+      return res.redirect(`/backup?erro=${encodeURIComponent(`Configure no Render: ${status.missing.join(', ')}`)}`);
+    }
+    const state = crypto.randomBytes(24).toString('hex');
+    req.session.onedriveOAuthState = state;
+    res.redirect(onedriveBackupService.authorizationUrl(state));
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Não foi possível iniciar a conexão com o OneDrive: ' + error.message)}`);
+  }
+});
+
+router.get('/backup/onedrive/callback', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    if (!req.query.state || req.query.state !== req.session.onedriveOAuthState) {
+      throw new Error('A validação de segurança da conexão expirou. Tente conectar novamente.');
+    }
+    delete req.session.onedriveOAuthState;
+    if (req.query.error) throw new Error(req.query.error_description || req.query.error);
+    if (!req.query.code) throw new Error('A Microsoft não retornou o código de autorização.');
+    const result = await onedriveBackupService.connectFromCode(String(req.query.code));
+    const conta = result.profile?.mail || result.profile?.userPrincipalName || result.profile?.displayName || 'conta Microsoft';
+    res.redirect(`/backup?ok=${encodeURIComponent(`OneDrive conectado com sucesso: ${conta}`)}`);
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Erro ao conectar o OneDrive: ' + error.message)}`);
+  }
+});
+
+router.post('/backup/onedrive/run', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    const current = await onedriveBackupService.status();
+    if (current.running) {
+      return res.redirect('/backup?aviso=' + encodeURIComponent('Já existe um backup automático em andamento.'));
+    }
+    setImmediate(() => {
+      onedriveBackupService.run({ triggerType: 'manual' })
+        .catch(error => console.error('[OneDrive backup] Falha no envio manual:', error.message));
+    });
+    res.redirect('/backup?ok=' + encodeURIComponent('Backup iniciado. Você pode sair desta página; o Render continuará o envio.'));
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Não foi possível iniciar o backup: ' + error.message)}`);
+  }
+});
+
+router.post('/backup/onedrive/disconnect', protegerRota, somenteAdmin, async (req, res) => {
+  try {
+    await onedriveBackupService.disconnect();
+    res.redirect('/backup?ok=' + encodeURIComponent('OneDrive desconectado. Os backups já enviados foram preservados.'));
+  } catch (error) {
+    res.redirect(`/backup?erro=${encodeURIComponent('Não foi possível desconectar o OneDrive: ' + error.message)}`);
+  }
 });
 
 router.post('/backup/banco', protegerRota, somenteAdmin, async (req, res) => {
