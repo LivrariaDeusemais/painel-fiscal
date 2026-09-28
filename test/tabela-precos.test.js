@@ -100,6 +100,17 @@ test('considera o crédito do marketplace no recebimento, lucro e margem da simu
   assert.equal(result.margin, result.netProfit / 100);
 });
 
+test('calcula o frete promocional sobre o preço original quando informado', () => {
+  const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'Mercado Livre');
+  const dynamicRules = [
+    { marketplace: 'Mercado Livre', priceMin: 0, priceMax: 119.99, weightMin: 0, weightMax: 1, value: 10 },
+    { marketplace: 'Mercado Livre', priceMin: 120, priceMax: null, weightMin: 0, weightMax: 1, value: 20 }
+  ];
+  const result = calculatePriceSimulation({ cost: 50, weight: 0.5 }, rule, 100, 5, dynamicRules, 130);
+  assert.equal(result.freight, 20);
+  assert.equal(result.marketplaceReceivable, 100 - 20 - 12 + 5);
+});
+
 test('classifica a margem da calculadora nas três faixas definidas', () => {
   assert.equal(priceSimulationStatus(0.0799), 'Não aceitável');
   assert.equal(priceSimulationStatus(0.08), 'Aceitar temporariamente');

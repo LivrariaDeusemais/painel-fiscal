@@ -104,17 +104,18 @@ function dynamicForPrice(marketplace, price, weight, rows) {
   };
 }
 
-function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES, freightPrice = price) {
   const dynamic = dynamicForPrice(rule.marketplace, price, numberOrZero(product.weight), dynamicRules);
+  const freightDynamic = dynamicForPrice(rule.marketplace, freightPrice, numberOrZero(product.weight), dynamicRules);
   const commissionRate = numberOrZero(rule.commission) + dynamic.commission;
   const cardRate = numberOrZero(rule.card);
   const adsRate = numberOrZero(rule.ads) + dynamic.ads;
   const adminRate = numberOrZero(rule.admin);
   const taxRate = numberOrZero(rule.tax);
-  const freightRate = numberOrZero(rule.freightPercent) + dynamic.freightPercent;
+  const freightRate = numberOrZero(rule.freightPercent) + freightDynamic.freightPercent;
   const percent = commissionRate + cardRate + adsRate + adminRate + taxRate + freightRate;
   const fixedFee = numberOrZero(rule.fixedFee) + dynamic.fixedFee;
-  const freight = numberOrZero(rule.fixedFreight) + dynamic.freight + (price * freightRate);
+  const freight = numberOrZero(rule.fixedFreight) + freightDynamic.freight + (numberOrZero(freightPrice) * freightRate);
   const commissionValue = price * commissionRate;
   const cardValue = price * cardRate;
   const adsValue = price * adsRate;
@@ -142,10 +143,10 @@ function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_R
   };
 }
 
-function calculatePriceSimulation(product, rule, price, marketplaceCredit = 0, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+function calculatePriceSimulation(product, rule, price, marketplaceCredit = 0, dynamicRules = DEFAULT_DYNAMIC_RULES, freightPrice = price) {
   const salePrice = numberOrZero(price);
   const credit = Math.max(0, numberOrZero(marketplaceCredit));
-  const details = calculateAtPrice(product, rule, salePrice, dynamicRules);
+  const details = calculateAtPrice(product, rule, salePrice, dynamicRules, freightPrice);
   const netProfit = details.netProfit + credit;
   return {
     ...details,
