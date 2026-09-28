@@ -100,6 +100,17 @@ test('considera o crédito do marketplace no recebimento, lucro e margem da simu
   assert.equal(result.margin, result.netProfit / 100);
 });
 
+test('considera percentual negativo como desconto assumido pelo vendedor', () => {
+  const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'Magalu');
+  const base = calculateAtPrice({ cost: 50, weight: 0.5 }, rule, 100, []);
+  const result = calculatePriceSimulation({ cost: 50, weight: 0.5 }, rule, 100, -5, []);
+  assert.equal(result.marketplaceCredit, -5);
+  assert.equal(result.marketplaceReceivable, base.marketplaceReceivable - 5);
+  assert.equal(result.totalCosts, base.totalCosts + 5);
+  assert.equal(result.netProfit, base.netProfit - 5);
+  assert.equal(result.margin, result.netProfit / 100);
+});
+
 test('calcula o frete promocional sobre o preço original quando informado', () => {
   const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'Mercado Livre');
   const dynamicRules = [

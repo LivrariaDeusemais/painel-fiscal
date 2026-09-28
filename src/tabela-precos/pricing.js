@@ -145,7 +145,7 @@ function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_R
 
 function calculatePriceSimulation(product, rule, price, marketplaceCredit = 0, dynamicRules = DEFAULT_DYNAMIC_RULES, freightPrice = price) {
   const salePrice = numberOrZero(price);
-  const credit = Math.max(0, numberOrZero(marketplaceCredit));
+  const credit = numberOrZero(marketplaceCredit);
   const details = calculateAtPrice(product, rule, salePrice, dynamicRules, freightPrice);
   const netProfit = details.netProfit + credit;
   return {
