@@ -31265,7 +31265,7 @@ function renderTabelaPrecosHub(req, resumo = null, feedback = null) {
     ['Produtos - Base de dados', 'Cadastro geral, custos, estoque e validação dos produtos.', '/ferramentas-ia/tabela-precos/produtos', 'Abrir produtos'],
     ['Vínculos dos Marketplaces', 'Importação dos vínculos da multiloja do Bling.', '/ferramentas-ia/tabela-precos/base', 'Atualizar vínculos'],
     ['Fretes e Tarifas por faixa', 'Faixas de peso, preço, frete e tarifas variáveis.', '/ferramentas-ia/tabela-precos/fretes', 'Consultar faixas'],
-    ['Simular Promoções', 'Avalie preço promocional, crédito do marketplace e margem.', '/ferramentas-ia/tabela-precos/promocoes', 'Abrir simulador'],
+    ['Calculadora de preços', 'Simule preços individuais, promoções, créditos e margem.', '/ferramentas-ia/tabela-precos/promocoes', 'Abrir calculadora'],
     ['Tabela por Marketplace', 'Compare preços, custos, margem e estoque em toda a largura da tela.', '/ferramentas-ia/tabela-precos/tabela', 'Abrir tabela']
   ].map(([title, description, href, action], index) => `<article class="tph-card ${index === 5 ? 'featured' : ''}">
     <div class="tph-card-index">${String(index + 1).padStart(2, '0')}</div>
@@ -31327,7 +31327,7 @@ function renderTabelaWideShell(req, innerHtml, options = {}) {
     ['Regras', '/ferramentas-ia/tabela-precos/regras'],
     ['Produtos - Base de dados', '/ferramentas-ia/tabela-precos/produtos'],
     ['Vínculos dos Marketplaces', '/ferramentas-ia/tabela-precos/base'], ['Fretes e tarifas', '/ferramentas-ia/tabela-precos/fretes'],
-    ['Simular promoções', '/ferramentas-ia/tabela-precos/promocoes']
+    ['Calculadora de preços', '/ferramentas-ia/tabela-precos/promocoes']
   ].map(([label, href]) => `<a class="${currentPath === href ? 'active' : ''}" href="${href}">${label}</a>`).join('');
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} - PlennaTec</title><style>
     *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f2f6f8}.tpw-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dce7e1;box-shadow:0 5px 18px rgba(15,23,42,.07)}.tpw-top{height:70px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.tpw-brand{display:flex;align-items:center;gap:12px;min-width:230px}.tpw-brand img{width:42px;height:42px;object-fit:contain}.tpw-brand strong{display:block;font-size:19px}.tpw-brand span{display:block;margin-top:3px;color:#64748b;font-size:11px;font-weight:700}.tpw-user{text-align:right}.tpw-user strong{display:block;color:#009640;font-size:13px}.tpw-user span{font-size:10px;color:#64748b;font-weight:900}.tpw-nav{min-height:45px;padding:0 22px;display:flex;align-items:center;gap:5px;border-top:1px solid #edf2f7;overflow:auto}.tpw-nav a{height:32px;padding:0 12px;border-radius:7px;color:#334155;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;font-size:12px;font-weight:900}.tpw-nav a:hover{background:#eaf8f0;color:#087334}.tpw-nav a.active{background:#009640;color:#fff}.tpw-main{padding:16px 18px 22px}.tpw-alert{margin-bottom:12px;padding:12px 14px;border:1px solid;border-radius:8px;font-size:12px;font-weight:800}.tpw-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpw-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}@media(max-width:720px){.tpw-top{height:auto;padding:12px}.tpw-user{display:none}.tpw-nav{padding:7px 12px}.tpw-main{padding:10px}}
@@ -31495,9 +31495,71 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
   return renderTabelaWideShell(req, compactContent);
 }
 
-function renderTabelaPromocoesPage(req) {
-  const content = `<style>.tpp-shell{max-width:920px;display:grid;gap:16px}.tpp-back{display:inline-flex;align-items:center;justify-self:start;min-height:38px;padding:0 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;background:#fff;text-decoration:none;font-size:11px;font-weight:900}.tpp-stage{padding:24px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpp-stage span{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eaf8f0;color:#087334;font-size:10px;font-weight:900;text-transform:uppercase}.tpp-stage h2{margin:17px 0 8px!important}.tpp-stage p{margin:0;color:#64748b;line-height:1.5;font-weight:700}.tpp-list{margin:18px 0 0;padding-left:19px;color:#334155;line-height:1.8;font-weight:700}</style><div class="tpp-shell"><a class="tpp-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a><section class="tpp-stage"><span>Próxima etapa</span><h2>Simulador de Promoções</h2><p>Esta área receberá a simulação de preço ao cliente, crédito concedido pelo marketplace, margem final e validade da campanha.</p><ul class="tpp-list"><li>Comparação com o preço praticado.</li><li>Crédito do marketplace tratado como ganho da campanha.</li><li>Registro da validade e dos dias restantes.</li><li>Aprovação restrita ao administrador.</li></ul></section></div>`;
-  return renderPremiumAdminShell(req, { titulo: 'Simular Promoções', subtitulo: 'Análise de campanhas e margem por marketplace.', paginaAtual: 'ferramentas-ia' }, content);
+function renderTabelaPromocoesPage(req, model = {}) {
+  const { marketplaces = [], values = {}, context = {}, result = null, error = '' } = model;
+  const money = value => value == null || !Number.isFinite(Number(value))
+    ? '-'
+    : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const percent = value => value == null || !Number.isFinite(Number(value))
+    ? '-'
+    : `${(Number(value) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  const inputNumber = value => value == null || value === '' ? '' : String(value).replace('.', ',');
+  const checked = (key, expected) => values[key] === expected ? 'checked' : '';
+  const selectedMarketplace = item => values.marketplace === item ? 'selected' : '';
+  const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}" ${selectedMarketplace(item)}>${escapeHtmlGlobal(item)}</option>`).join('');
+  const product = context.product || null;
+  const published = context.published || null;
+  const hasSku = Boolean(values.sku);
+  const productState = hasSku
+    ? `<span class="tpc-product-state ${product ? 'found' : 'missing'}">${product ? 'Produto cadastrado' : 'Sem cadastro'}</span>`
+    : '<span class="tpc-product-state neutral">Informe um SKU</span>';
+  const statusClass = result?.status === 'Preço aprovado' ? 'approved'
+    : result?.status === 'Aceitar temporariamente' ? 'temporary' : 'rejected';
+  const breakdown = result ? [
+    ['Novo Líquido', money(result.salePrice), 'primary'],
+    ['Frete', money(result.details.freight)],
+    ['Taxa por pedido', money(result.details.fixedFee)],
+    ['Comissão Valor', money(result.details.commissionValue)],
+    ['TX Cartão', money(result.details.cardValue)],
+    ['Crédito do marketplace', money(result.details.marketplaceCredit), 'credit'],
+    ['Receber do MKP', money(result.details.marketplaceReceivable), 'receive'],
+    ['ADS', money(result.details.adsValue)],
+    ['CMV', money(result.details.costValue)],
+    ['ADM', money(result.details.adminValue)],
+    ['Imposto', money(result.details.taxValue)],
+    ['Total custos', money(result.details.totalCosts), 'total'],
+    ['Lucro Líquido', money(result.details.netProfit), 'profit'],
+    ['Margem Líquida', percent(result.details.margin), 'profit'],
+    ['Dif. R$ Líquidos', result.difference == null ? '-' : money(result.difference), result.difference < 0 ? 'negative' : 'positive']
+  ].map(([label, value, className = '']) => `<tr class="${className}"><th>${label}</th><td>${value}</td></tr>`).join('') : '';
+  const resultHtml = result ? `<section class="tpc-result">
+    <div class="tpc-result-head ${statusClass}"><div><span>Resultado da simulação</span><h2>${escapeHtmlGlobal(result.status)}</h2></div><div class="tpc-result-margin"><small>Margem final</small><strong>${percent(result.details.margin)}</strong></div></div>
+    <div class="tpc-result-summary"><div><span>Preço atual</span><strong>${money(result.currentPrice)}</strong></div><div><span>Novo preço</span><strong>${money(result.salePrice)}</strong></div><div><span>Crédito marketplace</span><strong>${money(result.details.marketplaceCredit)}</strong></div><div><span>Lucro líquido</span><strong>${money(result.details.netProfit)}</strong></div></div>
+    <div class="tpc-breakdown"><table><tbody>${breakdown}</tbody></table></div>
+  </section>` : `<section class="tpc-empty"><div class="tpc-empty-mark">R$</div><div><h2>Resultado da simulação</h2><p>Preencha os dados e calcule para visualizar custos, recebimento, lucro e margem.</p></div></section>`;
+  const content = `<style>
+    .tpc-shell{max-width:1480px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(390px,.65fr);gap:14px;align-items:start}.tpc-panel,.tpc-result,.tpc-empty{border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpc-panel{padding:20px}.tpc-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.tpc-heading h1{margin:0 0 5px;font-size:24px}.tpc-heading p{margin:0;color:#64748b;font-size:12px;font-weight:700}.tpc-product-state{display:inline-flex;align-items:center;min-height:29px;padding:0 10px;border-radius:999px;font-size:10px;font-weight:900;white-space:nowrap}.tpc-product-state.found{background:#dcfce7;color:#166534}.tpc-product-state.missing{background:#fff1d6;color:#92400e}.tpc-product-state.neutral{background:#eef2f7;color:#475569}.tpc-alert{margin-bottom:14px;padding:12px 14px;border:1px solid #fecdd3;border-radius:7px;background:#fff1f2;color:#9f1239;font-size:12px;font-weight:800}.tpc-section{padding-top:17px;margin-top:17px;border-top:1px solid #e2e8f0}.tpc-section:first-of-type{padding-top:0;margin-top:0;border-top:0}.tpc-section-title{margin:0 0 12px;font-size:11px;color:#087334;text-transform:uppercase;font-weight:900}.tpc-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:11px}.tpc-field{grid-column:span 4;display:grid;gap:6px}.tpc-field.wide{grid-column:span 8}.tpc-field.half{grid-column:span 6}.tpc-field.full{grid-column:1/-1}.tpc-field>span,.tpc-label{color:#334155;font-size:10px;font-weight:900}.tpc-field input,.tpc-field select{width:100%;height:42px;padding:0 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#172033;font:700 12px Arial}.tpc-field input[readonly]{background:#f8fafc;color:#475569}.tpc-field small{color:#64748b;font-size:9px;font-weight:700;line-height:1.35}.tpc-segment{height:42px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid #cbd5e1;border-radius:7px;overflow:hidden;background:#f8fafc}.tpc-segment label{position:relative;display:grid;place-items:center;padding:0 9px;color:#64748b;font-size:10px;font-weight:900;cursor:pointer}.tpc-segment label+label{border-left:1px solid #cbd5e1}.tpc-segment input{position:absolute;opacity:0;pointer-events:none}.tpc-segment label:has(input:checked){background:#009640;color:#fff}.tpc-combo{display:grid;grid-template-columns:115px 1fr;gap:8px}.tpc-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:18px}.tpc-btn{min-height:40px;padding:0 16px;border:1px solid #009640;border-radius:7px;background:#009640;color:#fff;font:900 11px Arial;cursor:pointer}.tpc-btn.soft{display:inline-flex;align-items:center;background:#fff;color:#087334;text-decoration:none}.tpc-result{overflow:hidden}.tpc-result-head{min-height:108px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid}.tpc-result-head span{font-size:9px;font-weight:900;text-transform:uppercase}.tpc-result-head h2{margin:6px 0 0!important;font-size:19px!important}.tpc-result-head.approved{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpc-result-head.temporary{background:#fffbeb;border-color:#fde68a;color:#92400e}.tpc-result-head.rejected{background:#fff1f2;border-color:#fecdd3;color:#9f1239}.tpc-result-margin{text-align:right}.tpc-result-margin small{display:block;font-size:9px;font-weight:900;text-transform:uppercase}.tpc-result-margin strong{display:block;margin-top:5px;font-size:27px}.tpc-result-summary{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e2e8f0}.tpc-result-summary div{padding:13px 16px}.tpc-result-summary div:nth-child(odd){border-right:1px solid #e2e8f0}.tpc-result-summary div:nth-child(-n+2){border-bottom:1px solid #e2e8f0}.tpc-result-summary span{display:block;color:#64748b;font-size:8px;font-weight:900;text-transform:uppercase}.tpc-result-summary strong{display:block;margin-top:4px;font-size:14px}.tpc-breakdown{max-height:58vh;overflow:auto}.tpc-breakdown table{width:100%;border-collapse:collapse}.tpc-breakdown th,.tpc-breakdown td{padding:10px 16px;border-bottom:1px solid #edf2f7;font-size:11px}.tpc-breakdown th{text-align:left;color:#475569}.tpc-breakdown td{text-align:right;font-weight:900}.tpc-breakdown tr.primary{background:#e8f1ff}.tpc-breakdown tr.credit{background:#f0fdf4;color:#166534}.tpc-breakdown tr.receive{background:#e8f4f8}.tpc-breakdown tr.total th,.tpc-breakdown tr.total td{border-top:2px solid #cbd5e1}.tpc-breakdown tr.profit{background:#ecfeff;color:#155e75}.tpc-breakdown tr.negative td{color:#dc2626}.tpc-breakdown tr.positive td{color:#15803d}.tpc-empty{min-height:270px;padding:26px;display:flex;align-items:center;justify-content:center;gap:17px;color:#64748b}.tpc-empty-mark{width:52px;height:52px;display:grid;place-items:center;border-radius:8px;background:#eaf8f0;color:#087334;font-size:16px;font-weight:900}.tpc-empty h2{margin:0 0 6px!important;color:#172033;font-size:17px!important}.tpc-empty p{max-width:310px;margin:0;font-size:11px;font-weight:700;line-height:1.45}
+    @media(max-width:980px){.tpc-shell{grid-template-columns:1fr}.tpc-breakdown{max-height:none}}@media(max-width:680px){.tpc-panel{padding:15px}.tpc-heading{display:grid}.tpc-field,.tpc-field.wide,.tpc-field.half{grid-column:1/-1}.tpc-combo{grid-template-columns:100px 1fr}.tpc-result-head{align-items:flex-start}.tpc-result-summary{grid-template-columns:1fr}.tpc-result-summary div{border-right:0!important;border-bottom:1px solid #e2e8f0!important}}
+  </style><div class="tpc-shell"><section class="tpc-panel"><div class="tpc-heading"><div><h1>Calculadora de preços</h1><p>Simulação individual com as regras vigentes de cada marketplace.</p></div>${productState}</div>${error ? `<div class="tpc-alert">${escapeHtmlGlobal(error)}</div>` : ''}
+    <form method="get" action="/ferramentas-ia/tabela-precos/promocoes">
+      <section class="tpc-section"><h2 class="tpc-section-title">Cenário</h2><div class="tpc-grid">
+        <label class="tpc-field half"><span>Marketplace</span><select name="marketplace" required><option value="">Selecione</option>${options}</select></label>
+        <div class="tpc-field half"><span class="tpc-label">Tipo de cálculo</span><div class="tpc-segment"><label><input type="radio" name="modo" value="novo" ${checked('modo', 'novo')}>Preço novo</label><label><input type="radio" name="modo" value="promocao" ${checked('modo', 'promocao')}>Promoção</label></div></div>
+        <label class="tpc-field half"><span>SKU</span><input name="sku" value="${escapeHtmlGlobal(values.sku || '')}" placeholder="Ex.: B1254" required></label>
+        <label class="tpc-field half"><span>Descrição</span><input name="descricao" value="${escapeHtmlGlobal(product?.nome || values.descricao || '')}" ${product ? 'readonly' : ''} placeholder="Descrição do produto"></label>
+      </div></section>
+      <section class="tpc-section"><h2 class="tpc-section-title">Produto e preço atual</h2><div class="tpc-grid">
+        <label class="tpc-field"><span>Custo R$</span><input name="custo" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(product?.custo ?? values.custo))}" ${product ? 'readonly' : ''} placeholder="0,00" required></label>
+        <label class="tpc-field"><span>Peso kg</span><input name="peso" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(product?.peso ?? values.peso))}" ${product ? 'readonly' : ''} placeholder="0,000" required><small>Necessário para calcular o frete por faixa.</small></label>
+        <label class="tpc-field"><span>Valor de venda atual</span><input value="${escapeHtmlGlobal(published ? money(published.liquidPrice) : '-') }" readonly></label>
+      </div></section>
+      <section class="tpc-section"><h2 class="tpc-section-title">Nova condição</h2><div class="tpc-grid">
+        <label class="tpc-field half"><span>Novo preço ao cliente</span><div class="tpc-combo"><select name="preco_tipo"><option value="valor" ${values.preco_tipo === 'valor' ? 'selected' : ''}>Valor R$</option><option value="percentual" ${values.preco_tipo === 'percentual' ? 'selected' : ''}>Desconto %</option></select><input name="preco_valor" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(values.preco_valor))}" placeholder="0,00" required></div></label>
+        <label class="tpc-field half"><span>Crédito assumido pelo marketplace</span><div class="tpc-combo"><select name="credito_tipo"><option value="valor" ${values.credito_tipo === 'valor' ? 'selected' : ''}>Valor R$</option><option value="percentual" ${values.credito_tipo === 'percentual' ? 'selected' : ''}>Percentual</option></select><input name="credito_valor" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(values.credito_valor))}" placeholder="0,00"></div><small>O percentual é calculado sobre o valor de venda atual.</small></label>
+      </div></section>
+      <div class="tpc-actions"><a class="tpc-btn soft" href="/ferramentas-ia/tabela-precos/promocoes">Limpar</a><button class="tpc-btn" type="submit" name="calcular" value="1">Calcular preço</button></div>
+    </form></section>${resultHtml}</div>`;
+  return renderTabelaWideShell(req, content, { title: 'Calculadora de preços', subtitle: 'Preço individual, promoção e margem por marketplace' });
 }
 
 function renderTabelaFretesPage(req, rows, feedback = null) {
@@ -31729,8 +31791,78 @@ router.get('/ferramentas-ia/tabela-precos/tabela', protegerRota, permitirPerfis(
   }
 });
 
-router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
-  res.send(renderTabelaPromocoesPage(req));
+router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  const parseDecimal = value => {
+    let text = String(value ?? '').trim().replace(/[^\d,.-]/g, '');
+    if (!text) return null;
+    if (text.includes(',') && text.includes('.')) text = text.replace(/\./g, '').replace(',', '.');
+    else if (text.includes(',')) text = text.replace(',', '.');
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const values = {
+    marketplace: String(req.query.marketplace || '').trim().slice(0, 80),
+    modo: req.query.modo === 'promocao' ? 'promocao' : 'novo',
+    sku: String(req.query.sku || '').trim().slice(0, 80),
+    descricao: String(req.query.descricao || '').trim().slice(0, 240),
+    custo: String(req.query.custo || '').trim().slice(0, 30),
+    peso: String(req.query.peso || '').trim().slice(0, 30),
+    preco_tipo: req.query.preco_tipo === 'percentual' ? 'percentual' : 'valor',
+    preco_valor: String(req.query.preco_valor || '').trim().slice(0, 30),
+    credito_tipo: req.query.credito_tipo === 'percentual' ? 'percentual' : 'valor',
+    credito_valor: String(req.query.credito_valor || '').trim().slice(0, 30)
+  };
+  try {
+    await tabelaPrecosService.ensureTables(pool);
+    const overview = await tabelaPrecosService.overview(pool);
+    const marketplaces = overview.rules.filter(item => item.ativo && item.marketplace !== 'Bling').map(item => item.marketplace);
+    if (!marketplaces.includes(values.marketplace)) values.marketplace = '';
+    const context = values.marketplace
+      ? await tabelaPrecosService.calculatorContext(pool, values.marketplace, values.sku)
+      : {};
+    let result = null;
+    let error = '';
+    if (req.query.calcular === '1') {
+      const product = context.product;
+      const cost = product ? Number(product.custo) : parseDecimal(values.custo);
+      const weight = product ? Number(product.peso) : parseDecimal(values.peso);
+      const currentPrice = context.published ? Number(context.published.liquidPrice) : null;
+      const proposed = parseDecimal(values.preco_valor);
+      const creditInput = Math.max(0, parseDecimal(values.credito_valor) || 0);
+      if (!values.marketplace || !context.rule) error = 'Selecione um marketplace com regra ativa.';
+      else if (!values.sku) error = 'Informe o SKU do produto.';
+      else if (values.modo === 'promocao' && !(currentPrice > 0)) error = 'Este SKU não possui preço atual vinculado ao marketplace selecionado.';
+      else if (!(cost > 0)) error = 'Informe um custo maior que zero.';
+      else if (!(weight > 0)) error = 'Informe um peso maior que zero para calcular o frete.';
+      else if (!(proposed > 0)) error = 'Informe o novo preço ou o percentual de desconto.';
+      else if (values.preco_tipo === 'percentual' && !(currentPrice > 0)) error = 'O desconto percentual exige um preço atual vinculado.';
+      else if (values.preco_tipo === 'percentual' && proposed >= 100) error = 'O desconto percentual deve ser menor que 100%.';
+      if (!error) {
+        const salePrice = values.preco_tipo === 'percentual'
+          ? Math.round(currentPrice * (1 - (proposed / 100)) * 100) / 100
+          : Math.round(proposed * 100) / 100;
+        const marketplaceCredit = values.credito_tipo === 'percentual'
+          ? Math.round((currentPrice || 0) * (creditInput / 100) * 100) / 100
+          : Math.round(creditInput * 100) / 100;
+        if (!(salePrice > 0)) error = 'O novo preço calculado deve ser maior que zero.';
+        else {
+          const details = tabelaPrecosService.calculatePriceSimulation(
+            { sku: values.sku, cost, weight }, context.rule, salePrice, marketplaceCredit, context.dynamicRules
+          );
+          result = {
+            salePrice,
+            currentPrice,
+            difference: currentPrice > 0 ? salePrice - currentPrice : null,
+            details,
+            status: tabelaPrecosService.priceSimulationStatus(details.margin)
+          };
+        }
+      }
+    }
+    res.send(renderTabelaPromocoesPage(req, { marketplaces, values, context, result, error }));
+  } catch (routeError) {
+    res.send(renderTabelaPromocoesPage(req, { values, error: `Calculadora indisponível: ${routeError.message}` }));
+  }
 });
 
 router.post('/ferramentas-ia/tabela-precos/base', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('base'), async (req, res) => {

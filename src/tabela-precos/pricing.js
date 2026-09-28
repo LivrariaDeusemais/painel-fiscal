@@ -142,6 +142,28 @@ function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_R
   };
 }
 
+function calculatePriceSimulation(product, rule, price, marketplaceCredit = 0, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+  const salePrice = numberOrZero(price);
+  const credit = Math.max(0, numberOrZero(marketplaceCredit));
+  const details = calculateAtPrice(product, rule, salePrice, dynamicRules);
+  const netProfit = details.netProfit + credit;
+  return {
+    ...details,
+    marketplaceCredit: credit,
+    marketplaceReceivable: details.marketplaceReceivable + credit,
+    totalCosts: details.totalCosts - credit,
+    netProfit,
+    margin: salePrice > 0 ? netProfit / salePrice : 0
+  };
+}
+
+function priceSimulationStatus(margin) {
+  const value = numberOrZero(margin);
+  if (value < 0.08) return 'Não aceitável';
+  if (value <= 0.1) return 'Aceitar temporariamente';
+  return 'Preço aprovado';
+}
+
 function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULES) {
   if (numberOrZero(product.cost) <= 0 || numberOrZero(product.weight) <= 0) {
     return { status: 'Revisar', reason: 'Produto sem custo ou peso.' };
@@ -218,8 +240,10 @@ module.exports = {
   MARKETPLACE_RULES,
   attractivePriceAtOrAbove,
   calculateAtPrice,
+  calculatePriceSimulation,
   calculateMarketplace,
   calculateMercadoLivre,
+  priceSimulationStatus,
   standardizeEqualProducts,
   weightBandLabel
 };

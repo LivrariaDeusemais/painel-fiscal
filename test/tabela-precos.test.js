@@ -4,8 +4,10 @@ const {
   MARKETPLACE_RULES,
   attractivePriceAtOrAbove,
   calculateAtPrice,
+  calculatePriceSimulation,
   calculateMarketplace,
   calculateMercadoLivre,
+  priceSimulationStatus,
   standardizeEqualProducts
 } = require('../src/tabela-precos/pricing');
 const { costWeightGroup, mercadoLivreCsv, priceReviewStatus, publishedPrices, weightRange } = require('../src/tabela-precos/service');
@@ -85,6 +87,24 @@ test('detalha todos os custos monetários calculados sobre o preço líquido', (
   assert.equal(details.totalCosts, 89);
   assert.equal(details.netProfit, 11);
   assert.equal(details.margin, 0.11);
+});
+
+test('considera o crédito do marketplace no recebimento, lucro e margem da simulação', () => {
+  const rule = MARKETPLACE_RULES.find(item => item.marketplace === 'Mercado Livre');
+  const base = calculateAtPrice({ cost: 50, weight: 0.5 }, rule, 100, []);
+  const result = calculatePriceSimulation({ cost: 50, weight: 0.5 }, rule, 100, 5, []);
+  assert.equal(result.marketplaceCredit, 5);
+  assert.equal(result.marketplaceReceivable, base.marketplaceReceivable + 5);
+  assert.equal(result.totalCosts, base.totalCosts - 5);
+  assert.equal(result.netProfit, base.netProfit + 5);
+  assert.equal(result.margin, result.netProfit / 100);
+});
+
+test('classifica a margem da calculadora nas três faixas definidas', () => {
+  assert.equal(priceSimulationStatus(0.0799), 'Não aceitável');
+  assert.equal(priceSimulationStatus(0.08), 'Aceitar temporariamente');
+  assert.equal(priceSimulationStatus(0.1), 'Aceitar temporariamente');
+  assert.equal(priceSimulationStatus(0.1001), 'Preço aprovado');
 });
 
 test('padroniza produtos com mesmo custo e faixa de peso', () => {

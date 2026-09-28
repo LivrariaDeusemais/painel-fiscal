@@ -4,7 +4,9 @@ const {
   DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
   calculateAtPrice,
+  calculatePriceSimulation,
   calculateMarketplace,
+  priceSimulationStatus,
   standardizeEqualProducts
 } = require('./pricing');
 
@@ -459,6 +461,31 @@ async function marketplaceRows(pool, filters = {}) {
   });
 }
 
+async function calculatorContext(pool, marketplace, sku) {
+  const cleanMarketplace = String(marketplace || '').trim();
+  const cleanSku = String(sku || '').trim();
+  const [ruleResult, dynamicRules, productResult, linkResult] = await Promise.all([
+    pool.query(`SELECT * FROM tabela_preco_regras WHERE marketplace = $1 AND ativo = TRUE`, [cleanMarketplace]),
+    freightRules(pool),
+    cleanSku
+      ? pool.query(`SELECT sku, nome, marca, custo, peso, estoque, preco_bling FROM tabela_preco_produtos WHERE UPPER(sku) = UPPER($1) LIMIT 1`, [cleanSku])
+      : Promise.resolve({ rows: [] }),
+    cleanSku && cleanMarketplace
+      ? pool.query(`SELECT * FROM tabela_preco_vinculos WHERE marketplace = $1 AND UPPER(sku) = UPPER($2) ORDER BY id LIMIT 1`, [cleanMarketplace, cleanSku])
+      : Promise.resolve({ rows: [] })
+  ]);
+  const rule = ruleResult.rows[0] ? databaseRule(ruleResult.rows[0]) : null;
+  const product = productResult.rows[0] || null;
+  const link = linkResult.rows[0] || null;
+  return {
+    rule,
+    dynamicRules,
+    product,
+    link,
+    published: link && rule ? publishedPrices(link, rule) : null
+  };
+}
+
 function priceReviewStatus(validationStatus, calculationStatus, difference) {
   if (validationStatus === 'Novo') return 'Novo';
   if (calculationStatus !== 'OK' || !Number.isFinite(Number(difference))) return 'Revisar';
@@ -531,6 +558,8 @@ async function updateFreight(pool, id, values) {
 }
 
 module.exports = {
+  calculatorContext,
+  calculatePriceSimulation,
   costWeightGroup,
   ensureTables,
   importProducts,
@@ -542,6 +571,7 @@ module.exports = {
   mercadoLivreRows,
   overview,
   priceReviewStatus,
+  priceSimulationStatus,
   productRows,
   publishedPrices,
   runParser,
