@@ -559,6 +559,7 @@ async function updateFreight(pool, id, values) {
 
 module.exports = {
   calculatorContext,
+  calculateMarketplace,
   calculatePriceSimulation,
   costWeightGroup,
   ensureTables,
