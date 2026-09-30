@@ -681,12 +681,22 @@ def extrair_penkal_orcamento_por_coordenadas(paginas, indices) -> list[ItemPdf]:
             bloco = texto_bloco(bloco_words)
             produto = buscar_produto(code_word["text"], bloco, indices)
             same_line = [w for w in words if abs(w["top"] - code_word["top"]) <= 2.5]
-            quantidade_word = next((w for w in same_line if 300 <= w["x0"] <= 350), None)
-            total_word = next((w for w in same_line if 515 <= w["x0"] <= 560), None)
-            quantidade = decimal_br(quantidade_word["text"]) if quantidade_word else None
-            total = decimal_br(total_word["text"]) if total_word else None
-            unitario = None
-            if quantidade and total and quantidade != 0:
+            # Depois da unidade: quantidade, preço de lista, desconto %, preço
+            # unitário líquido e total. As posições mudam entre os layouts Penkal.
+            unidade_word = next(
+                (w for w in same_line if w["x0"] > code_word["x0"] and w["text"].upper() == "UN"),
+                None,
+            )
+            valores = [
+                decimal_br(w["text"])
+                for w in sorted(same_line, key=lambda w: w["x0"])
+                if w["x0"] > (unidade_word or code_word)["x0"]
+                and re.fullmatch(r"\d+(?:\.\d{3})*(?:,\d+)?", w["text"])
+            ]
+            quantidade = valores[0] if len(valores) >= 5 else None
+            unitario = valores[3] if len(valores) >= 5 else None
+            total = valores[4] if len(valores) >= 5 else None
+            if unitario is None and quantidade and total is not None:
                 unitario = (total / quantidade).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             itens.append(
                 ItemPdf(
@@ -793,7 +803,7 @@ def overlay_pdf(input_pdf: Path, output_pdf: Path, paginas, anotacoes: list[Item
         writer.write(handle)
 
 
-def criar_excel_orcamento(output_xlsx: Path, itens: list[ItemPdf]) -> None:
+def criar_excel_orcamento(output_xlsx: Path, itens: list[ItemPdf], formulas: bool = False) -> None:
     wb = Workbook()
     ws = wb.active
     ws.title = "Orçamento"
@@ -815,9 +825,11 @@ def criar_excel_orcamento(output_xlsx: Path, itens: list[ItemPdf]) -> None:
                 decimal_excel(total_item),
             ]
         )
+        if formulas and item.quantidade is not None and item.valor_unitario is not None:
+            ws.cell(ws.max_row, 5, f"=D{ws.max_row}*C{ws.max_row}")
     total_row = ws.max_row + 1
     ws.cell(total_row, 4, "Total geral")
-    ws.cell(total_row, 5, decimal_excel(total_geral))
+    ws.cell(total_row, 5, f"=SUM(E2:E{total_row - 1})" if formulas and itens else decimal_excel(total_geral))
     for celula in ws[1]:
         celula.font = Font(bold=True, color="FFFFFF")
         celula.fill = PatternFill("solid", fgColor="1F4E78")
@@ -877,7 +889,7 @@ def processar(pdf_path: Path, fornecedor: str = "auto", tipo: str = "auto") -> d
     excel_saida = None
     if tipo_final == "orcamento":
         excel_saida = pasta_saida / f"{base_nome}_itens.xlsx"
-        criar_excel_orcamento(excel_saida, itens_excel or anotacoes)
+        criar_excel_orcamento(excel_saida, itens_excel or anotacoes, formulas=fornecedor_final == "penkal")
 
     total_itens = len(itens_excel) if tipo_final == "orcamento" and itens_excel else len(anotacoes)
     resumo = {
