@@ -3167,7 +3167,7 @@ function renderStatusPagtoOptions(selectedValue = '') {
   return `
     <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
     <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
-    <option value="DOP" ${selected === 'DOP' ? 'selected' : ''}>DOP-Desc. Operação</option>
+    <option value="DOP" ${selected === 'DOP' ? 'selected' : ''}>Desc. Operação</option>
     <option value="NAO_TEM" ${selected === 'NAO_TEM' ? 'selected' : ''}>Não tem</option>
     <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
   `;
@@ -11741,7 +11741,7 @@ function montarTextoAlertaVencimento(contas, dataParts, mesAno) {
     '',
     ...linhas,
     '',
-    'Itens já marcados como Pago, DOP-Desc. Operação ou Não tem foram ignorados automaticamente.'
+    'Itens já marcados como Pago, Desc. Operação ou Não tem foram ignorados automaticamente.'
   ].join('\n');
 }
 
@@ -13808,7 +13808,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                 <div class="status-line">E-mail: <span class="${smtpConfigurado ? 'ok' : 'warn'}">${smtpConfigurado ? 'Configurado' : 'Pendente de configuração SMTP'}</span></div>
                 <div class="status-line">WhatsApp: <span class="warn">Preparado, aguardando API/provedor</span></div>
               </div>
-              <p>O alerta ignora automaticamente contas marcadas como Pago, DOP-Desc. Operação ou Não tem.</p>
+              <p>O alerta ignora automaticamente contas marcadas como Pago, Desc. Operação ou Não tem.</p>
               <div class="actions">
                 <form method="POST" action="/alertas-vencimentos/enviar">
                   <button class="btn btn-primary" type="submit">Enviar alerta agora</button>
@@ -23571,6 +23571,12 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           border: 1px solid #fca5a5 !important;
         }
 
+        .status-select.status-pagto-DOP {
+          font-size: 9px !important;
+          padding-left: 6px;
+          padding-right: 6px;
+        }
+
         .status-pagto-NAO_TEM,
         .status-pagto-Não tem {
           background-color: #e5e7eb !important;
@@ -24835,7 +24841,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             if (normal.includes('VENCIDO')) return 1;
             if (normal.includes('A PAGAR')) return 2;
-            if (normal.includes('PAGO') || normal.startsWith('DOP')) return 3;
+            if (normal.includes('PAGO') || normal.startsWith('DOP') || normal === 'DESC. OPERACAO') return 3;
             if (normal.includes('NAO TEM')) return 4;
             return 9;
           }
