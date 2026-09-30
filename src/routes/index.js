@@ -35,6 +35,7 @@ const xml2js = require('xml2js');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
 const https = require('https');
+const { certificadoTls } = require('../services/certificado-tls');
 const zlib = require('zlib');
 const PDFDocument = require('pdfkit');
 const tabelaPrecosService = require('../tabela-precos/service');
@@ -30465,8 +30466,7 @@ function nfseHttpsGetJson(url, { certPath, certPassword }) {
     try {
       req = https.request(url, {
         method: 'GET',
-        pfx,
-        passphrase: certPassword,
+        ...certificadoTls(pfx, certPassword),
         timeout: 25000,
         headers: {
           Accept: 'application/json'
@@ -30537,8 +30537,7 @@ function nfseHttpsGetBuffer(url, { certPath, certPassword, accept = 'application
     try {
       req = https.request(url, {
         method: 'GET',
-        pfx,
-        passphrase: certPassword,
+        ...certificadoTls(pfx, certPassword),
         timeout: timeoutMs,
         headers: {
           Accept: accept,
