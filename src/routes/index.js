@@ -2774,10 +2774,11 @@ async function analisarArquivoFilaParaConciliacao(id, { lerPdf = true } = {}) {
 
   const duplicado = await pool.query(`
     SELECT id FROM arquivo_fila
-    WHERE id <> $1 AND tipo = $2 AND hash_sha256 = $3
+    WHERE id <> $1 AND tipo = $2
+      AND (hash_sha256 = $3 OR ($4 <> '' AND chave_fiscal = $4 AND id < $1))
       AND COALESCE(status, 'DISPONIVEL') <> 'EXCLUIDO'
     ORDER BY id LIMIT 1
-  `, [id, arquivo.tipo, hash]);
+  `, [id, arquivo.tipo, hash, metadados.chave || '']);
 
   const fiscal = arquivo.tipo === 'XML' || !!metadados.chave;
   const analiseStatus = duplicado.rows[0]
@@ -2861,7 +2862,7 @@ async function reprocessarArquivoFila({ limitePdf = 30, somentePendentes = true 
   const resultado = await pool.query(`
     SELECT id, tipo FROM arquivo_fila
     WHERE status = 'DISPONIVEL'
-      ${somentePendentes ? `AND analisado_em IS NULL` : ''}
+      ${somentePendentes ? `AND (analisado_em IS NULL OR (tipo = 'XML' AND origem = 'NFSE_PAULISTANA' AND COALESCE(chave_fiscal, '') = ''))` : ''}
     ORDER BY CASE WHEN tipo = 'XML' THEN 0 ELSE 1 END, id
   `);
 

@@ -250,6 +250,7 @@ async function atualizarNotaPaulistanaExistente(id, nota) {
         data_documento = $5,
         valor_documento = $6,
         metadados = COALESCE(metadados, '{}'::jsonb) || $7::jsonb,
+        chave_fiscal = COALESCE($8, chave_fiscal),
         analisado_em = NOW()
     WHERE id = $1
   `, [
@@ -264,7 +265,8 @@ async function atualizarNotaPaulistanaExistente(id, nota) {
       codigoVerificacao: nota.codigoVerificacao,
       inscricaoPrestador: nota.inscricaoPrestador,
       discriminacao: nota.discriminacao
-    })
+    }),
+    (String(nota.xml || '').match(/<(?:\w+:)?ChaveNotaNacional[^>]*>\s*(\d{50})\s*</i) || [])[1] || null
   ]);
 }
 
@@ -291,11 +293,11 @@ async function importarNotaPaulistana(nota) {
         nome_original, nome_arquivo, tipo, caminho, tamanho_bytes, status, origem,
         chave_origem, metadados, documento_classe, cnpj_cpf, fornecedor,
         numero_documento, tipo_documento_detectado, data_documento,
-        valor_documento, hash_sha256, analise_status, analisado_em
+        valor_documento, hash_sha256, analise_status, analisado_em, chave_fiscal
       ) VALUES (
         $1, $2, 'XML', $3, $4, 'DISPONIVEL', 'NFSE_PAULISTANA',
         $5, $6, 'FISCAL', $7, $8, $9, 'NFSE', $10, $11, $12,
-        'AGUARDANDO_PDF', NOW()
+        'AGUARDANDO_PDF', NOW(), $13
       )
     `, [
       `NFS-e Paulistana ${nota.numero}`,
@@ -314,7 +316,8 @@ async function importarNotaPaulistana(nota) {
       nota.numero,
       data,
       nota.valor,
-      hash
+      hash,
+      (String(nota.xml || '').match(/<(?:\w+:)?ChaveNotaNacional[^>]*>\s*(\d{50})\s*</i) || [])[1] || null
     ]);
   } catch (error) {
     try { fs.unlinkSync(caminho); } catch (unlinkError) {}
