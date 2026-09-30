@@ -3151,6 +3151,7 @@ function normalizarStatusPagto(value) {
     .replace(/\s+/g, '_');
 
   if (texto === 'PAGO') return 'PAGO';
+  if (texto === 'DOP' || texto === 'DOP-DESC._OPERACAO') return 'DOP';
   if (texto === 'VENCIDO') return 'VENCIDO';
   if (texto === 'NAO_TEM' || texto === 'NAO-TEM' || texto === 'NAOTEM') return 'NAO_TEM';
   return 'A_PAGAR';
@@ -3166,6 +3167,7 @@ function renderStatusPagtoOptions(selectedValue = '') {
   return `
     <option value="A_PAGAR" ${selected === 'A_PAGAR' ? 'selected' : ''}>À pagar</option>
     <option value="PAGO" ${selected === 'PAGO' ? 'selected' : ''}>Pago</option>
+    <option value="DOP" ${selected === 'DOP' ? 'selected' : ''}>DOP-Desc. Operação</option>
     <option value="NAO_TEM" ${selected === 'NAO_TEM' ? 'selected' : ''}>Não tem</option>
     <option value="VENCIDO" ${selected === 'VENCIDO' ? 'selected' : ''}>Vencido</option>
   `;
@@ -11698,7 +11700,7 @@ async function getContasPendentesAteODia(dataParts = getSaoPauloDateParts()) {
       ON sm.rotina_id = r.id
      AND sm.mes_ano = $1
     WHERE COALESCE(sm.ativo, r.ativo, true) = true
-      AND UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) NOT IN ('PAGO', 'NAO_TEM', 'NAOTEM')
+      AND UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) NOT IN ('PAGO', 'DOP', 'NAO_TEM', 'NAOTEM')
       AND COALESCE(
         NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int,
         EXTRACT(DAY FROM r.data_vencimento)::int
@@ -11739,7 +11741,7 @@ function montarTextoAlertaVencimento(contas, dataParts, mesAno) {
     '',
     ...linhas,
     '',
-    'Itens já marcados como Pago ou Não tem foram ignorados automaticamente.'
+    'Itens já marcados como Pago, DOP-Desc. Operação ou Não tem foram ignorados automaticamente.'
   ].join('\n');
 }
 
@@ -13806,7 +13808,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                 <div class="status-line">E-mail: <span class="${smtpConfigurado ? 'ok' : 'warn'}">${smtpConfigurado ? 'Configurado' : 'Pendente de configuração SMTP'}</span></div>
                 <div class="status-line">WhatsApp: <span class="warn">Preparado, aguardando API/provedor</span></div>
               </div>
-              <p>O alerta ignora automaticamente contas marcadas como Pago ou Não tem.</p>
+              <p>O alerta ignora automaticamente contas marcadas como Pago, DOP-Desc. Operação ou Não tem.</p>
               <div class="actions">
                 <form method="POST" action="/alertas-vencimentos/enviar">
                   <button class="btn btn-primary" type="submit">Enviar alerta agora</button>
@@ -23200,7 +23202,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         CASE
           WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('VENCIDO') THEN 1
           WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('A_PAGAR') THEN 2
-          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('PAGO') THEN 3
+          WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('PAGO', 'DOP') THEN 3
           WHEN UPPER(translate(COALESCE(sm.status_pagto, 'A_PAGAR'), 'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ', 'AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) IN ('NAO_TEM', 'NAO_TEM') THEN 4
           ELSE 5
         END,
@@ -23556,7 +23558,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           border: 1px solid #93c5fd !important;
         }
 
-        .status-pagto-PAGO {
+        .status-pagto-PAGO,
+        .status-pagto-DOP {
           background-color: #dcfce7 !important;
           color: #166534 !important;
           border: 1px solid #86efac !important;
@@ -24832,7 +24835,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
             if (normal.includes('VENCIDO')) return 1;
             if (normal.includes('A PAGAR')) return 2;
-            if (normal.includes('PAGO')) return 3;
+            if (normal.includes('PAGO') || normal.startsWith('DOP')) return 3;
             if (normal.includes('NAO TEM')) return 4;
             return 9;
           }
@@ -24875,6 +24878,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             'status-N/A',
             'status-pagto-A_PAGAR',
             'status-pagto-PAGO',
+            'status-pagto-DOP',
             'status-pagto-NAO_TEM',
             'status-pagto-VENCIDO',
             'status-ativo-SIM',
