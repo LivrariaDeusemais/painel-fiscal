@@ -438,7 +438,7 @@ async function marketplaceRows(pool, filters = {}) {
     ), v AS (
       SELECT l.*, COALESCE(l.sku, c.sku) AS produto_sku,
              COALESCE(l.marketplace, c.marketplace) AS canal,
-             l.id IS NULL AS sem_vinculo
+             (l.id IS NULL OR COALESCE(l.dados->>'preco_manual_sem_vinculo', 'false') = 'true') AS sem_vinculo
       FROM canais c
       FULL JOIN tabela_preco_vinculos l ON l.sku = c.sku AND l.marketplace = c.marketplace
     )
@@ -461,7 +461,7 @@ async function marketplaceRows(pool, filters = {}) {
     };
   });
   return standardizeEqualProducts(calculated, dynamicRules).map(item => {
-    const published = item.row.sem_vinculo
+    const published = item.row.sem_vinculo && !(Number(item.row.preco_promocional) > 0)
       ? { grossPrice: null, discount: null, liquidPrice: null }
       : publishedPrices(item.row, item.rule);
     return {
@@ -499,6 +499,48 @@ async function calculatorContext(pool, marketplace, sku) {
     link,
     published: link && rule ? publishedPrices(link, rule) : null
   };
+}
+
+async function saveCalculatorPrice(pool, marketplace, sku, price) {
+  if (!Number.isFinite(price) || price <= 0 || price > 99999999999) {
+    throw new Error('Informe um preço válido maior que zero.');
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const product = (await client.query(
+      'SELECT sku, nome FROM tabela_preco_produtos WHERE UPPER(sku) = UPPER($1) FOR UPDATE', [String(sku).trim()]
+    )).rows[0];
+    if (!product) throw new Error('Selecione um SKU cadastrado para salvar o preço.');
+    const rule = (await client.query(
+      "SELECT desconto FROM tabela_preco_regras WHERE marketplace = $1 AND ativo = TRUE AND marketplace <> 'Bling'", [marketplace]
+    )).rows[0];
+    if (!rule) throw new Error('Selecione um marketplace com regra ativa.');
+    const link = (await client.query(
+      'SELECT * FROM tabela_preco_vinculos WHERE marketplace = $1 AND sku = $2 ORDER BY id LIMIT 1 FOR UPDATE', [marketplace, product.sku]
+    )).rows[0];
+    const liquid = Math.round(price * 100) / 100;
+    if (!(liquid > 0)) throw new Error('Informe um preço de pelo menos R$ 0,01.');
+    const discount = Math.max(0, Math.min(0.99, Number(rule.desconto) || 0));
+    const gross = Math.max(liquid, Number(link?.preco_atual) || liquid / (1 - discount));
+    if (gross > 99999999999) throw new Error('Preço acima do limite permitido.');
+    const data = { ...(link?.dados || {}), Preco: gross, 'Preco Promocional': liquid };
+    if (link) {
+      await client.query('UPDATE tabela_preco_vinculos SET preco_atual = $1, preco_promocional = $2, dados = $3::jsonb WHERE id = $4',
+        [gross, liquid, JSON.stringify(data), link.id]);
+    } else {
+      data.preco_manual_sem_vinculo = true;
+      await client.query(`INSERT INTO tabela_preco_vinculos (marketplace, sku, nome, preco_atual, preco_promocional, dados)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb)`, [marketplace, product.sku, product.nome, gross, liquid, JSON.stringify(data)]);
+    }
+    await client.query('COMMIT');
+    return liquid;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 function priceReviewStatus(validationStatus, calculationStatus, difference) {
@@ -574,6 +616,7 @@ async function updateFreight(pool, id, values) {
 
 module.exports = {
   calculatorContext,
+  saveCalculatorPrice,
   calculateMarketplace,
   calculatePriceSimulation,
   costWeightGroup,

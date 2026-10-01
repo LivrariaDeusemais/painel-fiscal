@@ -237,3 +237,51 @@ test('calculadora usa custo e peso do cadastro mesmo sem anúncio', async () => 
   assert.equal(context.published, null);
   assert.equal(context.rule.marketplace, 'Mercado Livre');
 });
+
+test('salva preço líquido manual preservando anúncio, bruto e dados do vínculo', async () => {
+  const { saveCalculatorPrice, publishedPrices } = require('../src/tabela-precos/service');
+  const calls = [];
+  const client = { release() {}, query: async (sql, args) => {
+    calls.push({ sql, args });
+    if (sql.includes('FROM tabela_preco_produtos')) return { rows: [{ sku: 'B1103', nome: 'Bíblia' }] };
+    if (sql.includes('FROM tabela_preco_regras')) return { rows: [{ desconto: 0.3 }] };
+    if (sql.includes('FROM tabela_preco_vinculos')) return { rows: [{ id: 7, preco_atual: 439.8571, dados: { 'ID na Loja': 'MLB1', Nome: 'Bíblia' } }] };
+    return { rows: [] };
+  } };
+  await saveCalculatorPrice({ connect: async () => client }, 'Mercado Livre', 'B1103', 299.9);
+  const update = calls.find(c => c.sql.startsWith('UPDATE'));
+  assert.equal(update.args[0], 439.8571);
+  assert.equal(update.args[1], 299.9);
+  assert.equal(update.args[3], 7);
+  assert.equal(JSON.parse(update.args[2])['ID na Loja'], 'MLB1');
+  assert.equal(publishedPrices({ preco_atual: update.args[0], preco_promocional: update.args[1] }, { discount: 0.3 }).liquidPrice, 299.9);
+  assert.equal(calls.at(-1).sql, 'COMMIT');
+});
+
+test('salva preço para produto sem anúncio sem criar identificador de marketplace', async () => {
+  const { saveCalculatorPrice } = require('../src/tabela-precos/service');
+  const calls = [];
+  const client = { release() {}, query: async (sql, args) => {
+    calls.push({ sql, args });
+    if (sql.includes('FROM tabela_preco_produtos')) return { rows: [{ sku: 'L1368', nome: 'Livro' }] };
+    if (sql.includes('FROM tabela_preco_regras')) return { rows: [{ desconto: 0.3 }] };
+    return { rows: [] };
+  } };
+  await saveCalculatorPrice({ connect: async () => client }, 'Mercado Livre', 'L1368', 15.9);
+  const insert = calls.find(c => c.sql.startsWith('INSERT'));
+  assert.equal(insert.args[4], 15.9);
+  assert.equal(JSON.parse(insert.args[5]).preco_manual_sem_vinculo, true);
+  assert.equal(JSON.parse(insert.args[5])['ID na Loja'], undefined);
+  assert.equal(calls.at(-1).sql, 'COMMIT');
+});
+
+test('rejeita preço manual inválido antes de gravar e desfaz tentativa sem cadastro', async () => {
+  const { saveCalculatorPrice } = require('../src/tabela-precos/service');
+  for (const price of [0, -1, NaN, Infinity]) {
+    await assert.rejects(saveCalculatorPrice({}, 'Mercado Livre', 'X', price), /preço válido/);
+  }
+  const calls = [];
+  const client = { release() {}, query: async sql => { calls.push(sql); return { rows: [] }; } };
+  await assert.rejects(saveCalculatorPrice({ connect: async () => client }, 'Mercado Livre', 'X', 10), /SKU cadastrado/);
+  assert.equal(calls.at(-1), 'ROLLBACK');
+});
