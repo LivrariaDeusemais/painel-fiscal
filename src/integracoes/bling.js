@@ -185,7 +185,7 @@ async function startSync(pool) {
     // All progress is persisted; the HTTP response can return while the work continues.
     runSync(pool, client, job.id, settings.configuracao).catch(() => {}).finally(async () => {
       try { await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))"); } finally { client.release(); }
-    });
+    }).catch(() => {});
     return job.id;
   } catch (error) {
     if (locked) await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))");
