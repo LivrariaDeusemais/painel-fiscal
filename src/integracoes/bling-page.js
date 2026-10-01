@@ -20,9 +20,15 @@ function render(model, feedback) {
   <form method="post" action="${ROOT}/configuracao"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><label>Depósito Matriz${select('matriz',settings.matriz,'Selecione a Matriz')}</label>
   ${model.marketplaces.map((m,i)=>`<label>Full ${escape(m)}${select('full_'+i,settings.full?.[m],'Sem Full (0)')}</label>`).join('')}
   <button class="bling-btn" ${!model.depositos?.length||active?'disabled':''}>Salvar depósitos</button></form></section>
+  <section class="bling-card"><h2>Preços brutos por marketplace</h2><p>Selecione a loja do Bling correspondente a cada marketplace. A consulta atualiza os preços brutos e preserva os preços líquidos. O Mercado Livre consulta os anúncios publicados pelo código MLB. A importação por planilha continua disponível durante a validação.</p><p>Se o Bling negar a consulta, revise as permissões de consulta de Canais de Venda, Produtos/Lojas e Anúncios no aplicativo e reconecte a conta.</p>
+  <form method="post" action="${ROOT}/lojas"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><button class="bling-btn" ${!model.conectado||active?'disabled':''}>Consultar lojas do Bling</button></form>
+  <form method="post" action="${ROOT}/lojas/configuracao"><input type="hidden" name="csrf" value="${escape(model.csrf)}">
+  ${model.marketplaces.map((m,i)=>`<label>${escape(m)}<select name="loja_${i}"><option value="">Não consultar por integração</option>${(model.lojas || []).map(loja=>`<option value="${escape(loja.id)}" ${String(settings.lojas?.[m])===String(loja.id)?'selected':''}>${escape(loja.descricao)} (${escape(loja.tipo || '')})</option>`).join('')}</select></label>`).join('')}
+  <button class="bling-btn" ${!model.lojas?.length||active?'disabled':''}>Salvar lojas</button></form>
+  <p>Se uma consulta falhar ou não identificar o anúncio, os dados anteriores permanecem. O envio dos novos preços ao Bling continua pelo arquivo exportado da tabela.</p></section>
   <section class="bling-card"><h2>Atualizar dados</h2><div class="bling-note"><strong>Custo: Preço de custo do fornecedor padrão no Bling.</strong><p>A atualização usa somente o fornecedor marcado como padrão de cada produto. Custos ausentes, zerados ou inválidos e cadastros com mais de um padrão preservam o custo anterior e geram uma pendência. O preço de compra e fornecedores antigos não são usados como substitutos.</p></div>
-  <form method="post" action="${ROOT}/atualizar"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><div class="bling-actions"><button class="bling-btn" ${!model.conectado||!settings.matriz||active?'disabled':''}>${active?'Atualização em andamento':'Atualizar cadastro, custos e estoques'}</button><a href="${ROOT}">Consultar andamento</a></div></form>
-  <p>Os vínculos e os preços líquidos informados permanecem preservados. Os custos válidos do fornecedor padrão atualizam a tabela e as calculadoras. Falhas mantêm os últimos saldos conhecidos, com sua data de atualização.</p>
+  <form method="post" action="${ROOT}/atualizar"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><div class="bling-actions"><button class="bling-btn" ${!model.conectado||!settings.matriz||active?'disabled':''}>${active?'Atualização em andamento':'Atualizar cadastro, custos, estoques e preços brutos'}</button><a href="${ROOT}">Consultar andamento</a></div></form>
+  <p>Os preços brutos dos vínculos são consultados nas lojas configuradas. Os preços líquidos informados permanecem preservados. Os custos válidos do fornecedor padrão atualizam a tabela e as calculadoras. Falhas mantêm os últimos saldos conhecidos, com sua data de atualização.</p>
   <div class="bling-scroll"><table><thead><tr><th>Início</th><th>Status</th><th>Andamento</th><th>Resultado</th></tr></thead><tbody>${jobs || '<tr><td colspan="4">Nenhuma atualização iniciada.</td></tr>'}</tbody></table></div></section></div>${active?'<script>setTimeout(()=>location.reload(),5000)</script>':''}`;
 }
 function createRouter(pool, renderShell) {
@@ -64,6 +70,8 @@ function createRouter(pool, renderShell) {
     catch(error){req.session.blingFeedback={ok:false,message:error.message};}
     res.redirect(ROOT);
   });
+  action('/lojas',async()=>{await service.loadStores(pool);return 'Lojas consultadas. Selecione a loja de cada marketplace.';});
+  action('/lojas/configuracao',async req=>{const model=await service.state(pool);await service.saveStores(pool,Object.fromEntries(model.marketplaces.map((m,i)=>[m,String(req.body['loja_'+i] || '')]).filter(([,value])=>value)));return 'Lojas salvas. A próxima atualização consultará os preços brutos.';});
   action('/depositos',async()=>{await service.loadDeposits(pool);return 'Depósitos consultados. Selecione a Matriz e o Full de cada canal.';});
   action('/configuracao',async req=>{
     const model=await service.state(pool);

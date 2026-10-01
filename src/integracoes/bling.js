@@ -45,6 +45,7 @@ async function ensureTables(pool) {
     total INTEGER NOT NULL DEFAULT 0, falhas INTEGER NOT NULL DEFAULT 0, mensagem TEXT,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(), atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(), finalizado_em TIMESTAMPTZ
   )`);
+  await pool.query(`ALTER TABLE bling_integracao ADD COLUMN IF NOT EXISTS lojas JSONB NOT NULL DEFAULT '[]'`);
 }
 async function requestToken(params) {
   const c = config();
@@ -89,7 +90,7 @@ async function accessToken(pool) {
 class BlingClient {
   constructor(pool, transport = fetch, sleep = delay) { this.pool = pool; this.transport = transport; this.sleep = sleep; this.lastRequest = 0; }
   async get(path, params = {}) {
-    if (!/^\/(produtos(?:\/\d+|\/fornecedores)?|estoques\/saldos|depositos)$/.test(path)) throw new Error('Consulta Bling não permitida.');
+    if (!/^\/(produtos(?:\/\d+|\/fornecedores|\/lojas)?|anuncios(?:\/\d+)?|canais-venda|estoques\/saldos|depositos)$/.test(path)) throw new Error('Consulta Bling não permitida.');
     const url = new URL(API + path);
     for (const [key, value] of Object.entries(params)) {
       for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, item);
@@ -157,7 +158,7 @@ async function state(pool) {
     }
   } finally { client.release(); }
   const [result, jobs, rules] = await Promise.all([
-    pool.query('SELECT configuracao, depositos, conectado_em, ultima_sincronizacao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1'),
+    pool.query('SELECT configuracao, depositos, lojas, conectado_em, ultima_sincronizacao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1'),
     pool.query('SELECT * FROM bling_sincronizacoes ORDER BY id DESC LIMIT 5'),
     pool.query("SELECT marketplace FROM tabela_preco_regras WHERE marketplace <> 'Bling' ORDER BY marketplace")
   ]);
@@ -173,11 +174,53 @@ async function saveSettings(pool, input) {
     if (!available.has(String(id)) || String(id) === String(input.matriz)) throw new Error('Selecione um depósito Full diferente da Matriz.');
     full[marketplace] = String(id);
   }
-  await pool.query('UPDATE bling_integracao SET configuracao=$1::jsonb WHERE id=1', [JSON.stringify({ matriz: String(input.matriz), full })]);
+  await pool.query('UPDATE bling_integracao SET configuracao=$1::jsonb WHERE id=1', [JSON.stringify({ ...((await pool.query('SELECT configuracao FROM bling_integracao WHERE id=1')).rows[0]?.configuracao || {}), matriz: String(input.matriz), full })]);
 }
 async function loadDeposits(pool) {
   const deposits = await new BlingClient(pool).all('/depositos', { situacao: 1 });
   await pool.query('UPDATE bling_integracao SET depositos=$1::jsonb WHERE id=1', [JSON.stringify(deposits)]);
+}
+async function loadStores(pool) {
+  const stores = await new BlingClient(pool).all('/canais-venda');
+  await pool.query('UPDATE bling_integracao SET lojas=$1::jsonb WHERE id=1', [JSON.stringify(stores)]);
+}
+async function saveStores(pool, stores) {
+  const model = (await pool.query('SELECT lojas,configuracao FROM bling_integracao WHERE id=1')).rows[0];
+  const available = new Set((model.lojas || []).map(row => String(row.id)));
+  const used = new Set();
+  for (const value of Object.values(stores)) {
+    if (!available.has(value) || used.has(value)) throw new Error('Escolha uma loja válida e diferente para cada marketplace.');
+    used.add(value);
+  }
+  await pool.query('UPDATE bling_integracao SET configuracao=$1::jsonb WHERE id=1', [JSON.stringify({...model.configuracao,lojas:stores})]);
+}
+function grossLink(row, product, storeId, isAd = false) {
+  const code = String(isAd ? row.anuncioLoja?.id || '' : row.codigo || '').trim();
+  const price = isAd ? row.preco?.valor : row.preco;
+  if (!code || (typeof price !== 'number' && typeof price !== 'string') || String(price).trim()==='' || !Number.isFinite(Number(price)) || Number(price)<=0) throw new Error('Anúncio sem identificação ou preço bruto válido.');
+  if (String(row.produto?.id)!==product.id) throw new Error('Produto do vínculo divergente.');
+  return {sku:product.sku,product_id:product.id,store_id:code,name:product.name,current_price:Number(price),raw:{bling_loja_id:String(storeId),bling_vinculo_id:String(row.id || ''),bruto_origem:'Bling',bruto_bling_em:new Date().toISOString()}};
+}
+async function saveGrossLinks(pool, marketplace, links) {
+  if (!links.length) return 0;
+  const db = await pool.connect();
+  try {
+    await db.query('BEGIN');
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',[`tabela-precos-vinculos:${marketplace}`]);
+    const existing = (await db.query('SELECT id,id_loja,id_produto,sku FROM tabela_preco_vinculos WHERE marketplace=$1 FOR UPDATE',[marketplace])).rows;
+    const plan = pricing.planLinkImport(existing,links);
+    for (const row of plan.updates) {
+      const target = existing.find(item=>item.id===row.id);
+      if (target.sku.toUpperCase()!==row.sku.toUpperCase() || (target.id_produto && String(target.id_produto)!==row.product_id)) throw new Error('Vínculo '+row.store_id+' pertence a outro produto. Dados preservados.');
+      await db.query(`UPDATE tabela_preco_vinculos SET preco_atual=$2,id_produto=$3,id_loja=$4,
+        dados=dados || $5::jsonb,importado_em=NOW() WHERE id=$1`,[row.id,row.current_price,row.product_id,row.store_id,JSON.stringify(row.raw)]);
+    }
+    for (const row of plan.inserts) await db.query(`INSERT INTO tabela_preco_vinculos(marketplace,sku,id_produto,id_loja,nome,preco_atual,dados)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)`,[marketplace,row.sku,row.product_id,row.store_id,row.name,row.current_price,JSON.stringify(row.raw)]);
+    await db.query('COMMIT');
+    return links.length;
+  } catch(error) { await db.query('ROLLBACK');throw error; }
+  finally { db.release(); }
 }
 async function startSync(pool) {
   await ensureTables(pool);
@@ -202,7 +245,7 @@ async function startSync(pool) {
   }
 }
 async function runSync(pool, client, id, settings, api = new BlingClient(pool)) {
-  let processed = 0, failures = 0, costsUpdated = 0;
+  let processed = 0, failures = 0, costsUpdated = 0, grossUpdated = 0;
   const issues = [];
   const progress = async (stage, total = null) => client.query(`UPDATE bling_sincronizacoes SET etapa=$2,processados=$3,falhas=$4,total=COALESCE($5,total),atualizado_em=NOW() WHERE id=$1`, [id, stage, processed, failures, total]);
   try {
@@ -274,11 +317,30 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
       }
       await progress('Atualizando saldos por depósito');
     }
+    const productsById = new Map(valid.map(p=>[p.id,p]));
+    for (const [marketplace,storeId] of Object.entries(settings.lojas || {})) {
+      await progress('Consultando preços brutos: '+marketplace);
+      try {
+        const isML = marketplace === 'Mercado Livre';
+        const rows = await api.all(isML ? '/anuncios' : '/produtos/lojas', isML ? {idLoja:storeId,tipoIntegracao:'MercadoLivre',situacao:1} : {idLoja:storeId});
+        const links = [];
+        for (const source of rows) {
+          const row = isML ? await api.get('/anuncios/'+source.id,{idLoja:storeId,tipoIntegracao:'MercadoLivre'}) : source;
+          if (!isML && String(row.loja?.id)!==String(storeId)) throw new Error('Loja do vínculo divergente.');
+          const product = productsById.get(String(row.produto?.id));
+          if (!product) { failures++;issues.push(marketplace+': produto '+String(row.produto?.id || '?')+' não identificado; vínculo preservado.');continue; }
+          try { links.push(grossLink(row,product,storeId,isML)); }
+          catch(error) { failures++;issues.push(marketplace+' '+product.sku+': '+error.message); }
+        }
+        grossUpdated += await saveGrossLinks(pool,marketplace,links);
+        if (!rows.length) { failures++;issues.push(marketplace+': nenhum vínculo retornado; dados anteriores preservados.'); }
+      } catch(error) { failures++;issues.push(marketplace+': '+error.message); }
+    }
     await client.query('UPDATE bling_integracao SET ultima_sincronizacao=NOW() WHERE id=1');
     await client.query(`UPDATE bling_sincronizacoes SET status=$2,etapa='Concluído',falhas=$3,mensagem=$4,finalizado_em=NOW(),atualizado_em=NOW() WHERE id=$1`,
-    [id,failures?'parcial':'concluida',failures, `${valid.length} produtos consultados. ${issues.slice(0,10).join('; ')}. ${costsUpdated} custos atualizados pelo fornecedor padrão. Preços dos vínculos preservados. ${failures} pendência(s).${stockIssues.length ? ' Saldos não atualizados: '+stockIssues.slice(0,20).join(', ') : ''}`]);
+    [id,failures?'parcial':'concluida',failures, `${valid.length} produtos consultados. ${issues.slice(0,10).join('; ')}. ${costsUpdated} custos atualizados pelo fornecedor padrão. ${grossUpdated} preços brutos atualizados. Preços líquidos preservados.${Object.keys(settings.lojas || {}).length ? "" : " Configure as lojas para consultar preços brutos."} ${failures} pendência(s).${stockIssues.length ? ' Saldos não atualizados: '+stockIssues.slice(0,20).join(', ') : ''}`]);
   } catch(error) {
     await client.query("UPDATE bling_sincronizacoes SET status='falhou', mensagem=$2,finalizado_em=NOW(),atualizado_em=NOW() WHERE id=$1", [id,error.message]);
   }
 }
-module.exports = { ensureTables, state, connect, loadDeposits, saveSettings, startSync, config, normalizedProduct, defaultSupplierCost, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };
+module.exports = { ensureTables, state, connect, loadDeposits, loadStores, saveStores, grossLink, saveGrossLinks, saveSettings, startSync, config, normalizedProduct, defaultSupplierCost, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };

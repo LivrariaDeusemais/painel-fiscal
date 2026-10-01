@@ -67,3 +67,28 @@ test('falha na consulta de fornecedores preserva custo e ainda atualiza estoque'
   assert.equal(calls.find(c=>c.sql.includes('SET estoque=')).args[1],80);
   assert.equal(calls.at(-1).args[1],'parcial');
 });
+
+test('preço bruto por loja e anúncio ignora o promocional',()=>{
+  const {grossLink}=require('../src/integracoes/bling');
+  const p={id:'123',sku:'B1103',name:'Bíblia'};
+  assert.equal(grossLink({id:5,produto:{id:123},codigo:'ALI123',preco:325.57,precoPromocional:200},p,'8').current_price,325.57);
+  const ml=grossLink({id:9,produto:{id:123},anuncioLoja:{id:'MLB123'},preco:{valor:439.86,promocional:299.90}},p,'10',true);
+  assert.equal(ml.current_price,439.86);assert.equal(ml.store_id,'MLB123');
+  assert.equal(ml.promotional_price,undefined);
+  assert.throws(()=>grossLink({produto:{id:321},codigo:'X',preco:10},p,'8'),/divergente/);
+});
+test('atualiza somente bruto do anúncio exato preservando dados de líquido',async()=>{
+  const {saveGrossLinks}=require('../src/integracoes/bling');const calls=[];
+  const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:sql.startsWith('SELECT id,')?[{id:1,sku:'B1103',id_loja:'MLB1',id_produto:'123'},{id:2,sku:'B1103',id_loja:'MLB2',id_produto:'123'}]:[]};},release(){}};
+  await saveGrossLinks({connect:async()=>db},'Mercado Livre',[{sku:'B1103',product_id:'123',store_id:'MLB2',current_price:450,raw:{bruto_origem:'Bling'}}]);
+  const update=calls.find(c=>c.sql.startsWith('UPDATE tabela_preco_vinculos'));
+  assert.equal(update.args[0],2);assert.equal(update.args[1],450);
+  assert.doesNotMatch(update.sql,/preco_promocional\s*=|preco_liquido_manual/);
+  assert.equal(calls.at(-1).sql,'COMMIT');
+});
+test('associação de anúncio a outro produto interrompe gravação',async()=>{
+  const {saveGrossLinks}=require('../src/integracoes/bling');const calls=[];
+  const db={query:async sql=>{calls.push(sql);return {rows:sql.startsWith('SELECT id,')?[{id:1,sku:'OUTRO',id_loja:'MLB1',id_produto:'999'}]:[]};},release(){}};
+  await assert.rejects(saveGrossLinks({connect:async()=>db},'Mercado Livre',[{sku:'B1103',product_id:'123',store_id:'MLB1',current_price:450}]),/outro produto/);
+  assert.equal(calls.at(-1),'ROLLBACK');assert.equal(calls.some(sql=>sql.startsWith('UPDATE tabela_preco_vinculos')),false);
+});
