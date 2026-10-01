@@ -285,3 +285,56 @@ test('rejeita preço manual inválido antes de gravar e desfaz tentativa sem cad
   await assert.rejects(saveCalculatorPrice({ connect: async () => client }, 'Mercado Livre', 'X', 10), /SKU cadastrado/);
   assert.equal(calls.at(-1), 'ROLLBACK');
 });
+
+test('importação de um anúncio atualiza somente seu vínculo e permite novo anúncio do mesmo SKU', () => {
+  const { planLinkImport } = require('../src/tabela-precos/service');
+  const existing = [
+    { id: '1', sku: 'A', id_loja: 'MLB1', id_produto: '10' },
+    { id: '2', sku: 'B', id_loja: 'MLB2', id_produto: '20' },
+    { id: '3', sku: 'A', id_loja: 'MLB3', id_produto: '10' }
+  ];
+  const plan = planLinkImport(existing, [{ sku: 'A', store_id: 'MLB1', current_price: 99 }]);
+  assert.deepEqual(plan.updates.map(row => row.id), ['1']);
+  assert.equal(plan.updates[0].current_price, 99);
+  assert.equal(plan.inserts.length, 0);
+  const next = planLinkImport(existing, [{ sku: 'A', store_id: 'MLB4', product_id: '10' }]);
+  assert.equal(next.updates.length, 0);
+  assert.equal(next.inserts.length, 1);
+});
+
+test('importação por SKU preserva identificadores ausentes no arquivo e promove registro manual a vínculo', () => {
+  const { planLinkImport } = require('../src/tabela-precos/service');
+  const plan = planLinkImport([{ id: '1', sku: 'A', id_loja: 'MLB1', id_produto: '10' }], [{ sku: 'A', store_id: '', product_id: '', raw: {} }]);
+  assert.equal(plan.updates[0].store_id, 'MLB1');
+  assert.equal(plan.updates[0].product_id, '10');
+  assert.equal(plan.updates[0].raw['ID na Loja'], 'MLB1');
+  const manual = planLinkImport([{ id: '2', sku: 'L1368', id_loja: null }], [{ sku: 'L1368', store_id: 'MLB5', raw: {} }]);
+  assert.equal(manual.updates[0].id, '2');
+  assert.equal(manual.updates[0].store_id, 'MLB5');
+  assert.equal(manual.updates[0].raw.preco_manual_sem_vinculo, undefined);
+});
+
+test('importação rejeita SKU ambíguo e linhas repetidas sem alterar vínculos', () => {
+  const { planLinkImport } = require('../src/tabela-precos/service');
+  const existing = [{ id: '1', sku: 'A', id_loja: 'MLB1' }, { id: '2', sku: 'A', id_loja: 'MLB2' }];
+  assert.throws(() => planLinkImport(existing, [{ sku: 'A' }]), /Mais de um vínculo/);
+  assert.throws(() => planLinkImport([], [{ sku: 'A', store_id: 'MLB1' }, { sku: 'A', store_id: 'MLB1' }]), /repetido/);
+});
+
+test('importa lote misto com atualização e inclusão sem apagar os demais vínculos', async () => {
+  const { importLinks } = require('../src/tabela-precos/service');
+  const calls = [];
+  const client = { release() {}, query: async (sql, args) => {
+    calls.push({ sql, args });
+    return { rows: sql.startsWith('SELECT id,') ? [{ id: '1', sku: 'A', id_loja: 'MLB1' }, { id: '2', sku: 'B', id_loja: 'MLB2' }] : [] };
+  } };
+  const result = await importLinks({ connect: async () => client }, 'Mercado Livre', [
+    { sku: 'A', store_id: 'MLB1', current_price: 99, raw: {} },
+    { sku: 'C', store_id: 'MLB3', current_price: 29, raw: {} }
+  ]);
+  assert.deepEqual(result, { updated: 1, inserted: 1 });
+  assert.equal(calls.some(c => /DELETE/.test(c.sql)), false);
+  const update = calls.find(c => c.sql.includes('UPDATE tabela_preco_vinculos'));
+  assert.deepEqual(JSON.parse(update.args[1]).map(row => row.id), ['1']);
+  assert.equal(calls.at(-1).sql, 'COMMIT');
+});

@@ -309,12 +309,70 @@ async function updateProductStatuses(pool, skus, status) {
   return result.rowCount;
 }
 
+function planLinkImport(existing, links) {
+  const clean = value => String(value || '').trim();
+  const byStore = new Map();
+  const bySku = new Map();
+  for (const row of existing) {
+    const store = clean(row.id_loja);
+    const sku = clean(row.sku).toUpperCase();
+    if (store) byStore.set(store, [...(byStore.get(store) || []), row]);
+    bySku.set(sku, [...(bySku.get(sku) || []), row]);
+  }
+  const seen = new Set();
+  const matched = new Set();
+  const updates = [];
+  const inserts = [];
+  for (const source of links) {
+    const link = { ...source, sku: clean(source.sku), store_id: clean(source.store_id), product_id: clean(source.product_id) };
+    if (!link.sku) throw new Error('Todos os itens devem informar o Código (SKU).');
+    const key = link.store_id ? `anuncio:${link.store_id}` : `sku:${link.sku.toUpperCase()}`;
+    if (seen.has(key)) throw new Error(`Item repetido na planilha: ${link.store_id || link.sku}.`);
+    seen.add(key);
+    const skuRows = bySku.get(link.sku.toUpperCase()) || [];
+    let candidates;
+    if (link.store_id) {
+      candidates = byStore.get(link.store_id) || skuRows.filter(row => !clean(row.id_loja));
+    } else {
+      const productRows = link.product_id ? skuRows.filter(row => clean(row.id_produto) === link.product_id) : [];
+      candidates = productRows.length ? productRows : skuRows;
+    }
+    if (candidates.length > 1) throw new Error(`Mais de um vínculo corresponde ao SKU ${link.sku}. Informe o ID na Loja para identificar o anúncio.`);
+    const target = candidates[0];
+    if (target) {
+      if (matched.has(target.id)) throw new Error(`Duas linhas correspondem ao mesmo vínculo do SKU ${link.sku}.`);
+      matched.add(target.id);
+      const productId = link.product_id || clean(target.id_produto);
+      const storeId = link.store_id || clean(target.id_loja);
+      updates.push({ ...link, product_id: productId, store_id: storeId, id: target.id,
+        raw: { ...(link.raw || {}), IdProduto: productId, 'ID na Loja': storeId } });
+    } else {
+      inserts.push(link);
+    }
+  }
+  return { updates, inserts };
+}
+
 async function importLinks(pool, marketplace, links) {
+  if (!Array.isArray(links) || !links.length) throw new Error('Nenhum vínculo foi encontrado na planilha.');
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('DELETE FROM tabela_preco_vinculos WHERE marketplace = $1', [marketplace]);
-    await client.query(`
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`tabela-precos-vinculos:${marketplace}`]);
+    const existing = await client.query('SELECT id, id_loja, id_produto, sku FROM tabela_preco_vinculos WHERE marketplace = $1 FOR UPDATE', [marketplace]);
+    const { updates, inserts } = planLinkImport(existing.rows, links);
+    if (updates.length) await client.query(`
+      UPDATE tabela_preco_vinculos v SET id_produto = item.product_id, id_loja = item.store_id,
+        sku = item.sku, nome = item.name, preco_atual = item.current_price,
+        preco_promocional = item.promotional_price, dados = item.raw,
+        importado_em = NOW(), confirmado_em = NULL, confirmado_por = NULL
+      FROM jsonb_to_recordset($2::jsonb) AS item(
+        id BIGINT, product_id TEXT, store_id TEXT, sku TEXT, name TEXT,
+        current_price NUMERIC, promotional_price NUMERIC, raw JSONB
+      )
+      WHERE v.marketplace = $1 AND v.id = item.id
+    `, [marketplace, JSON.stringify(updates)]);
+    if (inserts.length) await client.query(`
       INSERT INTO tabela_preco_vinculos
         (marketplace, id_produto, id_loja, sku, nome, preco_atual, preco_promocional, dados)
       SELECT $1, product_id, store_id, sku, name, current_price, promotional_price, raw
@@ -322,8 +380,9 @@ async function importLinks(pool, marketplace, links) {
         product_id TEXT, store_id TEXT, sku TEXT, name TEXT,
         current_price NUMERIC, promotional_price NUMERIC, raw JSONB
       )
-    `, [marketplace, JSON.stringify(links)]);
+    `, [marketplace, JSON.stringify(inserts)]);
     await client.query('COMMIT');
+    return { updated: updates.length, inserted: inserts.length };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -508,6 +567,7 @@ async function saveCalculatorPrice(pool, marketplace, sku, price) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`tabela-precos-vinculos:${marketplace}`]);
     const product = (await client.query(
       'SELECT sku, nome FROM tabela_preco_produtos WHERE UPPER(sku) = UPPER($1) FOR UPDATE', [String(sku).trim()]
     )).rows[0];
@@ -623,6 +683,7 @@ module.exports = {
   ensureTables,
   importProducts,
   importLinks,
+  planLinkImport,
   freightRules,
   marketplaceCsv,
   marketplaceRows,
