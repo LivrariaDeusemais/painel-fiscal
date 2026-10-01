@@ -418,11 +418,11 @@ async function marketplaceRows(pool, filters = {}) {
   const conditions = [];
   if (filters.marketplace) {
     values.push(filters.marketplace);
-    conditions.push(`v.marketplace = $${values.length}`);
+    conditions.push(`v.canal = $${values.length}`);
   }
   if (filters.search) {
     values.push(`%${String(filters.search).trim()}%`);
-    conditions.push(`(v.sku ILIKE $${values.length} OR p.nome ILIKE $${values.length} OR v.nome ILIKE $${values.length})`);
+    conditions.push(`(v.produto_sku ILIKE $${values.length} OR p.nome ILIKE $${values.length} OR v.nome ILIKE $${values.length})`);
   }
   if (filters.stock === 'positive') conditions.push(`COALESCE(p.estoque, 0) > 0`);
   if (filters.stock === 'nonpositive') conditions.push(`COALESCE(p.estoque, 0) <= 0`);
@@ -430,12 +430,25 @@ async function marketplaceRows(pool, filters = {}) {
     pool.query(`SELECT * FROM tabela_preco_regras WHERE ativo = TRUE`),
     freightRules(pool),
     pool.query(`
-    SELECT v.*, p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling,
+    WITH canais AS (
+      SELECT p.sku, r.marketplace
+      FROM tabela_preco_produtos p
+      CROSS JOIN tabela_preco_regras r
+      WHERE r.ativo = TRUE AND r.marketplace <> 'Bling'
+    ), v AS (
+      SELECT l.*, COALESCE(l.sku, c.sku) AS produto_sku,
+             COALESCE(l.marketplace, c.marketplace) AS canal,
+             l.id IS NULL AS sem_vinculo
+      FROM canais c
+      FULL JOIN tabela_preco_vinculos l ON l.sku = c.sku AND l.marketplace = c.marketplace
+    )
+    SELECT v.*, v.produto_sku AS sku, v.canal AS marketplace,
+           p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling,
            p.status_validacao
-    FROM tabela_preco_vinculos v
-    LEFT JOIN tabela_preco_produtos p ON p.sku = v.sku
+    FROM v
+    LEFT JOIN tabela_preco_produtos p ON p.sku = v.produto_sku
     ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
-    ORDER BY v.sku, v.marketplace, v.id
+    ORDER BY v.produto_sku, v.canal, v.id
   `, values)
   ]);
   const rules = new Map(ruleResult.rows.map(row => [row.marketplace, databaseRule(row)]));
@@ -448,7 +461,9 @@ async function marketplaceRows(pool, filters = {}) {
     };
   });
   return standardizeEqualProducts(calculated, dynamicRules).map(item => {
-    const published = publishedPrices(item.row, item.rule);
+    const published = item.row.sem_vinculo
+      ? { grossPrice: null, discount: null, liquidPrice: null }
+      : publishedPrices(item.row, item.rule);
     return {
       ...item,
       published: {
@@ -513,7 +528,7 @@ function formatCsvNumber(value) {
 function marketplaceCsv(items) {
   const lines = [CSV_HEADERS.map(csvEscape).join(';')];
   for (const item of items) {
-    if (item.result?.status !== 'OK') continue;
+    if (item.row.sem_vinculo || item.result?.status !== 'OK') continue;
     const data = { ...(item.row.dados || {}) };
     data.Preco = formatCsvNumber(item.result.grossPrice);
     data['Preco Promocional'] = '0';

@@ -191,3 +191,49 @@ test('classifica o status de conferência pela validação e diferença líquida
   assert.equal(priceReviewStatus('Validado', 'OK', 1.01), 'Reajustar');
   assert.equal(priceReviewStatus('Validado', 'OK', -1.01), 'Abaixou');
 });
+
+test('precifica produto sem vínculo sem inventar preço publicado e preserva anúncio existente', async () => {
+  const { marketplaceRows, marketplaceCsv } = require('../src/tabela-precos/service');
+  const rule = {
+    marketplace: 'Mercado Livre', comissao: 0.12, imposto: 0.05, adm: 0.03,
+    ads: 0, cartao: 0, frete_percentual: 0, taxa_fixa: 6,
+    frete_fixo: 0, desconto: 0.3, margem_minima: 0.1, saldo_minimo: 0
+  };
+  const pool = { query: async sql => {
+    if (sql.includes('FROM tabela_preco_regras WHERE')) return { rows: [rule] };
+    if (sql.includes('FROM tabela_preco_fretes')) return { rows: [] };
+    return { rows: [
+      { sku: 'L1368', marketplace: 'Mercado Livre', custo: 5, peso: 0.109, sem_vinculo: true },
+      { sku: 'EXISTENTE', marketplace: 'Mercado Livre', custo: 5, peso: 0.109,
+        sem_vinculo: false, preco_atual: 30, preco_promocional: 20,
+        dados: { 'Código': 'EXISTENTE', 'ID na Loja': 'MLB123' } }
+    ] };
+  } };
+  const items = await marketplaceRows(pool, { marketplace: 'Mercado Livre' });
+  const unlinked = items.find(i => i.row.sku === 'L1368');
+  assert.equal(unlinked.result.status, 'OK');
+  assert.ok(unlinked.result.finalPrice > 0);
+  assert.deepEqual(unlinked.published, { grossPrice: null, discount: null, liquidPrice: null, details: null });
+  const linked = items.find(i => i.row.sku === 'EXISTENTE');
+  assert.equal(linked.published.liquidPrice, 20);
+  assert.equal(linked.published.grossPrice, 30);
+  const csv = marketplaceCsv(items);
+  assert.equal(csv.trim().split('\r\n').length, 2);
+  assert.match(csv, /MLB123/);
+  assert.doesNotMatch(csv, /L1368/);
+});
+
+test('calculadora usa custo e peso do cadastro mesmo sem anúncio', async () => {
+  const { calculatorContext } = require('../src/tabela-precos/service');
+  const pool = { query: async sql => ({ rows:
+    sql.includes('FROM tabela_preco_regras') ? [{ marketplace: 'Mercado Livre', desconto: 0.3 }] :
+    sql.includes('FROM tabela_preco_produtos') ? [{ sku: 'L1368', custo: 5, peso: 0.109 }] : []
+  }) };
+  const context = await calculatorContext(pool, 'Mercado Livre', 'L1368');
+  assert.equal(context.product.sku, 'L1368');
+  assert.equal(context.product.custo, 5);
+  assert.equal(context.product.peso, 0.109);
+  assert.equal(context.link, null);
+  assert.equal(context.published, null);
+  assert.equal(context.rule.marketplace, 'Mercado Livre');
+});
