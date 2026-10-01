@@ -8,7 +8,7 @@ function render(model, feedback) {
   const select = (name,value,empty) => `<select name="${escape(name)}"><option value="">${empty}</option>${(model.depositos || []).map(d=>`<option value="${escape(d.id)}" ${String(value)===String(d.id)?'selected':''}>${escape(d.descricao)}</option>`).join('')}</select>`;
   const active = model.jobs?.[0]?.status === 'executando';
   const statuses = {executando:'Em andamento',concluida:'Concluída',parcial:'Com pendências',interrompida:'Interrompida',falhou:'Falhou'};
-  const jobs = (model.jobs || []).map(j=>`<tr><td>${new Date(j.criado_em).toLocaleString('pt-BR')}</td><td>${escape(statuses[j.status] || j.status)}</td><td>${escape(j.etapa)} (${j.processados}/${j.total})</td><td>${escape(j.mensagem || '')}</td></tr>`).join('');
+  const jobs = (model.jobs || []).map(j=>`<tr><td>${new Date(j.criado_em).toLocaleString('pt-BR')}</td><td>${escape(statuses[j.status] || j.status)}</td><td>${escape(j.etapa)} (${j.processados}/${j.total})</td><td>${escape(j.mensagem || '')}${j.status!=='executando' && (j.falhas>0 || j.status==='falhou') ? `<p><a href="${ROOT}/divergencias/${escape(j.id)}">Baixar divergências em Excel${j.divergencias==null?' (resumo antigo)':''}</a></p>`:''}</td></tr>`).join('');
   return `<style>.bling-wrap{max-width:1100px;margin:auto;display:grid;gap:16px}.bling-card{background:#fff;border:1px solid #dce7e1;border-radius:10px;padding:22px}.bling-card h2{font-size:20px;margin:0 0 12px}.bling-card p{color:#475569;line-height:1.5}.bling-card label{display:grid;gap:7px;margin:12px 0;font-weight:700}.bling-card select{padding:10px;border:1px solid #cbd5e1;border-radius:6px;max-width:480px}.bling-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.bling-btn{border:1px solid #009640;padding:10px 16px;border-radius:7px;background:#009640;color:white;text-decoration:none;font-weight:700;cursor:pointer}.bling-btn:disabled{opacity:.5;cursor:default}.bling-scroll{overflow:auto}.bling-scroll table{width:100%;border-collapse:collapse;font-size:12px}.bling-scroll td,.bling-scroll th{padding:12px;text-align:left;border-bottom:1px solid #e2e8f0}.bling-note{padding:12px;background:#fff7e8;border-left:4px solid #d97706}.bling-alert{padding:14px;border-radius:8px;background:${feedback?.ok?'#dcfce7':'#fff1f2'}}</style>
   <div class="bling-wrap">${feedback ? `<div class="bling-alert">${escape(feedback.message)}</div>`:''}
   <section class="bling-card"><h2>Conexão com o Bling</h2><p>Atualize o cadastro, o custo do fornecedor padrão, o peso, o preço geral do Bling e os saldos por depósito. A carga de preços brutos dos marketplaces continua sendo feita pelo arquivo exportado da tabela.</p>
@@ -20,7 +20,7 @@ function render(model, feedback) {
   <form method="post" action="${ROOT}/configuracao"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><label>Depósito Matriz${select('matriz',settings.matriz,'Selecione a Matriz')}</label>
   ${model.marketplaces.map((m,i)=>`<label>Full ${escape(m)}${select('full_'+i,settings.full?.[m],'Sem Full (0)')}</label>`).join('')}
   <button class="bling-btn" ${!model.depositos?.length||active?'disabled':''}>Salvar depósitos</button></form></section>
-  <section class="bling-card"><h2>Preços brutos por marketplace</h2><p>Selecione a loja do Bling correspondente a cada marketplace. A consulta atualiza os preços brutos e preserva os preços líquidos. O Mercado Livre consulta os anúncios publicados pelo código MLB. A importação por planilha continua disponível durante a validação.</p><p>Se o Bling negar a consulta, revise as permissões de consulta de Canais de Venda, Produtos/Lojas e Anúncios no aplicativo e reconecte a conta.</p>
+  <section class="bling-card"><h2>Preços brutos por marketplace</h2><p>Selecione a loja do Bling correspondente a cada marketplace. A consulta atualiza os preços brutos e preserva os preços líquidos. O Mercado Livre consulta os anúncios publicados pelo código MLB. A importação por planilha continua disponível durante a validação.</p><p>Se o Bling negar a consulta, revise as permissões de consulta de Integrações e Lojas Virtuais, Produtos e Anúncios de Marketplaces no aplicativo e reconecte a conta.</p>
   <form method="post" action="${ROOT}/lojas"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><button class="bling-btn" ${!model.conectado||active?'disabled':''}>Consultar lojas do Bling</button></form>
   <form method="post" action="${ROOT}/lojas/configuracao"><input type="hidden" name="csrf" value="${escape(model.csrf)}">
   ${model.marketplaces.map((m,i)=>`<label>${escape(m)}<select name="loja_${i}"><option value="">Não consultar por integração</option>${(model.lojas || []).map(loja=>`<option value="${escape(loja.id)}" ${String(settings.lojas?.[m])===String(loja.id)?'selected':''}>${escape(loja.descricao)} (${escape(loja.tipo || '')})</option>`).join('')}</select></label>`).join('')}
@@ -49,7 +49,20 @@ function createRouter(pool, renderShell) {
       res.send(renderShell(req,render(model,feedback),{title:'Integração Bling',subtitle:'Cadastro e estoques por depósito'}));
     } catch(error) { res.status(503).send('Integração Bling indisponível. Tente novamente.'); }
   });
-  router.post('/conectar',async(req,res)=>{
+  router.get('/divergencias/:id',async(req,res)=>{
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).send('Atualização inválida.');
+    try {
+      await service.ensureTables(pool);
+      const job=(await pool.query('SELECT * FROM bling_sincronizacoes WHERE id=$1',[req.params.id])).rows[0];
+      if (!job) return res.status(404).send('Atualização não encontrada.');
+      const workbook=require('./bling-report').buildReport(job);
+      const buffer=await workbook.xlsx.writeBuffer();
+      res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.set('Content-Disposition',`attachment; filename="bling-divergencias-${job.id}.xlsx"`);
+      res.send(Buffer.from(buffer));
+    } catch(error) { res.status(503).send('Não foi possível gerar o relatório. Tente novamente.'); }
+  });
+  router.post('/conectar' ,async(req,res)=>{
     const c=service.config();
     if (!c.clientId || !c.clientSecret || c.key.length<32) { req.session.blingFeedback={ok:false,message:'Configure as três variáveis da conexão no Render.'}; return res.redirect(ROOT); }
     const state=crypto.randomBytes(32).toString('hex');
