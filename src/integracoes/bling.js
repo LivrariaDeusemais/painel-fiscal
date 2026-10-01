@@ -34,6 +34,7 @@ function decrypt(value) {
 }
 async function ensureTables(pool) {
   await pricing.ensureTables(pool);
+  await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS custo_bling_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS custo_bling_fornecedor_id TEXT, ADD COLUMN IF NOT EXISTS custo_origem TEXT`);
   await pool.query(`CREATE TABLE IF NOT EXISTS bling_integracao (
     id INTEGER PRIMARY KEY CHECK (id = 1), access_token TEXT, refresh_token TEXT, expira_em TIMESTAMPTZ,
     conectado_em TIMESTAMPTZ, configuracao JSONB NOT NULL DEFAULT '{}', depositos JSONB NOT NULL DEFAULT '[]',
@@ -88,7 +89,7 @@ async function accessToken(pool) {
 class BlingClient {
   constructor(pool, transport = fetch, sleep = delay) { this.pool = pool; this.transport = transport; this.sleep = sleep; this.lastRequest = 0; }
   async get(path, params = {}) {
-    if (!/^\/(produtos(?:\/\d+)?|estoques\/saldos|depositos)$/.test(path)) throw new Error('Consulta Bling não permitida.');
+    if (!/^\/(produtos(?:\/\d+|\/fornecedores)?|estoques\/saldos|depositos)$/.test(path)) throw new Error('Consulta Bling não permitida.');
     const url = new URL(API + path);
     for (const [key, value] of Object.entries(params)) {
       for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, item);
@@ -128,6 +129,14 @@ function normalizedProduct(product) {
   const number = value => value !== null && value !== '' && value !== undefined && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
   return { sku, id: String(product.id), name: product.nome, brand: product.marca || '', status: product.situacao || '',
     weight: number(product.pesoLiquido), grossWeight: number(product.pesoBruto), price: number(product.preco), ean: product.gtin || '' };
+}
+function defaultSupplierCost(rows) {
+  const defaults = rows.filter(row => row.padrao === true);
+  if (defaults.length !== 1) throw new Error(defaults.length ? 'Mais de um fornecedor padrão. Custo anterior preservado.' : 'Fornecedor padrão não encontrado. Custo anterior preservado.');
+  const supplier = defaults[0];
+  const value = supplier.precoCusto;
+  if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '' || !Number.isFinite(Number(value)) || Number(value) <= 0) throw new Error('Preço de custo do fornecedor padrão inválido. Custo anterior preservado.');
+  return { cost: Number(value), supplierId: String(supplier.id || '') };
 }
 function balancesByMarketplace(stock, settings, marketplace) {
   const deposits = new Map((stock?.depositos || []).map(d => [String(d.id), d]));
@@ -193,7 +202,7 @@ async function startSync(pool) {
   }
 }
 async function runSync(pool, client, id, settings, api = new BlingClient(pool)) {
-  let processed = 0, failures = 0;
+  let processed = 0, failures = 0, costsUpdated = 0;
   const issues = [];
   const progress = async (stage, total = null) => client.query(`UPDATE bling_sincronizacoes SET etapa=$2,processados=$3,falhas=$4,total=COALESCE($5,total),atualizado_em=NOW() WHERE id=$1`, [id, stage, processed, failures, total]);
   try {
@@ -204,7 +213,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
       if (sku && seen.has(sku)) throw new Error(`Mais de um produto do Bling usa o SKU ${sku}. Revise o cadastro antes de sincronizar.`);
       if (sku) seen.add(sku);
     }
-    await progress('Atualizando cadastro (custos preservados)', products.length);
+    await progress('Atualizando cadastro', products.length);
     const valid = [];
     for (const item of products) {
       try {
@@ -224,7 +233,27 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         failures++; issues.push(String(item.codigo || item.id)+': '+error.message);
       }
       processed++;
-      await progress('Atualizando cadastro (custos preservados)');
+      await progress('Atualizando cadastro');
+    }
+    await progress('Consultando custos dos fornecedores padrão');
+    let suppliers;
+    try { suppliers = await api.all('/produtos/fornecedores'); }
+    catch (error) { failures++; issues.push('Custos não atualizados: '+error.message); }
+    if (suppliers) {
+      const byProduct = new Map();
+      for (const supplier of suppliers) {
+        const key = String(supplier.produto?.id || '');
+        if (!byProduct.has(key)) byProduct.set(key, []);
+        byProduct.get(key).push(supplier);
+      }
+      for (const p of valid) {
+        try {
+          const cost = defaultSupplierCost(byProduct.get(p.id) || []);
+          await client.query(`UPDATE tabela_preco_produtos SET custo=$2,custo_origem='Bling: fornecedor padrão',
+            custo_bling_fornecedor_id=$3,custo_bling_em=NOW() WHERE sku=$1`, [p.sku,cost.cost,cost.supplierId]);
+          costsUpdated++;
+        } catch (error) { failures++; issues.push(p.sku+': '+error.message); }
+      }
     }
     await progress('Atualizando saldos por depósito');
     const stockIssues = [];
@@ -247,9 +276,9 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
     }
     await client.query('UPDATE bling_integracao SET ultima_sincronizacao=NOW() WHERE id=1');
     await client.query(`UPDATE bling_sincronizacoes SET status=$2,etapa='Concluído',falhas=$3,mensagem=$4,finalizado_em=NOW(),atualizado_em=NOW() WHERE id=$1`,
-    [id,failures?'parcial':'concluida',failures, `${valid.length} produtos consultados. ${issues.slice(0,10).join('; ')}. Custos e preços dos vínculos preservados. ${failures} pendência(s).${stockIssues.length ? ' Saldos não atualizados: '+stockIssues.slice(0,20).join(', ') : ''}`]);
+    [id,failures?'parcial':'concluida',failures, `${valid.length} produtos consultados. ${issues.slice(0,10).join('; ')}. ${costsUpdated} custos atualizados pelo fornecedor padrão. Preços dos vínculos preservados. ${failures} pendência(s).${stockIssues.length ? ' Saldos não atualizados: '+stockIssues.slice(0,20).join(', ') : ''}`]);
   } catch(error) {
     await client.query("UPDATE bling_sincronizacoes SET status='falhou', mensagem=$2,finalizado_em=NOW(),atualizado_em=NOW() WHERE id=$1", [id,error.message]);
   }
 }
-module.exports = { ensureTables, state, connect, loadDeposits, saveSettings, startSync, config, normalizedProduct, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };
+module.exports = { ensureTables, state, connect, loadDeposits, saveSettings, startSync, config, normalizedProduct, defaultSupplierCost, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };

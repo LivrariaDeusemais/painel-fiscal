@@ -1,6 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {normalizedProduct,balancesByMarketplace,encrypt,decrypt,BlingClient,runSync}=require('../src/integracoes/bling');
+const {normalizedProduct,defaultSupplierCost,balancesByMarketplace,encrypt,decrypt,BlingClient,runSync}=require('../src/integracoes/bling');
 
 test('estoque Full usa o depósito da linha e não soma canais',()=>{
   const stock={depositos:[{id:1,saldoFisico:80},{id:2,saldoFisico:63},{id:3,saldoFisico:44}]};
@@ -37,18 +37,33 @@ test('cliente trata limite de consultas sem escrever no Bling',async()=>{
 test('sincronização salva Matriz e Full e mantém custo e vínculos intactos',async()=>{
   const calls=[];
   const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:sql.startsWith('SELECT sku')?[{sku:'B1254',bling_id:'123'}]:[]};}};
-  const api={all:async()=>[{id:123,codigo:'B1254'}],get:async(path)=>path.startsWith('/produtos/')?{id:123,codigo:'B1254',nome:'Bíblia',pesoLiquido:1.2,preco:199.86}:[{produto:{id:123},depositos:[{id:1,saldoFisico:80},{id:2,saldoFisico:63},{id:3,saldoFisico:44}]}]};
+  const api={all:async(path)=>path==='/produtos/fornecedores'?[{id:9,produto:{id:123},padrao:true,precoCusto:61.605}]:[{id:123,codigo:'B1254'}],get:async(path)=>path.startsWith('/produtos/')?{id:123,codigo:'B1254',nome:'Bíblia',pesoLiquido:1.2,preco:199.86}:[{produto:{id:123},depositos:[{id:1,saldoFisico:80},{id:2,saldoFisico:63},{id:3,saldoFisico:44}]}]};
   await runSync({},db,7,{matriz:'1',full:{'Mercado Livre':'2',Shopee:'3'}},api);
   const stock=calls.find(c=>c.sql.includes('SET estoque='));
   assert.equal(stock.args[1],80);assert.deepEqual(JSON.parse(stock.args[2]),{'Mercado Livre':63,Shopee:44});
   assert.equal(calls.some(c=>c.sql.includes('tabela_preco_vinculos')),false);
-  assert.equal(calls.some(c=>/custo\s*=/.test(c.sql)),false);
+  assert.equal(calls.find(c=>/SET custo=/.test(c.sql)).args[1],61.605);
   assert.equal(calls.at(-1).args[1],'concluida');
 });
 test('saldo incompleto não zera nem sobrescreve saldo conhecido',async()=>{
   const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};}};
-  const api={all:async()=>[{id:123,codigo:'A'}],get:async(path)=>path.startsWith('/produtos/')?{id:123,codigo:'A',nome:'A'}:[{produto:{id:123},depositos:[{id:1,saldoFisico:80}]}]};
+  const api={all:async(path)=>path==='/produtos/fornecedores'?[]:[{id:123,codigo:'A'}],get:async(path)=>path.startsWith('/produtos/')?{id:123,codigo:'A',nome:'A'}:[{produto:{id:123},depositos:[{id:1,saldoFisico:80}]}]};
   await runSync({},db,1,{matriz:'1',full:{Shopee:'3'}},api);
   assert.equal(calls.some(c=>c.sql.includes('SET estoque=')),false);
+  assert.equal(calls.at(-1).args[1],'parcial');
+});
+
+test('custo usa apenas fornecedor padrão, mesmo com fornecedores antigos',()=>{
+  assert.deepEqual(defaultSupplierCost([{id:1,padrao:false,precoCusto:147.52},{id:2,padrao:true,precoCusto:156.88}]),{cost:156.88,supplierId:'2'});
+  for (const value of [null,undefined,0,-1,'', 'abc', true]) assert.throws(()=>defaultSupplierCost([{padrao:true,precoCusto:value}]),/inválido/);
+  assert.throws(()=>defaultSupplierCost([{padrao:false,precoCusto:10}]),/não encontrado/);
+  assert.throws(()=>defaultSupplierCost([{padrao:true,precoCusto:10},{padrao:true,precoCusto:20}]),/Mais de um/);
+});
+test('falha na consulta de fornecedores preserva custo e ainda atualiza estoque',async()=>{
+  const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};}};
+  const api={all:async path=>{if(path==='/produtos/fornecedores')throw new Error('Sem permissão');return [{id:123,codigo:'A'}];},get:async path=>path.startsWith('/produtos/')?{id:123,codigo:'A',nome:'A'}:[{produto:{id:123},depositos:[{id:1,saldoFisico:80}]}]};
+  await runSync({},db,1,{matriz:'1'},api);
+  assert.equal(calls.some(c=>/SET custo=/.test(c.sql)),false);
+  assert.equal(calls.find(c=>c.sql.includes('SET estoque=')).args[1],80);
   assert.equal(calls.at(-1).args[1],'parcial');
 });
