@@ -69,6 +69,12 @@ async function initializeTables(pool) {
     )
   `);
   await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado'`);
+  await pool.query(`ALTER TABLE tabela_preco_produtos
+    ADD COLUMN IF NOT EXISTS estoque_matriz NUMERIC(15,4),
+    ADD COLUMN IF NOT EXISTS estoque_full JSONB,
+    ADD COLUMN IF NOT EXISTS estoque_bling_em TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS bling_atualizado_em TIMESTAMPTZ`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tabela_preco_vinculos (
       id BIGSERIAL PRIMARY KEY,
@@ -86,6 +92,12 @@ async function initializeTables(pool) {
     )
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS tabela_preco_vinculos_marketplace_sku_idx ON tabela_preco_vinculos (marketplace, sku)`);
+  // Old calculator saves used numeric JSON, while CSV imports carry text. Preserve identifiable manual saves.
+  await pool.query(`UPDATE tabela_preco_vinculos SET dados=dados || jsonb_build_object(
+    'preco_liquido_manual',preco_promocional,'preco_manual_origem','manual anterior')
+    WHERE preco_promocional > 0 AND jsonb_typeof(dados->'Preco Promocional')='number'
+      AND NOT dados ? 'preco_liquido_manual'`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tabela_preco_regras (
       marketplace TEXT PRIMARY KEY,
@@ -218,7 +230,7 @@ async function importProducts(pool, products) {
       )
       ON CONFLICT (sku) DO UPDATE SET
         bling_id=EXCLUDED.bling_id, nome=EXCLUDED.nome, marca=EXCLUDED.marca,
-        situacao=EXCLUDED.situacao, estoque=EXCLUDED.estoque, custo=EXCLUDED.custo,
+        situacao=EXCLUDED.situacao, estoque=COALESCE(tabela_preco_produtos.estoque_matriz,EXCLUDED.estoque), custo=EXCLUDED.custo,
         preco_compra=EXCLUDED.preco_compra, peso=EXCLUDED.peso,
         peso_bruto=EXCLUDED.peso_bruto, preco_bling=EXCLUDED.preco_bling,
         ean=EXCLUDED.ean, importado_em=NOW()
@@ -364,8 +376,8 @@ async function importLinks(pool, marketplace, links) {
     if (updates.length) await client.query(`
       UPDATE tabela_preco_vinculos v SET id_produto = item.product_id, id_loja = item.store_id,
         sku = item.sku, nome = item.name, preco_atual = item.current_price,
-        preco_promocional = item.promotional_price, dados = item.raw,
-        importado_em = NOW(), confirmado_em = NULL, confirmado_por = NULL
+        preco_promocional = item.promotional_price, dados = v.dados || item.raw || jsonb_build_object('preco_manual_sem_vinculo',false, 'preco_liquido_manual',v.dados->'preco_liquido_manual','preco_manual_em',v.dados->'preco_manual_em','preco_manual_origem',v.dados->'preco_manual_origem'),
+        importado_em = NOW()
       FROM jsonb_to_recordset($2::jsonb) AS item(
         id BIGINT, product_id TEXT, store_id TEXT, sku TEXT, name TEXT,
         current_price NUMERIC, promotional_price NUMERIC, raw JSONB
@@ -410,16 +422,15 @@ function databaseRule(row) {
 
 function publishedPrices(row, rule) {
   const grossPrice = Number(row.preco_atual) || 0;
+  const manual = Number(row.dados?.preco_liquido_manual) || 0;
   const promotionalPrice = Number(row.preco_promocional) || 0;
   const configuredDiscount = Math.max(0, Math.min(0.99, Number(rule?.discount) || 0));
-  const discount = promotionalPrice > 0 && grossPrice > 0
-    ? Math.max(0, 1 - (promotionalPrice / grossPrice))
-    : configuredDiscount;
-  return {
-    grossPrice,
-    discount,
-    liquidPrice: promotionalPrice > 0 ? promotionalPrice : grossPrice * (1 - discount)
-  };
+  const liquidPrice = manual > 0 ? manual : promotionalPrice > 0 ? promotionalPrice : grossPrice * (1 - configuredDiscount);
+  const source = manual > 0 ? 'Informado manualmente' : promotionalPrice > 0 ? 'Promocional do Bling' : 'Estimado pela regra';
+  return { grossPrice, liquidPrice,
+    discount: !manual && !promotionalPrice ? configuredDiscount : grossPrice > 0 ? 1 - liquidPrice / grossPrice : null,
+    source, estimated: !manual && !promotionalPrice,
+    observedAt: manual > 0 ? row.dados?.preco_manual_em || null : row.importado_em || null };
 }
 
 async function overview(pool) {
@@ -503,6 +514,7 @@ async function marketplaceRows(pool, filters = {}) {
     )
     SELECT v.*, v.produto_sku AS sku, v.canal AS marketplace,
            p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling,
+           p.estoque_matriz, p.estoque_full, p.estoque_bling_em,
            p.status_validacao
     FROM v
     LEFT JOIN tabela_preco_produtos p ON p.sku = v.produto_sku
@@ -576,18 +588,20 @@ async function saveCalculatorPrice(pool, marketplace, sku, price) {
       "SELECT desconto FROM tabela_preco_regras WHERE marketplace = $1 AND ativo = TRUE AND marketplace <> 'Bling'", [marketplace]
     )).rows[0];
     if (!rule) throw new Error('Selecione um marketplace com regra ativa.');
-    const link = (await client.query(
-      'SELECT * FROM tabela_preco_vinculos WHERE marketplace = $1 AND sku = $2 ORDER BY id LIMIT 1 FOR UPDATE', [marketplace, product.sku]
-    )).rows[0];
+    const links = (await client.query(
+      'SELECT * FROM tabela_preco_vinculos WHERE marketplace = $1 AND sku = $2 ORDER BY id FOR UPDATE', [marketplace, product.sku]
+    )).rows;
+    if (links.length > 1) throw new Error('Este SKU possui mais de um anúncio no marketplace. Informe o preço por anúncio para evitar atualizar o vínculo errado.');
+    const link = links[0];
     const liquid = Math.round(price * 100) / 100;
     if (!(liquid > 0)) throw new Error('Informe um preço de pelo menos R$ 0,01.');
     const discount = Math.max(0, Math.min(0.99, Number(rule.desconto) || 0));
-    const gross = Math.max(liquid, Number(link?.preco_atual) || liquid / (1 - discount));
+    const gross = Number(link?.preco_atual) || liquid / (1 - discount);
     if (gross > 99999999999) throw new Error('Preço acima do limite permitido.');
-    const data = { ...(link?.dados || {}), Preco: gross, 'Preco Promocional': liquid };
+    const data = { ...(link?.dados || {}), preco_liquido_manual: liquid, preco_manual_em: new Date().toISOString(), preco_manual_origem: 'calculadora' };
     if (link) {
-      await client.query('UPDATE tabela_preco_vinculos SET preco_atual = $1, preco_promocional = $2, dados = $3::jsonb WHERE id = $4',
-        [gross, liquid, JSON.stringify(data), link.id]);
+      await client.query('UPDATE tabela_preco_vinculos SET dados = $1::jsonb WHERE id = $2',
+        [JSON.stringify(data), link.id]);
     } else {
       data.preco_manual_sem_vinculo = true;
       await client.query(`INSERT INTO tabela_preco_vinculos (marketplace, sku, nome, preco_atual, preco_promocional, dados)

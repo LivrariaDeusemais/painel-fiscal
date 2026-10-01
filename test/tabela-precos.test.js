@@ -250,11 +250,10 @@ test('salva preço líquido manual preservando anúncio, bruto e dados do víncu
   } };
   await saveCalculatorPrice({ connect: async () => client }, 'Mercado Livre', 'B1103', 299.9);
   const update = calls.find(c => c.sql.startsWith('UPDATE'));
-  assert.equal(update.args[0], 439.8571);
-  assert.equal(update.args[1], 299.9);
-  assert.equal(update.args[3], 7);
-  assert.equal(JSON.parse(update.args[2])['ID na Loja'], 'MLB1');
-  assert.equal(publishedPrices({ preco_atual: update.args[0], preco_promocional: update.args[1] }, { discount: 0.3 }).liquidPrice, 299.9);
+  assert.equal(update.args[1], 7);
+  assert.equal(JSON.parse(update.args[0])['ID na Loja'], 'MLB1');
+  assert.equal(publishedPrices({ preco_atual: 439.8571, dados: JSON.parse(update.args[0]) }, { discount: 0.3 }).liquidPrice, 299.9);
+  assert.doesNotMatch(update.sql, /SET preco_atual/);
   assert.equal(calls.at(-1).sql, 'COMMIT');
 });
 
@@ -337,4 +336,16 @@ test('importa lote misto com atualização e inclusão sem apagar os demais vín
   const update = calls.find(c => c.sql.includes('UPDATE tabela_preco_vinculos'));
   assert.deepEqual(JSON.parse(update.args[1]).map(row => row.id), ['1']);
   assert.equal(calls.at(-1).sql, 'COMMIT');
+});
+
+
+test('preserva líquido manual após nova carga Bling e identifica estimativa sem promoção', () => {
+  const result = publishedPrices({ preco_atual: 399.2999878, preco_promocional: null,
+    dados: { preco_liquido_manual: 299.9, preco_manual_em: '2026-10-01T12:00:00Z' } }, { discount: 0.3 });
+  assert.equal(result.liquidPrice,299.9);
+  assert.equal(result.source,'Informado manualmente');
+  assert.equal(result.estimated,false);
+  const estimate=publishedPrices({preco_atual:399.3},{discount:0.3});
+  assert.equal(estimate.estimated,true);
+  assert.equal(estimate.source,'Estimado pela regra');
 });
