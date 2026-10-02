@@ -31592,7 +31592,7 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
   const rowsWithGross = rows.replaceAll('<td class="g-new">', () => {
     const item = pageItems[grossIndex++];
     const valid = item?.result?.status === 'OK' && item.result.grossPrice > 0;
-    const value = valid && isAdmin && item.row.id && !item.row.sem_vinculo ? `<form method="post" action="/ferramentas-ia/tabela-precos/novo-bruto/${item.row.id}" class="gross-edit" onkeydown="if(event.key==='Enter'){event.preventDefault();if(this.reportValidity())this.requestSubmit();}"><input type="hidden" name="csrf" value="${escapeHtmlGlobal(req.session.grossCsrf)}"><input type="hidden" name="retorno" value="${escapeHtmlGlobal(new URLSearchParams(filtros).toString())}"><input aria-label="Novo Bruto ${escapeHtmlGlobal(item.row.sku)}" class="${item.result.grossManual ? 'gross-manual' : 'gross-auto'}" title="Edite e pressione Enter para salvar" name="valor" type="number" min="0.01" step="0.01" value="${Number(item.result.grossPrice).toFixed(2)}"></form>` : valid ? money(item.result.grossPrice) : '-';
+    const value = valid && isAdmin && item.row.id && !item.row.sem_vinculo ? `<form method="post" action="/ferramentas-ia/tabela-precos/novo-bruto/${item.row.id}" class="gross-edit" onkeydown="if(event.key==='Enter'){event.preventDefault();if(this.reportValidity())this.requestSubmit();}"><input type="hidden" name="csrf" value="${escapeHtmlGlobal(req.session.grossCsrf)}"><input type="hidden" name="retorno" value="${escapeHtmlGlobal(new URLSearchParams(filtros).toString())}"><input aria-label="Novo Bruto ${escapeHtmlGlobal(item.row.sku)}" class="${item.result.grossManual ? 'gross-manual' : 'gross-auto'}" title="Edite e pressione Enter para salvar" name="valor" type="text" inputmode="decimal" required pattern="[0-9]+([,.][0-9]{1,2})?" value="${Number(item.result.grossPrice).toFixed(2).replace('.',',')}"></form>` : valid ? money(item.result.grossPrice) : '-';
     return `<td class="g-base col-gross-status">${escapeHtmlGlobal(item.grossStatus)}</td><td class="g-cost col-new-gross">${value}</td><td class="g-new">`;
   });
   const content = `${tabelaPrecosFeedbackHtml(feedback, 'tpw-alert')}<style>
@@ -32276,7 +32276,7 @@ router.post('/ferramentas-ia/tabela-precos/novo-bruto/:id', protegerRota, soment
   try {
     if (!req.session.grossCsrf || req.body.csrf !== req.session.grossCsrf) throw new Error('Sessão inválida. Atualize a página.');
     if (!/^\d+$/.test(req.params.id)) throw new Error('Anúncio inválido.');
-    const value = req.body.automatico === '1' ? null : Number(req.body.valor);
+    const value = req.body.automatico === '1' ? null : Number(String(req.body.valor ?? '').trim().replace(',','.'));
     if (value != null && (!Number.isFinite(value) || value <= 0)) throw new Error('Informe um preço bruto positivo.');
     await pool.query('ALTER TABLE tabela_preco_vinculos ADD COLUMN IF NOT EXISTS novo_bruto_manual NUMERIC');
     const saved=await pool.query('UPDATE tabela_preco_vinculos SET novo_bruto_manual=$2 WHERE id=$1 RETURNING id',[req.params.id,value]);
