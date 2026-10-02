@@ -100,11 +100,39 @@ function standardPrice(prices,id) {
   if(chosen.length!==1) throw new Error('Preço bruto padrão do canal Mercado Livre ausente ou ambíguo.');
   return Number(chosen[0].amount);
 }
+function activeBenefit(sale,promotions) {
+  const pending={status:'pending',amount:null};
+  if(!Array.isArray(promotions))return pending;
+  const meta=sale.metadata || {};
+  if(!meta.promotion_id)return promotions.some(p=>p.status==='started')?pending:{status:'none',amount:0};
+  const matches=promotions.filter(p=>p.status==='started' && String(p.id)===String(meta.promotion_id) && (!meta.promotion_type || p.type===meta.promotion_type));
+  if(matches.length!==1)return pending;
+  const p=matches[0],effective=Number(p.boosted_offer?p.total_price_for_boosted_offer:p.price);
+  if(!Number.isFinite(effective) || Math.abs(effective-Number(sale.amount))>0.005)return pending;
+  const cofinanced=['MARKETPLACE_CAMPAIGN','SMART','PRICE_MATCHING','PRE_NEGOTIATED','UNHEALTHY_STOCK'].includes(p.type);
+  if(!cofinanced && !['DEAL','PRICE_DISCOUNT','SELLER_CAMPAIGN','LIGHTNING','DOD'].includes(p.type))return pending;
+  let amount=0;
+  if(cofinanced) {
+    const share=p.meli_percentage==null?NaN:Number(p.meli_percentage),original=Number(p.original_price);
+    if(!Number.isFinite(share) || share<0 || share>100 || !(original>0))return pending;
+    amount=original*share/100;
+  }
+  if(p.boosted_offer) {
+    const boost=p.discount_meli_boost_amount==null?NaN:Number(p.discount_meli_boost_amount);
+    if(!Number.isFinite(boost) || boost<0)return pending;
+    amount+=boost;
+  }
+  if(!Number.isFinite(amount) || amount<0)return pending;
+  return {status:'identified',amount:Math.round(amount*100)/100,promotionId:p.id,type:p.type};
+}
 async function snapshot(api,id,seller) {
   const item=await api.get('/items/'+id);assertOwned(item,id,seller);
   const prices=await api.get('/items/'+id+'/prices');
   const sale=await api.get('/items/'+id+'/sale_price',{context:'channel_marketplace'});
-  return {item,sale,price:readPrice(item,sale,seller,standardPrice(prices,id))};
+  const price=readPrice(item,sale,seller,standardPrice(prices,id));
+  try {price.benefit=activeBenefit(sale,await api.get('/seller-promotions/items/'+id,{app_version:'v2'}));}
+  catch {price.benefit={status:'pending',amount:null};}
+  return {item,sale,price};
 }
 function readPrice(item,sale,seller,gross) {
   assertOwned(item,itemId(item.id),seller);
@@ -152,7 +180,7 @@ async function appendResult(pool,id,result) {await pool.query("UPDATE ml_operaco
 async function runSync(pool,op) {
   const api=new MeliClient(pool);let errors=0;
   try {const rows=(await pool.query("SELECT id,sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' ORDER BY id")).rows;
-    for(const row of rows) {let result={sku:row.sku,anuncio:row.id_loja};try {const id=itemId(row.id_loja);const {price}=await snapshot(api,id,op.seller);await savePrice(pool,row,price);result={...result,status:'Atualizado',bruto:price.gross,liquido:price.amount};
+    for(const row of rows) {let result={sku:row.sku,anuncio:row.id_loja};try {const id=itemId(row.id_loja);const {price}=await snapshot(api,id,op.seller);await savePrice(pool,row,price);result={...result,status:'Atualizado',bruto:price.gross,liquido:price.amount,beneficio:price.benefit?.amount,beneficioStatus:price.benefit?.status};if(price.benefit?.status==='pending'){errors++;result.motivo='Benefício da promoção vigente pendente de identificação.';}
     }catch(e){errors++;result={...result,status:'Pendente',motivo:e.message};}await appendResult(pool,op.id,result);}
     await pool.query('UPDATE ml_operacoes SET status=$2,atualizado_em=NOW() WHERE id=$1',[op.id,errors?'parcial':'concluida']);
   }catch(e){await appendResult(pool,op.id,{status:'Falhou',motivo:e.message});await pool.query("UPDATE ml_operacoes SET status='falhou',atualizado_em=NOW() WHERE id=$1",[op.id]);}
@@ -164,4 +192,4 @@ async function startSync(pool,user) {
     const op=await operation(client,'consulta',user,{},'executando');await client.query('COMMIT');setImmediate(()=>runLocked(pool,op,()=>runSync(pool,op)).catch(()=>{}));return op.id;
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
-module.exports={ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};
+module.exports={ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};

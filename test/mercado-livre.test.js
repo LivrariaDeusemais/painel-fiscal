@@ -101,3 +101,14 @@ test('aceita ofertas propostas usando offer_id, sem enviar preço que o vendedor
   assert.deepEqual(actions.participationBody({id:'C-MLB1',type:'SELLER_CAMPAIGN'},{},70),{promotion_id:'C-MLB1',promotion_type:'SELLER_CAMPAIGN',deal_price:70});
   assert.deepEqual(actions.participationBody({id:'P-MLB1',type:'MARKETPLACE_CAMPAIGN'},{},70),{promotion_id:'P-MLB1',promotion_type:'MARKETPLACE_CAMPAIGN'});
 });
+
+test('benefício vigente combina coparticipação e boost uma vez e rejeita campanha futura ou ambígua',()=>{
+  const observed={amount:75,metadata:{promotion_id:'P1',promotion_type:'SMART'}};
+  const active={id:'P1',type:'SMART',status:'started',price:80,original_price:100,meli_percentage:5,boosted_offer:true,total_price_for_boosted_offer:75,discount_meli_boost_amount:5};
+  assert.equal(service.activeBenefit(observed,[active]).amount,10);
+  assert.equal(service.activeBenefit(observed,[{...active,status:'pending'}]).status,'pending');
+  assert.equal(service.activeBenefit(observed,[active,active]).status,'pending');
+  assert.equal(service.activeBenefit({...observed,amount:74},[active]).status,'pending');
+  assert.equal(service.activeBenefit(observed,[{...active,original_price:null}]).status,'pending');
+  assert.equal(service.activeBenefit({amount:100,metadata:{}},[]).amount,0);
+});
