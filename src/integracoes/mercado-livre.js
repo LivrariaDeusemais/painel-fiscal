@@ -101,29 +101,38 @@ function standardPrice(prices,id) {
   return Number(chosen[0].amount);
 }
 function activeBenefit(sale,promotions) {
-  const pending={status:'pending',amount:null};
-  if(!Array.isArray(promotions))return pending;
+  const pending=reason=>({status:'pending',amount:null,reason});
+  if(!Array.isArray(promotions))return pending('Resposta de promoções inválida.');
   const meta=sale.metadata || {};
-  if(!meta.promotion_id)return promotions.some(p=>p.status==='started')?pending:{status:'none',amount:0};
-  const matches=promotions.filter(p=>p.status==='started' && String(p.id)===String(meta.promotion_id) && (!meta.promotion_type || p.type===meta.promotion_type));
-  if(matches.length!==1)return pending;
+  if(!meta.promotion_id && !meta.campaign_id)return promotions.some(p=>p.status==='started')?pending('Preço vigente sem identificador de oferta ou campanha.'):{status:'none',amount:0};
+  // sale_price identifies the winning offer, while seller-promotions identifies the campaign.
+  // Their type names also differ (marketplace_campaign can correspond to SMART).
+  const matches=promotions.filter(p=>{
+    if(p.status!=='started')return false;
+    const refs=[p.ref_id,p.offer_id].filter(Boolean).map(String);
+    if(meta.campaign_id && String(p.id)!==String(meta.campaign_id))return false;
+    if(meta.promotion_id && refs.length)return refs.includes(String(meta.promotion_id));
+    return meta.campaign_id || String(p.id)===String(meta.promotion_id);
+  });
+  if(matches.length!==1)return pending('Oferta vigente não encontrada de forma única entre as promoções ativas.');
   const p=matches[0],effective=Number(p.boosted_offer?p.total_price_for_boosted_offer:p.price);
-  if(!Number.isFinite(effective) || Math.abs(effective-Number(sale.amount))>0.005)return pending;
-  const cofinanced=['MARKETPLACE_CAMPAIGN','SMART','PRICE_MATCHING','PRE_NEGOTIATED','UNHEALTHY_STOCK'].includes(p.type);
-  if(!cofinanced && !['DEAL','PRICE_DISCOUNT','SELLER_CAMPAIGN','LIGHTNING','DOD'].includes(p.type))return pending;
+  if(!Number.isFinite(effective) || Math.abs(effective-Number(sale.amount))>0.005)return pending('Preço da promoção difere do preço vigente consultado.');
+  const cofinanced=['MARKETPLACE_CAMPAIGN','SMART','PRICE_MATCHING','PRICE_MATCHING_MELI_ALL','PRE_NEGOTIATED','UNHEALTHY_STOCK'].includes(p.type);
+  if(!cofinanced && !['DEAL','PRICE_DISCOUNT','SELLER_CAMPAIGN','LIGHTNING','DOD'].includes(p.type))return pending('Tipo de promoção sem cálculo de benefício validado: '+p.type);
   let amount=0;
   if(cofinanced) {
     const share=p.meli_percentage==null?NaN:Number(p.meli_percentage),original=Number(p.original_price);
-    if(!Number.isFinite(share) || share<0 || share>100 || !(original>0))return pending;
+    if(!Number.isFinite(share) || share<0 || share>100 || !(original>0))return pending('Participação do Meli ou preço original ausente ou inválido.');
     amount=original*share/100;
   }
   if(p.boosted_offer) {
     const boost=p.discount_meli_boost_amount==null?NaN:Number(p.discount_meli_boost_amount);
-    if(!Number.isFinite(boost) || boost<0)return pending;
+    if(!Number.isFinite(boost) || boost<0)return pending('Valor absoluto do benefício adicional ausente ou inválido.');
     amount+=boost;
   }
-  if(!Number.isFinite(amount) || amount<0)return pending;
-  return {status:'identified',amount:Math.round(amount*100)/100,promotionId:p.id,type:p.type};
+  if(!Number.isFinite(amount) || amount<0)return pending('Benefício calculado inválido.');
+  return {status:'identified',amount:Math.round(amount*100)/100,promotionId:p.id,offerId:p.ref_id || p.offer_id || null,type:p.type,
+    estimated:cofinanced && amount>0,reason:cofinanced && amount>0?'Estimado pelo percentual de participação retornado pelo Meli; pode diferir do valor exibido no portal.':null};
 }
 async function snapshot(api,id,seller) {
   const item=await api.get('/items/'+id);assertOwned(item,id,seller);
@@ -131,7 +140,7 @@ async function snapshot(api,id,seller) {
   const sale=await api.get('/items/'+id+'/sale_price',{context:'channel_marketplace'});
   const price=readPrice(item,sale,seller,standardPrice(prices,id));
   try {price.benefit=activeBenefit(sale,await api.get('/seller-promotions/items/'+id,{app_version:'v2'}));}
-  catch {price.benefit={status:'pending',amount:null};}
+  catch(e) {price.benefit={status:'pending',amount:null,reason:e.message};}
   return {item,sale,price};
 }
 function readPrice(item,sale,seller,gross) {
@@ -167,7 +176,7 @@ async function savePrice(pool,row,price) {
 async function operation(pool,type,user,data,status='previa') {
   const account=(await pool.query('SELECT seller_id FROM ml_integracao WHERE id=1')).rows[0];
   if(!account?.seller_id)throw new Error('Conecte o Mercado Livre primeiro.');
-  const id=crypto.randomUUID();await pool.query(`INSERT INTO ml_operacoes(id,tipo,status,seller_id,usuario,dados,expira_em) VALUES($1,$2,$3,$4,$5,$6,NOW()+INTERVAL '20 minutes')`,[id,type,status,account.seller_id,String(user),JSON.stringify(data)]);return {id,seller:account.seller_id};
+  const id=crypto.randomUUID();await pool.query(`INSERT INTO ml_operacoes(id,tipo,status,seller_id,usuario,dados,expira_em) VALUES($1,$2,$3,$4,$5,$6,NOW()+INTERVAL '20 minutes')`,[id,type,status,account.seller_id,String(user),JSON.stringify(data)]);return {id,seller:account.seller_id,dados:data};
 }
 async function beginOperation(pool,type,user,data) {
   const client=await pool.connect();
@@ -178,18 +187,20 @@ async function beginOperation(pool,type,user,data) {
 }
 async function appendResult(pool,id,result) {await pool.query("UPDATE ml_operacoes SET resultados=resultados||$2::jsonb,atualizado_em=NOW() WHERE id=$1",[id,JSON.stringify([result])]);}
 async function runSync(pool,op) {
-  const api=new MeliClient(pool);let errors=0;
-  try {const rows=(await pool.query("SELECT id,sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' ORDER BY id")).rows;
-    for(const row of rows) {let result={sku:row.sku,anuncio:row.id_loja};try {const id=itemId(row.id_loja);const {price}=await snapshot(api,id,op.seller);await savePrice(pool,row,price);result={...result,status:'Atualizado',bruto:price.gross,liquido:price.amount,beneficio:price.benefit?.amount,beneficioStatus:price.benefit?.status};if(price.benefit?.status==='pending'){errors++;result.motivo='Benefício da promoção vigente pendente de identificação.';}
+  const api=new MeliClient(pool);let errors=0;const snapshots=new Map();
+  try {const rows=(await pool.query("SELECT id,sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' AND ($1='' OR sku=$1 OR UPPER(TRIM(id_loja))=UPPER($1)) ORDER BY id",[op.dados?.filter || ''])).rows;
+    if(!rows.length){errors++;await appendResult(pool,op.id,{status:'Pendente',motivo:'Nenhum vínculo encontrado para o SKU ou anúncio informado.'});}
+    for(const row of rows) {let result={sku:row.sku,anuncio:row.id_loja};try {const id=itemId(row.id_loja);if(!snapshots.has(id))snapshots.set(id,await snapshot(api,id,op.seller));const {price}=snapshots.get(id);await savePrice(pool,row,price);result={...result,status:'Atualizado',bruto:price.gross,liquido:price.amount,beneficio:price.benefit?.amount,beneficioStatus:price.benefit?.estimated?'Estimado pela API':price.benefit?.status,motivo:price.benefit?.reason || null};if(price.benefit?.status==='pending'){errors++;result.motivo=price.benefit.reason || 'Benefício da promoção vigente pendente de identificação.';}
     }catch(e){errors++;result={...result,status:'Pendente',motivo:e.message};}await appendResult(pool,op.id,result);}
     await pool.query('UPDATE ml_operacoes SET status=$2,atualizado_em=NOW() WHERE id=$1',[op.id,errors?'parcial':'concluida']);
   }catch(e){await appendResult(pool,op.id,{status:'Falhou',motivo:e.message});await pool.query("UPDATE ml_operacoes SET status='falhou',atualizado_em=NOW() WHERE id=$1",[op.id]);}
 }
-async function startSync(pool,user) {
+async function startSync(pool,user,filter='') {
+  filter=String(filter).trim();if(filter.length>100)throw new Error('Filtro de anúncio inválido.');
   const client=await pool.connect();
   try{await client.query('BEGIN');await client.query('SELECT id FROM ml_integracao WHERE id=1 FOR UPDATE');
     if((await client.query("SELECT id FROM ml_operacoes WHERE status='executando' LIMIT 1")).rows.length)throw new Error('Já existe uma operação em andamento. Consulte o resultado antes de iniciar outra.');
-    const op=await operation(client,'consulta',user,{},'executando');await client.query('COMMIT');setImmediate(()=>runLocked(pool,op,()=>runSync(pool,op)).catch(()=>{}));return op.id;
+    const op=await operation(client,'consulta',user,{filter},'executando');await client.query('COMMIT');setImmediate(()=>runLocked(pool,op,()=>runSync(pool,op)).catch(()=>{}));return op.id;
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
 module.exports={ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};

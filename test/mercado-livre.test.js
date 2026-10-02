@@ -112,3 +112,25 @@ test('benefício vigente combina coparticipação e boost uma vez e rejeita camp
   assert.equal(service.activeBenefit(observed,[{...active,original_price:null}]).status,'pending');
   assert.equal(service.activeBenefit({amount:100,metadata:{}},[]).amount,0);
 });
+
+test('associa a oferta vencedora à campanha SMART com nomenclaturas diferentes da API',()=>{
+  const sale={amount:281.25,metadata:{campaign_id:'P-MLB18087110',promotion_id:'OFFER-MLB1827540119-13978683128',promotion_type:'marketplace_campaign'}};
+  const active={id:'P-MLB18087110',ref_id:'OFFER-MLB1827540119-13978683128',type:'SMART',status:'started',price:281.25,original_price:398.8,meli_percentage:1.6};
+  const other={...active,id:'P-other',ref_id:'OFFER-other'};
+  const result=service.activeBenefit(sale,[other,active]);assert.equal(result.amount,6.38);assert.equal(result.estimated,true);assert.match(result.reason,/Estimado/);
+  assert.equal(service.activeBenefit(sale,[{...active,ref_id:'OFFER-other'}]).status,'pending');
+  assert.equal(service.activeBenefit(sale,[{...active,id:'P-other'}]).status,'pending');
+  assert.equal(service.activeBenefit(sale,[{...active,meli_percentage:null}]).status,'pending');
+  assert.equal(service.activeBenefit({...sale,metadata:{promotion_id:active.ref_id,promotion_type:'marketplace_campaign'}},[active]).amount,6.38);
+});
+test('desconto custom associa ref_id e benefício absoluto de boost sem estimar coparticipação',()=>{
+  const sale={amount:75,metadata:{promotion_id:'OFFER-123',promotion_type:'custom'}};
+  const active={id:'P1',ref_id:'OFFER-123',type:'PRICE_DISCOUNT',status:'started',price:80,boosted_offer:true,total_price_for_boosted_offer:75,discount_meli_boost_amount:5};
+  const result=service.activeBenefit(sale,[active]);assert.equal(result.amount,5);assert.equal(result.estimated,false);
+});
+
+test('consulta mantém filtro exato no contexto da operação',async()=>{
+  const pool={query:async(sql)=>({rows:sql.startsWith('SELECT seller_id')?[{seller_id:'42'}]:[]})};
+  const op=await service.operation(pool,'consulta','admin',{filter:'B1103'},'executando');
+  assert.deepEqual(op.dados,{filter:'B1103'});assert.equal(op.seller,'42');
+});
