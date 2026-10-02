@@ -39,7 +39,8 @@ function createRouter(pool,renderShell) {
       const account=(await service.state(pool)).account,api=new service.MeliClient(pool);
       const snap=await service.snapshot(api,id,account.seller_id);
       let promotions;try{promotions=await api.get('/seller-promotions/items/'+id,{app_version:'v2'});}catch(e){promotions={erro:e.message};}
-      res.send(renderShell(req,`<section class="ml-card"><h2>Diagnóstico da promoção vigente</h2><p>Consulta de leitura do anúncio ${escape(id)}. Nenhuma alteração é publicada.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${escape(JSON.stringify({sale:snap.sale,benefit:snap.price.benefit,promotions},null,2))}</pre></section>`,{title:'Diagnóstico Mercado Livre'}));
+      let campaign;try{if(snap.sale.metadata?.campaign_id){const match=Array.isArray(promotions)?promotions.find(p=>p.id===snap.sale.metadata.campaign_id):null;if(match)campaign=await api.get('/seller-promotions/promotions/'+match.id+'/items',{app_version:'v2',promotion_type:match.type,item_id:id});}}catch(e){campaign={erro:e.message};}
+      res.send(renderShell(req,`<section class="ml-card"><h2>Diagnóstico da promoção vigente</h2><p>Consulta de leitura do anúncio ${escape(id)}. Nenhuma alteração é publicada.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${escape(JSON.stringify({sale:snap.sale,benefit:snap.price.benefit,promotions,campaign},null,2))}</pre></section>`,{title:'Diagnóstico Mercado Livre'}));
     }catch(e){res.status(503).send(escape(e.message));}
   });
   router.get('/relatorio/:id',async(req,res)=>{if(!/^[0-9a-f-]{36}$/i.test(req.params.id))return res.status(400).send('Relatório inválido.');try{await service.ensureTables(pool);const op=(await pool.query('SELECT * FROM ml_operacoes WHERE id=$1',[req.params.id])).rows[0];if(!op)return res.status(404).send('Relatório não encontrado.');
