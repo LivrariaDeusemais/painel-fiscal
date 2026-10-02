@@ -236,7 +236,22 @@ function standardizeEqualProducts(items, dynamicRules = DEFAULT_DYNAMIC_RULES) {
   });
 }
 
+// Gross changes preserve the target liquid price and its margin calculation.
+function applyGrossPolicy(item) {
+  const applied = item.published?.discount;
+  const available = !item.row.sem_vinculo && Number(item.published?.grossPrice) > 0 && applied != null && Number.isFinite(Number(applied));
+  const grossStatus = !available ? 'Revisar' : Number(applied) <= 0.06 + 1e-12 ? 'Aumentar valor' : Number(applied) <= 0.5 + 1e-12 ? 'Manter valor' : 'Reduzir valor';
+  if (item.result?.status !== 'OK') return {...item, grossStatus:'Revisar'};
+  const liquid = item.result.finalPrice;
+  const configured = Number(item.rule.discount);
+  const automatic = grossStatus === 'Manter valor' ? Number(item.published.grossPrice) : configured >= 0 && configured < 1 ? liquid / (1 - configured) : null;
+  const manual = Number(item.row.novo_bruto_manual);
+  const grossPrice = manual > 0 && Number.isFinite(manual) ? manual : automatic;
+  return {...item, grossStatus, result:{...item.result, grossPrice, grossManual:manual > 0, discount:grossPrice > 0 ? 1 - liquid / grossPrice : null}};
+}
+
 module.exports = {
+  applyGrossPolicy,
   DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
   attractivePriceAtOrAbove,

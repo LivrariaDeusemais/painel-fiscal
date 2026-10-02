@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const {
   DEFAULT_DYNAMIC_RULES,
   MARKETPLACE_RULES,
+  applyGrossPolicy,
   calculateAtPrice,
   calculatePriceSimulation,
   calculateMarketplace,
@@ -91,6 +92,7 @@ async function initializeTables(pool) {
       importado_em TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query('ALTER TABLE tabela_preco_vinculos ADD COLUMN IF NOT EXISTS novo_bruto_manual NUMERIC');
   await pool.query(`CREATE INDEX IF NOT EXISTS tabela_preco_vinculos_marketplace_sku_idx ON tabela_preco_vinculos (marketplace, sku)`);
   // Old calculator saves used numeric JSON, while CSV imports carry text. Preserve identifiable manual saves.
   await pool.query(`UPDATE tabela_preco_vinculos SET dados=dados || jsonb_build_object(
@@ -544,7 +546,7 @@ async function marketplaceRows(pool, filters = {}) {
           : null
       }
     };
-  });
+  }).map(applyGrossPolicy);
 }
 
 async function calculatorContext(pool, marketplace, sku) {
