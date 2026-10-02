@@ -31,6 +31,17 @@ function createRouter(pool,renderShell) {
     if(!auth || auth.expires<Date.now() || auth.state!==req.query.state || !req.query.code || req.query.error){req.session.mlFeedback={ok:false,message:'Autorização cancelada ou inválida. Conecte novamente.'};return res.redirect(ROOT);}
     try{await service.ensureTables(pool);await service.connect(pool,String(req.query.code),auth.verifier);req.session.mlFeedback={ok:true,message:'Conta conectada. Você pode consultar os preços do Mercado Livre.'};}catch(e){req.session.mlFeedback={ok:false,message:e.message};}res.redirect(ROOT);});
   router.post('/consultar',async(req,res)=>{try{await service.ensureTables(pool);await service.startSync(pool,req.session.usuario.id || req.session.usuario.email);req.session.mlFeedback={ok:true,message:'Consulta iniciada. Acompanhe os resultados abaixo.'};}catch(e){req.session.mlFeedback={ok:false,message:e.message};}res.redirect(ROOT);});
+  router.get('/diagnostico',async(req,res)=>{
+    try {
+      const id=service.itemId(req.query.anuncio);
+      const row=(await pool.query("SELECT id FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' AND UPPER(TRIM(id_loja))=$1 LIMIT 1",[id])).rows[0];
+      if(!row)return res.status(404).send('Anúncio sem vínculo no Plennatec.');
+      const account=(await service.state(pool)).account,api=new service.MeliClient(pool);
+      const snap=await service.snapshot(api,id,account.seller_id);
+      let promotions;try{promotions=await api.get('/seller-promotions/items/'+id,{app_version:'v2'});}catch(e){promotions={erro:e.message};}
+      res.send(renderShell(req,`<section class="ml-card"><h2>Diagnóstico da promoção vigente</h2><p>Consulta de leitura do anúncio ${escape(id)}. Nenhuma alteração é publicada.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${escape(JSON.stringify({sale:snap.sale,benefit:snap.price.benefit,promotions},null,2))}</pre></section>`,{title:'Diagnóstico Mercado Livre'}));
+    }catch(e){res.status(503).send(escape(e.message));}
+  });
   router.get('/relatorio/:id',async(req,res)=>{if(!/^[0-9a-f-]{36}$/i.test(req.params.id))return res.status(400).send('Relatório inválido.');try{await service.ensureTables(pool);const op=(await pool.query('SELECT * FROM ml_operacoes WHERE id=$1',[req.params.id])).rows[0];if(!op)return res.status(404).send('Relatório não encontrado.');
     const ExcelJS=require('exceljs'),book=new ExcelJS.Workbook(),sheet=book.addWorksheet('Resultados');sheet.columns=[{header:'SKU',key:'sku',width:18},{header:'Anúncio',key:'anuncio',width:22},{header:'Status',key:'status',width:24},{header:'Bruto',key:'bruto',width:18},{header:'Líquido',key:'liquido',width:18},{header:'Benefício Meli',key:'beneficio',width:18},{header:'Identificação benefício',key:'beneficioStatus',width:24},{header:'Motivo',key:'motivo',width:90}];sheet.addRows(op.resultados);sheet.getRow(1).font={bold:true};sheet.views=[{state:'frozen',ySplit:1}];for(const key of ['bruto','liquido','beneficio'])sheet.getColumn(key).numFmt='"R$" #,##0.00';
     res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.set('Content-Disposition',`attachment; filename="mercado-livre-${op.id}.xlsx"`);res.send(Buffer.from(await book.xlsx.writeBuffer()));}catch(e){res.status(503).send('Não foi possível gerar o relatório.');}});

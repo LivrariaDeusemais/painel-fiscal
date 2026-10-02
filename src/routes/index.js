@@ -31649,6 +31649,12 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
     .gross-edit input.gross-manual{color:#1d4ed8;font-weight:800}
     .gross-edit input.gross-auto{color:#000}
     .tpt-table .col-new-gross small{white-space:normal;overflow:visible;text-overflow:clip;font-size:9px}
+    .tpt-filter label{min-width:0}.tpt-filter select,.tpt-filter input{width:100%;min-width:0;box-sizing:border-box}
+    .tpt-table .col-new-gross{width:80px!important;min-width:80px!important}
+    .gross-edit input{width:100%;font-size:9px;padding:3px 2px;text-align:center;appearance:textfield;-moz-appearance:textfield}
+    .gross-edit input::-webkit-inner-spin-button,.gross-edit input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .gross-edit input:focus{outline:2px solid #93c5fd}
+
   </style>`;
   return renderTabelaWideShell(req, compactContent);
 }
