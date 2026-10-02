@@ -423,6 +423,14 @@ function databaseRule(row) {
 }
 
 function publishedPrices(row, rule) {
+  const remote = row.dados?.mercado_livre_preco;
+  if (row.marketplace === 'Mercado Livre' && remote?.itemId === String(row.id_loja || '').trim().toUpperCase()
+      && remote.currency === 'BRL' && Number(remote.amount) > 0 && Number(remote.gross) > 0
+      && Number.isFinite(Number(remote.amount)) && Number.isFinite(Number(remote.gross))) {
+    return { grossPrice: Number(remote.gross), liquidPrice: Number(remote.amount),
+      discount: 1 - Number(remote.amount) / Number(remote.gross), source: 'Consultado no Mercado Livre',
+      estimated: false, observedAt: remote.observedAt || null };
+  }
   const grossPrice = Number(row.preco_atual) || 0;
   const manual = Number(row.dados?.preco_liquido_manual) || 0;
   const promotionalPrice = Number(row.preco_promocional) || 0;

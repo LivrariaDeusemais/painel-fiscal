@@ -31452,7 +31452,7 @@ function renderTabelaWideShell(req, innerHtml, options = {}) {
     ['Produtos - Base de dados', '/ferramentas-ia/tabela-precos/produtos'],
     ['Vínculos dos Marketplaces', '/ferramentas-ia/tabela-precos/base'], ['Fretes e tarifas', '/ferramentas-ia/tabela-precos/fretes'],
     ['Calculadora de preços', '/ferramentas-ia/tabela-precos/promocoes'],
-    ...(req.session.usuario?.perfil === 'ADMIN' ? [['Integração Bling', '/ferramentas-ia/tabela-precos/bling']] : [])
+    ...(req.session.usuario?.perfil === 'ADMIN' ? [['Integração Bling', '/ferramentas-ia/tabela-precos/bling'], ['Mercado Livre', '/ferramentas-ia/tabela-precos/mercado-livre']] : [])
   ].map(([label, href]) => `<a class="${currentPath === href ? 'active' : ''}" href="${href}">${label}</a>`).join('');
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} - PlennaTec</title><style>
     *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f2f6f8}.tpw-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid #dce7e1;box-shadow:0 5px 18px rgba(15,23,42,.07)}.tpw-top{height:70px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.tpw-brand{display:flex;align-items:center;gap:12px;min-width:230px}.tpw-brand img{width:42px;height:42px;object-fit:contain}.tpw-brand strong{display:block;font-size:19px}.tpw-brand span{display:block;margin-top:3px;color:#64748b;font-size:11px;font-weight:700}.tpw-user{text-align:right}.tpw-user strong{display:block;color:#009640;font-size:13px}.tpw-user span{font-size:10px;color:#64748b;font-weight:900}.tpw-nav{min-height:45px;padding:0 22px;display:flex;align-items:center;gap:5px;border-top:1px solid #edf2f7;overflow:auto}.tpw-nav a{height:32px;padding:0 12px;border-radius:7px;color:#334155;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;font-size:12px;font-weight:900}.tpw-nav a:hover{background:#eaf8f0;color:#087334}.tpw-nav a.active{background:#009640;color:#fff}.tpw-main{padding:16px 18px 22px}.tpw-alert{margin-bottom:12px;padding:12px 14px;border:1px solid;border-radius:8px;font-size:12px;font-weight:800}.tpw-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tpw-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}@media(max-width:720px){.tpw-top{height:auto;padding:12px}.tpw-user{display:none}.tpw-nav{padding:7px 12px}.tpw-main{padding:10px}}
@@ -31905,6 +31905,7 @@ router.get('/ferramentas-ia/codificador/download/:id/:tipo', protegerRota, permi
 });
 
 router.use('/ferramentas-ia/tabela-precos/bling', require('../integracoes/bling-page').createRouter(pool, renderTabelaWideShell));
+router.use('/ferramentas-ia/tabela-precos/mercado-livre', require('../integracoes/mercado-livre-page').createRouter(pool, renderTabelaWideShell));
 
 router.get('/ferramentas-ia/tabela-precos', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   const feedback = req.session.tabelaPrecosFeedback || null;
