@@ -171,7 +171,14 @@ async function executeCampaign(pool,op) {
     if(op.dados.newCampaign) {
       // Validate every selected item before creating the remote campaign.
       sellerCampaign({name:op.dados.newCampaign.name,start:op.dados.newCampaign.start_date.slice(0,10),end:op.dados.newCampaign.finish_date.slice(0,10)});
-      for(const entry of op.dados.entries) {const row=freshRows.find(i=>String(i.row.id)===String(entry.link));if(!row || fingerprint(row)!==entry.fingerprint)throw new Error('Cadastro, estoque ou cálculo mudou. Prepare novamente.');}
+      for(const entry of op.dados.entries) {
+        const row=freshRows.find(i=>String(i.row.id)===String(entry.link));if(!row || fingerprint(row)!==entry.fingerprint)throw new Error('Cadastro, estoque ou cálculo mudou. Prepare novamente.');
+        const snap=await service.snapshot(api,entry.anuncio,op.seller_id);
+        if(snap.item.status!=='active' || Math.abs(snap.price.gross-entry.anterior)>0.005)throw new Error('Anúncio ou bruto mudou. Prepare novamente antes de criar a campanha.');
+        const terms=campaignTerms(campaign,{id:entry.anuncio,status:'candidate'},row,snap.price.gross,dynamic);
+        if(Math.abs(terms.profit-entry.profit)>0.005 || Math.abs(terms.margin-entry.margin)>0.000001)throw new Error('Margem mudou desde a prévia. Prepare novamente antes de criar a campanha.');
+        await pool.query('UPDATE ml_operacoes SET atualizado_em=NOW() WHERE id=$1',[op.id]);
+      }
       await service.appendResult(pool,op.id,{status:'Criação iniciada',motivo:'Se houver interrupção, consulte as campanhas no Mercado Livre antes de criar novamente.'});
       const created=await api.request('POST','/seller-promotions/promotions',{app_version:'v2'},op.dados.newCampaign);
       if(!created.id || created.type!=='SELLER_CAMPAIGN')throw new Error('Criação sem identificação confirmada. Consulte as campanhas antes de repetir.');
@@ -186,7 +193,7 @@ async function executeCampaign(pool,op) {
         const matches=candidates.filter(c=>c.id===entry.anuncio),candidate=matches.length===1?matches[0]:null;
         if(!candidate || candidate.status!=='candidate')throw new Error('Item não é candidato ou já participa. Consulte a campanha.');
         if(!op.dados.newCampaign && candidateKey(candidate)!==entry.candidateKey)throw new Error('Condições da oferta mudaram. Revise uma nova prévia.');
-        const terms=campaignTerms(campaign,candidate,row,snap.price.gross,dynamic);if(Math.abs(terms.price-entry.liquido)>0.005 || Math.abs(terms.credit-entry.credit)>0.005)throw new Error('Preço ou benefício mudou desde a prévia. Prepare novamente.');
+        const terms=campaignTerms(campaign,candidate,row,snap.price.gross,dynamic);if(Math.abs(terms.price-entry.liquido)>0.005 || Math.abs(terms.credit-entry.credit)>0.005 || Math.abs(terms.profit-entry.profit)>0.005 || Math.abs(terms.margin-entry.margin)>0.000001)throw new Error('Preço, benefício ou margem mudou desde a prévia. Prepare novamente.');
         const body=participationBody(campaign,candidate,terms.price);
         await service.appendResult(pool,op.id,{...result,status:'Envio iniciado',motivo:'Campanha '+campaign.id+'. Consulte a participação se houver interrupção.'});
         const accepted=await api.request('POST','/seller-promotions/items/'+entry.anuncio,{app_version:'v2'},body);
