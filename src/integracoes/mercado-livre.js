@@ -146,7 +146,7 @@ async function snapshot(api,id,seller) {
 function readPrice(item,sale,seller,gross) {
   assertOwned(item,itemId(item.id),seller);
   if(sale.currency_id!=='BRL' || !Number.isFinite(Number(sale.amount)) || !(Number(sale.amount)>0) || !(Number(gross)>0) || !Number.isFinite(Number(gross))) throw new Error('Preço do anúncio ausente ou inválido.');
-  return {itemId:item.id,sellerId:String(seller),amount:Number(sale.amount),gross:Number(gross),currency:'BRL',observedAt:new Date().toISOString(),promotion:sale.metadata || {},priceId:sale.price_id || null};
+  return {itemId:item.id,sellerId:String(seller),amount:Number(sale.amount),gross:Number(gross),currency:'BRL',catalogListing:item.catalog_listing === true,catalogProductId:item.catalog_product_id || null,observedAt:new Date().toISOString(),promotion:sale.metadata || {},priceId:sale.price_id || null};
 }
 async function runLocked(pool,op,worker) {
   const lock=await pool.connect();

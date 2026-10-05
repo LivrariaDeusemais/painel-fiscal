@@ -429,7 +429,7 @@ function publishedPrices(row, rule) {
       && Number.isFinite(Number(remote.amount)) && Number.isFinite(Number(remote.gross))) {
     return { grossPrice: Number(remote.gross), liquidPrice: Number(remote.amount),
       discount: 1 - Number(remote.amount) / Number(remote.gross), source: 'Migrado do Meli',
-      benefit:remote.benefit || {status:'pending',amount:null}, estimated: false, observedAt: remote.observedAt || null };
+      catalogListing:remote.catalogListing === true, benefit:remote.benefit || {status:'pending',amount:null}, estimated: false, observedAt: remote.observedAt || null };
   }
   const grossPrice = Number(row.preco_atual) || 0;
   const manual = Number(row.dados?.preco_liquido_manual) || 0;
@@ -638,6 +638,21 @@ function priceReviewStatus(validationStatus, calculationStatus, difference) {
   return 'Analisar';
 }
 
+// Compare the practiced price's profitability with the configured requirements.
+// The recommended target remains informational and does not force a price change.
+function marketplaceReviewStatus(item) {
+  if (item.row.sem_vinculo) return 'Sem Vínculo';
+  if (item.row.status_validacao === 'Novo') return 'Novo';
+  const current=item.published?.details;
+  if (item.result?.status !== 'OK' || !current || !item.rule
+      || !Number.isFinite(current.margin) || !Number.isFinite(current.netProfit)) return 'Revisar';
+  const sufficient=current.margin+1e-9 >= Number(item.rule.minMargin || 0)
+    && Math.round(current.netProfit*100) >= Math.round(Number(item.rule.minProfit || 0)*100);
+  if (sufficient) return 'Manter preço';
+  if (item.published.benefit?.status === 'pending') return 'Revisar';
+  return 'Reajustar';
+}
+
 async function mercadoLivreRows(pool) {
   return marketplaceRows(pool, { marketplace: 'Mercado Livre' });
 }
@@ -715,6 +730,7 @@ module.exports = {
   mercadoLivreRows,
   overview,
   priceReviewStatus,
+  marketplaceReviewStatus,
   priceSimulationStatus,
   productRows,
   publishedPrices,

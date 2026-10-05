@@ -35,13 +35,14 @@ test('escritas não se repetem em falha HTTP ou resposta ambígua; GET permite r
   calls=0;await assert.rejects(api.request('DELETE','/items/MLB123'),/permitida/);assert.equal(calls,0);
   await assert.rejects(api.get('https://example.org'),/permitida/);assert.equal(calls,0);
 });
-test('publicação de bruto bloqueia promoções, automatização e respostas incompletas',()=>{
+test('publicação de bruto permite promoções mas bloqueia automatização e bruto inferior ao líquido',()=>{
   const local={result:{status:'OK',grossPrice:120}},snap={item,price:{amount:100,gross:100}};
   assert.equal(actions.validateGross(local,snap,[]),120);
   assert.throws(()=>actions.validateGross(local,snap,undefined),/incompleta/);
-  assert.throws(()=>actions.validateGross(local,snap,[{status:'started'}]),/promoção/);
+  assert.equal(actions.validateGross(local,snap,[{status:'started'}]),120);
   assert.throws(()=>actions.validateGross(local,{...snap,item:{...item,tags:['dynamic_standard_price']}},[]),/automatização/);
-  assert.throws(()=>actions.validateGross(local,{...snap,price:{amount:75,gross:100}},[]),/promocional/);
+  assert.equal(actions.validateGross(local,{...snap,price:{amount:75,gross:100}},[]),120);
+  assert.throws(()=>actions.validateGross({result:{status:'OK',grossPrice:70}},{...snap,price:{amount:75,gross:100}},[]),/menor/);
 });
 test('campanha própria mantém líquido e exige 5% sem impor esse mínimo a outros tipos',()=>{
   const local={result:{finalPrice:95},product:{cost:30,weight:.3},rule:MARKETPLACE_RULES.find(r=>r.marketplace==='Mercado Livre')};
@@ -133,4 +134,39 @@ test('consulta mantém filtro exato no contexto da operação',async()=>{
   const pool={query:async(sql)=>({rows:sql.startsWith('SELECT seller_id')?[{seller_id:'42'}]:[]})};
   const op=await service.operation(pool,'consulta','admin',{filter:'B1103'},'executando');
   assert.deepEqual(op.dados,{filter:'B1103'});assert.equal(op.seller,'42');
+});
+
+test('catálogo é identificado pelo flag do anúncio, não pelo produto ou elegibilidade',()=>{
+  assert.equal(service.readPrice({...item,catalog_listing:true},sale,42,100).catalogListing,true);
+  assert.equal(service.readPrice({...item,catalog_product_id:'MLB999',tags:['catalog_listing_eligible']},sale,42,100).catalogListing,false);
+  const row={marketplace:'Mercado Livre',id_loja:'MLB123',dados:{mercado_livre_preco:service.readPrice({...item,catalog_listing:true},sale,42,100)}};
+  assert.equal(publishedPrices(row,{}).catalogListing,true);
+});
+test('revisão dos brutos exibe memória e edição externa sem misturar o formulário de seleção',()=>{
+  const html=actions.pricesTable([{row:{id:1,sku:'B1234',id_loja:'MLB123',estoque_full:{}},published:{grossPrice:100,liquidPrice:75,catalogListing:true},result:{status:'OK',grossPrice:120,finalPrice:90,discount:.25,grossManual:true,details:{costValue:30,margin:.1}},grossStatus:'Manter valor'}],{query:{},session:{mlCsrf:'token'}});
+  for(const label of ['Frete','CMV','Lucro líquido','Margem líquida','Catálogo','Novo Bruto B1234'])assert.ok(html.includes(label));
+  assert.ok(html.includes('form="gross-1"'));assert.ok(html.includes('ml-gross manual'));
+  assert.ok(html.indexOf('</form><form id="gross-1"')>0);
+});
+
+test('envio escreve somente bruto e verifica líquido promocional depois sem alterar promoção',async()=>{
+  const pricing=require('../src/tabela-precos/service');
+  const original={rows:pricing.marketplaceRows,api:service.MeliClient,snapshot:service.snapshot,save:service.savePrice,append:service.appendResult};
+  const local={row:{id:1,sku:'B',id_loja:'MLB123'},product:{cost:30,weight:.3},rule:{},result:{status:'OK',grossPrice:120,finalPrice:90,details:{}},published:{}};
+  const entry={link:1,sku:'B',anuncio:'MLB123',bruto:120,anterior:100,liquidoAtual:75,promocional:true,fingerprint:actions.fingerprint(local)};
+  let requests=[],reports=[],saved=[],snapCount=0,changed=false;
+  try{
+    pricing.marketplaceRows=async()=>[local];
+    service.MeliClient=class{async get(){return [{status:'started'}];}async request(...args){requests.push(args);return {};}};
+    service.snapshot=async()=>({item,price:{gross:++snapCount%2?100:120,amount:changed&&snapCount%2===0?76:75}});
+    service.savePrice=async(pool,row,price)=>saved.push(price);
+    service.appendResult=async(pool,id,result)=>reports.push(result);
+    const pool={query:async()=>({rows:[]})},op={id:'op',seller_id:42,dados:{entries:[entry]}};
+    await actions.executePrices(pool,op);
+    assert.equal(requests.length,1);assert.equal(requests[0][1],'/items/MLB123/prices/standard');
+    assert.deepEqual(requests[0][3],{prices:[{conditions:{context_restrictions:['channel_marketplace']},amount:120,currency_id:'BRL'}]});
+    assert.equal(reports.at(-1).status,'Publicado');assert.match(reports.at(-1).motivo,/preservado/);
+    changed=true;await actions.executePrices(pool,op);
+    assert.equal(reports.at(-1).status,'Pendente');assert.match(reports.at(-1).motivo,/alterou o líquido/);assert.equal(saved.at(-1).amount,76);
+  }finally{pricing.marketplaceRows=original.rows;service.MeliClient=original.api;service.snapshot=original.snapshot;service.savePrice=original.save;service.appendResult=original.append;}
 });
