@@ -38,7 +38,8 @@ test('escritas não se repetem em falha HTTP ou resposta ambígua; GET permite r
 test('publicação de bruto permite promoções mas bloqueia automatização e bruto inferior ao líquido',()=>{
   const local={result:{status:'OK',grossPrice:120}},snap={item,price:{amount:100,gross:100}};
   assert.equal(actions.validateGross(local,snap,[]),120);
-  assert.throws(()=>actions.validateGross(local,snap,undefined),/incompleta/);
+  assert.equal(actions.validateGross(local,snap),120);
+  assert.equal(actions.validateGross({result:{status:'OK',grossPrice:42.71}},{...snap,price:{amount:4440,gross:4440,benefit:{status:'pending'}}}),42.71);
   assert.equal(actions.validateGross(local,snap,[{status:'started'}]),120);
   assert.throws(()=>actions.validateGross(local,{...snap,item:{...item,tags:['dynamic_standard_price']}},[]),/automatização/);
   assert.equal(actions.validateGross(local,{...snap,price:{amount:75,gross:100}},[]),120);
@@ -157,7 +158,7 @@ test('envio escreve somente bruto e verifica líquido promocional depois sem alt
   let requests=[],reports=[],saved=[],snapCount=0,changed=false;
   try{
     pricing.marketplaceRows=async()=>[local];
-    service.MeliClient=class{async get(){return [{status:'started'}];}async request(...args){requests.push(args);return {};}};
+    service.MeliClient=class{async get(){throw new Error('Mercado Livre recusou a operação (HTTP 400).');}async request(...args){requests.push(args);return {};}};
     service.snapshot=async()=>({item,price:{gross:++snapCount%2?100:120,amount:changed&&snapCount%2===0?76:75}});
     service.savePrice=async(pool,row,price)=>saved.push(price);
     service.appendResult=async(pool,id,result)=>reports.push(result);

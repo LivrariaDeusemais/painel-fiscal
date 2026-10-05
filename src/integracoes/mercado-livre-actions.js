@@ -18,13 +18,12 @@ function fingerprint(item) {
   // Includes every calculation input and target, not just the editable gross.
   return JSON.stringify({link:item.row.id,id:item.row.id_loja,sku:item.row.sku,product:item.product,rule:item.rule,target:item.result.finalPrice,gross:round(item.result.grossPrice),details:item.result.details,stock:item.row.estoque,matriz:item.row.estoque_matriz,full:item.row.estoque_full});
 }
-function validateGross(item,snapshot,promotions) {
+function validateGross(item,snapshot) {
   const gross=round(item.result.grossPrice);
   if(item.result.status!=='OK' || !Number.isFinite(gross) || gross<=0)throw new Error('Cálculo sem novo bruto válido.');
   if(snapshot.item.status!=='active')throw new Error('Anúncio não está ativo.');
   if(snapshot.item.tags?.includes('dynamic_standard_price'))throw new Error('Anúncio com automatização de preço. Gerencie a automatização no Mercado Livre.');
-  if(!Array.isArray(promotions))throw new Error('Consulta de promoções incompleta. Não é seguro publicar o bruto.');
-  if(gross < snapshot.price.amount-0.005)throw new Error('Novo bruto menor que o líquido em vigor. Ajuste a promoção no Mercado Livre antes do envio.');
+  if(snapshot.price.amount < snapshot.price.gross-0.005 && gross < snapshot.price.amount-0.005)throw new Error('Novo bruto menor que o líquido em vigor. Ajuste a promoção no Mercado Livre antes do envio.');
   return gross;
 }
 async function previewPrices(pool,rows,owner) {
@@ -36,8 +35,8 @@ async function preparePrices(pool,rows,op) {
   const duplicates=new Map();for(const row of rows){const id=String(row.row.id_loja).trim().toUpperCase();duplicates.set(id,(duplicates.get(id)||0)+1);}
   for(const row of rows) {const entry={link:row.row.id,sku:row.row.sku,anuncio:row.row.id_loja,liquido:row.result.finalPrice,bruto:round(row.result.grossPrice),fingerprint:fingerprint(row)};
     try{const id=service.itemId(row.row.id_loja);if(duplicates.get(id)>1)throw new Error('Mesmo MLB em mais de um vínculo. Corrija a duplicidade.');
-      const snap=await service.snapshot(api,id,account.seller_id),promos=await api.get('/seller-promotions/items/'+id,{app_version:'v2'});
-      entry.bruto=validateGross(row,snap,Array.isArray(promos)?promos:promos.results);entry.anuncio=id;entry.anterior=snap.price.gross;entry.liquidoAtual=snap.price.amount;entry.promocional=snap.price.amount < snap.price.gross-0.005;
+      const snap=await service.snapshot(api,id,account.seller_id);
+      entry.bruto=validateGross(row,snap);entry.anuncio=id;entry.anterior=snap.price.gross;entry.liquidoAtual=snap.price.amount;entry.promocional=snap.price.amount < snap.price.gross-0.005;
       if(Math.abs(entry.bruto-entry.anterior)<0.005)throw new Error('Preço bruto já corresponde ao novo valor.');
       entry.status='Pronto';
     }catch(e){entry.status='Bloqueado';entry.motivo=e.message;}entries.push(entry);await service.appendResult(pool,op.id,{sku:entry.sku,anuncio:entry.anuncio,status:entry.status,motivo:entry.motivo});}
@@ -67,8 +66,8 @@ async function executePrices(pool,op) {
   await finish(pool,op,async report=>{const rows=await localRows(pool,{stock:'all'});for(const entry of op.dados.entries) {let result={sku:entry.sku,anuncio:entry.anuncio,bruto:entry.bruto,liquido:entry.liquido};
     try{const current=rows.find(i=>String(i.row.id)===String(entry.link));
       if(!current || fingerprint(current)!==entry.fingerprint)throw new Error('Cadastro, estoque ou cálculo mudou desde a prévia. Prepare novamente.');
-      const snap=await service.snapshot(api,entry.anuncio,op.seller_id),promos=await api.get('/seller-promotions/items/'+entry.anuncio,{app_version:'v2'});
-      validateGross(current,snap,Array.isArray(promos)?promos:promos.results);
+      const snap=await service.snapshot(api,entry.anuncio,op.seller_id);
+      validateGross(current,snap);
       if(!Number.isFinite(entry.liquidoAtual))throw new Error('Prévia antiga. Prepare uma nova prévia antes de enviar.');
       if(Math.abs(snap.price.gross-entry.anterior)>0.005 || Math.abs(snap.price.amount-entry.liquidoAtual)>0.005)throw new Error('Preço bruto ou líquido publicado mudou desde a prévia. Prepare novamente.');
       await service.appendResult(pool,op.id,{...result,status:'Envio iniciado',motivo:'Confira o anúncio se a operação for interrompida antes da confirmação.'});
