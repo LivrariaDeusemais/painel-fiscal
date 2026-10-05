@@ -186,9 +186,24 @@ async function beginOperation(pool,type,user,data) {
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
 async function appendResult(pool,id,result) {await pool.query("UPDATE ml_operacoes SET resultados=resultados||$2::jsonb,atualizado_em=NOW() WHERE id=$1",[id,JSON.stringify([result])]);}
+function syncSelectors(filter='') {
+  const raw=String(filter).trim();
+  if(raw.length>5000)throw new Error('Lista muito longa. Informe até 50 SKUs ou anúncios.');
+  if(!raw)return [];
+  const entries=raw.split(',').map(v=>v.trim().toUpperCase());
+  if(entries.some(v=>!v || v.length>100))throw new Error('Informe os SKUs ou anúncios separados por vírgula, sem posições vazias.');
+  const selectors=[...new Set(entries)];
+  if(selectors.length>50)throw new Error('Informe até 50 SKUs ou anúncios por consulta.');
+  return selectors;
+}
+async function syncRows(pool,filter) {
+  const selectors=syncSelectors(filter);
+  return (await pool.query("SELECT id,sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' AND (cardinality($1::text[])=0 OR UPPER(TRIM(sku))=ANY($1::text[]) OR UPPER(TRIM(id_loja))=ANY($1::text[])) ORDER BY id",[selectors])).rows;
+}
 async function runSync(pool,op) {
   const api=new MeliClient(pool);let errors=0;const snapshots=new Map();
-  try {const rows=(await pool.query("SELECT id,sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre' AND ($1='' OR sku=$1 OR UPPER(TRIM(id_loja))=UPPER($1)) ORDER BY id",[op.dados?.filter || ''])).rows;
+  try {const rows=await syncRows(pool,op.dados?.filter || '');
+    for(const selector of syncSelectors(op.dados?.filter || '')) {if(!rows.some(row=>[row.sku,row.id_loja].some(v=>String(v || '').trim().toUpperCase()===selector))){errors++;await appendResult(pool,op.id,{sku:selector,status:'Pendente',motivo:'Nenhum vínculo encontrado para o código informado.'});}}
     if(!rows.length){errors++;await appendResult(pool,op.id,{status:'Pendente',motivo:'Nenhum vínculo encontrado para o SKU ou anúncio informado.'});}
     for(const row of rows) {let result={sku:row.sku,anuncio:row.id_loja};try {const id=itemId(row.id_loja);if(!snapshots.has(id))snapshots.set(id,await snapshot(api,id,op.seller));const {price}=snapshots.get(id);await savePrice(pool,row,price);result={...result,status:'Atualizado',bruto:price.gross,liquido:price.amount,beneficio:price.benefit?.amount,beneficioStatus:price.benefit?.estimated?'Estimado pela API':price.benefit?.status,motivo:price.benefit?.reason || null};if(price.benefit?.status==='pending'){errors++;result.motivo=price.benefit.reason || 'Benefício da promoção vigente pendente de identificação.';}
     }catch(e){errors++;result={...result,status:'Pendente',motivo:e.message};}await appendResult(pool,op.id,result);}
@@ -196,11 +211,11 @@ async function runSync(pool,op) {
   }catch(e){await appendResult(pool,op.id,{status:'Falhou',motivo:e.message});await pool.query("UPDATE ml_operacoes SET status='falhou',atualizado_em=NOW() WHERE id=$1",[op.id]);}
 }
 async function startSync(pool,user,filter='') {
-  filter=String(filter).trim();if(filter.length>100)throw new Error('Filtro de anúncio inválido.');
+  filter=syncSelectors(filter).join(', ');
   const client=await pool.connect();
   try{await client.query('BEGIN');await client.query('SELECT id FROM ml_integracao WHERE id=1 FOR UPDATE');
     if((await client.query("SELECT id FROM ml_operacoes WHERE status='executando' LIMIT 1")).rows.length)throw new Error('Já existe uma operação em andamento. Consulte o resultado antes de iniciar outra.');
     const op=await operation(client,'consulta',user,{filter},'executando');await client.query('COMMIT');setImmediate(()=>runLocked(pool,op,()=>runSync(pool,op)).catch(()=>{}));return op.id;
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
-module.exports={ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};
+module.exports={syncSelectors,syncRows,ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};

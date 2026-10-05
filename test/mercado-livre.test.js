@@ -171,3 +171,11 @@ test('envio escreve somente bruto e verifica líquido promocional depois sem alt
     assert.equal(reports.at(-1).status,'Pendente');assert.match(reports.at(-1).motivo,/alterou o líquido/);assert.equal(saved.at(-1).amount,76);
   }finally{pricing.marketplaceRows=original.rows;service.MeliClient=original.api;service.snapshot=original.snapshot;service.savePrice=original.save;service.appendResult=original.append;}
 });
+test('consulta por lista usa códigos exatos e não transforma uma lista inválida em consulta geral',async()=>{
+  assert.deepEqual(service.syncSelectors(' b1607, B1605, B1606, B1607 '),['B1607','B1605','B1606']);
+  assert.deepEqual(service.syncSelectors(''),[]);
+  for(const invalid of [',','B1607,',Array.from({length:51},(_,i)=>'B'+i).join(',')])assert.throws(()=>service.syncSelectors(invalid));
+  let params,sql;
+  await service.syncRows({query:async(q,p)=>{sql=q;params=p;return {rows:[]};}},'B1607, MLB123');
+  assert.deepEqual(params,[['B1607','MLB123']]);assert.match(sql,/marketplace='Mercado Livre'/);assert.match(sql,/UPPER\(TRIM\(sku\)\)=ANY/);assert.ok(!sql.includes('ILIKE'));
+});
