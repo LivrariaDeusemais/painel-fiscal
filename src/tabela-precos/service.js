@@ -646,7 +646,7 @@ function marketplaceReviewStatus(item) {
   const current=item.published?.details;
   if (item.result?.status !== 'OK' || !current || !item.rule
       || !Number.isFinite(current.margin) || !Number.isFinite(current.netProfit)) return 'Revisar';
-  const sufficient=current.margin+1e-9 >= Number(item.rule.minMargin || 0)
+  const sufficient=Math.round((current.margin+Number.EPSILON)*10000) >= Math.round(Number(item.rule.minMargin || 0)*10000)
     && Math.round(current.netProfit*100) >= Math.round(Number(item.rule.minProfit || 0)*100);
   if (sufficient) return 'Manter preço';
   if (item.published.benefit?.status === 'pending') return 'Revisar';

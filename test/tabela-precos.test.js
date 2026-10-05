@@ -355,6 +355,7 @@ test('status mantém preço lucrativo mesmo quando o alvo calculado é maior e i
   const i={row:{status_validacao:'Validado'},rule:{minMargin:.1,minProfit:4},result:{status:'OK',finalPrice:282.9},published:{liquidPrice:265.91,details:{margin:.1249,netProfit:33.21},benefit:{status:'identified',amount:15.78}}};
   assert.equal(marketplaceReviewStatus(i),'Manter preço');
   assert.equal(marketplaceReviewStatus({...i,published:{...i.published,details:{margin:.1,netProfit:4}}}),'Manter preço');
+  assert.equal(marketplaceReviewStatus({...i,published:{...i.published,details:{margin:.09996,netProfit:20}}}),'Manter preço');
   assert.equal(marketplaceReviewStatus({...i,published:{...i.published,details:{margin:.099,netProfit:20}}}),'Reajustar');
   assert.equal(marketplaceReviewStatus({...i,published:{...i.published,details:{margin:.12,netProfit:3.99}}}),'Reajustar');
   assert.equal(marketplaceReviewStatus({...i,published:{...i.published,benefit:{status:'pending'},details:{margin:.09,netProfit:20}}}),'Revisar');
