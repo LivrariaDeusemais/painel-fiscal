@@ -713,7 +713,16 @@ async function updateFreight(pool, id, values) {
     percent('frete_percentual'), decimal('taxa_fixa') || 0]);
 }
 
+async function deleteLink(pool, fields) {
+  const {id,sku,anuncio,marketplace}=fields;
+  if (!/^[1-9]\d*$/.test(String(id)) || !sku || !marketplace) throw new Error('Vínculo inválido. Pesquise novamente.');
+  const result = await pool.query("DELETE FROM tabela_preco_vinculos WHERE id=$1 AND sku=$2 AND COALESCE(id_loja,'')=$3 AND marketplace=$4 RETURNING id",[String(id),sku,anuncio || '',marketplace]);
+  if (!result.rows.length) throw new Error('Vínculo não encontrado ou alterado. Pesquise novamente antes de excluir.');
+  return result.rows[0];
+}
+
 module.exports = {
+  deleteLink,
   calculatorContext,
   saveCalculatorPrice,
   calculateMarketplace,

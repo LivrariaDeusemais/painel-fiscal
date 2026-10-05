@@ -31413,12 +31413,15 @@ function renderTabelaBasePage(req, resumo = null, feedback = null) {
   const linkMap = new Map((resumo?.links || []).map(item => [item.marketplace, item]));
   const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}">${escapeHtmlGlobal(item)}</option>`).join('');
   const statusRows = marketplaces.map(item => `<tr><td><strong>${escapeHtmlGlobal(item)}</strong></td><td>${Number(linkMap.get(item)?.total || 0).toLocaleString('pt-BR')}</td><td>${linkMap.get(item)?.atualizado_em ? new Date(linkMap.get(item).atualizado_em).toLocaleString('pt-BR') : 'Ainda não importado'}</td></tr>`).join('');
+  const links = resumo?.managedLinks || [];
+  const management = `<section class="tpb-band"><h2>Consultar e excluir vínculos</h2><p>A exclusão remove somente o vínculo do Plennatec. O produto e seus outros anúncios são preservados. Uma nova importação pode trazer o vínculo novamente.</p><form method="get"><label>SKU ou número do anúncio <input name="busca" value="${escapeHtmlGlobal(req.query.busca || '')}" maxlength="120"></label><button>Pesquisar vínculos</button></form><div class="tpb-scroll"><table><thead><tr><th>Marketplace</th><th>SKU</th><th>Anúncio</th><th>Produto</th>${isAdmin ? '<th>Ação</th>' : ''}</tr></thead><tbody>${links.map(link => `<tr><td>${escapeHtmlGlobal(link.marketplace)}</td><td>${escapeHtmlGlobal(link.sku)}</td><td>${escapeHtmlGlobal(link.id_loja || '')}</td><td>${escapeHtmlGlobal(link.nome || '')}</td>${isAdmin ? `<td><form method="post" action="/ferramentas-ia/tabela-precos/vinculos/excluir" onsubmit="return confirm(this.dataset.confirmation)" data-confirmation="${escapeHtmlGlobal('Excluir somente o vínculo do SKU '+link.sku+', anúncio '+(link.id_loja || '(sem número)')+' — '+link.marketplace+'? O produto e os outros anúncios serão preservados.')}" ><input type="hidden" name="csrf" value="${escapeHtmlGlobal(req.session.linkDeleteCsrf)}"><input type="hidden" name="id" value="${escapeHtmlGlobal(link.id)}"><input type="hidden" name="sku" value="${escapeHtmlGlobal(link.sku)}"><input type="hidden" name="anuncio" value="${escapeHtmlGlobal(link.id_loja || '')}"><input type="hidden" name="marketplace" value="${escapeHtmlGlobal(link.marketplace)}"><input type="hidden" name="busca" value="${escapeHtmlGlobal(req.query.busca || '')}"><button>Excluir vínculo</button></form></td>` : ''}</tr>`).join('') || '<tr><td colspan="5">Nenhum vínculo encontrado.</td></tr>'}</tbody></table></div><p>Exibindo até 100 vínculos. Use a pesquisa para localizar um anúncio específico.</p></section>`;
   const content = `<style>
     .tpb-shell{display:grid;gap:16px;max-width:1480px}.tph-alert{padding:13px 15px;border:1px solid;border-radius:8px;font-size:13px;font-weight:800}.tph-alert.ok{background:#ecfdf3;border-color:#a7e8be;color:#166534}.tph-alert.err{background:#fff1f2;border-color:#fecdd3;color:#9f1239}.tpb-back{display:inline-flex;align-items:center;min-height:38px;padding:0 13px;border:1px solid #bfd8c8;border-radius:7px;color:#087334!important;background:#fff;text-decoration:none;font-size:11px;font-weight:900}.tpb-band{padding:20px;border:1px solid #dce7e1;border-radius:8px;background:#fff}.tpb-band h2{margin:0 0 5px!important}.tpb-band>p{margin:0 0 18px;color:#64748b;font-weight:700}.tpb-imports{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tpb-import{padding:16px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;display:grid;gap:12px}.tpb-import strong,.tpb-import small{display:block}.tpb-import small{margin-top:4px;color:#64748b}.tpb-import input,.tpb-import select{width:100%}.tpb-import button{justify-self:start}.tpb-scroll{overflow:auto;border:1px solid #e2e8f0;border-radius:7px}.tpb-scroll table{min-width:650px}.tpb-issues{border-left:4px solid #dc8b16}.tpb-issues h2 span{display:inline-flex;margin-left:7px;padding:4px 7px;border-radius:999px;background:#fff1d6;color:#92400e;font-size:10px;vertical-align:middle}.tpb-issues table{width:100%;min-width:900px;table-layout:fixed}.tpb-issues col.issue-line{width:64px}.tpb-issues col.issue-sku{width:130px}.tpb-issues col.issue-product{width:38%}.tpb-issues th{position:sticky;top:0;background:#fff7e8!important}.tpb-issues th,.tpb-issues td{vertical-align:top;text-align:left}.tpb-issues td:nth-child(3){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tpb-issues td:nth-child(4){white-space:normal;overflow-wrap:anywhere;line-height:1.45}.tpb-note{padding:16px;border-left:4px solid #94a3b8;background:#f8fafc;color:#475569;font-weight:700}.tpb-note a{color:#087334!important}.tpb-disabled{opacity:.68}@media(max-width:800px){.tpb-imports{grid-template-columns:1fr}}
   </style><div class="tpb-shell">${tabelaPrecosFeedbackHtml(feedback)}<div><a class="tpb-back" href="/ferramentas-ia/tabela-precos">← Voltar ao painel</a></div>
     <section class="tpb-band"><h2>Vínculos dos Marketplaces</h2><p><a href="/ferramentas-ia/tabela-precos/bling">Integração com o Bling: cadastro e estoques</a></p><p>Importe um ou vários itens da multiloja do Bling. Os itens enviados serão atualizados ou incluídos, preservando os demais vínculos.</p>${isAdmin ? `<div class="tpb-imports" style="grid-template-columns:minmax(0,720px)">
       <form class="tpb-import" method="post" action="/ferramentas-ia/tabela-precos/vinculos" enctype="multipart/form-data"><div><strong>Vínculos do marketplace</strong><small>CSV da multiloja do Bling. Você também pode atualizar os preços brutos pela Integração Bling, após configurar as lojas. A planilha permanece disponível durante a validação.</small></div><select name="marketplace" required><option value="">Selecione o marketplace</option>${options}</select><input type="file" name="vinculos" accept=".csv" required><button type="submit">Importar vínculos</button></form>
     </div>` : '<div class="tpb-note">Somente administradores podem substituir os vínculos.</div>'}</section>
+    ${management}
     <section class="tpb-band"><h2>Situação dos vínculos</h2><div class="tpb-scroll"><table><thead><tr><th>Marketplace</th><th>Vínculos</th><th>Última importação</th></tr></thead><tbody>${statusRows}</tbody></table></div></section>
   </div>`;
   return renderPremiumAdminShell(req, { titulo: 'Vínculos dos Marketplaces', subtitulo: 'Anúncios vinculados pela multiloja do Bling.', paginaAtual: 'ferramentas-ia' }, content);
@@ -31922,6 +31925,9 @@ router.get('/ferramentas-ia/tabela-precos/base', protegerRota, permitirPerfis('A
   try {
     await tabelaPrecosService.ensureTables(pool);
     const resumo = await tabelaPrecosService.overview(pool);
+    req.session.linkDeleteCsrf ||= crypto.randomBytes(32).toString('hex');
+    const busca = String(req.query.busca || '').trim().slice(0,120);
+    resumo.managedLinks = (await pool.query(`SELECT id, marketplace, sku, id_loja, nome FROM tabela_preco_vinculos WHERE $1='' OR sku ILIKE $2 OR id_loja ILIKE $2 ORDER BY marketplace, sku, id LIMIT 100`, [busca, '%'+busca+'%'])).rows;
     res.send(renderTabelaBasePage(req, resumo, feedback));
   } catch (error) {
     res.send(renderTabelaBasePage(req, null, feedback || { erro: `Bases indisponíveis: ${error.message}` }));
@@ -32200,6 +32206,15 @@ router.post('/ferramentas-ia/tabela-precos/produtos/status-lote', protegerRota, 
     req.session.tabelaPrecosFeedback = { erro: `Não foi possível atualizar os produtos selecionados: ${error.message}` };
   }
   res.redirect(returnTo);
+});
+
+router.post('/ferramentas-ia/tabela-precos/vinculos/excluir', protegerRota, somenteAdmin, async (req,res) => {
+  if (!req.session.linkDeleteCsrf || req.body.csrf !== req.session.linkDeleteCsrf) return res.status(403).send('Sessão inválida. Atualize a página de vínculos.');
+  try {
+    await tabelaPrecosService.deleteLink(pool, req.body);
+    req.session.tabelaPrecosFeedback = { mensagem: `Vínculo ${req.body.anuncio || '(sem número)'} do SKU ${req.body.sku} excluído do Plennatec. Produto e outros anúncios preservados.` };
+  } catch (error) { req.session.tabelaPrecosFeedback = { erro: error.message }; }
+  res.redirect('/ferramentas-ia/tabela-precos/base?busca='+encodeURIComponent(String(req.body.busca || '').slice(0,120)));
 });
 
 router.post('/ferramentas-ia/tabela-precos/vinculos', protegerRota, somenteAdmin, receberArquivoTabelaPrecos('vinculos'), async (req, res) => {
