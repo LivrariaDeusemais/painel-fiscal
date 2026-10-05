@@ -713,6 +713,16 @@ async function updateFreight(pool, id, values) {
     percent('frete_percentual'), decimal('taxa_fixa') || 0]);
 }
 
+async function managedLinkRows(pool, query={}) {
+  const filters={search:String(query.busca || '').trim().slice(0,120),marketplace:String(query.marketplace || '').slice(0,100),duplicates:['sim','nao'].includes(query.duplicados)?query.duplicados:''};
+  const cte=`WITH groups AS (SELECT marketplace,UPPER(TRIM(sku)) AS sku_key,COUNT(DISTINCT NULLIF(UPPER(TRIM(id_loja)),''))::int AS anuncios FROM tabela_preco_vinculos GROUP BY marketplace,UPPER(TRIM(sku))), filtered AS (SELECT v.*,g.anuncios FROM tabela_preco_vinculos v JOIN groups g ON g.marketplace=v.marketplace AND g.sku_key=UPPER(TRIM(v.sku)) WHERE ($1='' OR v.sku ILIKE $2 OR v.id_loja ILIKE $2) AND ($3='' OR v.marketplace=$3) AND ($4='' OR ($4='sim' AND g.anuncios>1) OR ($4='nao' AND g.anuncios<=1)))`;
+  const args=[filters.search,'%'+filters.search+'%',filters.marketplace,filters.duplicates];
+  const total=Number((await pool.query(cte+' SELECT COUNT(*)::int AS total FROM filtered',args)).rows[0].total);
+  const pages=Math.max(1,Math.ceil(total/50)),page=Math.min(pages,Math.max(1,parseInt(query.pagina,10)||1));
+  const rows=(await pool.query(cte+' SELECT id,marketplace,sku,id_loja,nome,anuncios FROM filtered ORDER BY marketplace,UPPER(TRIM(sku)),id LIMIT 50 OFFSET $5',[...args,(page-1)*50])).rows;
+  return {rows,total,pages,page,filters};
+}
+
 async function deleteLink(pool, fields) {
   const {id,sku,anuncio,marketplace}=fields;
   if (!/^[1-9]\d*$/.test(String(id)) || !sku || !marketplace) throw new Error('Vínculo inválido. Pesquise novamente.');
@@ -723,6 +733,7 @@ async function deleteLink(pool, fields) {
 
 module.exports = {
   deleteLink,
+  managedLinkRows,
   calculatorContext,
   saveCalculatorPrice,
   calculateMarketplace,
