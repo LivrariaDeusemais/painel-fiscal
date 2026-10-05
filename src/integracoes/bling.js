@@ -223,7 +223,8 @@ async function saveGrossLinks(pool, marketplace, links) {
   } catch(error) { await db.query('ROLLBACK');throw error; }
   finally { db.release(); }
 }
-async function startSync(pool) {
+async function startSync(pool, filter='') {
+  const selectedSkus = require('./mercado-livre').syncSelectors(filter);
   await ensureTables(pool);
   const settings = (await pool.query('SELECT configuracao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1')).rows[0];
   if (!settings?.conectado) throw new Error('Conecte sua conta Bling.');
@@ -236,7 +237,7 @@ async function startSync(pool) {
     await client.query("UPDATE bling_sincronizacoes SET status='interrompida', mensagem='A execução anterior foi interrompida. Os dados já atualizados foram preservados.', finalizado_em=NOW() WHERE status='executando'");
     const job = (await client.query("INSERT INTO bling_sincronizacoes(status,etapa) VALUES('executando','Consultando produtos') RETURNING id")).rows[0];
     // All progress is persisted; the HTTP response can return while the work continues.
-    runSync(pool, client, job.id, settings.configuracao).catch(() => {}).finally(async () => {
+    runSync(pool, client, job.id, {...settings.configuracao, selectedSkus}).catch(() => {}).finally(async () => {
       try { await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))"); } finally { client.release(); }
     }).catch(() => {});
     return job.id;
@@ -255,7 +256,10 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
   const persistIssues = () => client.query('UPDATE bling_sincronizacoes SET divergencias=$2::jsonb WHERE id=$1',[id,JSON.stringify(divergences)]);
   const progress = async (stage, total = null) => client.query(`UPDATE bling_sincronizacoes SET etapa=$2,processados=$3,falhas=$4,total=COALESCE($5,total),atualizado_em=NOW() WHERE id=$1`, [id, stage, processed, failures, total]);
   try {
-    const products = await api.all('/produtos');
+    const selected = new Set(settings.selectedSkus || []);
+    const allProducts = await api.all('/produtos');
+    const products = selected.size ? allProducts.filter(p=>selected.has(String(p.codigo || '').trim().toUpperCase())) : allProducts;
+    for(const sku of selected) {if(!products.some(p=>String(p.codigo || '').trim().toUpperCase()===sku)){failures++;issue('Cadastro','',sku,'','','SKU não encontrado no Bling.');}}
     const seen = new Set();
     for (const item of products) {
       const sku = String(item.codigo || '').trim().toUpperCase();
@@ -332,9 +336,11 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         const rows = await api.all(isML ? '/anuncios' : '/produtos/lojas', isML ? {idLoja:storeId,tipoIntegracao:'MercadoLivre',situacao:1} : {idLoja:storeId});
         const links = [];
         for (const source of rows) {
+          if(selected.size && source.produto?.id && !productsById.has(String(source.produto.id))) continue;
           const row = isML ? await api.get('/anuncios/'+source.id,{idLoja:storeId,tipoIntegracao:'MercadoLivre'}) : source;
           if (!isML && String(row.loja?.id)!==String(storeId)) throw new Error('Loja do vínculo divergente.');
           const product = productsById.get(String(row.produto?.id));
+          if (!product && selected.size) continue;
           if (!product) { failures++;issue('Preços brutos',marketplace,'',row.produto?.id,isML?row.anuncioLoja?.id:row.codigo,'Produto não identificado na base consultada; vínculo preservado.');continue; }
           try { links.push(grossLink(row,product,storeId,isML)); }
           catch(error) { failures++;issue('Preços brutos',marketplace,product.sku,product.id,isML?row.anuncioLoja?.id:row.codigo,error.message); }

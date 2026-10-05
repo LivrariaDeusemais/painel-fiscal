@@ -92,3 +92,12 @@ test('associação de anúncio a outro produto interrompe gravação',async()=>{
   await assert.rejects(saveGrossLinks({connect:async()=>db},'Mercado Livre',[{sku:'B1103',product_id:'123',store_id:'MLB1',current_price:450}]),/outro produto/);
   assert.equal(calls.at(-1),'ROLLBACK');assert.equal(calls.some(sql=>sql.startsWith('UPDATE tabela_preco_vinculos')),false);
 });
+test('consulta focada atualiza apenas SKUs selecionados e relata código ausente',async()=>{
+  const calls=[],details=[];
+  const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:[]};}};
+  const api={all:async path=>path==='/produtos'?[{id:1,codigo:'B1607'},{id:2,codigo:'B1605'},{id:3,codigo:'OUTRO'}]:[],get:async(path)=>{details.push(path);return path.startsWith('/produtos/')?{id:Number(path.split('/').at(-1)),codigo:path.endsWith('/1')?'B1607':'B1605',nome:'Livro'}:[{produto:{id:1},depositos:[{id:1,saldoFisico:5}]},{produto:{id:2},depositos:[{id:1,saldoFisico:6}]}];}};
+  await runSync({},db,1,{matriz:'1',selectedSkus:['B1607','B1605','AUSENTE']},api);
+  assert.ok(details.includes('/produtos/1'));assert.ok(details.includes('/produtos/2'));assert.ok(!details.includes('/produtos/3'));
+  const stocks=calls.filter(c=>c.sql.includes('SET estoque='));assert.deepEqual(stocks.map(c=>c.args[0]),['B1607','B1605']);
+  assert.ok(calls.some(c=>c.sql.includes('divergencias=')&&c.args[1].includes('AUSENTE')));
+});
