@@ -138,6 +138,7 @@ async function initializeTables(pool) {
       UNIQUE (marketplace, tipo, ordem)
     )
   `);
+  await pool.query('ALTER TABLE tabela_preco_regras ADD COLUMN IF NOT EXISTS tiktok_faixas JSONB');
   await pool.query(`
     INSERT INTO tabela_preco_regras
       (marketplace, comissao, imposto, adm, ads, cartao, frete_percentual, taxa_fixa, frete_fixo, desconto, margem_minima, saldo_minimo)
@@ -408,6 +409,7 @@ async function importLinks(pool, marketplace, links) {
 function databaseRule(row) {
   return {
     marketplace: row.marketplace,
+    tiktokTiers: row.tiktok_faixas,
     commission: Number(row.comissao),
     tax: Number(row.imposto),
     admin: Number(row.adm),
@@ -681,17 +683,24 @@ function marketplaceCsv(items) {
 const mercadoLivreCsv = marketplaceCsv;
 
 async function updateRule(pool, marketplace, values) {
+  let tiers=null;
+  if(marketplace==='TikTok') {
+    const value=(name,fallback)=>{const raw=values[name];const n=raw==null?fallback:Number(String(raw).replace(',','.'));if(!Number.isFinite(n)||n<0)throw new Error('Informe valores válidos para as faixas do TikTok.');return n;};
+    tiers={lowCommission:value('tiktok_low_commission',10)/100,lowFixed:value('tiktok_low_fixed',4),highCommission:value('tiktok_high_commission',6)/100,highFixed:value('tiktok_high_fixed',6)};
+    if(tiers.lowCommission>=1 || tiers.highCommission>=1)throw new Error('Comissão deve ser menor que 100%.');
+  }
+
   const percent = key => (Number(String(values[key] || 0).replace(',', '.')) || 0) / 100;
   const money = key => Number(String(values[key] || 0).replace(',', '.')) || 0;
   await pool.query(`
     UPDATE tabela_preco_regras SET
       ativo=$2, comissao=$3, imposto=$4, adm=$5, ads=$6, cartao=$7,
       frete_percentual=$8, taxa_fixa=$9, frete_fixo=$10, desconto=$11,
-      margem_minima=$12, saldo_minimo=$13, atualizado_em=NOW()
+      margem_minima=$12, saldo_minimo=$13, tiktok_faixas=$14::jsonb, atualizado_em=NOW()
     WHERE marketplace=$1
   `, [marketplace, values.ativo === 'on', percent('comissao'), percent('imposto'), percent('adm'),
     percent('ads'), percent('cartao'), percent('frete_percentual'), money('taxa_fixa'),
-    money('frete_fixo'), percent('desconto'), percent('margem_minima'), money('saldo_minimo')]);
+    money('frete_fixo'), percent('desconto'), percent('margem_minima'), money('saldo_minimo'),tiers?JSON.stringify(tiers):null]);
 }
 
 async function updateFreight(pool, id, values) {

@@ -362,3 +362,19 @@ test('status mantém preço lucrativo mesmo quando o alvo calculado é maior e i
   assert.equal(marketplaceReviewStatus({...i,row:{sem_vinculo:true}}),'Sem Vínculo');
   assert.equal(marketplaceReviewStatus({...i,row:{status_validacao:'Novo'}}),'Novo');
 });
+test('TikTok aplica faixa pelo líquido com taxa por unidade e arredonda cobranças como extrato',()=>{
+  const rule=MARKETPLACE_RULES.find(r=>r.marketplace==='TikTok'),p={cost:10,weight:.3};
+  const low=calculateAtPrice(p,rule,46);assert.equal(low.commissionValue,4.6);assert.equal(low.fixedFee,4);assert.equal(low.freight,2.76);assert.ok(Math.abs(low.marketplaceReceivable-34.64)<1e-8);
+  const high=calculateAtPrice(p,rule,322.93);assert.equal(high.commissionValue,19.38);assert.equal(high.fixedFee,6);assert.equal(high.freight,19.38);assert.ok(Math.abs(high.marketplaceReceivable-278.17)<1e-8);
+  assert.equal(calculateAtPrice(p,rule,49.99).fixedFee,4);assert.equal(calculateAtPrice(p,rule,50).fixedFee,6);assert.equal(calculateAtPrice(p,rule,50).commissionValue,3);
+  for(const cost of [10,20,25,30,100]) {const result=calculateMarketplace({cost,weight:.3},rule);assert.equal(result.status,'OK');const details=calculateAtPrice({cost,weight:.3},rule,result.finalPrice);assert.equal(result.fixedFee,details.fixedFee);assert.ok(result.margin>=rule.minMargin-.0001);}
+  const custom=calculateAtPrice(p,{...rule,tiktokTiers:{lowCommission:.09,lowFixed:3,highCommission:.05,highFixed:5}},46);assert.equal(custom.fixedFee,3);assert.equal(custom.commissionValue,4.14);
+});
+test('salva faixas do TikTok com percentuais normalizados e rejeita tarifas inválidas',async()=>{
+  const {updateRule}=require('../src/tabela-precos/service');let args;
+  const pool={query:async(sql,p)=>{args=p;return {rows:[]};}};
+  await updateRule(pool,'TikTok',{tiktok_low_commission:'10',tiktok_low_fixed:'4',tiktok_high_commission:'6',tiktok_high_fixed:'6',frete_percentual:'6'});
+  assert.deepEqual(JSON.parse(args[13]),{lowCommission:.1,lowFixed:4,highCommission:.06,highFixed:6});
+  await assert.rejects(updateRule(pool,'TikTok',{tiktok_low_commission:'abc'}),/válidos/);
+  await assert.rejects(updateRule(pool,'TikTok',{tiktok_high_commission:'100'}),/100%/);
+});

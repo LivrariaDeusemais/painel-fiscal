@@ -104,7 +104,16 @@ function dynamicForPrice(marketplace, price, weight, rows) {
   };
 }
 
+function tierContext(rule, rows) {
+  if(rule.marketplace!=='TikTok')return {rule,rows};
+  const tiers=rule.tiktokTiers || {lowCommission:.1,lowFixed:4,highCommission:.06,highFixed:6};
+  return {rule:{...rule,commission:0,fixedFee:0},rows:[...rows.filter(r=>r.marketplace!=='TikTok'),
+    {marketplace:'TikTok',priceMin:0,priceMax:49.99,commission:tiers.lowCommission,fixedFee:tiers.lowFixed},
+    {marketplace:'TikTok',priceMin:50,priceMax:null,commission:tiers.highCommission,fixedFee:tiers.highFixed}]};
+}
+
 function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES, freightPrice = price) {
+  ({rule,rows:dynamicRules}=tierContext(rule,dynamicRules));
   const dynamic = dynamicForPrice(rule.marketplace, price, numberOrZero(product.weight), dynamicRules);
   const freightDynamic = dynamicForPrice(rule.marketplace, freightPrice, numberOrZero(product.weight), dynamicRules);
   const commissionRate = numberOrZero(rule.commission) + dynamic.commission;
@@ -115,8 +124,9 @@ function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_R
   const freightRate = numberOrZero(rule.freightPercent) + freightDynamic.freightPercent;
   const percent = commissionRate + cardRate + adsRate + adminRate + taxRate + freightRate;
   const fixedFee = numberOrZero(rule.fixedFee) + dynamic.fixedFee;
-  const freight = numberOrZero(rule.fixedFreight) + freightDynamic.freight + (numberOrZero(freightPrice) * freightRate);
-  const commissionValue = price * commissionRate;
+  const cents=value=>rule.marketplace==='TikTok'?Math.round((value+Number.EPSILON)*100)/100:value;
+  const freight = cents(numberOrZero(rule.fixedFreight) + freightDynamic.freight + (numberOrZero(freightPrice) * freightRate));
+  const commissionValue = cents(price * commissionRate);
   const cardValue = price * cardRate;
   const adsValue = price * adsRate;
   const adminValue = price * adminRate;
@@ -166,6 +176,7 @@ function priceSimulationStatus(margin) {
 }
 
 function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULES) {
+  ({rule,rows:dynamicRules}=tierContext(rule,dynamicRules));
   if (numberOrZero(product.cost) <= 0 || numberOrZero(product.weight) <= 0) {
     return { status: 'Revisar', reason: 'Produto sem custo ou peso.' };
   }
@@ -190,7 +201,7 @@ function calculateMarketplace(product, rule, dynamicRules = DEFAULT_DYNAMIC_RULE
       (numberOrZero(product.cost) + fixedFee + freight) / marginDenominator,
       (numberOrZero(product.cost) + fixedFee + freight + numberOrZero(rule.minProfit)) / profitDenominator
     );
-    const finalPrice = attractivePriceAtOrAbove(minimum);
+    const finalPrice = attractivePriceAtOrAbove(Math.max(minimum, numberOrZero(row.priceMin)));
     if (!within(finalPrice, row.priceMin, row.priceMax)) return null;
     return { finalPrice, details: calculateAtPrice(product, rule, finalPrice, dynamicRules) };
   }).filter(Boolean).sort((a, b) => a.finalPrice - b.finalPrice);
