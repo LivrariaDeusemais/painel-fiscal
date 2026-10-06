@@ -378,3 +378,15 @@ test('salva faixas do TikTok com percentuais normalizados e rejeita tarifas inv�
   await assert.rejects(updateRule(pool,'TikTok',{tiktok_low_commission:'abc'}),/válidos/);
   await assert.rejects(updateRule(pool,'TikTok',{tiktok_high_commission:'100'}),/100%/);
 });
+
+ test('exporta códigos canônicos dos vínculos criados pela integração', () => {
+  const csv = mercadoLivreCsv([{
+    row: { sku: 'L1367', id_produto: '123456',
+      id_loja: '1737774347122411094_1737774262627632726',
+      produto_nome: 'Livro Devocional',
+      dados: { IdProduto: 'antigo', bling_loja_id: '99', 'Link Externo': 'https://exemplo.test' } },
+    result: { status: 'OK', grossPrice: 25.7 }
+  }]);
+  assert.match(csv, /123456;1737774347122411094_1737774262627632726;Livro Devocional;L1367;25,7000;0;;;/);
+  assert.match(csv, /https:\/\/exemplo.test/);
+});

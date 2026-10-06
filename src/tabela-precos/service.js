@@ -673,6 +673,15 @@ function marketplaceCsv(items) {
   for (const item of items) {
     if (item.row.sem_vinculo || item.result?.status !== 'OK') continue;
     const data = { ...(item.row.dados || {}) };
+    const canonical = {
+      IdProduto: item.row.id_produto,
+      'ID na Loja': item.row.id_loja,
+      Nome: item.row.produto_nome || item.row.nome,
+      'Código': item.row.sku
+    };
+    for (const [header, value] of Object.entries(canonical)) {
+      if (value != null && String(value).trim() !== '') data[header] = String(value);
+    }
     data.Preco = formatCsvNumber(item.result.grossPrice);
     data['Preco Promocional'] = '0';
     lines.push(CSV_HEADERS.map(header => csvEscape(data[header])).join(';'));
