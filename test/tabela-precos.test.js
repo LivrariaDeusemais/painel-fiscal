@@ -390,3 +390,12 @@ test('salva faixas do TikTok com percentuais normalizados e rejeita tarifas inv�
   assert.match(csv, /123456;1737774347122411094_1737774262627632726;Livro Devocional;L1367;25,7000;0;;;/);
   assert.match(csv, /https:\/\/exemplo.test/);
 });
+
+ test('carga Bling usa o nome exato da Multiloja pelo ID guardado no vínculo', () => {
+  const item = { row: {marketplace:'TikTok',sku:'L1367',dados:{bling_loja_id:'99'}}, result:{status:'OK',grossPrice:25.7} };
+  const csv = mercadoLivreCsv([item],{lojas:[{id:99,descricao:'TikTok Shop'}],requireStoreName:true});
+  assert.match(csv,/;TikTok Shop\r\n/);
+  const configured = mercadoLivreCsv([{...item,row:{...item.row,dados:{}}}],{lojas:[{id:99,descricao:'TikTok Shop'}],configuracao:{lojas:{TikTok:'99'}},requireStoreName:true});
+  assert.match(configured,/;TikTok Shop\r\n/);
+  assert.throws(()=>mercadoLivreCsv([item],{requireStoreName:true}),/Nome da Multiloja não encontrado/);
+});

@@ -668,7 +668,7 @@ function formatCsvNumber(value) {
   return Number(value).toFixed(4).replace('.', ',');
 }
 
-function marketplaceCsv(items) {
+function marketplaceCsv(items, options = {}) {
   const lines = [CSV_HEADERS.map(csvEscape).join(';')];
   for (const item of items) {
     if (item.row.sem_vinculo || item.result?.status !== 'OK') continue;
@@ -681,6 +681,13 @@ function marketplaceCsv(items) {
     };
     for (const [header, value] of Object.entries(canonical)) {
       if (value != null && String(value).trim() !== '') data[header] = String(value);
+    }
+    const storeId = item.row.dados?.bling_loja_id || options.configuracao?.lojas?.[item.row.marketplace];
+    const store = (options.lojas || []).find(row => String(row.id) === String(storeId));
+    const storeName = store?.descricao || data['Nome Loja (Multilojas)'];
+    if (storeName && String(storeName).trim()) data['Nome Loja (Multilojas)'] = String(storeName);
+    else if (options.requireStoreName) {
+      throw new Error(`Nome da Multiloja não encontrado para ${item.row.marketplace}. Configure a loja na Integração Bling ou importe um vínculo com o nome exato da Multiloja.`);
     }
     data.Preco = formatCsvNumber(item.result.grossPrice);
     data['Preco Promocional'] = '0';

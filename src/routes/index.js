@@ -32460,7 +32460,9 @@ router.get('/ferramentas-ia/tabela-precos/exportar/:marketplace', protegerRota, 
     if (pendentes.length) {
       throw new Error(`${pendentes.length} anúncio(s) ainda precisam de revisão por falta de custo ou peso.`);
     }
-    const csv = tabelaPrecosService.marketplaceCsv(itens);
+    await require('../integracoes/bling').ensureTables(pool);
+    const lojasBling = (await pool.query('SELECT lojas, configuracao FROM bling_integracao WHERE id=1')).rows[0] || {};
+    const csv = tabelaPrecosService.marketplaceCsv(itens, { ...lojasBling, requireStoreName: true });
     const hoje = new Date().toISOString().slice(0, 10);
     const nome = marketplace.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
