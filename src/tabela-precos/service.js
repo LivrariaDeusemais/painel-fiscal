@@ -556,7 +556,7 @@ async function marketplaceRows(pool, filters = {}) {
           : null
       }
     };
-  }).map(applyGrossPolicy);
+  }).map(item => applyGrossPolicy(item, filters.grossMode));
 }
 
 async function calculatorContext(pool, marketplace, sku) {

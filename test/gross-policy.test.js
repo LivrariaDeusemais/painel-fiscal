@@ -30,3 +30,23 @@ test('sem publicado ou cálculo válido exige revisão sem inventar status comer
   const invalid=item(0.3);invalid.result.status='Revisar';
   assert.equal(applyGrossPolicy(invalid).grossStatus,'Revisar');
 });
+
+test('modo calculado usa desconto da regra em todos os marketplaces preservando líquido e margem',()=>{
+  for(const marketplace of ['TikTok','Mercado Livre','Shopee']) {
+    const original=item(0.3);original.rule.marketplace=marketplace;
+    const result=applyGrossPolicy(original,'calculated').result;
+    assert.equal(result.grossPrice,100/0.7);
+    assert.ok(Math.abs(result.discount-0.3)<1e-12);
+    assert.equal(result.finalPrice,100);
+    assert.deepEqual(result.details,original.result.details);
+  }
+});
+test('edição manual prevalece nos dois modos e recalcula apenas desconto',()=>{
+  for(const mode of ['published','calculated']) {
+    const result=applyGrossPolicy(item(0.3,250),mode).result;
+    assert.equal(result.grossPrice,250);
+    assert.equal(result.discount,0.6);
+    assert.equal(result.finalPrice,100);
+    assert.equal(result.details.margin,0.1);
+  }
+});
