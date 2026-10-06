@@ -114,6 +114,8 @@ function tierContext(rule, rows) {
 
 function calculateAtPrice(product, rule, price, dynamicRules = DEFAULT_DYNAMIC_RULES, freightPrice = price) {
   ({rule,rows:dynamicRules}=tierContext(rule,dynamicRules));
+  // TikTok SFP is charged on this sale, even when a promotion has a reference price.
+  if (rule.marketplace === 'TikTok') freightPrice = price;
   const dynamic = dynamicForPrice(rule.marketplace, price, numberOrZero(product.weight), dynamicRules);
   const freightDynamic = dynamicForPrice(rule.marketplace, freightPrice, numberOrZero(product.weight), dynamicRules);
   const commissionRate = numberOrZero(rule.commission) + dynamic.commission;

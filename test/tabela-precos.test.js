@@ -399,3 +399,30 @@ test('salva faixas do TikTok com percentuais normalizados e rejeita tarifas inv�
   assert.match(configured,/;TikTok Shop\r\n/);
   assert.throws(()=>mercadoLivreCsv([item],{requireStoreName:true}),/Nome da Multiloja não encontrado/);
 });
+
+test('TikTok promoção calcula SFP pelo preço da venda e aplica todas as taxas da regra', () => {
+  const { calculateAtPrice, calculatePriceSimulation } = require('../src/tabela-precos/pricing');
+  const rule = MARKETPLACE_RULES.find(r=>r.marketplace==='TikTok');
+  const product={cost:34.76,weight:0.965};
+  const result=calculatePriceSimulation(product,rule,92.15,0,undefined,64.505);
+  assert.equal(result.freight,5.53);
+  assert.equal(result.commissionValue,5.53);
+  assert.equal(result.fixedFee,6);
+  assert.ok(Math.abs(result.marketplaceReceivable-75.09)<1e-9);
+  for (const [key,value] of Object.entries(calculateAtPrice(product,rule,92.15))) {
+    assert.ok(Math.abs(result[key]-value)<1e-9,key);
+  }
+  assert.ok(Math.abs(result.adsValue-92.15*.13)<1e-9);
+  assert.ok(Math.abs(result.adminValue-92.15*.03)<1e-9);
+  assert.ok(Math.abs(result.taxValue-92.15*.05)<1e-9);
+  assert.equal(result.costValue,34.76);
+  assert.equal(result.cardValue,0);
+  const changed=calculatePriceSimulation(product,{...rule,freightPercent:.08,tax:.07,admin:.04,ads:.12,card:.01,tiktokTiers:{lowCommission:.11,lowFixed:3,highCommission:.09,highFixed:7}},92.15,0,undefined,64.505);
+  assert.equal(changed.freight,7.37);
+  assert.equal(changed.commissionValue,8.29);
+  assert.equal(changed.fixedFee,7);
+  assert.ok(Math.abs(changed.taxValue-92.15*.07)<1e-9);
+  assert.ok(Math.abs(changed.adminValue-92.15*.04)<1e-9);
+  assert.ok(Math.abs(changed.adsValue-92.15*.12)<1e-9);
+  assert.ok(Math.abs(changed.cardValue-92.15*.01)<1e-9);
+});
