@@ -748,6 +748,24 @@ async function managedLinkRows(pool, query={}) {
   return {rows,total,pages,page,filters};
 }
 
+async function deleteProducts(pool, input) {
+  const skus = [...new Set((Array.isArray(input) ? input : [input]).filter(value => typeof value === 'string' && value.trim()))];
+  if (!skus.length || skus.length > 100) throw new Error('Selecione de 1 a 100 produtos desta página.');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const found = await client.query('SELECT sku FROM tabela_preco_produtos WHERE sku = ANY($1::text[]) FOR UPDATE', [skus]);
+    if (found.rows.length !== skus.length) throw new Error('Algum produto já foi removido. Atualize a página e selecione novamente.');
+    await client.query('DELETE FROM tabela_preco_vinculos WHERE sku = ANY($1::text[])', [skus]);
+    const deleted = await client.query('DELETE FROM tabela_preco_produtos WHERE sku = ANY($1::text[]) RETURNING sku', [skus]);
+    await client.query('COMMIT');
+    return deleted.rows.length;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
 async function deleteLink(pool, fields) {
   const {id,sku,anuncio,marketplace}=fields;
   if (!/^[1-9]\d*$/.test(String(id)) || !sku || !marketplace) throw new Error('Vínculo inválido. Pesquise novamente.');
@@ -757,6 +775,7 @@ async function deleteLink(pool, fields) {
 }
 
 module.exports = {
+  deleteProducts,
   deleteLink,
   managedLinkRows,
   calculatorContext,
