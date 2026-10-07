@@ -35,6 +35,8 @@ test('formulário renderiza campos de revisão e scripts válidos', async () => 
     router: { get: (_path, fn) => { mock.handler = fn; } },
     URLSearchParams, JSON, console,
     renderGlobalHeader: () => '', escapeHtmlGlobal: value => String(value || ''),
+    getArquivoFilaDisponivel: async () => ({cnpj_cpf:'12345678000190'}),
+    buscarRotinasPorDocumento: async () => contas.slice(0,2),
     normalizarDiaVencimento: () => '',
     pool: {query: async () => ({rows:[{id:10,nome:'Categoria principal',categoria_pai_id:null},{id:11,nome:'Subcategoria',categoria_pai_id:10}]})},
     renderTipoDocumentoOptions: () => '<option value="NF">NF</option>',
@@ -43,7 +45,9 @@ test('formulário renderiza campos de revisão e scripts válidos', async () => 
   const fim = codigo.indexOf("router.post(\n  '/novo'",inicio);
   vm.runInContext(codigo.slice(inicio,fim),mock);
   let html;
-  await mock.handler({query:{}},{send: body => {html=body;}});
+  await mock.handler({query:{arquivo_pdf_id:'1',iniciar_arquivo:'1'}},{send: body => {html=body;}});
+  assert.ok(html.includes('var rotinasPDF = [{'));
+  assert.ok(html.includes('\"subcategoria_id\":12'));
   assert.ok(html.includes('id="pdf_tipo_pagamento"'), html.slice(0,300));
   assert.ok(html.includes('id="pdf_categoria_principal"'));
   assert.ok(html.includes('id="pdf_subcategoria"'));

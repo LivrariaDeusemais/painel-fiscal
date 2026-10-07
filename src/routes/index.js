@@ -17312,10 +17312,13 @@ router.get('/novo', async (req, res) => {
       }
     }
 
-    if (!rotinaPadrao && req.query.iniciar_arquivo === '1' && arquivo_pdf_id) {
-      const documentoArquivo = await getArquivoFilaDisponivel(Number(arquivo_pdf_id), 'PDF');
-      const candidatas = await buscarRotinasPorDocumento(documentoArquivo?.cnpj_cpf);
-      if (candidatas.length === 1) rotinaPadrao = candidatas[0];
+    let rotinasIniciaisPDF = [];
+    const documentoArquivo = arquivo_pdf_id
+      ? await getArquivoFilaDisponivel(Number(arquivo_pdf_id), 'PDF') : null;
+    const documentoConsulta = documentoArquivo?.cnpj_cpf || rotinaPadrao?.cnpj_cpf;
+    if (documentoConsulta) rotinasIniciaisPDF = await buscarRotinasPorDocumento(documentoConsulta);
+    if (!rotinaPadrao && req.query.iniciar_arquivo === '1' && rotinasIniciaisPDF.length === 1) {
+      rotinaPadrao = rotinasIniciaisPDF[0];
     }
 
     const categoriaSelecionada = rotinaPadrao?.subcategoria_id || rotinaPadrao?.categoria_principal_id || '';
@@ -17874,6 +17877,8 @@ body {
             cursor: default;
             user-select: none;
           }
+          .pdf-copy-panel .arquivo-selecionado-chip { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+          .pdf-copy-panel .pdf-copy-file-row { flex-wrap:wrap; }
           .pdf-copy-panel-header {
             display: flex;
             align-items: center;
@@ -18214,7 +18219,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               </div>
               <div>
                 <label for="pdf_cnpj_cpf">CNPJ/CPF</label>
-                <input id="pdf_cnpj_cpf" placeholder="00.000.000/0000-00" />
+                <input id="pdf_cnpj_cpf" placeholder="00.000.000/0000-00" onchange="consultarRotinasPDF()" />
               </div>
               <div>
                 <label for="pdf_fornecedor">Razão Social</label>
@@ -18240,7 +18245,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
         <script>
           var pdfCopyObjectUrl = null;
           var categoriasPDF = ${JSON.stringify(categorias).replace(/</g, '\u003c')};
-          var rotinasPDF = [];
+          var rotinasPDF = ${JSON.stringify(rotinasIniciaisPDF).replace(/</g, '\\u003c')};
           var consultaRotinaPDF = 0;
           var consultaRotinaPendente = false;
           var consultaRotinaFalhou = false;
@@ -18250,7 +18255,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           }
           function atualizarSubcategoriasPDF(valor) {
             var principal = document.getElementById('pdf_categoria_principal').value;
-            preencherOpcoesPDF(document.getElementById('pdf_subcategoria'), categoriasPDF.filter(function(c) { return String(c.categoria_pai_id || '') === principal; }), 'Sem subcategoria');
+            preencherOpcoesPDF(document.getElementById('pdf_subcategoria'), categoriasPDF.filter(function(c) { return principal && String(c.categoria_pai_id || '') === principal; }), 'Sem subcategoria');
             document.getElementById('pdf_subcategoria').value = valor || '';
           }
           function selecionarCategoriaPDF(valor) {
@@ -18265,6 +18270,20 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             document.getElementById('pdf_tipo_pagamento').value = rotina.tipo_pagamento_padrao || '';
             selecionarCategoriaPDF(rotina.subcategoria_id || rotina.categoria_principal_id || '');
           }
+          function mostrarRotinasPDF() {
+            var seletor = document.getElementById('pdf_rotina_id');
+            var origemId = getCampoNovoLancamento('rotina_id').value;
+            preencherOpcoesPDF(seletor, rotinasPDF.map(function(r) { return { id:r.id, nome:r.fornecedor + ' — ' + (r.categoria_principal_nome || 'Sem categoria') + (r.subcategoria_nome ? ' > ' + r.subcategoria_nome : '') }; }), 'Selecione a conta e sua categoria');
+            document.getElementById('pdfRotinaEscolha').style.display = rotinasPDF.length > 1 ? 'block' : 'none';
+            document.getElementById('pdfRotinaMensagem').textContent = 'Há mais de um pré-cadastro para este documento. Escolha a conta para conferir a categoria.';
+            var origem = rotinasPDF.find(function(r) { return String(r.id) === String(origemId); });
+            if (origem) seletor.value = origem.id;
+            else if (rotinasPDF.length === 1) { seletor.value = rotinasPDF[0].id; aplicarRotinaPDF(seletor.value); }
+            else {
+              getCampoNovoLancamento('rotina_id').value = '';
+              if (rotinasPDF.length > 1) selecionarCategoriaPDF('');
+            }
+          }
           async function consultarRotinasPDF() {
             var numeroConsulta = ++consultaRotinaPDF;
             var documento = document.getElementById('pdf_cnpj_cpf').value;
@@ -18275,18 +18294,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               var dados = await resposta.json();
               if (numeroConsulta !== consultaRotinaPDF) return;
               rotinasPDF = dados.rotinas || [];
-              var seletor = document.getElementById('pdf_rotina_id');
-              var origemId = getCampoNovoLancamento('rotina_id').value;
-              preencherOpcoesPDF(seletor, rotinasPDF.map(function(r) { return { id:r.id, nome:r.fornecedor + ' — ' + (r.categoria_principal_nome || 'Sem categoria') + (r.subcategoria_nome ? ' > ' + r.subcategoria_nome : '') }; }), 'Selecione a conta e sua categoria');
-              document.getElementById('pdfRotinaEscolha').style.display = rotinasPDF.length > 1 ? 'block' : 'none';
-              document.getElementById('pdfRotinaMensagem').textContent = 'Há mais de um pré-cadastro para este documento. Escolha a conta para conferir a categoria.';
-              var origem = rotinasPDF.find(function(r) { return String(r.id) === String(origemId); });
-              if (origem) seletor.value = origem.id;
-              else if (rotinasPDF.length === 1) { seletor.value = rotinasPDF[0].id; aplicarRotinaPDF(seletor.value); }
-              else {
-                getCampoNovoLancamento('rotina_id').value = '';
-                if (rotinasPDF.length > 1) selecionarCategoriaPDF('');
-              }
+              mostrarRotinasPDF();
             } catch(e) {
               if (numeroConsulta !== consultaRotinaPDF) return;
               consultaRotinaFalhou = true;
@@ -18301,7 +18309,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             document.getElementById('pdf_tipo_pagamento').value = document.getElementById('tipo_pagamento').value;
             document.getElementById('pdf_categoria_principal').addEventListener('change', function() { atualizarSubcategoriasPDF(''); });
             document.getElementById('pdf_rotina_id').addEventListener('change', function() { aplicarRotinaPDF(this.value); });
-            document.getElementById('pdf_cnpj_cpf').addEventListener('change', consultarRotinasPDF);
+            mostrarRotinasPDF();
           });
 
 
@@ -18386,7 +18394,6 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 : arquivo.valor_documento);
             }
 
-            await consultarRotinasPDF();
             var viewer = document.getElementById('pdfCopyViewer');
             var empty = document.getElementById('pdfCopyEmpty');
 
