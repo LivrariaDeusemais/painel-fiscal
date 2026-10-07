@@ -54,6 +54,22 @@ function createRouter(pool, renderShell) {
       res.send(renderShell(req,render(model,feedback),{title:'Integração Bling',subtitle:'Cadastro e estoques por depósito'}));
     } catch(error) { res.status(503).send('Integração Bling indisponível. Tente novamente.'); }
   });
+  router.get('/andamento',async(req,res)=>{
+    try {const job=(await pool.query('SELECT id,status,etapa FROM bling_sincronizacoes ORDER BY id DESC LIMIT 1')).rows[0];res.json({active:job?.status==='executando',id:job?.id,etapa:job?.etapa});}
+    catch {res.status(503).json({error:'Andamento indisponível'});}
+  });
+  router.post('/atalho',async(req,res)=>{
+    const target=require('./bling-shortcuts').safeReturn(req.body.return_to);
+    try {
+      const module=req.body.modulo==='links'?'links':'data';
+      const marketplace=String(req.body.marketplace || '');
+      const model=await service.state(pool);
+      if(module==='links' && marketplace && !model.configuracao?.lojas?.[marketplace])throw new Error('Configure a loja desse marketplace na Integração Bling.');
+      await service.startSync(pool,'',module,module==='links'&&marketplace?[marketplace]:null);
+      req.session.tabelaPrecosFeedback={mensagem:'Atualização Bling iniciada. Aguarde a conclusão.'};
+    } catch(error){req.session.tabelaPrecosFeedback={erro:error.message};}
+    res.redirect(target);
+  });
   router.get('/divergencias/:id',async(req,res)=>{
     if (!/^\d+$/.test(req.params.id)) return res.status(400).send('Atualização inválida.');
     try {
