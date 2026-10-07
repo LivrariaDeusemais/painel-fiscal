@@ -2225,9 +2225,10 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         }
         table { table-layout:fixed; min-width:1280px; }
         th, td { padding:9px 8px; vertical-align:middle; }
-        th:nth-child(1), td:nth-child(1) { width:7%; text-align:center; }
+        th:nth-child(1), td:nth-child(1) { width:90px; text-align:center; }
         th:nth-child(2), td:nth-child(2) { width:21%; }
         th:nth-child(3), td:nth-child(3) { width:8%; }
+        th:nth-child(3) { white-space:normal; line-height:1.25; }
         th:nth-child(4), td:nth-child(4) { width:24%; }
         th:nth-child(5), td:nth-child(5) { width:10%; }
         th:nth-child(6), td:nth-child(6) { width:7%; }
