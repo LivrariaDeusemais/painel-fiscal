@@ -8,7 +8,12 @@ function render(model, feedback) {
   const select = (name,value,empty) => `<select name="${escape(name)}"><option value="">${empty}</option>${(model.depositos || []).map(d=>`<option value="${escape(d.id)}" ${String(value)===String(d.id)?'selected':''}>${escape(d.descricao)}</option>`).join('')}</select>`;
   const active = model.jobs?.[0]?.status === 'executando';
   const statuses = {executando:'Em andamento',concluida:'Concluída',parcial:'Com pendências',interrompida:'Interrompida',falhou:'Falhou'};
-  const jobs = (model.jobs || []).map(j=>`<tr><td>${new Date(j.criado_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})}</td><td>${escape(statuses[j.status] || j.status)}</td><td>${escape(j.etapa)} (${j.processados}/${j.total})</td><td>${escape(j.mensagem || '')}${j.status!=='executando' && (j.falhas>0 || j.status==='falhou') ? `<p><a href="${ROOT}/divergencias/${escape(j.id)}">Baixar divergências em Excel${j.divergencias==null?' (resumo antigo)':''}</a></p>`:''}</td></tr>`).join('');
+  const diagnosticHtml = job => !Array.isArray(job.diagnostico) ? '' : [...new Set(job.diagnostico.map(r=>r.modulo))].map(module=>{
+    const rows=job.diagnostico.filter(r=>r.modulo===module);
+    const counts=['verificado','atualizado','pendente'].map(status=>rows.filter(r=>r.status===status).length);
+    return `<section style="margin-top:10px;padding:10px;border:1px solid #dce7df;border-radius:7px"><strong>${escape(module)}</strong><p>${counts[0]} itens verificados | ${counts[1]} atualizados | ${counts[2]} com pendências</p>${['verificado','atualizado','pendente'].map((status,i)=>`<a style="margin-right:10px" href="${ROOT}/diagnostico/${job.id}?modulo=${encodeURIComponent(module)}&grupo=${status}">Excel: ${['verificados','atualizados','pendências'][i]}</a>`).join('')}</section>`;
+  }).join('');
+  const jobs = (model.jobs || []).map(j=>`<tr><td>${new Date(j.criado_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})}</td><td>${escape(statuses[j.status] || j.status)}</td><td>${escape(j.etapa)} (${j.processados}/${j.total})</td><td>${escape(j.mensagem || '')}${diagnosticHtml(j)}${j.status!=='executando' && (j.falhas>0 || j.status==='falhou') ? `<p><a href="${ROOT}/divergencias/${escape(j.id)}">Baixar divergências em Excel${j.divergencias==null?' (resumo antigo)':''}</a></p>`:''}</td></tr>`).join('');
   return `<style>.bling-wrap{max-width:1100px;margin:auto;display:grid;gap:16px}.bling-card{background:#fff;border:1px solid #dce7e1;border-radius:10px;padding:22px}.bling-card h2{font-size:20px;margin:0 0 12px}.bling-card p{color:#475569;line-height:1.5}.bling-card label{display:grid;gap:7px;margin:12px 0;font-weight:700}.bling-card select{padding:10px;border:1px solid #cbd5e1;border-radius:6px;max-width:480px}.bling-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.bling-btn{border:1px solid #009640;padding:10px 16px;border-radius:7px;background:#009640;color:white;text-decoration:none;font-weight:700;cursor:pointer}.bling-btn:disabled{opacity:.5;cursor:default}.bling-scroll{overflow:auto}.bling-scroll table{width:100%;border-collapse:collapse;font-size:12px}.bling-scroll td,.bling-scroll th{padding:12px;text-align:left;border-bottom:1px solid #e2e8f0}.bling-note{padding:12px;background:#fff7e8;border-left:4px solid #d97706}.bling-alert{padding:14px;border-radius:8px;background:${feedback?.ok?'#dcfce7':'#fff1f2'}}</style>
   <div class="bling-wrap">${feedback ? `<div class="bling-alert">${escape(feedback.message)}</div>`:''}
   <section class="bling-card"><h2>Conexão com o Bling</h2><p>Atualize o cadastro, o custo do fornecedor padrão, o peso, o preço geral do Bling e os saldos por depósito. A carga de preços brutos dos marketplaces continua sendo feita pelo arquivo exportado da tabela.</p>
@@ -26,8 +31,8 @@ function render(model, feedback) {
   ${model.marketplaces.map((m,i)=>`<label>${escape(m)}<select name="loja_${i}"><option value="">Não consultar por integração</option>${(model.lojas || []).map(loja=>`<option value="${escape(loja.id)}" ${String(settings.lojas?.[m])===String(loja.id)?'selected':''}>${escape(loja.descricao)} (${escape(loja.tipo || '')})</option>`).join('')}</select></label>`).join('')}
   <button class="bling-btn" ${!model.lojas?.length||active?'disabled':''}>Salvar lojas</button></form>
   <p>Se uma consulta falhar ou não identificar o anúncio, os dados anteriores permanecem. O envio dos novos preços ao Bling continua pelo arquivo exportado da tabela.</p></section>
-  <section class="bling-card"><h2>Atualizar dados</h2><div class="bling-note"><strong>Custo: Preço de custo do fornecedor padrão no Bling.</strong><p>A atualização usa somente o fornecedor marcado como padrão de cada produto. Custos ausentes, zerados ou inválidos e cadastros com mais de um padrão preservam o custo anterior e geram uma pendência. O preço de compra e fornecedores antigos não são usados como substitutos.</p></div>
-  <form method="post" action="${ROOT}/atualizar"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><label>SKU(s), separados por vírgula (opcional)<input name="skus" maxlength="5000" placeholder="Ex.: B1607, B1605, B1606" style="display:block;width:min(480px,90vw);box-sizing:border-box;padding:12px;margin:10px 0;border:1px solid #cbd5e1;border-radius:7px"></label><p>Preencha os códigos para atualizar somente esses produtos. Deixe em branco para atualizar toda a base.</p><div class="bling-actions"><button class="bling-btn" ${!model.conectado||!settings.matriz||active?'disabled':''}>${active?'Atualização em andamento':'Atualizar cadastro, custos, estoques e preços brutos'}</button><a href="${ROOT}">Consultar andamento</a></div></form>
+  <section class="bling-card"><h2>Atualizar dados</h2><p>Somente produtos ativos do Bling são atualizados. Cada atualização remove da base local os produtos confirmados como inativos ou excluídos, junto com seus vínculos.</p><div class="bling-note"><strong>Custo: Preço de custo do fornecedor padrão no Bling.</strong><p>A atualização usa somente o fornecedor marcado como padrão de cada produto. Custos ausentes, zerados ou inválidos e cadastros com mais de um padrão preservam o custo anterior e geram uma pendência. O preço de compra e fornecedores antigos não são usados como substitutos.</p></div>
+  <form method="post" action="${ROOT}/atualizar"><input type="hidden" name="csrf" value="${escape(model.csrf)}"><label>SKU(s), separados por vírgula (opcional)<input name="skus" maxlength="5000" placeholder="Ex.: B1607, B1605, B1606" style="display:block;width:min(480px,90vw);box-sizing:border-box;padding:12px;margin:10px 0;border:1px solid #cbd5e1;border-radius:7px"></label><p>Preencha os códigos para atualizar somente esses produtos. Deixe em branco para atualizar toda a base.</p><div class="bling-actions"><button class="bling-btn" name="modulo" value="data" ${!model.conectado||!settings.matriz||active?'disabled':''}>${active?'Atualização em andamento':'Atualizar cadastro, custos e estoques'}</button><button class="bling-btn" name="modulo" value="links" ${!model.conectado||active?'disabled':''}>Atualizar vínculos e preços brutos</button><a href="${ROOT}">Consultar andamento</a></div></form>
   <p>Os preços brutos dos vínculos são consultados nas lojas configuradas. Os preços líquidos informados permanecem preservados. Os custos válidos do fornecedor padrão atualizam a tabela e as calculadoras. Falhas mantêm os últimos saldos conhecidos, com sua data de atualização.</p>
   <div class="bling-scroll"><table><thead><tr><th>Início</th><th>Status</th><th>Andamento</th><th>Resultado</th></tr></thead><tbody>${jobs || '<tr><td colspan="4">Nenhuma atualização iniciada.</td></tr>'}</tbody></table></div></section></div>${active?'<script>setTimeout(()=>location.reload(),5000)</script>':''}`;
 }
@@ -62,6 +67,19 @@ function createRouter(pool, renderShell) {
       res.send(Buffer.from(buffer));
     } catch(error) { res.status(503).send('Não foi possível gerar o relatório. Tente novamente.'); }
   });
+  router.get('/diagnostico/:id',async(req,res)=>{
+    if (!/^\d+$/.test(req.params.id) || !['verificado','atualizado','pendente'].includes(req.query.grupo)) return res.status(400).send('Relatório inválido.');
+    try {
+      const job=(await pool.query('SELECT diagnostico FROM bling_sincronizacoes WHERE id=$1',[req.params.id])).rows[0];
+      if(!Array.isArray(job?.diagnostico))return res.status(404).send('Diagnóstico indisponível.');
+      const rows=job.diagnostico.filter(r=>r.modulo===req.query.modulo && r.status===req.query.grupo);
+      const ExcelJS=require('exceljs');const workbook=new ExcelJS.Workbook();const sheet=workbook.addWorksheet('Diagnóstico');
+      sheet.columns=[{header:'Módulo',key:'modulo',width:28},{header:'Resultado',key:'status',width:18},{header:'SKU',key:'sku',width:18},{header:'ID produto Bling',key:'produto_id',width:24},{header:'Detalhe',key:'detalhe',width:70}];
+      sheet.getColumn(4).numFmt='@';sheet.addRows(rows);sheet.getRow(1).font={bold:true};sheet.autoFilter='A1:E1';
+      res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.set('Content-Disposition',`attachment; filename="bling-diagnostico-${req.params.id}-${req.query.grupo}.xlsx"`);
+      await workbook.xlsx.write(res);res.end();
+    } catch(error) {res.status(503).send('Não foi possível gerar o relatório.');}
+  });
   router.post('/conectar' ,async(req,res)=>{
     const c=service.config();
     if (!c.clientId || !c.clientSecret || c.key.length<32) { req.session.blingFeedback={ok:false,message:'Configure as três variáveis da conexão no Render.'}; return res.redirect(ROOT); }
@@ -91,7 +109,7 @@ function createRouter(pool, renderShell) {
     await service.saveSettings(pool,{matriz:req.body.matriz,full:Object.fromEntries(model.marketplaces.map((m,i)=>[m,req.body['full_'+i]]))});
     return 'Depósitos salvos. A próxima atualização usará esta configuração.';
   });
-  action('/atualizar',async req=>{await service.startSync(pool,req.body.skus || '');return 'Atualização iniciada. O andamento aparecerá abaixo.';});
+  action('/atualizar',async req=>{await service.startSync(pool,req.body.skus || '',req.body.modulo==='links'?'links':'data');return 'Atualização iniciada. O andamento aparecerá abaixo.';});
   return router;
 }
 module.exports={createRouter,render};

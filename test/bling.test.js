@@ -101,3 +101,25 @@ test('consulta focada atualiza apenas SKUs selecionados e relata código ausente
   const stocks=calls.filter(c=>c.sql.includes('SET estoque='));assert.deepEqual(stocks.map(c=>c.args[0]),['B1607','B1605']);
   assert.ok(calls.some(c=>c.sql.includes('divergencias=')&&c.args[1].includes('AUSENTE')));
 });
+
+test('atualização de dados usa ativos, limpa somente inativos/excluídos confirmados e dispensa lojas',async()=>{
+  const calls=[],apiCalls=[];
+  const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:sql.startsWith('DELETE FROM tabela_preco_produtos')?[{sku:'OFF',bling_id:'2'}]:[]};}};
+  const api={all:async(path,params)=>{apiCalls.push([path,params]);if(path==='/produtos')return params.criterio===2?[{id:1,codigo:'ON'}]:params.criterio===3?[{id:2,codigo:'OFF'}]:[{id:3,codigo:'GONE'}];return [];},get:async path=>{apiCalls.push([path]);return path==='/produtos/1'?{id:1,codigo:'ON',nome:'Ativo',pesoLiquido:1,preco:20}:[{produto:{id:1},depositos:[{id:9,saldoFisico:5}]}];}};
+  await runSync({},db,1,{module:'data',matriz:'9',lojas:{TikTok:'8'}},api);
+  assert.ok(!apiCalls.some(([path])=>path==='/produtos/2'||path==='/produtos/3'||path==='/produtos/lojas'));
+  const removed=calls.find(c=>c.sql.startsWith('DELETE FROM tabela_preco_produtos'));assert.deepEqual(removed.args[0],['2','3']);
+  assert.deepEqual(calls.find(c=>c.sql.startsWith('DELETE FROM tabela_preco_vinculos')).args,[['OFF']]);
+  const report=JSON.parse(calls.filter(c=>c.sql.includes('diagnostico=$3')).at(-1).args[2]);assert.ok(report.some(r=>r.modulo==='Limpeza'&&r.sku==='OFF'&&r.status==='atualizado'));assert.ok(report.some(r=>r.modulo==='Estoque'&&r.status==='atualizado'));
+});
+test('atualização de vínculos não consulta detalhes, fornecedores ou estoque e ignora vínculos inativos',async()=>{
+  const calls=[],requests=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};}};
+  const api={all:async(path,params)=>{requests.push(path);if(path==='/produtos')return params.criterio===2?[{id:1,codigo:'ON',nome:'Ativo'}]:[];return [{produto:{id:2},loja:{id:8},codigo:'INATIVO'}];},get:async()=>{throw Error('Não deve consultar detalhes');}};
+  await runSync({},db,1,{module:'links',matriz:'9',lojas:{TikTok:'8'}},api);
+  assert.ok(!requests.includes('/produtos/fornecedores'));assert.ok(!calls.some(c=>c.sql.includes('SET estoque=')||c.sql.includes('SET custo=')));assert.equal(calls.at(-1).args[1],'concluida');
+});
+test('falha ao consultar excluídos interrompe limpeza sem excluir produtos por ausência',async()=>{
+  const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};}};
+  const api={all:async(path,params)=>{if(params.criterio===4)throw Error('Consulta indisponível');return [];}};
+  await runSync({},db,1,{module:'data',matriz:'1'},api);assert.ok(!calls.some(c=>c.sql.startsWith('DELETE')));assert.equal(calls.at(-1).sql.includes("status='falhou'"),true);
+});

@@ -277,7 +277,7 @@ async function productRows(pool, filters = {}) {
     values.push(`%${String(filters.search).trim()}%`);
     conditions.push(`(sku ILIKE $${values.length} OR nome ILIKE $${values.length} OR marca ILIKE $${values.length})`);
   }
-  if (['Novo', 'Validado'].includes(filters.status)) {
+  if (['Novo', 'Validado', 'Reajustar'].includes(filters.status)) {
     values.push(filters.status);
     conditions.push(`status_validacao = $${values.length}`);
   }
@@ -287,7 +287,7 @@ async function productRows(pool, filters = {}) {
   const offset = (page - 1) * pageSize;
   const countResult = await pool.query(`SELECT COUNT(*)::int AS total FROM tabela_preco_produtos ${where}`, values);
   const result = await pool.query(`
-    SELECT sku, nome, marca, peso, custo, estoque, preco_bling, status_validacao
+    SELECT sku, nome, marca, peso, custo, estoque, estoque_full, preco_bling, status_validacao
     FROM tabela_preco_produtos
     ${where}
     ORDER BY sku
@@ -316,7 +316,7 @@ async function updateProductCost(pool, sku, cost) {
 async function updateProductStatuses(pool, skus, status) {
   const normalized = [...new Set((Array.isArray(skus) ? skus : [skus]).map(String).map(item => item.trim()).filter(Boolean))];
   if (!normalized.length) throw new Error('Selecione pelo menos um produto.');
-  if (!['Novo', 'Validado'].includes(status)) throw new Error('Status inválido.');
+  if (!['Novo', 'Validado', 'Reajustar'].includes(status)) throw new Error('Status inválido.');
   const result = await pool.query(`
     UPDATE tabela_preco_produtos SET status_validacao=$2
     WHERE sku = ANY($1::text[])
