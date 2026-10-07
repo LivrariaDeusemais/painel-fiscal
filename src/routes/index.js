@@ -2707,16 +2707,18 @@ function arquivoConciliacaoMetadadosXml(xml) {
     (texto.match(/<(?:\w+:)?emit[^>]*>([\s\S]*?)<\/(?:\w+:)?emit>/i) || [])[1] ||
     (texto.match(/<(?:\w+:)?prest[^>]*>([\s\S]*?)<\/(?:\w+:)?prest>/i) || [])[1] ||
     (texto.match(/<(?:\w+:)?Prestador[^>]*>([\s\S]*?)<\/(?:\w+:)?Prestador>/i) || [])[1] ||
+    (texto.match(/<(?:\w+:)?CPFCNPJPrestador[^>]*>([\s\S]*?)<\/(?:\w+:)?CPFCNPJPrestador>/i) || [])[1] ||
     texto;
 
   const cnpjCpf = arquivoConciliacaoSomenteDigitos(
     arquivoAutoFindTag(blocoEmitente, ['CNPJ', 'CPF', 'Cnpj', 'Cpf'])
   );
   const fornecedor =
+    arquivoAutoFindTag(texto, ['RazaoSocialPrestador']) ||
     arquivoAutoFindTag(blocoEmitente, ['xNome', 'RazaoSocial', 'RazaoSocialPrestador', 'Nome', 'NomeFantasia']) ||
     arquivoAutoFindTag(texto, ['xNome', 'RazaoSocialPrestador', 'RazaoSocial']);
   const numero = arquivoAutoFindTag(texto, ['nNF', 'nNFSe', 'NumeroNFe', 'NumeroNfse', 'NumeroNFS-e', 'Numero']);
-  const data = arquivoAutoFindTag(texto, ['dhEmi', 'dEmi', 'DataEmissao', 'DataEmissaoNfse', 'Competencia']);
+  const data = arquivoAutoFindTag(texto, ['dhEmi', 'dEmi', 'DataEmissao', 'DataEmissaoNFe', 'DataEmissaoNfse', 'Competencia']);
   const valor = arquivoAutoFindTag(texto, ['vNF', 'vLiq', 'ValorLiquidoNfse', 'ValorServicos', 'ValorTotal', 'Valor']);
   const tipoDocumento = /<(?:\w+:)?(?:infNFSe|NFSe|DPS)[\s>]/i.test(texto)
     ? 'NFEs Serviço'

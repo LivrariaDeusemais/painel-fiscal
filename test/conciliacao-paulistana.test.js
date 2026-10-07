@@ -8,7 +8,9 @@ function carregarConciliacao(pool) {
   const codigo = fs.readFileSync(require.resolve('../src/routes/index'), 'utf8');
   const contexto = vm.createContext({ pool, ensureArquivoFilaTable: async () => {} });
   vm.runInContext(codigo.slice(codigo.indexOf('function arquivoConciliacaoSomenteDigitos('),
-    codigo.indexOf('function arquivoConciliacaoDataIso(')), contexto);
+    codigo.indexOf('async function arquivoConciliacaoTextoPdf(')), contexto);
+  vm.runInContext(codigo.slice(codigo.indexOf('function arquivoAutoNormText('),
+    codigo.indexOf('function arquivoAutoFindInBlock(')), contexto);
   vm.runInContext(codigo.slice(codigo.indexOf('async function conciliarArquivoFilaDisponiveis('),
     codigo.indexOf('async function reprocessarArquivoFila(')), contexto);
   return contexto;
@@ -18,6 +20,21 @@ test('chave nacional municipal tem prioridade sobre outro Id fiscal no XML', () 
   const contexto = carregarConciliacao();
   assert.equal(contexto.arquivoConciliacaoExtrairChave(
     `<NFe Id="${'1'.repeat(44)}"><ns:ChaveNotaNacional> ${chave} </ns:ChaveNotaNacional></NFe>`), chave);
+});
+
+test('XML Paulistana mantém prestador e emissão mesmo com xNome do tomador', () => {
+  const contexto = carregarConciliacao();
+  const resultado = contexto.arquivoConciliacaoMetadadosXml(`<NFe>
+    <ChaveNFe><NumeroNFe>4790567</NumeroNFe><ChaveNotaNacional>${chave}</ChaveNotaNacional></ChaveNFe>
+    <CPFCNPJPrestador><CNPJ>27415911000136</CNPJ></CPFCNPJPrestador>
+    <RazaoSocialPrestador>BYTEDANCE BRASIL TECNOLOGIA LTDA.</RazaoSocialPrestador>
+    <DataEmissaoNFe>2026-09-18T02:40:47</DataEmissaoNFe><ValorServicos>1442.28</ValorServicos>
+    <Adquirente><CNPJ>18862388000103</CNPJ><xNome>DEUS E MAIS</xNome></Adquirente></NFe>`);
+  assert.equal(resultado.fornecedor, 'BYTEDANCE BRASIL TECNOLOGIA LTDA.');
+  assert.equal(resultado.cnpjCpf, '27415911000136');
+  assert.equal(resultado.numero, '4790567');
+  assert.equal(resultado.data, '2026-09-18');
+  assert.equal(resultado.valor, 1442.28);
 });
 
 test('concilia pela chave exata, ignora duplicados e preserva pares anteriores', async () => {
