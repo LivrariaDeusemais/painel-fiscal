@@ -2033,7 +2033,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
       ARQUIVO_AUSENTE: 'Arquivo ausente'
     }[a.analise_status] || 'Aguardando análise';
     const statusClass = String(a.analise_status || 'PENDENTE').toLowerCase();
-    const documento = [a.fornecedor, a.numero_documento ? `Doc ${a.numero_documento}` : ''].filter(Boolean).join(' - ') || a.nome_arquivo || '';
+    const razaoSocial = a.fornecedor || a.nome_original || a.nome_arquivo || '-';
     const valor = a.valor_documento != null
       ? Number(a.valor_documento).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
       : '-';
@@ -2046,7 +2046,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
     return `
       <tr>
         <td>${badge}</td>
-        <td class="arquivo-nome"><strong>${escapeHtmlGlobal(documento)}</strong><small>${escapeHtmlGlobal(a.chave_fiscal ? `Chave ${a.chave_fiscal}` : (a.nome_original || ''))}</small></td>
+        <td class="arquivo-nome" title="${escapeHtmlGlobal(razaoSocial)}"><strong>${escapeHtmlGlobal(razaoSocial)}</strong></td>
+        <td title="${escapeHtmlGlobal(a.numero_documento || '')}">${escapeHtmlGlobal(a.numero_documento || '-')}</td>
+        <td class="arquivo-chave" title="${escapeHtmlGlobal(a.chave_fiscal || '')}">${escapeHtmlGlobal(a.chave_fiscal || '-')}</td>
         <td>${escapeHtmlGlobal(a.cnpj_cpf || '-')}</td>
         <td>${arquivoDataBr(a.data_documento)}</td>
         <td>${valor}</td>
@@ -2221,13 +2223,19 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           z-index:3;
           box-shadow:0 1px 0 #dce7ef;
         }
-        th:nth-child(1), td:nth-child(1) { width:96px; min-width:96px; text-align:center; overflow:visible; }
-        th:nth-child(2), td:nth-child(2) { width:32%; }
-        th:nth-child(3), td:nth-child(3) { width:26%; }
-        th:nth-child(4), td:nth-child(4) { width:115px; }
-        th:nth-child(5), td:nth-child(5) { width:120px; }
-        th:nth-child(6), td:nth-child(6) { width:145px; min-width:145px; overflow:visible; }
-        th:nth-child(7), td:nth-child(7) { width:330px; min-width:330px; overflow:visible; }
+        table { table-layout:fixed; min-width:1280px; }
+        th, td { padding:9px 8px; vertical-align:middle; }
+        th:nth-child(1), td:nth-child(1) { width:7%; text-align:center; }
+        th:nth-child(2), td:nth-child(2) { width:21%; }
+        th:nth-child(3), td:nth-child(3) { width:8%; }
+        th:nth-child(4), td:nth-child(4) { width:24%; }
+        th:nth-child(5), td:nth-child(5) { width:10%; }
+        th:nth-child(6), td:nth-child(6) { width:7%; }
+        th:nth-child(7), td:nth-child(7) { width:7%; }
+        th:nth-child(8), td:nth-child(8) { width:9%; text-align:center; }
+        th:nth-child(9), td:nth-child(9) { width:210px; text-align:center; overflow:visible; }
+        .arquivo-nome { white-space:nowrap; }
+        .arquivo-chave { font-family:monospace; font-size:10px; letter-spacing:-.3px; }
         .arquivo-badge {
           display:inline-flex;
           align-items:center;
@@ -2249,36 +2257,18 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         .conciliacao-status.duplicado, .conciliacao-status.arquivo_ausente { background:#fee2e2; color:#991b1b; }
         .arquivo-actions {
           text-align:right;
-          min-width:310px;
+          min-width:0;
           overflow:visible;
         }
         .arquivo-actions-inner {
           display:flex;
           gap:7px;
           align-items:center;
-          justify-content:flex-end;
+          justify-content:center;
           width:100%;
         }
         .arquivo-actions-inner > * { flex:0 0 auto; }
         .arquivo-actions-inner form { margin:0; }
-
-        .table-wrap table { table-layout: auto !important; min-width: 1280px; }
-        th:nth-child(2), td:nth-child(2) {
-          width: auto !important;
-          min-width: 420px !important;
-          max-width: none !important;
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          word-break: break-word !important;
-        }
-        .arquivo-nome {
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          word-break: break-word !important;
-          line-height: 1.35 !important;
-        }
 
         .empty {
           padding:34px;
@@ -2355,7 +2345,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
               <thead>
                 <tr>
                   <th>Tipo</th>
-                  <th>Documento</th>
+                  <th>Razão social</th>
+                  <th>Nº Documento/NF</th>
+                  <th>Chave NF</th>
                   <th>CNPJ/CPF</th>
                   <th>Emissão</th>
                   <th>Valor</th>
@@ -2364,7 +2356,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                 </tr>
               </thead>
               <tbody>
-                ${linhas || `<tr><td colspan="7"><div class="empty">Nenhum arquivo encontrado.</div></td></tr>`}
+                ${linhas || `<tr><td colspan="9"><div class="empty">Nenhum arquivo encontrado.</div></td></tr>`}
               </tbody>
             </table>
           </div>
