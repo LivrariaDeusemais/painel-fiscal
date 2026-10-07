@@ -198,7 +198,7 @@ async function saveStores(pool, stores) {
 function grossLink(row, product, storeId, isAd = false) {
   const code = String(isAd ? row.anuncioLoja?.id || '' : row.codigo || '').trim();
   const price = isAd ? row.preco?.valor : row.preco;
-  if (!code || (typeof price !== 'number' && typeof price !== 'string') || String(price).trim()==='' || !Number.isFinite(Number(price)) || Number(price)<=0) throw new Error('Anúncio sem identificação ou preço bruto válido.');
+  if (!code || /^0+$/.test(code) || (typeof price !== 'number' && typeof price !== 'string') || String(price).trim()==='' || !Number.isFinite(Number(price)) || Number(price)<=0) throw new Error('Anúncio sem identificação ou preço bruto válido.');
   if (String(row.produto?.id)!==product.id) throw new Error('Produto do vínculo divergente.');
   return {sku:product.sku,product_id:product.id,store_id:code,name:product.name,current_price:Number(price),raw:{bling_loja_id:String(storeId),bling_vinculo_id:String(row.id || ''),bruto_origem:'Bling',bruto_bling_em:new Date().toISOString()}};
 }
@@ -249,11 +249,13 @@ async function startSync(pool, filter='', module='all', marketplaces=null) {
 async function runSync(pool, client, id, settings, api = new BlingClient(pool)) {
   let processed = 0, failures = 0, costsUpdated = 0, grossUpdated = 0;
   const issues = [], divergences = [], diagnostic = [];
-  const record = (module, status, product={}, detail='') => diagnostic.push({modulo:module,status,sku:product.sku || product.codigo || '',produto_id:String(product.id || ''),detalhe:detail});
+  const productsForReport = new Map();
+  const record = (module, status, product={}, detail='') => diagnostic.push({modulo:module,status,sku:product.sku || product.codigo || '',produto_id:String(product.id || ''),nome:product.name || product.nome || '',anuncio_id:String(product.store_id || product.anuncio_id || ''),detalhe:detail});
 
   const issue = (stage, marketplace, sku, productId, adId, reason) => {
     issues.push([marketplace, sku || productId, reason].filter(Boolean).join(': '));
-    record(stage==='Preços brutos' && marketplace ? 'Vínculos: '+marketplace : stage,'pendente',{sku,id:productId},reason);
+    const product = productsForReport.get(String(productId)) || {};
+    record(stage==='Preços brutos' && marketplace ? 'Vínculos: '+marketplace : stage,'pendente',{...product,sku:sku || product.sku,id:productId,anuncio_id:adId},reason);
     divergences.push({etapa:stage, marketplace:marketplace || '', sku:sku || '', produto_id:String(productId || ''), anuncio_id:String(adId || ''), motivo:reason, acao:'Dados anteriores preservados'});
   };
   const persistIssues = () => client.query('UPDATE bling_sincronizacoes SET divergencias=$2::jsonb,diagnostico=$3::jsonb WHERE id=$1',[id,JSON.stringify(divergences),JSON.stringify(diagnostic)]);
@@ -364,6 +366,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
     }
     }
     const productsById = new Map(valid.map(p=>[p.id,p]));
+    for (const p of valid) productsForReport.set(p.id,p);
     for (const [marketplace,storeId] of Object.entries(updateLinks ? settings.lojas || {} : {})) {
       if (Array.isArray(settings.marketplaces) && !settings.marketplaces.includes(marketplace)) continue;
       await persistIssues();
@@ -381,12 +384,26 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
           const product = productsById.get(String(row.produto?.id));
           if (!product && selected.size) continue;
           if (!product) { failures++;issue('Preços brutos',marketplace,'',row.produto?.id,isML?row.anuncioLoja?.id:row.codigo,'Produto não identificado na base consultada; vínculo preservado.');continue; }
-          record('Vínculos: '+marketplace,'verificado',product);
+          record('Vínculos: '+marketplace,'verificado',{...product,anuncio_id:isML?row.anuncioLoja?.id:row.codigo});
           try { links.push(grossLink(row,product,storeId,isML)); }
           catch(error) { failures++;issue('Preços brutos',marketplace,product.sku,product.id,isML?row.anuncioLoja?.id:row.codigo,error.message); }
         }
-        grossUpdated += await saveGrossLinks(pool,marketplace,links);
-        for(const link of links) record('Vínculos: '+marketplace,'atualizado',{sku:link.sku,id:link.product_id},link.store_id);
+        const counts = new Map();
+        for (const link of links) counts.set(link.store_id,(counts.get(link.store_id) || 0)+1);
+        const unique = links.filter(link=>{
+          if (counts.get(link.store_id)===1) return true;
+          failures++;issue('Preços brutos',marketplace,link.sku,link.product_id,link.store_id,'Código de anúncio repetido nos vínculos retornados pelo Bling. Vínculo preservado.');return false;
+        });
+        try {
+          grossUpdated += await saveGrossLinks(pool,marketplace,unique);
+          for(const link of unique) record('Vínculos: '+marketplace,'atualizado',{sku:link.sku,id:link.product_id,name:link.name,store_id:link.store_id});
+        } catch(error) {
+          // A rejected batch is rolled back. Retry individually to identify the affected links.
+          for(const link of unique) {
+            try {grossUpdated += await saveGrossLinks(pool,marketplace,[link]);record('Vínculos: '+marketplace,'atualizado',{sku:link.sku,id:link.product_id,name:link.name,store_id:link.store_id});}
+            catch(itemError) {failures++;issue('Preços brutos',marketplace,link.sku,link.product_id,link.store_id,itemError.message);}
+          }
+        }
       } catch(error) { failures++;issue('Preços brutos',marketplace,'','','',error.message); }
     }
     await persistIssues();

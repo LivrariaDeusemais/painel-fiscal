@@ -74,8 +74,8 @@ function createRouter(pool, renderShell) {
       if(!Array.isArray(job?.diagnostico))return res.status(404).send('Diagnóstico indisponível.');
       const rows=job.diagnostico.filter(r=>r.modulo===req.query.modulo && r.status===req.query.grupo);
       const ExcelJS=require('exceljs');const workbook=new ExcelJS.Workbook();const sheet=workbook.addWorksheet('Diagnóstico');
-      sheet.columns=[{header:'Módulo',key:'modulo',width:28},{header:'Resultado',key:'status',width:18},{header:'SKU',key:'sku',width:18},{header:'ID produto Bling',key:'produto_id',width:24},{header:'Detalhe',key:'detalhe',width:70}];
-      sheet.getColumn(4).numFmt='@';sheet.addRows(rows);sheet.getRow(1).font={bold:true};sheet.autoFilter='A1:E1';
+      sheet.columns=[{header:'Módulo',key:'modulo',width:28},{header:'Resultado',key:'status',width:18},{header:'SKU',key:'sku',width:18},{header:'ID produto Bling',key:'produto_id',width:24},{header:'Produto',key:'nome',width:50},{header:'Código do anúncio',key:'anuncio_id',width:28},{header:'Detalhe',key:'detalhe',width:70}];
+      sheet.getColumn(4).numFmt='@';sheet.getColumn(6).numFmt='@';sheet.addRows(rows);sheet.getRow(1).font={bold:true};sheet.autoFilter='A1:G1';
       res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.set('Content-Disposition',`attachment; filename="bling-diagnostico-${req.params.id}-${req.query.grupo}.xlsx"`);
       await workbook.xlsx.write(res);res.end();
     } catch(error) {res.status(503).send('Não foi possível gerar o relatório.');}

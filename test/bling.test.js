@@ -137,3 +137,12 @@ test('custo Bling compara valor anterior e marca existentes, preservando Novo pa
   const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/THEN 'Reajustar' ELSE status_validacao/);
  }
 });
+test('anúncios zero e repetidos têm referências no diagnóstico e não bloqueiam vínculos válidos',async()=>{
+ const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};},release(){}};const pool={connect:async()=>db};
+ const products=[{id:1,codigo:'B1',nome:'Produto um'},{id:2,codigo:'B2',nome:'Produto dois'},{id:3,codigo:'B3',nome:'Produto três'},{id:4,codigo:'B4',nome:'Produto quatro'}];
+ const api={all:async(path,params)=>path==='/produtos'?params.criterio===2?products:[]:[{produto:{id:1},loja:{id:8},codigo:'0',preco:20},{produto:{id:2},loja:{id:8},codigo:'999',preco:20},{produto:{id:3},loja:{id:8},codigo:'999',preco:20},{produto:{id:4},loja:{id:8},codigo:'888',preco:20}]};
+ await runSync(pool,db,1,{module:'links',lojas:{Shopee:'8'}},api);
+ const report=JSON.parse(calls.filter(c=>c.sql.includes('diagnostico=$3')).at(-1).args[2]);
+ const pending=report.filter(r=>r.status==='pendente');assert.deepEqual(pending.map(r=>r.sku),['B1','B2','B3']);assert.equal(pending[0].nome,'Produto um');assert.equal(pending[0].anuncio_id,'0');assert.equal(pending[1].anuncio_id,'999');
+ assert.ok(report.some(r=>r.status==='atualizado'&&r.sku==='B4'&&r.anuncio_id==='888'));
+});
