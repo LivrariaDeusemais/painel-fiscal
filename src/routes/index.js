@@ -2058,6 +2058,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             ${arquivosLinks || `<a class="btn-soft-mini" href="/arquivo/ver/${idAcao}" target="_blank">Abrir</a>`}
             ${a.analise_status === 'COMPROVANTE' ? `<a class="btn-soft-mini" href="/arquivo/renomear/${idAcao}">Renomear</a>` : ''}
             ${usarBtn}
+            ${!modoSelecao && a.pdf_id ? `<a class="btn-green-mini" href="/arquivo/usar/${a.pdf_id}?destino=pdf&iniciar_arquivo=1">Preencher</a>` : ''}
             <form method="POST" action="/arquivo/${idAcao}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
               <button type="submit" class="btn-danger-mini">Excluir</button>
             </form>
@@ -2234,7 +2235,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         th:nth-child(6), td:nth-child(6) { width:7%; }
         th:nth-child(7), td:nth-child(7) { width:7%; }
         th:nth-child(8), td:nth-child(8) { width:9%; text-align:center; }
-        th:nth-child(9), td:nth-child(9) { width:210px; text-align:center; overflow:visible; }
+        th:nth-child(9), td:nth-child(9) { width:290px; text-align:center; overflow:visible; }
+        #arquivoTabela.sem-chave .arquivo-chave { display:none; }
+        #arquivoTabela.sem-chave td:nth-child(2), #arquivoTabela.sem-chave th:nth-child(2) { width:30%; }
         .arquivo-nome { white-space:nowrap; }
         .arquivo-chave { font-family:monospace; font-size:10px; letter-spacing:-.3px; }
         .arquivo-badge {
@@ -2341,14 +2344,15 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             <a class="dm-menu-btn" href="/arquivo">Limpar</a>
           </form>
 
-          <div class="table-wrap">
+          <label style="display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;cursor:pointer"><input type="checkbox" id="esconderChaveNF"> Esconder chave NF</label>
+          <div class="table-wrap" id="arquivoTabela">
             <table>
               <thead>
                 <tr>
                   <th>Tipo</th>
                   <th>Razão social</th>
                   <th>Nº Documento/NF</th>
-                  <th>Chave NF</th>
+                  <th class="arquivo-chave">Chave NF</th>
                   <th>CNPJ/CPF</th>
                   <th>Emissão</th>
                   <th>Valor</th>
@@ -2365,7 +2369,14 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
         </div>
       </div>
       <dialog id="xmlEspelho" style="width:min(1100px,94vw);height:88vh;padding:0;border:0;border-radius:12px;box-shadow:0 24px 70px rgba(15,23,42,.3)"><iframe title="Espelho do XML" style="width:100%;height:100%;border:0"></iframe></dialog>
-      <script>document.addEventListener('click',function(e){const b=e.target.closest('[data-espelho]');if(!b)return;const d=document.getElementById('xmlEspelho');d.querySelector('iframe').src=b.dataset.espelho;d.showModal();});</script>
+      <script>
+      const chaveControle = document.getElementById('esconderChaveNF');
+      const chaveTabela = document.getElementById('arquivoTabela');
+      try { chaveControle.checked = localStorage.getItem('arquivo_esconder_chave') === '1'; } catch(e) {}
+      function aplicarChave() { chaveTabela.classList.toggle('sem-chave', chaveControle.checked); }
+      aplicarChave();
+      chaveControle.addEventListener('change', function() { aplicarChave(); try { localStorage.setItem('arquivo_esconder_chave', chaveControle.checked ? '1' : '0'); } catch(e) {} });
+      document.addEventListener('click',function(e){const b=e.target.closest('[data-espelho]');if(!b)return;const d=document.getElementById('xmlEspelho');d.querySelector('iframe').src=b.dataset.espelho;d.showModal();});</script>
     </body>
     </html>
   `;
@@ -3194,9 +3205,36 @@ function redirectRotinaDespesasComFiltros(req, res, id) {
   return res.redirect(destino);
 }
 
-async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto, ativo = null) {
+function escolherRotinaDoLancamento(rotinas, cnpjCpf, categoriaId, rotinaId) {
+  const documento = String(cnpjCpf || '').replace(/\D/g, '');
+  if (![11, 14].includes(documento.length) || !categoriaId) return null;
+  const candidatas = rotinas.filter(r => String(r.cnpj_cpf || '').replace(/\D/g, '') === documento
+    && String(r.subcategoria_id || r.categoria_principal_id || '') === String(categoriaId));
+  if (rotinaId) return candidatas.find(r => String(r.id) === String(rotinaId)) || null;
+  return candidatas.length === 1 ? candidatas[0] : null;
+}
+
+async function buscarRotinasPorDocumento(cnpjCpf) {
+  const documento = String(cnpjCpf || '').replace(/\D/g, '');
+  if (![11, 14].includes(documento.length)) return [];
+  const mes = await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+  const resultado = await pool.query(`
+    SELECT r.id, r.fornecedor, r.cnpj_cpf, r.tipo_pagamento_padrao,
+      r.categoria_principal_id, r.subcategoria_id,
+      cp.nome AS categoria_principal_nome, cs.nome AS subcategoria_nome
+    FROM rotina_despesas r
+    LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
+    LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
+    LEFT JOIN rotina_despesas_status_mensal sm ON sm.rotina_id = r.id AND sm.mes_ano = $2
+    WHERE regexp_replace(COALESCE(r.cnpj_cpf, ''), '[^0-9]', '', 'g') = $1
+      AND COALESCE(sm.ativo, r.ativo, true) = true
+    ORDER BY r.id`, [documento, mes]);
+  return resultado.rows;
+}
+
+async function upsertStatusMensal(rotinaId, mesAno, statusLinha, statusPagto, ativo = null, executor = pool) {
   const mes = String(mesAno || '').trim() || getMesAnoAtual();
-  await pool.query(`
+  await executor.query(`
     INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, status_linha, status_pagto, ativo, atualizado_em)
     VALUES ($1, $2, $3, $4, $5, NOW())
     ON CONFLICT (rotina_id, mes_ano)
@@ -16090,6 +16128,11 @@ router.get('/arquivo/ver/:id', protegerRota, async (req, res) => {
   }
 });
 
+router.get('/rotina-despesas/api/por-documento', protegerRota, async (req, res) => {
+  try { res.json({ rotinas: await buscarRotinasPorDocumento(req.query.documento) }); }
+  catch (erro) { res.status(500).json({ erro: 'Não foi possível consultar o pré-cadastro. Tente novamente.' }); }
+});
+
 router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -16113,6 +16156,7 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
 
     const query = new URLSearchParams();
     if (rotinaId) query.set('rotina_id', rotinaId);
+    if (req.query.iniciar_arquivo === '1') query.set('iniciar_arquivo', '1');
     if (retornoFiltros) query.set('retorno_filtros', retornoFiltros);
 
     let arquivoPareado = null;
@@ -17268,6 +17312,12 @@ router.get('/novo', async (req, res) => {
       }
     }
 
+    if (!rotinaPadrao && req.query.iniciar_arquivo === '1' && arquivo_pdf_id) {
+      const documentoArquivo = await getArquivoFilaDisponivel(Number(arquivo_pdf_id), 'PDF');
+      const candidatas = await buscarRotinasPorDocumento(documentoArquivo?.cnpj_cpf);
+      if (candidatas.length === 1) rotinaPadrao = candidatas[0];
+    }
+
     const categoriaSelecionada = rotinaPadrao?.subcategoria_id || rotinaPadrao?.categoria_principal_id || '';
 
     let optionsCategorias = '<option value="">Selecione a categoria</option>';
@@ -17811,10 +17861,10 @@ body {
           }
           .pdf-copy-panel {
             position: absolute;
-            top: 168px;
+            top: 28px;
             right: 42px;
             width: min(470px, calc(100vw - 38px));
-            max-height: calc(100vh - 188px);
+            max-height: calc(100vh - 56px);
             overflow-y: auto;
             background: rgba(255,255,255,.96);
             border: 2px solid #00B050;
@@ -18138,6 +18188,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               >Buscar PDF no Arquivo</a>
             </div>
 
+            <div id="pdfRotinaEscolha" style="display:none;margin-bottom:12px">
+              <label for="pdf_rotina_id">Pré-cadastro da conta</label>
+              <select id="pdf_rotina_id"><option value="">Selecione a conta e sua categoria</option></select>
+              <p id="pdfRotinaMensagem" class="pdf-copy-help"></p>
+            </div>
             <div class="pdf-copy-grid">
               <div>
                 <label for="pdf_tipo_documento">Tipo do documento</label>
@@ -18167,6 +18222,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               </div>
             </div>
 
+            <div class="pdf-copy-grid" style="margin-top:12px">
+              <div><label for="pdf_tipo_pagamento">Tipo de pagamento</label><select id="pdf_tipo_pagamento"></select></div>
+              <div><label for="pdf_categoria_principal">Categoria principal</label><select id="pdf_categoria_principal"></select></div>
+              <div><label for="pdf_subcategoria">Subcategoria</label><select id="pdf_subcategoria"></select></div>
+            </div>
             <p class="pdf-copy-help">Arraste este quadro pela barra “Preencher”. Ao salvar, os dados serão enviados para os campos da tela Novo Lançamento.</p>
 
             <div class="pdf-copy-actions">
@@ -18179,6 +18239,70 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
       
         <script>
           var pdfCopyObjectUrl = null;
+          var categoriasPDF = ${JSON.stringify(categorias).replace(/</g, '\u003c')};
+          var rotinasPDF = [];
+          var consultaRotinaPDF = 0;
+          var consultaRotinaPendente = false;
+          var consultaRotinaFalhou = false;
+          function preencherOpcoesPDF(select, itens, texto) {
+            select.replaceChildren(new Option(texto, ''));
+            itens.forEach(function(item) { select.add(new Option(item.nome, item.id)); });
+          }
+          function atualizarSubcategoriasPDF(valor) {
+            var principal = document.getElementById('pdf_categoria_principal').value;
+            preencherOpcoesPDF(document.getElementById('pdf_subcategoria'), categoriasPDF.filter(function(c) { return String(c.categoria_pai_id || '') === principal; }), 'Sem subcategoria');
+            document.getElementById('pdf_subcategoria').value = valor || '';
+          }
+          function selecionarCategoriaPDF(valor) {
+            var categoria = categoriasPDF.find(function(c) { return String(c.id) === String(valor); });
+            document.getElementById('pdf_categoria_principal').value = categoria ? String(categoria.categoria_pai_id || categoria.id) : '';
+            atualizarSubcategoriasPDF(categoria && categoria.categoria_pai_id ? String(categoria.id) : '');
+          }
+          function aplicarRotinaPDF(id) {
+            var rotina = rotinasPDF.find(function(r) { return String(r.id) === String(id); });
+            getCampoNovoLancamento('rotina_id').value = rotina ? rotina.id : '';
+            if (!rotina) return;
+            document.getElementById('pdf_tipo_pagamento').value = rotina.tipo_pagamento_padrao || '';
+            selecionarCategoriaPDF(rotina.subcategoria_id || rotina.categoria_principal_id || '');
+          }
+          async function consultarRotinasPDF() {
+            var numeroConsulta = ++consultaRotinaPDF;
+            var documento = document.getElementById('pdf_cnpj_cpf').value;
+            consultaRotinaPendente = true; consultaRotinaFalhou = false;
+            try {
+              var resposta = await fetch('/rotina-despesas/api/por-documento?documento=' + encodeURIComponent(documento));
+              if (!resposta.ok) throw new Error('consulta');
+              var dados = await resposta.json();
+              if (numeroConsulta !== consultaRotinaPDF) return;
+              rotinasPDF = dados.rotinas || [];
+              var seletor = document.getElementById('pdf_rotina_id');
+              var origemId = getCampoNovoLancamento('rotina_id').value;
+              preencherOpcoesPDF(seletor, rotinasPDF.map(function(r) { return { id:r.id, nome:r.fornecedor + ' — ' + (r.categoria_principal_nome || 'Sem categoria') + (r.subcategoria_nome ? ' > ' + r.subcategoria_nome : '') }; }), 'Selecione a conta e sua categoria');
+              document.getElementById('pdfRotinaEscolha').style.display = rotinasPDF.length > 1 ? 'block' : 'none';
+              document.getElementById('pdfRotinaMensagem').textContent = 'Há mais de um pré-cadastro para este documento. Escolha a conta para conferir a categoria.';
+              var origem = rotinasPDF.find(function(r) { return String(r.id) === String(origemId); });
+              if (origem) seletor.value = origem.id;
+              else if (rotinasPDF.length === 1) { seletor.value = rotinasPDF[0].id; aplicarRotinaPDF(seletor.value); }
+              else {
+                getCampoNovoLancamento('rotina_id').value = '';
+                if (rotinasPDF.length > 1) selecionarCategoriaPDF('');
+              }
+            } catch(e) {
+              if (numeroConsulta !== consultaRotinaPDF) return;
+              consultaRotinaFalhou = true;
+              document.getElementById('pdfRotinaEscolha').style.display = 'block';
+              document.getElementById('pdfRotinaMensagem').textContent = 'Não foi possível consultar o pré-cadastro. Confira a conexão e tente novamente.';
+            } finally { if (numeroConsulta === consultaRotinaPDF) consultaRotinaPendente = false; }
+          }
+          document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('pdf_tipo_pagamento').innerHTML = document.getElementById('tipo_pagamento').innerHTML;
+            preencherOpcoesPDF(document.getElementById('pdf_categoria_principal'), categoriasPDF.filter(function(c) { return !c.categoria_pai_id; }), 'Selecione a categoria');
+            selecionarCategoriaPDF(document.getElementById('categoria_id').value);
+            document.getElementById('pdf_tipo_pagamento').value = document.getElementById('tipo_pagamento').value;
+            document.getElementById('pdf_categoria_principal').addEventListener('change', function() { atualizarSubcategoriasPDF(''); });
+            document.getElementById('pdf_rotina_id').addEventListener('change', function() { aplicarRotinaPDF(this.value); });
+            document.getElementById('pdf_cnpj_cpf').addEventListener('change', consultarRotinasPDF);
+          });
 
 
           function salvarRascunhoNovoLancamentoAntesArquivo() {
@@ -18262,6 +18386,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 : arquivo.valor_documento);
             }
 
+            await consultarRotinasPDF();
             var viewer = document.getElementById('pdfCopyViewer');
             var empty = document.getElementById('pdfCopyEmpty');
 
@@ -18366,7 +18491,8 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               ['data_despesa', 'pdf_data_despesa'],
               ['valor', 'pdf_valor'],
               ['cnpj_cpf', 'pdf_cnpj_cpf'],
-              ['fornecedor', 'pdf_fornecedor']
+              ['fornecedor', 'pdf_fornecedor'],
+              ['tipo_pagamento', 'pdf_tipo_pagamento']
             ];
             pares.forEach(function(par) {
               var origem = getCampoNovoLancamento(par[0]);
@@ -18398,6 +18524,14 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           }
 
           function salvarCopiarDoPDF() {
+            if (consultaRotinaPendente) { alert('Aguarde a consulta do pré-cadastro.'); return false; }
+            if (consultaRotinaFalhou) { consultarRotinasPDF(); alert('Não foi possível conferir o pré-cadastro. Tente novamente.'); return false; }
+            var principal = document.getElementById('pdf_categoria_principal');
+            if (!principal.value) { alert('Selecione a categoria antes de salvar.'); principal.focus(); return false; }
+            if (rotinasPDF.length > 1 && !document.getElementById('pdf_rotina_id').value) { alert('Selecione o pré-cadastro da conta para vincular a categoria.'); document.getElementById('pdf_rotina_id').focus(); return false; }
+            if (!document.getElementById('pdf_tipo_pagamento').value) { alert('Selecione o tipo de pagamento.'); document.getElementById('pdf_tipo_pagamento').focus(); return false; }
+            setValorCampoNovoLancamento('categoria_id', document.getElementById('pdf_subcategoria').value || principal.value);
+            setValorCampoNovoLancamento('tipo_pagamento', document.getElementById('pdf_tipo_pagamento').value);
             setValorCampoNovoLancamento('tipo_documento', document.getElementById('pdf_tipo_documento').value);
             setValorCampoNovoLancamento('numero_documento', document.getElementById('pdf_numero_documento').value);
             setValorCampoNovoLancamento('data_despesa', document.getElementById('pdf_data_despesa').value);
@@ -18412,7 +18546,11 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           }
 
           function limparCamposCopiarDoPDF() {
-            ['pdf_tipo_documento','pdf_numero_documento','pdf_data_despesa','pdf_valor','pdf_cnpj_cpf','pdf_fornecedor'].forEach(function(id) {
+            ++consultaRotinaPDF;
+            rotinasPDF = []; consultaRotinaPendente = false; consultaRotinaFalhou = false;
+            getCampoNovoLancamento('rotina_id').value = '';
+            document.getElementById('pdfRotinaEscolha').style.display = 'none';
+            ['pdf_tipo_documento','pdf_numero_documento','pdf_data_despesa','pdf_valor','pdf_cnpj_cpf','pdf_fornecedor','pdf_tipo_pagamento','pdf_categoria_principal','pdf_subcategoria','pdf_rotina_id'].forEach(function(id) {
               var el = document.getElementById(id);
               if (el) el.value = '';
             });
@@ -18520,24 +18658,40 @@ router.post(
         anexoXml = arquivoXmlFilaNovo.nome_arquivo;
       }
 
-      await pool.query(
-        `INSERT INTO lancamentos
-        (tipo_documento, numero_documento, data_despesa, fornecedor, cnpj_cpf, codigo_pagamento, categoria_id, valor, tipo_pagamento, anexo_pdf, anexo_xml)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-        [
-          tipo_documento,
-          numero_documento || null,
-          data_despesa,
-          fornecedor,
-          cnpj_cpf || null,
-          codigo_pagamento || null,
-          categoria_id,
-          parseMoneyBR(valor),
-          tipo_pagamento,
-          anexoPdf,
-          anexoXml
-        ]
-      );
+      if (!categoria_id || !tipo_pagamento) return res.status(400).send('Selecione categoria e tipo de pagamento antes de salvar.');
+      const rotinasCorrespondentes = await buscarRotinasPorDocumento(cnpj_cpf);
+      const rotinaFeita = escolherRotinaDoLancamento(rotinasCorrespondentes, cnpj_cpf, categoria_id, rotina_id);
+
+      const clienteLancamento = await pool.connect();
+      try {
+        await clienteLancamento.query('BEGIN');
+        await clienteLancamento.query(
+          `INSERT INTO lancamentos
+          (tipo_documento, numero_documento, data_despesa, fornecedor, cnpj_cpf, codigo_pagamento, categoria_id, valor, tipo_pagamento, anexo_pdf, anexo_xml)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [
+            tipo_documento,
+            numero_documento || null,
+            data_despesa,
+            fornecedor,
+            cnpj_cpf || null,
+            codigo_pagamento || null,
+            categoria_id,
+            parseMoneyBR(valor),
+            tipo_pagamento,
+            anexoPdf,
+            anexoXml
+          ]
+        );
+        if (rotinaFeita) {
+          const mesCompetencia = await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+          await upsertStatusMensal(rotinaFeita.id, mesCompetencia, 'FEITO', null, null, clienteLancamento);
+        }
+        await clienteLancamento.query('COMMIT');
+      } catch (erro) {
+        await clienteLancamento.query('ROLLBACK');
+        throw erro;
+      } finally { clienteLancamento.release(); }
       // Depois de salvar o lançamento, remove da fila os arquivos usados.
       if (arquivoPdfFilaNovo) {
         await marcarArquivoFilaComoUsado(arquivoPdfFilaNovo.id);
