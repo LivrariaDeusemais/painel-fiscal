@@ -70,6 +70,7 @@ async function initializeTables(pool) {
     )
   `);
   await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado', ADD COLUMN IF NOT EXISTS custo_origem TEXT`);
+  await pool.query("UPDATE tabela_preco_produtos SET status_validacao='Novo custo' WHERE status_validacao='Reajustar'");
   await pool.query(`ALTER TABLE tabela_preco_produtos
     ADD COLUMN IF NOT EXISTS estoque_matriz NUMERIC(15,4),
     ADD COLUMN IF NOT EXISTS estoque_full JSONB,
@@ -277,7 +278,7 @@ async function productRows(pool, filters = {}) {
     values.push(`%${String(filters.search).trim()}%`);
     conditions.push(`(sku ILIKE $${values.length} OR nome ILIKE $${values.length} OR marca ILIKE $${values.length})`);
   }
-  if (['Novo', 'Validado', 'Reajustar'].includes(filters.status)) {
+  if (['Novo', 'Validado', 'Novo custo'].includes(filters.status)) {
     values.push(filters.status);
     conditions.push(`status_validacao = $${values.length}`);
   }
@@ -316,7 +317,7 @@ async function updateProductCost(pool, sku, cost) {
 async function updateProductStatuses(pool, skus, status) {
   const normalized = [...new Set((Array.isArray(skus) ? skus : [skus]).map(String).map(item => item.trim()).filter(Boolean))];
   if (!normalized.length) throw new Error('Selecione pelo menos um produto.');
-  if (!['Novo', 'Validado', 'Reajustar'].includes(status)) throw new Error('Status inválido.');
+  if (!['Novo', 'Validado', 'Novo custo'].includes(status)) throw new Error('Status inválido.');
   const result = await pool.query(`
     UPDATE tabela_preco_produtos SET status_validacao=$2
     WHERE sku = ANY($1::text[])
@@ -630,6 +631,7 @@ async function saveCalculatorPrice(pool, marketplace, sku, price) {
 }
 
 function priceReviewStatus(validationStatus, calculationStatus, difference) {
+  if (validationStatus === 'Novo custo') return 'Novo custo';
   if (validationStatus === 'Novo') return 'Novo';
   if (calculationStatus !== 'OK' || !Number.isFinite(Number(difference))) return 'Revisar';
 
@@ -643,6 +645,7 @@ function priceReviewStatus(validationStatus, calculationStatus, difference) {
 // Compare the practiced price's profitability with the configured requirements.
 // The recommended target remains informational and does not force a price change.
 function marketplaceReviewStatus(item) {
+  if (item.row.status_validacao === 'Novo custo') return 'Novo custo';
   if (item.row.sem_vinculo) return 'Sem Vínculo';
   if (item.row.status_validacao === 'Novo') return 'Novo';
   const current=item.published?.details;

@@ -337,7 +337,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         try {
           const cost = defaultSupplierCost(byProduct.get(p.id) || []);
           await client.query(`UPDATE tabela_preco_produtos SET custo=$2,custo_origem='Bling: fornecedor padrão',
-            status_validacao=CASE WHEN NOT $4::boolean AND custo IS DISTINCT FROM $2::numeric THEN 'Reajustar' ELSE status_validacao END,
+            status_validacao=CASE WHEN NOT $4::boolean AND custo IS DISTINCT FROM $2::numeric THEN 'Novo custo' ELSE status_validacao END,
             custo_bling_fornecedor_id=$3,custo_bling_em=NOW() WHERE sku=$1`, [p.sku,cost.cost,cost.supplierId,p.isNew]);
           costsUpdated++;
           record('Custos','atualizado',p);

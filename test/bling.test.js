@@ -134,7 +134,7 @@ test('custo Bling compara valor anterior e marca existentes, preservando Novo pa
   const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:sql.startsWith('SELECT sku')&&existing?[{sku:'B1',bling_id:'1'}]:[]};}};
   const api={all:async(path,params)=>path==='/produtos'?params.criterio===2?[{id:1,codigo:'B1'}]:[]:[{id:9,produto:{id:1},padrao:true,precoCusto:30}],get:async(path)=>path.startsWith('/produtos/')?{id:1,codigo:'B1',nome:'Teste'}:[]};
   await runSync({},db,1,{module:'data'},api);
-  const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/THEN 'Reajustar' ELSE status_validacao/);
+  const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/THEN 'Novo custo' ELSE status_validacao/);
  }
 });
 test('anúncios zero e repetidos têm referências no diagnóstico e não bloqueiam vínculos válidos',async()=>{
