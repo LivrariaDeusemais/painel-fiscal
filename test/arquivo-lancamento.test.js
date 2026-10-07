@@ -81,3 +81,36 @@ test('grava lançamento e Feito juntos, revertendo ambos se o status falhar', as
     assert.ok(falhar ? resposta.includes('Falha simulada') : resposta === '/lancamentos');
   }
 });
+
+test('arraste do PDF captura o ponteiro, move verticalmente e solta fora do painel', () => {
+  const eventos = {}, janela = {};
+  let capturado = null;
+  const panel = {style:{}, offsetWidth:470, offsetHeight:560, getBoundingClientRect:()=>({left:600,top:16})};
+  const handle = {
+    addEventListener:(nome, fn)=>{eventos[nome]=fn;},
+    setPointerCapture:id=>{capturado=id;},
+    hasPointerCapture:id=>capturado===id,
+    releasePointerCapture:()=>{capturado=null;}
+  };
+  const ctx = {document:{getElementById:id=>id==='pdfCopyPanel'?panel:handle},window:{innerWidth:1100,innerHeight:700,addEventListener:(nome,fn)=>{janela[nome]=fn;}}};
+  const inicio = codigo.indexOf('(function habilitarArrastePopupPDF()');
+  vm.runInNewContext(codigo.slice(inicio,codigo.indexOf('})();',inicio)+5),ctx);
+  const down={isPrimary:true,button:0,pointerId:1,clientX:620,clientY:36,target:{closest:()=>null},preventDefault(){}};
+  eventos.pointerdown(down);
+  assert.equal(capturado,1);
+  eventos.pointermove({pointerId:1,pointerType:'mouse',buttons:1,clientX:300,clientY:140});
+  assert.equal(panel.style.top,'120px');
+  eventos.pointermove({pointerId:1,pointerType:'mouse',buttons:1,clientX:0,clientY:0});
+  assert.equal(panel.style.top,'8px');
+  assert.equal(panel.style.left,'8px');
+  eventos.pointerup();
+  assert.equal(capturado,null);
+  eventos.pointermove({pointerId:1,pointerType:'mouse',buttons:1,clientX:400,clientY:300});
+  assert.equal(panel.style.top,'8px');
+  eventos.pointerdown(down);
+  eventos.pointermove({pointerId:1,pointerType:'mouse',buttons:0});
+  assert.equal(capturado,null);
+  eventos.pointerdown(down);
+  janela.blur();
+  assert.equal(capturado,null);
+});

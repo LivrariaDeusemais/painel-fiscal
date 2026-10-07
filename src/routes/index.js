@@ -17864,11 +17864,15 @@ body {
           }
           .pdf-copy-panel {
             position: absolute;
-            top: 28px;
-            right: 42px;
+            top: 16px;
+            right: 16px;
             width: min(470px, calc(100vw - 38px));
-            max-height: calc(100vh - 56px);
-            overflow-y: auto;
+            max-height: calc(100vh - 32px);
+            max-height: calc(100dvh - 32px);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             background: rgba(255,255,255,.96);
             border: 2px solid #00B050;
             border-radius: 14px;
@@ -17885,10 +17889,13 @@ body {
             justify-content: space-between;
             gap: 12px;
             cursor: move;
+            touch-action: none;
+            flex-shrink: 0;
             padding-bottom: 10px;
             border-bottom: 1px solid #dbe7df;
             margin-bottom: 10px;
           }
+          .pdf-copy-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
           .pdf-copy-panel-header strong {
             color: #2f7d20;
             font-size: 19px;
@@ -17932,6 +17939,9 @@ body {
             border-radius: 8px !important;
           }
           .pdf-copy-actions {
+            flex-shrink: 0;
+            padding-top: 10px;
+            border-top: 1px solid #dbe7df;
             display: flex;
             gap: 8px;
             justify-content: flex-end;
@@ -17951,7 +17961,7 @@ body {
           }
           @media(max-width: 760px) {
             .pdf-copy-viewer-wrap { inset: 8px; }
-            .pdf-copy-panel { top: 126px; left: 14px; right: auto; width: calc(100vw - 28px); max-height:calc(100vh - 140px); }
+            .pdf-copy-panel { top: 16px; left: 14px; right: auto; width: calc(100vw - 28px); }
             .pdf-copy-grid { grid-template-columns: 1fr; }
           }
 
@@ -18184,6 +18194,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <button type="button" class="pdf-copy-close" onclick="fecharCopiarDoPDF()" title="Fechar">×</button>
             </div>
 
+            <div class="pdf-copy-content">
             <div class="pdf-copy-file-row">
               <input id="pdfCopyFile" type="file" accept="application/pdf,.pdf" onchange="carregarPDFManual(event)" />
               <a
@@ -18234,6 +18245,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             </div>
             <p class="pdf-copy-help">Arraste este quadro pela barra “Preencher”. Ao salvar, os dados serão enviados para os campos da tela Novo Lançamento.</p>
 
+            </div>
             <div class="pdf-copy-actions">
               <button type="button" class="btn-secondary" onclick="limparCamposCopiarDoPDF()">Limpar</button>
               <button type="button" onclick="salvarCopiarDoPDF()">Salvar</button>
@@ -18568,45 +18580,44 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             var handle = document.getElementById('pdfCopyDragHandle');
             if (!panel || !handle) return;
 
-            var arrastando = false;
+            var pointerId = null;
             var offsetX = 0;
             var offsetY = 0;
-
-            function iniciar(e) {
-              var evento = e.touches ? e.touches[0] : e;
-              arrastando = true;
-              var rect = panel.getBoundingClientRect();
-              offsetX = evento.clientX - rect.left;
-              offsetY = evento.clientY - rect.top;
-              panel.style.left = rect.left + 'px';
-              panel.style.top = rect.top + 'px';
+            function posicionar(left, top) {
+              panel.style.left = Math.max(8, Math.min(Math.max(8, window.innerWidth - panel.offsetWidth - 8), left)) + 'px';
+              panel.style.top = Math.max(8, Math.min(Math.max(8, window.innerHeight - panel.offsetHeight - 8), top)) + 'px';
               panel.style.right = 'auto';
-              document.body.style.userSelect = 'none';
             }
-
-            function mover(e) {
-              if (!arrastando) return;
-              var evento = e.touches ? e.touches[0] : e;
-              var maxLeft = window.innerWidth - panel.offsetWidth - 8;
-              var maxTop = window.innerHeight - panel.offsetHeight - 8;
-              var minTop = window.innerWidth <= 760 ? 126 : 168;
-              var left = Math.max(8, Math.min(maxLeft, evento.clientX - offsetX));
-              var top = Math.max(minTop, Math.min(maxTop, evento.clientY - offsetY));
-              panel.style.left = left + 'px';
-              panel.style.top = top + 'px';
-            }
-
             function parar() {
-              arrastando = false;
-              document.body.style.userSelect = '';
+              var anterior = pointerId;
+              pointerId = null;
+              if (anterior !== null && handle.hasPointerCapture(anterior)) handle.releasePointerCapture(anterior);
             }
-
-            handle.addEventListener('mousedown', iniciar);
-            document.addEventListener('mousemove', mover);
-            document.addEventListener('mouseup', parar);
-            handle.addEventListener('touchstart', iniciar, { passive: true });
-            document.addEventListener('touchmove', mover, { passive: true });
-            document.addEventListener('touchend', parar);
+            handle.addEventListener('pointerdown', function(e) {
+              if (!e.isPrimary || e.button !== 0 || e.target.closest('button, a, input, select')) return;
+              var rect = panel.getBoundingClientRect();
+              offsetX = e.clientX - rect.left;
+              offsetY = e.clientY - rect.top;
+              pointerId = e.pointerId;
+              handle.setPointerCapture(pointerId);
+              posicionar(rect.left, rect.top);
+              e.preventDefault();
+            });
+            handle.addEventListener('pointermove', function(e) {
+              if (pointerId !== e.pointerId) return;
+              if (e.pointerType === 'mouse' && e.buttons === 0) { parar(); return; }
+              posicionar(e.clientX - offsetX, e.clientY - offsetY);
+            });
+            handle.addEventListener('pointerup', parar);
+            handle.addEventListener('pointercancel', parar);
+            handle.addEventListener('lostpointercapture', parar);
+            window.addEventListener('blur', parar);
+            window.addEventListener('resize', function() {
+              parar();
+              if (!panel.offsetWidth) return;
+              var rect = panel.getBoundingClientRect();
+              posicionar(rect.left, rect.top);
+            });
           })();
 
         </script>
