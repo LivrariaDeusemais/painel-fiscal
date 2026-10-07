@@ -2337,7 +2337,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
                 Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
               </p>
-              ${pendentesAnalise ? `<form method="POST" action="/arquivo/reprocessar" style="margin-top:12px"><button class="dm-menu-btn" type="submit">Analisar acervo (${pendentesAnalise} pendentes)</button></form>` : ''}
+              <form method="POST" action="/arquivo/reprocessar" style="margin-top:12px" onsubmit="const botao=this.querySelector('button'); botao.textContent='Conciliando… aguarde'; botao.disabled=true;"><button class="btn-soft-mini" type="submit">Reconciliar PDF/XML${pendentesAnalise ? ` (${pendentesAnalise} para analisar)` : ''}</button></form>
             </div>
           ` : ''}
 
@@ -2668,6 +2668,7 @@ function arquivoConciliacaoExtrairChave(...fontes) {
   for (const fonte of fontes) {
     const texto = String(fonte || '');
     const prioridades = [
+      /<(?:\w+:)?ChaveNotaNacional\b[^>]*>\s*(\d{50})\s*<\/(?:\w+:)?ChaveNotaNacional>/i,
       /(?:Id|id)=["'](?:NFS|NFe|CTe)?(\d{44,60})["']/i,
       /(?:chave(?:\s+de\s+acesso)?|chNFSe|chNFe|chCTe)[^0-9]{0,40}(\d(?:[ .-]?\d){43,59})/i,
       /(?:^|\D)(\d{44}|\d{50})(?:\D|$)/
@@ -2834,10 +2835,15 @@ async function conciliarArquivoFilaDisponiveis() {
     if (arquivo.tipo === 'XML') grupo.xmls.push(arquivo);
   }
 
+  let conciliados = 0;
   for (const grupo of grupos.values()) {
     const pdf = grupo.pdfs.find(item => item.analise_status !== 'DUPLICADO');
     const xml = grupo.xmls.find(item => item.analise_status !== 'DUPLICADO');
     if (!pdf || !xml) continue;
+    if (pdf.par_id && Number(pdf.par_id) !== Number(xml.id)) continue;
+    if (xml.par_id && Number(xml.par_id) !== Number(pdf.id)) continue;
+    if (Number(pdf.par_id) === Number(xml.id) && Number(xml.par_id) === Number(pdf.id)
+      && pdf.analise_status === 'COMPLETO' && xml.analise_status === 'COMPLETO') continue;
 
     const cnpjCpf = xml.cnpj_cpf || pdf.cnpj_cpf || null;
     const fornecedor = xml.fornecedor || pdf.fornecedor || null;
@@ -2854,7 +2860,9 @@ async function conciliarArquivoFilaDisponiveis() {
           tipo_documento_detectado = $6, data_documento = $7, valor_documento = $8
       WHERE id IN ($1, $2)
     `, [pdf.id, xml.id, cnpjCpf, fornecedor, numero, tipoDocumento, data, valor]);
+    conciliados += 1;
   }
+  return conciliados;
 }
 
 async function reprocessarArquivoFila({ limitePdf = 30, somentePendentes = true } = {}) {
@@ -2874,8 +2882,8 @@ async function reprocessarArquivoFila({ limitePdf = 30, somentePendentes = true 
     if (arquivo.tipo === 'PDF') pdfsLidos += 1;
     processados += 1;
   }
-  await conciliarArquivoFilaDisponiveis();
-  return { processados, pdfsLidos };
+  const conciliados = await conciliarArquivoFilaDisponiveis();
+  return { processados, pdfsLidos, conciliados };
 }
 
 function arquivoAutoEscapeHtml(v) {
@@ -15868,7 +15876,7 @@ router.post('/arquivo/reprocessar', protegerRota, async (req, res) => {
     `);
     const pendentes = Number(restantes.rows[0]?.total || 0);
     const complemento = pendentes ? ` Ainda restam ${pendentes}; clique novamente para continuar.` : ' Acervo concluído.';
-    res.redirect(`/arquivo?ok=${encodeURIComponent(`${resultado.processados} arquivo(s) analisado(s).${complemento}`)}`);
+    res.redirect(`/arquivo?ok=${encodeURIComponent(`${resultado.processados} arquivo(s) analisado(s). ${resultado.conciliados} par(es) PDF/XML conciliado(s).${complemento}`)}`);
   } catch (error) {
     res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
   }
