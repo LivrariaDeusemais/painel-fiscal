@@ -223,7 +223,7 @@ async function saveGrossLinks(pool, marketplace, links) {
   } catch(error) { await db.query('ROLLBACK');throw error; }
   finally { db.release(); }
 }
-async function startSync(pool, filter='', module='all') {
+async function startSync(pool, filter='', module='all', marketplaces=null) {
   const selectedSkus = require('./mercado-livre').syncSelectors(filter);
   await ensureTables(pool);
   const settings = (await pool.query('SELECT configuracao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1')).rows[0];
@@ -237,7 +237,7 @@ async function startSync(pool, filter='', module='all') {
     await client.query("UPDATE bling_sincronizacoes SET status='interrompida', mensagem='A execução anterior foi interrompida. Os dados já atualizados foram preservados.', finalizado_em=NOW() WHERE status='executando'");
     const job = (await client.query("INSERT INTO bling_sincronizacoes(status,etapa) VALUES('executando','Consultando produtos') RETURNING id")).rows[0];
     // All progress is persisted; the HTTP response can return while the work continues.
-    runSync(pool, client, job.id, {...settings.configuracao, selectedSkus, module}).catch(() => {}).finally(async () => {
+    runSync(pool, client, job.id, {...settings.configuracao, selectedSkus, module, marketplaces}).catch(() => {}).finally(async () => {
       try { await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))"); } finally { client.release(); }
     }).catch(() => {});
     return job.id;
@@ -300,6 +300,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         const p = normalizedProduct(await api.get('/produtos/' + item.id));
         const existing = (await client.query('SELECT sku,bling_id FROM tabela_preco_produtos WHERE UPPER(sku)=UPPER($1)', [p.sku])).rows;
         if (existing.length > 1 || (existing[0]?.bling_id && existing[0].bling_id !== p.id)) throw new Error('Identificação do produto divergente.');
+        p.isNew = existing.length === 0;
         p.sku = existing[0]?.sku || p.sku;
         await client.query(`INSERT INTO tabela_preco_produtos(sku,bling_id,nome,marca,situacao,peso,peso_bruto,preco_bling,ean,status_validacao,bling_atualizado_em)
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'Novo',NOW()) ON CONFLICT(sku) DO UPDATE SET
@@ -334,7 +335,8 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         try {
           const cost = defaultSupplierCost(byProduct.get(p.id) || []);
           await client.query(`UPDATE tabela_preco_produtos SET custo=$2,custo_origem='Bling: fornecedor padrão',
-            custo_bling_fornecedor_id=$3,custo_bling_em=NOW() WHERE sku=$1`, [p.sku,cost.cost,cost.supplierId]);
+            status_validacao=CASE WHEN NOT $4::boolean AND custo IS DISTINCT FROM $2::numeric THEN 'Reajustar' ELSE status_validacao END,
+            custo_bling_fornecedor_id=$3,custo_bling_em=NOW() WHERE sku=$1`, [p.sku,cost.cost,cost.supplierId,p.isNew]);
           costsUpdated++;
           record('Custos','atualizado',p);
         } catch (error) { failures++; issue('Custos','',p.sku,p.id,'',error.message); }
@@ -363,6 +365,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
     }
     const productsById = new Map(valid.map(p=>[p.id,p]));
     for (const [marketplace,storeId] of Object.entries(updateLinks ? settings.lojas || {} : {})) {
+      if (Array.isArray(settings.marketplaces) && !settings.marketplaces.includes(marketplace)) continue;
       await persistIssues();
       await progress('Consultando preços brutos: '+marketplace);
       try {

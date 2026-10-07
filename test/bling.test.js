@@ -123,3 +123,17 @@ test('falha ao consultar excluídos interrompe limpeza sem excluir produtos por 
   const api={all:async(path,params)=>{if(params.criterio===4)throw Error('Consulta indisponível');return [];}};
   await runSync({},db,1,{module:'data',matriz:'1'},api);assert.ok(!calls.some(c=>c.sql.startsWith('DELETE')));assert.equal(calls.at(-1).sql.includes("status='falhou'"),true);
 });
+test('vínculos consulta apenas os marketplaces selecionados',async()=>{
+ const requests=[];const db={query:async()=>({rows:[]})};
+ const api={all:async(path,params)=>{requests.push([path,params]);return [];}};
+ await runSync({},db,1,{module:'links',marketplaces:['Shopee','TikTok'],lojas:{Shopee:'1',TikTok:'2',Amazon:'3'}},api);
+ assert.deepEqual(requests.filter(([path])=>path==='/produtos/lojas').map(([,params])=>params.idLoja),['1','2']);
+});
+test('custo Bling compara valor anterior e marca existentes, preservando Novo para recém-incluídos',async()=>{
+ for(const existing of [true,false]){
+  const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:sql.startsWith('SELECT sku')&&existing?[{sku:'B1',bling_id:'1'}]:[]};}};
+  const api={all:async(path,params)=>path==='/produtos'?params.criterio===2?[{id:1,codigo:'B1'}]:[]:[{id:9,produto:{id:1},padrao:true,precoCusto:30}],get:async(path)=>path.startsWith('/produtos/')?{id:1,codigo:'B1',nome:'Teste'}:[]};
+  await runSync({},db,1,{module:'data'},api);
+  const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/THEN 'Reajustar' ELSE status_validacao/);
+ }
+});

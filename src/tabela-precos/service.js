@@ -69,7 +69,7 @@ async function initializeTables(pool) {
       importado_em TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `);
-  await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado'`);
+  await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado', ADD COLUMN IF NOT EXISTS custo_origem TEXT`);
   await pool.query(`ALTER TABLE tabela_preco_produtos
     ADD COLUMN IF NOT EXISTS estoque_matriz NUMERIC(15,4),
     ADD COLUMN IF NOT EXISTS estoque_full JSONB,
@@ -287,7 +287,7 @@ async function productRows(pool, filters = {}) {
   const offset = (page - 1) * pageSize;
   const countResult = await pool.query(`SELECT COUNT(*)::int AS total FROM tabela_preco_produtos ${where}`, values);
   const result = await pool.query(`
-    SELECT sku, nome, marca, peso, custo, estoque, estoque_full, preco_bling, status_validacao
+    SELECT sku, nome, marca, peso, custo, estoque, estoque_full, custo_origem, preco_bling, status_validacao
     FROM tabela_preco_produtos
     ${where}
     ORDER BY sku
@@ -307,7 +307,7 @@ async function productRows(pool, filters = {}) {
 
 async function updateProductCost(pool, sku, cost) {
   const result = await pool.query(`
-    UPDATE tabela_preco_produtos SET custo=$2, importado_em=NOW()
+    UPDATE tabela_preco_produtos SET custo=$2, custo_origem='Manual', importado_em=NOW()
     WHERE sku=$1 RETURNING sku
   `, [sku, cost]);
   if (!result.rows[0]) throw new Error('Produto não encontrado.');
