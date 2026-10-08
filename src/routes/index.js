@@ -28,7 +28,6 @@ function permitirPerfis(...perfis) {
 const ExcelJS = require('exceljs');
 const { criarRelatorioDespesasAnual } = require('../services/despesas-anual');
 const { criarRelatorioDespesasMensal } = require('../services/despesas-mensal');
-const { exportarComDinamicas } = require('../services/excel-pivots');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -21364,7 +21363,7 @@ LEFT JOIN categorias p ON p.id = c.categoria_pai_id
     );
 
     const workbook = criarRelatorioDespesasMensal(result.rows, { fornecedor, categoria_id, tipo_pagamento, cnpj_cpf, codigo_pagamento, numero_documento, data_inicio, data_fim });
-    const arquivoExcel = await exportarComDinamicas(workbook, result.rows.length);
+    const arquivoExcel = await workbook.xlsx.writeBuffer();
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="lancamentos.xlsx"');

@@ -90,43 +90,6 @@ function criarRelatorioDespesasMensal(rows, filtros = {}, agora = new Date()) {
   lista.getCell(`H${rTotal}`).numFmt = dinheiro;
   lista.getRow(rTotal).font = { bold: true, color: { argb: '008F48' } };
 
-  for (const [nome, campo] of [['Soma por Categorias', 9], ['Soma por Fornecedores', 4]]) {
-    const categorias = campo === 9;
-    const ws = wb.addWorksheet(nome);
-    ws.columns = (categorias ? [36, 44, 18, 24, 20] : [68, 20, 24, 20]).map(width => ({ width }));
-    const ultima = categorias ? 'E' : 'D';
-    const colValor = categorias ? 'D' : 'C';
-    const colQuantidade = categorias ? 'C' : 'B';
-    base(ws, ultima, `${nome} • consolidação dos mesmos lançamentos da aba Despesas`);
-    cabecalho(ws, categorias ? ['Categoria principal', 'Subcategoria', 'Quantidade', 'Valor total', 'Participação'] : ['Fornecedor', 'Quantidade', 'Valor total', 'Participação']);
-    const grupos = new Map();
-    detalhes.forEach(d => {
-      const labels = categorias ? [d[9], d[10]] : [d[4]];
-      const key = JSON.stringify(labels);
-      const g = grupos.get(key) || { labels, n: 0, soma: 0 };
-      g.n++; g.soma += d[7]; grupos.set(key, g);
-    });
-    const sorted = [...grupos.values()].sort((a, b) => categorias
-      ? a.labels[0].localeCompare(b.labels[0], 'pt-BR') || b.soma - a.soma || a.labels[1].localeCompare(b.labels[1], 'pt-BR')
-      : b.soma - a.soma || a.labels[0].localeCompare(b.labels[0], 'pt-BR'));
-    sorted.forEach((g, i) => {
-      const r = i + 8;
-      // Native pivot output cells contain values, not formulas. The source is
-      // the Despesas sheet and Excel refreshes the summaries when opened.
-      linha(ws, r, [...g.labels, g.n, Math.round(g.soma * 100) / 100,
-        { formula: `IF(SUM(Despesas!$H$8:$H$${fimDados})=0,0,${colValor}${r}/SUM(Despesas!$H$8:$H$${fimDados}))`, result: total ? g.soma / total : 0 }
-      ]);
-    });
-    ws.getColumn(categorias ? 4 : 3).numFmt = dinheiro;
-    ws.getColumn(categorias ? 5 : 4).numFmt = '0.0%';
-    // Filtering pivot fields is handled by Excel's PivotTable controls.
-    const t = sorted.length + 9;
-    linha(ws, t, [...(categorias ? ['TOTAL', ''] : ['TOTAL']),
-      { formula: `SUM(${colQuantidade}8:${colQuantidade}${Math.max(8, t - 2)})`, result: rows.length },
-      { formula: `SUM(${colValor}8:${colValor}${Math.max(8, t - 2)})`, result: total }, total ? 1 : 0]);
-    ws.getRow(t).font = { bold: true, color: { argb: 'FFFFFF' } };
-    ws.getRow(t).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '008F48' } };
-  }
   return wb;
 }
 module.exports = { criarRelatorioDespesasMensal, periodoRelatorio };
