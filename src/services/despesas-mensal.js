@@ -90,32 +90,42 @@ function criarRelatorioDespesasMensal(rows, filtros = {}, agora = new Date()) {
   lista.getCell(`H${rTotal}`).numFmt = dinheiro;
   lista.getRow(rTotal).font = { bold: true, color: { argb: '008F48' } };
 
-  for (const [nome, campo, coluna] of [['Soma por Categorias', 9, 'J'], ['Soma por Fornecedores', 4, 'E']]) {
+  for (const [nome, campo] of [['Soma por Categorias', 9], ['Soma por Fornecedores', 4]]) {
+    const categorias = campo === 9;
     const ws = wb.addWorksheet(nome);
-    ws.columns = [68, 20, 24, 20].map(width => ({ width }));
-    base(ws, 'D', `${nome} • consolidação dos mesmos lançamentos da aba Despesas`);
-    cabecalho(ws, [campo === 9 ? 'Categoria principal' : 'Fornecedor', 'Quantidade', 'Valor total', 'Participação']);
+    ws.columns = (categorias ? [36, 44, 18, 24, 20] : [68, 20, 24, 20]).map(width => ({ width }));
+    const ultima = categorias ? 'E' : 'D';
+    const colValor = categorias ? 'D' : 'C';
+    const colQuantidade = categorias ? 'C' : 'B';
+    base(ws, ultima, `${nome} • consolidação dos mesmos lançamentos da aba Despesas`);
+    cabecalho(ws, categorias ? ['Categoria principal', 'Subcategoria', 'Quantidade', 'Valor total', 'Participação'] : ['Fornecedor', 'Quantidade', 'Valor total', 'Participação']);
     const grupos = new Map();
-    detalhes.forEach(d => { const key = d[campo]; const g = grupos.get(key) || { n: 0, soma: 0 }; g.n++; g.soma += d[7]; grupos.set(key, g); });
-    const sorted = [...grupos.entries()].sort((a, b) => b[1].soma - a[1].soma || a[0].localeCompare(b[0], 'pt-BR'));
-    sorted.forEach(([nomeGrupo, g], i) => {
+    detalhes.forEach(d => {
+      const labels = categorias ? [d[9], d[10]] : [d[4]];
+      const key = JSON.stringify(labels);
+      const g = grupos.get(key) || { labels, n: 0, soma: 0 };
+      g.n++; g.soma += d[7]; grupos.set(key, g);
+    });
+    const sorted = [...grupos.values()].sort((a, b) => categorias
+      ? a.labels[0].localeCompare(b.labels[0], 'pt-BR') || b.soma - a.soma || a.labels[1].localeCompare(b.labels[1], 'pt-BR')
+      : b.soma - a.soma || a.labels[0].localeCompare(b.labels[0], 'pt-BR'));
+    sorted.forEach((g, i) => {
       const r = i + 8;
-      // Escape wildcards: a supplier name containing * or ? is a literal label.
-      const criterio = `SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(A${r},"~","~~"),"*","~*"),"?","~?")`;
-      linha(ws, r, [nomeGrupo,
-        { formula: `COUNTIF(Despesas!$${coluna}$8:$${coluna}$${fimDados},${criterio})`, result: g.n },
-        { formula: `SUMIF(Despesas!$${coluna}$8:$${coluna}$${fimDados},${criterio},Despesas!$H$8:$H$${fimDados})`, result: Math.round(g.soma * 100) / 100 },
-        { formula: `IF(SUM(Despesas!$H$8:$H$${fimDados})=0,0,C${r}/SUM(Despesas!$H$8:$H$${fimDados}))`, result: total ? g.soma / total : 0 }
+      // Native pivot output cells contain values, not formulas. The source is
+      // the Despesas sheet and Excel refreshes the summaries when opened.
+      linha(ws, r, [...g.labels, g.n, Math.round(g.soma * 100) / 100,
+        { formula: `IF(SUM(Despesas!$H$8:$H$${fimDados})=0,0,${colValor}${r}/SUM(Despesas!$H$8:$H$${fimDados}))`, result: total ? g.soma / total : 0 }
       ]);
     });
-    ws.getColumn(3).numFmt = dinheiro;
-    ws.getColumn(4).numFmt = '0.0%';
-    ws.autoFilter = `A7:D${Math.max(7, sorted.length + 7)}`;
+    ws.getColumn(categorias ? 4 : 3).numFmt = dinheiro;
+    ws.getColumn(categorias ? 5 : 4).numFmt = '0.0%';
+    // Filtering pivot fields is handled by Excel's PivotTable controls.
     const t = sorted.length + 9;
-    linha(ws, t, ['TOTAL', { formula: `SUM(B8:B${Math.max(8, t - 2)})`, result: rows.length }, { formula: `SUM(C8:C${Math.max(8, t - 2)})`, result: total }, total ? 1 : 0]);
+    linha(ws, t, [...(categorias ? ['TOTAL', ''] : ['TOTAL']),
+      { formula: `SUM(${colQuantidade}8:${colQuantidade}${Math.max(8, t - 2)})`, result: rows.length },
+      { formula: `SUM(${colValor}8:${colValor}${Math.max(8, t - 2)})`, result: total }, total ? 1 : 0]);
     ws.getRow(t).font = { bold: true, color: { argb: 'FFFFFF' } };
     ws.getRow(t).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '008F48' } };
-    if (sorted.length) ws.addConditionalFormatting({ ref: `D8:D${sorted.length + 7}`, rules: [{ type: 'dataBar', cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: 1 }], color: { argb: 'A7DCC0' }, showValue: true }] });
   }
   return wb;
 }
