@@ -37,14 +37,18 @@ async function exportarComDinamicas(wb, count) {
       : `<pivotField${i === 0 || i === 7 ? ' dataField="1"' : ''} showAll="0"/>`).join('');
     zip.file(`xl/pivotTables/pivotTable${idx}.xml`, doc(`<pivotTableDefinition xmlns="${ns}" name="Resumo${idx}" cacheId="1" dataCaption="Valores" rowGrandTotals="0" colGrandTotals="0" multipleFieldFilters="0" useAutoFormatting="0" compact="0" compactData="0" gridDropZones="0"><location ref="A7:C${7 + groups}" firstHeaderRow="0" firstDataRow="1" firstDataCol="1"/><pivotFields count="13">${pivotFields}</pivotFields><rowFields count="1"><field x="${field}"/></rowFields><rowItems count="${groups}">${items.map((v, i) => `<i><x v="${i}"/></i>`).join('')}</rowItems><colFields count="1"><field x="-2"/></colFields><colItems count="2"><i i="0"><x/></i><i i="1"><x v="1"/></i></colItems><dataFields count="2"><dataField name="Quantidade" fld="0" subtotal="count" baseField="0" baseItem="0"/><dataField name="Valor total" fld="7" subtotal="sum" baseField="0" baseItem="0" numFmtId="4"/></dataFields></pivotTableDefinition>`));
     zip.file(`xl/pivotTables/_rels/pivotTable${idx}.xml.rels`, relationships(`<Relationship Id="rId1" Type="${rel}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition1.xml"/>`));
-    const sheetPath = `xl/worksheets/sheet${idx + 1}.xml`;
-    const sheetXml = await zip.file(sheetPath).async('string');
-    zip.file(sheetPath, sheetXml.replace('</worksheet>', `<pivotTableParts count="1"><pivotTablePart r:id="rIdPivot"/></pivotTableParts></worksheet>`));
-    zip.file(`xl/worksheets/_rels/sheet${idx + 1}.xml.rels`, relationships(`<Relationship Id="rIdPivot" Type="${rel}/pivotTable" Target="../pivotTables/pivotTable${idx}.xml"/>`));
+    // PivotTables are implicit worksheet relationships, not worksheet children.
+    // CT_Worksheet has no pivotTableParts element (unlike ordinary tableParts).
+    const sheetRelsPath = `xl/worksheets/_rels/sheet${idx + 1}.xml.rels`;
+    const existingRels = zip.file(sheetRelsPath);
+    const sheetRels = existingRels ? await existingRels.async('string') : relationships('');
+    zip.file(sheetRelsPath, sheetRels.replace('</Relationships>', `<Relationship Id="rIdPivot" Type="${rel}/pivotTable" Target="../pivotTables/pivotTable${idx}.xml"/></Relationships>`));
     contentTypes = contentTypes.replace('</Types>', type(`xl/pivotTables/pivotTable${idx}.xml`, 'pivotTable') + '</Types>');
   }
   const workbookXml = await zip.file('xl/workbook.xml').async('string');
-  zip.file('xl/workbook.xml', workbookXml.replace('<calcPr', '<pivotCaches><pivotCache cacheId="1" r:id="rIdDespesasCache"/></pivotCaches><calcPr'));
+  // CT_Workbook requires pivotCaches after calcPr, never before it.
+  const caches = '<pivotCaches><pivotCache cacheId="1" r:id="rIdDespesasCache"/></pivotCaches>';
+  zip.file('xl/workbook.xml', workbookXml.replace(/(<calcPr\b[^>]*\/>|<calcPr\b[^>]*>[\s\S]*?<\/calcPr>)/, `$1${caches}`));
   const wbRel = await zip.file('xl/_rels/workbook.xml.rels').async('string');
   zip.file('xl/_rels/workbook.xml.rels', wbRel.replace('</Relationships>', `<Relationship Id="rIdDespesasCache" Type="${rel}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition1.xml"/></Relationships>`));
   zip.file('[Content_Types].xml', contentTypes);

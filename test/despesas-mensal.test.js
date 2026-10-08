@@ -48,5 +48,11 @@ test('exportação inclui duas tabelas dinâmicas nativas vinculadas à fonte e 
   const cache = await zip.file('xl/pivotCache/pivotCacheDefinition1.xml').async('string');
   assert.match(cache,/ref="A7:M8"/);
   assert.match(await zip.file('xl/workbook.xml').async('string'), /pivotCache cacheId="1"/);
+  const workbookXml = await zip.file('xl/workbook.xml').async('string');
+  assert.ok(workbookXml.indexOf('<calcPr') < workbookXml.indexOf('<pivotCaches'));
+  for (const i of [2,3]) {
+    assert.doesNotMatch(await zip.file(`xl/worksheets/sheet${i}.xml`).async('string'), /pivotTableParts/);
+    assert.match(await zip.file(`xl/worksheets/_rels/sheet${i}.xml.rels`).async('string'), /relationships\/pivotTable/);
+  }
   for (const i of [1,2]) assert.match(await zip.file(`xl/pivotTables/pivotTable${i}.xml`).async('string'), /subtotal="sum"/);
 });
