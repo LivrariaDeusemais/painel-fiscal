@@ -27,6 +27,8 @@ function permitirPerfis(...perfis) {
 
 const ExcelJS = require('exceljs');
 const { criarRelatorioDespesasAnual } = require('../services/despesas-anual');
+const { criarRelatorioDespesasMensal } = require('../services/despesas-mensal');
+const { exportarComDinamicas } = require('../services/excel-pivots');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -21280,7 +21282,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
   }
 });
 
-router.get('/exportar-excel', async (req, res) => {
+router.get('/exportar-excel', protegerRota, async (req, res) => {
   try {
     const {
       fornecedor = '',
@@ -21361,74 +21363,13 @@ LEFT JOIN categorias p ON p.id = c.categoria_pai_id
       values
     );
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Lancamentos');
-
-    worksheet.columns = [
-  { header: 'ID', key: 'id', width: 10 },
-  { header: 'Tipo do documento', key: 'tipo_documento', width: 22 },
-  { header: 'Número do documento', key: 'numero_documento', width: 22 },
-  { header: 'Data', key: 'data_despesa', width: 15 },
-  { header: 'Fornecedor', key: 'fornecedor', width: 28 },
-  { header: 'CNPJ/CPF', key: 'cnpj_cpf', width: 22 },
-  { header: 'Código de pagamento', key: 'codigo_pagamento', width: 24 },
-  { header: 'Valor', key: 'valor', width: 15 },
-  { header: 'Tipo de pagamento', key: 'tipo_pagamento', width: 24 },
-  { header: 'Categoria Principal', key: 'categoria_principal', width: 24 },
-  { header: 'Subcategoria', key: 'subcategoria', width: 24 },
-  { header: 'PDF', key: 'anexo_pdf', width: 28 },
-  { header: 'XML', key: 'anexo_xml', width: 28 }
-];
-
-    result.rows.forEach(l => {
-const nomePagamento = (l.tipo_pagamento || 'SemPagamento')
-  .toString().trim().replace(/\s+/g, ' ');
-
-const nomeFornecedor = (l.fornecedor || 'SemFornecedor')
-  .toString().trim().replace(/\s+/g, ' ');
-
-const nomeCategoria = (l.categoria || 'SemCategoria')
-  .toString().trim().replace(/\s+/g, ' ');
-
-const nomeNumero = (l.numero_documento || 'SemNumero')
-  .toString().trim().replace(/\s+/g, ' ');
-
-const nomeValor = formatMoneyBR(l.valor || 0)
-  .replace(/\s+/g, '');
-
-const nomeBaseDownload = `${nomePagamento}-${nomeFornecedor}-${nomeCategoria}-${nomeNumero}-${nomeValor}`
-  .replace(/[\/\\:*?"<>|]/g, '-')
-  .replace(/\s+/g, ' ')
-  .trim();
-
-  worksheet.addRow({
-    id: l.id,
-    tipo_documento: l.tipo_documento,
-    numero_documento: l.numero_documento || '',
-    data_despesa: l.data_despesa ? new Date(l.data_despesa).toISOString().split('T')[0] : '',
-    fornecedor: l.fornecedor,
-    cnpj_cpf: l.cnpj_cpf || '',
-    codigo_pagamento: l.codigo_pagamento || '',
-    valor: Number(l.valor),
-    tipo_pagamento: l.tipo_pagamento,
-    categoria_principal: l.categoria_pai_id ? (l.categoria_principal || '') : (l.categoria || ''),
-    subcategoria: l.categoria_pai_id ? (l.subcategoria || '') : '',
-    anexo_pdf: l.anexo_pdf ? `${nomeBaseDownload}.pdf` : '',
-anexo_xml: l.anexo_xml ? `${nomeBaseDownload}.xml` : ''  });
-});
-
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        row.getCell(8).numFmt = 'R$ #,##0.00';
-      }
-    });
+    const workbook = criarRelatorioDespesasMensal(result.rows, { fornecedor, categoria_id, tipo_pagamento, cnpj_cpf, codigo_pagamento, numero_documento, data_inicio, data_fim });
+    const arquivoExcel = await exportarComDinamicas(workbook, result.rows.length);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="lancamentos.xlsx"');
 
-    await workbook.xlsx.write(res);
-    res.end();
+    res.send(arquivoExcel);
   } catch (error) {
     res.send(`<pre>Erro ao exportar Excel:\n${error.message}</pre>`);
   }
