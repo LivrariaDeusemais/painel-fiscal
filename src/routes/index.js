@@ -26,6 +26,7 @@ function permitirPerfis(...perfis) {
 }
 
 const ExcelJS = require('exceljs');
+const { criarRelatorioDespesasAnual } = require('../services/despesas-anual');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -10545,6 +10546,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   '<label for="dashboardFiltroMes">Filtrar mês</label>' +
                   '<select id="dashboardFiltroMes">' + opcoes + '</select>' +
                   '<button type="button" id="dashboardFiltroMesBtn" class="dashboard-filter-btn">Aplicar</button>' +
+                  (tipoFiltro === 'categorias' ? '<button type="button" id="dashboardExportarAnual" class="dashboard-filter-btn">Exportar anual</button>' : '') +
                 '</div>' +
                 '<div class="dashboard-detail-total">' +
                   '<small>Total do período selecionado</small>' +
@@ -10553,6 +10555,12 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 
               const selectFiltro = document.getElementById('dashboardFiltroMes');
               const botaoFiltro = document.getElementById('dashboardFiltroMesBtn');
+              const botaoAnual = document.getElementById('dashboardExportarAnual');
+              if (botaoAnual) botaoAnual.addEventListener('click', function () {
+                const mes = selectFiltro ? selectFiltro.value : 'todos';
+                const ano = mes !== 'todos' ? mes.slice(0, 4) : new Date().getFullYear();
+                window.location.href = '/dashboard/exportar-anual?ano=' + encodeURIComponent(ano);
+              });
 
               function aplicarFiltro() {
                 const valorSelecionado = selectFiltro ? selectFiltro.value : 'todos';
@@ -14651,6 +14659,34 @@ router.post('/usuarios/resetar-senha/:id', protegerRota, somenteAdmin, async (re
 });
 
 // DASHBOARD
+router.get('/dashboard/exportar-anual', protegerRota, async (req, res) => {
+  const ano = Number(req.query.ano || new Date().getFullYear());
+  if (!Number.isInteger(ano) || ano < 1900 || ano > 9998) return res.status(400).send('Ano inválido.');
+  try {
+    const dados = await pool.query(`
+      SELECT TO_CHAR(l.data_despesa, 'YYYY-MM') AS mes_ref,
+        COALESCE(p.id, c.id) AS principal_id, c.id AS categoria_id,
+        COALESCE(p.nome, c.nome, 'Sem categoria') AS categoria_principal,
+        COALESCE(c.nome, 'Sem subcategoria') AS subcategoria,
+        COALESCE(SUM(l.valor), 0)::numeric AS total
+      FROM lancamentos l
+      LEFT JOIN categorias c ON c.id = l.categoria_id
+      LEFT JOIN categorias p ON p.id = c.categoria_pai_id
+      WHERE l.data_despesa >= $1::date AND l.data_despesa < $2::date
+      GROUP BY TO_CHAR(l.data_despesa, 'YYYY-MM'), p.id, c.id, p.nome, c.nome
+      ORDER BY mes_ref, categoria_principal, subcategoria
+    `, [`${ano}-01-01`, `${ano + 1}-01-01`]);
+    const workbook = criarRelatorioDespesasAnual(dados.rows, ano);
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="despesas-anuais-${ano}.xlsx"`);
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Erro na exportação anual das despesas:', error.message);
+    res.status(500).send('Não foi possível exportar as despesas anuais. Tente novamente.');
+  }
+});
+
 router.get('/dashboard', protegerRota, async (req, res) => {
   try {
     const { mes = '' } = req.query;
