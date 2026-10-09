@@ -38,6 +38,7 @@ test('formulário renderiza campos de revisão e scripts válidos', async () => 
     getArquivoFilaDisponivel: async () => ({cnpj_cpf:'12345678000190'}),
     buscarRotinasPorDocumento: async () => contas.slice(0,2),
     normalizarDiaVencimento: () => '',
+    dataValida: require('../src/services/rotina-previsao').dataValida,
     pool: {query: async () => ({rows:[{id:10,nome:'Categoria principal',categoria_pai_id:null},{id:11,nome:'Subcategoria',categoria_pai_id:10}]})},
     renderTipoDocumentoOptions: () => '<option value="NF">NF</option>',
   });

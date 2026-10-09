@@ -25,6 +25,7 @@ function permitirPerfis(...perfis) {
   };
 }
 
+const { mesValido, dataValida, valorEstimado, resolverEstimativa, historicoEstimativaSql } = require('../services/rotina-previsao');
 const ExcelJS = require('exceljs');
 const { criarRelatorioDespesasAnual } = require('../services/despesas-anual');
 const { criarRelatorioDespesasMensal } = require('../services/despesas-mensal');
@@ -3094,6 +3095,10 @@ function formatDateInput(dateValue) {
 
 
 async function ensureRotinaDespesasColumns() {
+  await pool.query(`ALTER TABLE rotina_despesas
+    ADD COLUMN IF NOT EXISTS valor_estimado NUMERIC(14,2),
+    ADD COLUMN IF NOT EXISTS vigorar_a_partir VARCHAR(7) NOT NULL DEFAULT '2026-01'`);
+
   await pool.query(`
     ALTER TABLE rotina_despesas
     ADD COLUMN IF NOT EXISTS dia_vencimento VARCHAR(50)
@@ -3132,6 +3137,9 @@ async function ensureRotinaDespesasColumns() {
     ALTER TABLE rotina_despesas_status_mensal
     ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true
   `);
+  await pool.query(`ALTER TABLE rotina_despesas_status_mensal
+    ADD COLUMN IF NOT EXISTS valor_estimado NUMERIC(14,2),
+    ADD COLUMN IF NOT EXISTS valor_estimado_editado BOOLEAN NOT NULL DEFAULT false`);
 }
 
 async function getPainelConfig(chave, valorPadrao = '') {
@@ -3230,6 +3238,7 @@ async function buscarRotinasPorDocumento(cnpjCpf) {
     LEFT JOIN rotina_despesas_status_mensal sm ON sm.rotina_id = r.id AND sm.mes_ano = $2
     WHERE regexp_replace(COALESCE(r.cnpj_cpf, ''), '[^0-9]', '', 'g') = $1
       AND COALESCE(sm.ativo, r.ativo, true) = true
+      AND COALESCE(r.vigorar_a_partir, '2026-01') <= $2
     ORDER BY r.id`, [documento, mes]);
   return resultado.rows;
 }
@@ -17311,6 +17320,10 @@ router.get('/novo', async (req, res) => {
     if (retornoFornecedor) retornoSeguro.set('fornecedor', retornoFornecedor);
     if (['PENDENTE', 'FEITO', 'N/A'].includes(retornoStatus)) retornoSeguro.set('status', retornoStatus);
     if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
+    for (const chave of ['ativo', 'sem_data', 'vencimento_inicio', 'vencimento_fim']) {
+      const valor = retornoRecebido.get(chave);
+      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
+    }
     const retornoFiltros = retornoSeguro.toString();
 
     const categoriasResult = await pool.query(`
@@ -18766,6 +18779,10 @@ const rotinaOrigem = String(rotina_id || '').trim();
         if (retornoFornecedor) retornoSeguro.set('fornecedor', retornoFornecedor);
         if (['PENDENTE', 'FEITO', 'N/A'].includes(retornoStatus)) retornoSeguro.set('status', retornoStatus);
         if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
+    for (const chave of ['ativo', 'sem_data', 'vencimento_inicio', 'vencimento_fim']) {
+      const valor = retornoRecebido.get(chave);
+      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
+    }
         const sufixoRetorno = retornoSeguro.toString() ? `?${retornoSeguro.toString()}` : '';
         return res.redirect(`/rotina-despesas${sufixoRetorno}#rotina-${rotinaOrigem}`);
       }
@@ -23286,10 +23303,20 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const statusFiltro = (req.query.status || '').trim();
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
+    const ativoFiltro = ['true', 'false'].includes(req.query.ativo) ? req.query.ativo : '';
+    const semDataFiltro = req.query.sem_data === '1';
+    const dataInicialFiltro = dataValida(req.query.vencimento_inicio) ? req.query.vencimento_inicio : '';
+    const dataFinalFiltro = dataValida(req.query.vencimento_fim) ? req.query.vencimento_fim : '';
+    const extraFiltros = new URLSearchParams();
+    if (ativoFiltro) extraFiltros.set('ativo', ativoFiltro);
+    if (semDataFiltro) extraFiltros.set('sem_data', '1');
+    if (dataInicialFiltro) extraFiltros.set('vencimento_inicio', dataInicialFiltro);
+    if (dataFinalFiltro) extraFiltros.set('vencimento_fim', dataFinalFiltro);
     const retornoFiltrosParams = new URLSearchParams();
     if (fornecedorFiltro) retornoFiltrosParams.set('fornecedor', fornecedorFiltro);
     if (statusFiltro) retornoFiltrosParams.set('status', statusFiltro);
     if (diaVencimentoFiltro) retornoFiltrosParams.set('dia_vencimento', diaVencimentoFiltro);
+    extraFiltros.forEach((value, key) => retornoFiltrosParams.set(key, value));
     const retornoFiltros = retornoFiltrosParams.toString();
 
     const fornecedoresResult = await pool.query(`
@@ -23313,7 +23340,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       return `<option value="${value}" ${selected}>${label}</option>`;
     }).join('');
 
-    const whereParts = [];
+    const whereParts = ["COALESCE(r.vigorar_a_partir, '2026-01') <= $1"];
     const values = [];
 
     if (fornecedorFiltro) {
@@ -23331,6 +23358,19 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       whereParts.push(`NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '') = $${values.length + 1}`);
     }
 
+    if (ativoFiltro) {
+      values.push(ativoFiltro === 'true');
+      whereParts.push(`COALESCE(sm.ativo, r.ativo, true) = $${values.length + 1}`);
+    }
+    const diaSql = `COALESCE(NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text, ''), '[^0-9]', '', 'g'), '')::int, EXTRACT(DAY FROM r.data_vencimento)::int)`;
+    const dataVencimentoSql = `(($1 || '-01')::date + (LEAST(${diaSql}, EXTRACT(DAY FROM (($1 || '-01')::date + INTERVAL '1 month - 1 day'))::int) - 1))`;
+    if (semDataFiltro) whereParts.push(`${diaSql} IS NULL`);
+    else {
+      if (dataInicialFiltro || dataFinalFiltro) whereParts.push(`${diaSql} IS NOT NULL`);
+      if (dataInicialFiltro) { values.push(dataInicialFiltro); whereParts.push(`${dataVencimentoSql} >= $${values.length + 1}::date`); }
+      if (dataFinalFiltro) { values.push(dataFinalFiltro); whereParts.push(`${dataVencimentoSql} <= $${values.length + 1}::date`); }
+    }
+
     const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
     const opcoesMesAnoHtml = gerarOpcoesMesAno(mesAnoEdicao);
 
@@ -23341,13 +23381,17 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         cs.nome AS subcategoria_nome,
         COALESCE(sm.status_linha, r.status, 'PENDENTE') AS status_linha_mes,
         COALESCE(sm.status_pagto, 'A_PAGAR') AS status_pagto_mes,
-        COALESCE(sm.ativo, r.ativo, true) AS ativo_mes
+        COALESCE(sm.ativo, r.ativo, true) AS ativo_mes,
+        sm.valor_estimado AS valor_estimado_mes,
+        sm.valor_estimado_editado,
+        historico.valor_historico
       FROM rotina_despesas r
       LEFT JOIN categorias cp ON cp.id = r.categoria_principal_id
       LEFT JOIN categorias cs ON cs.id = r.subcategoria_id
       LEFT JOIN rotina_despesas_status_mensal sm
         ON sm.rotina_id = r.id
        AND sm.mes_ano = $1
+      ${historicoEstimativaSql}
       ${whereSql}
       ORDER BY
         CASE
@@ -23369,9 +23413,11 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
         r.fornecedor ASC
     `, [mesAnoEdicao, ...values]);
 
+    const totalEstimado = result.rows.reduce((total, conta) => total + (resolverEstimativa(conta) || 0), 0);
     let linhas = '';
 
     result.rows.forEach(r => {
+      const estimativa = resolverEstimativa(r);
       const ondeEncontrarHtml =
         r.onde_encontrar_comprovante && r.onde_encontrar_comprovante.startsWith('http')
           ? `<a href="${r.onde_encontrar_comprovante}" target="_blank" rel="noopener noreferrer">Abrir link</a>`
@@ -23388,6 +23434,9 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
           <td class="col-rot-subcategoria">${r.subcategoria_nome || ''}</td>
           <td class="col-vencimento col-rot-vencimento">${formatDiaVencimento(r.dia_vencimento) || formatDateBR(r.data_vencimento) || '-'}</td>
 
+          <td class="col-rot-estimado">
+            <input class="rotina-estimativa ${r.valor_estimado_editado ? 'estimativa-editada' : ''}" inputmode="decimal" aria-label="Valor estimado de ${escapeHtmlGlobal(r.fornecedor || '')}" data-id="${r.id}" data-valor="${estimativa == null ? '' : estimativa}" value="${estimativa == null ? '' : estimativa.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" placeholder="—">
+          </td>
           <td class="col-status-pagto col-rot-status-pagto">
             <form method="POST" action="/rotina-despesas/status-pagto/${r.id}" class="status-form">
               <input type="hidden" name="fornecedor_filtro" value="${fornecedorFiltro}">
@@ -23453,6 +23502,20 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       <meta charset="UTF-8" />
       <title>Lista de Contas à pagar</title>
       <style>
+        .rotina-estimativa {width:110px; min-width:85px; box-sizing:border-box; border:1px solid #dce5ed; border-radius:8px; padding:8px; text-align:right; background:#fff; color:#253247;}
+        .rotina-estimativa.estimativa-editada {color:#2563eb; font-weight:700;}
+        .rotina-estimativa:focus {outline:2px solid #00ad4b;}
+        .rotina-filter-btn {border:0; background:transparent; color:inherit; font:inherit; font-weight:inherit; cursor:pointer; padding:7px; border-radius:8px;}
+        .rotina-filter-btn[data-filtered="true"] {background:#e8f7ee; color:#217346;}
+        .rotina-filter-menu {position:fixed; z-index:2147483000; background:white; border:1px solid #dce8df; border-radius:16px; box-shadow:0 12px 35px #173c2326; padding:10px; width:280px; max-width:calc(100vw - 24px); box-sizing:border-box;}
+        .rotina-filter-menu[hidden] {display:none;}
+        .rotina-filter-menu button {display:block; width:100%; text-align:left; border:0; background:white; padding:13px; border-radius:10px; color:#475569; cursor:pointer; font:inherit;}
+        .rotina-filter-menu button.selected {background:#eff9f2; color:#217346;}
+        .rotina-filter-menu label {display:block; margin:8px; font-size:13px;}
+        .rotina-filter-menu input {width:100%; padding:7px; box-sizing:border-box;}
+        .rotina-total {padding:12px 18px; margin:0 0 14px; background:#edf9f2; border:1px solid #cde8da; border-radius:12px; color:#217346; font-size:16px;}
+        .rotina-total strong {font-size:22px;}
+
         body {
           font-family: Arial, sans-serif;
           background: #f6f8fb;
@@ -24429,7 +24492,7 @@ table thead th {
   top: 0 !important;
   left: 0 !important;
   z-index: 2147482500 !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
   border-collapse: collapse !important;
   border-spacing: 0 !important;
   table-layout: fixed !important;
@@ -24644,6 +24707,13 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 }
 /* ===== FIM AJUSTE FINAL SOLICITADO - COMPROVANTES + CONTADOR ===== */
 
+body.dm-global-page button.rotina-filter-btn[type="button"] {background:transparent !important; color:#253247 !important; border:0 !important; box-shadow:none !important;}
+body.dm-global-page button.rotina-filter-btn[data-filtered="true"] {background:#e8f7ee !important; color:#217346 !important;}
+body.dm-global-page .rotina-filter-menu[role="dialog"] button {background:white !important; color:#475569 !important; border:0 !important; box-shadow:none !important;}
+body.dm-global-page .rotina-filter-menu[role="dialog"] button.selected {background:#eff9f2 !important; color:#217346 !important;}
+body.dm-global-page .col-rot-estimado {width:135px !important; min-width:135px !important;}
+body.dm-global-page input.rotina-estimativa {width:100% !important; min-width:0 !important;}
+body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !important;}
 </style>
     </head>
     <body class="dm-global-page">
@@ -24676,6 +24746,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <label><input type="checkbox" data-col="col-rot-cat-principal"> Categoria Principal</label>
               <label><input type="checkbox" data-col="col-rot-subcategoria"> Subcategoria</label>
               <label><input type="checkbox" data-col="col-rot-vencimento"> Vencimento</label>
+              <label><input type="checkbox" data-col="col-rot-estimado"> Valor Estimado</label>
               <label><input type="checkbox" data-col="col-rot-status-pagto"> Status Pagto</label>
               <label><input type="checkbox" data-col="col-rot-status"> Status</label>
               <label><input type="checkbox" data-col="col-rot-ativo"> Ativo</label>
@@ -24707,6 +24778,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 </select>
               </div>
 
+              ${Array.from(extraFiltros).map(([key,value]) => `<input type="hidden" name="${key}" value="${escapeHtmlGlobal(value)}">`).join('')}
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
               <a href="/rotina-despesas" class="btn btn-dark">Limpar</a>
             </form>
@@ -24762,6 +24834,19 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           </div>
 
 
+          <div class="rotina-total">Total estimado dos itens filtrados: <strong id="totalEstimadoRotina">${totalEstimado.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</strong> <small>• ${result.rows.filter(r => resolverEstimativa(r) == null).length} sem valor</small></div>
+          <div id="rotinaAtivoMenu" class="rotina-filter-menu" role="dialog" aria-label="Filtrar atividade" hidden>
+            ${[['true','Ativos'],['false','Inativos'],['','Todos']].map(([valor,label]) => `<button type="button" class="${ativoFiltro === valor ? 'selected' : ''}" onclick="filtrarAtivoRotina('${valor}')">${label}${ativoFiltro === valor ? ' ✓' : ''}</button>`).join('')}
+          </div>
+          <div id="rotinaVencimentoMenu" class="rotina-filter-menu" role="dialog" aria-label="Filtrar vencimento" hidden>
+            <form onsubmit="aplicarPeriodoRotina(event)">
+              <label>De<input type="date" name="inicio" value="${dataInicialFiltro || mesAnoEdicao + '-01'}" required></label>
+              <label>Até<input type="date" name="fim" value="${dataFinalFiltro}" required></label>
+              <button type="submit">Aplicar período</button>
+            </form>
+            <button type="button" class="${semDataFiltro ? 'selected' : ''}" onclick="filtrarPeriodoRotina('sem')">Sem data${semDataFiltro ? ' ✓' : ''}</button>
+            <button type="button" onclick="filtrarPeriodoRotina('todos')">Todos os vencimentos</button>
+          </div>
           <table id="rotinaTable" class="rotina-table">
             <thead>
               <tr>
@@ -24772,21 +24857,91 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                 <th class="col-rot-pagamento sortable-head" onclick="ordenarRotinaTabela(4, 'text')">Pagamento</th>
                 <th class="col-rot-cat-principal sortable-head" onclick="ordenarRotinaTabela(5, 'text')">Categoria Principal</th>
                 <th class="col-rot-subcategoria sortable-head" onclick="ordenarRotinaTabela(6, 'text')">Subcategoria</th>
-                <th class="col-vencimento col-rot-vencimento sortable-head" onclick="ordenarRotinaTabela(7, 'number')">Vencimento</th>
-                <th class="col-status-pagto col-rot-status-pagto sortable-head" onclick="ordenarRotinaTabela(8, 'statusPagto')">Status Pagto</th>
-                <th class="col-status col-rot-status sortable-head" onclick="ordenarRotinaTabela(9, 'text')">Status</th>
-                <th class="col-ativo col-rot-ativo sortable-head" onclick="ordenarRotinaTabela(10, 'text')">Ativo</th>
+                <th class="col-vencimento col-rot-vencimento sortable-head" ><button type="button" class="rotina-filter-btn" data-filtered="${semDataFiltro || !!dataInicialFiltro || !!dataFinalFiltro}" onclick="abrirFiltroRotina(event, 'rotinaVencimentoMenu')">Vencimento ▾</button></th>
+                <th class="col-rot-estimado">Valor Estimado</th>
+                <th class="col-status-pagto col-rot-status-pagto sortable-head" onclick="ordenarRotinaTabela(9, 'statusPagto')">Status Pagto</th>
+                <th class="col-status col-rot-status sortable-head" onclick="ordenarRotinaTabela(10, 'text')">Status</th>
+                <th class="col-ativo col-rot-ativo sortable-head" ><button type="button" class="rotina-filter-btn" data-filtered="${!!ativoFiltro}" onclick="abrirFiltroRotina(event, 'rotinaAtivoMenu')">Ativo ▾</button></th>
                 <th class="col-acoes col-rot-acoes">Ações</th>
               </tr>
             </thead>
             <tbody>
-              ${linhas || '<tr><td colspan="12">Nenhum item cadastrado</td></tr>'}
+              ${linhas || '<tr><td colspan="13">Nenhum item cadastrado</td></tr>'}
             </tbody>
           </table>
         </div>
       </div>
 
       <script>
+        document.querySelectorAll('.rotina-filter-menu').forEach(menu => document.body.appendChild(menu));
+        function fecharFiltrosRotina() {
+          document.querySelectorAll('.rotina-filter-menu').forEach(menu => {menu.hidden = true;});
+        }
+        function abrirFiltroRotina(event, id) {
+          event.stopPropagation();
+          const menu = document.getElementById(id);
+          const abrir = menu.hidden;
+          fecharFiltrosRotina();
+          if (!abrir) return;
+          menu.hidden = false;
+          const rect = event.currentTarget.getBoundingClientRect();
+          menu.style.left = Math.max(12, Math.min(rect.left, innerWidth - menu.offsetWidth - 12)) + 'px';
+          menu.style.top = Math.max(12, Math.min(rect.bottom + 6, innerHeight - menu.offsetHeight - 12)) + 'px';
+        }
+        document.addEventListener('click', event => {if (!event.target.closest('.rotina-filter-menu')) fecharFiltrosRotina();});
+        document.addEventListener('keydown', event => {if (event.key === 'Escape') fecharFiltrosRotina();});
+        window.addEventListener('resize', fecharFiltrosRotina);
+        function filtrarAtivoRotina(valor) {
+          const url = new URL(location.href);
+          if (valor) url.searchParams.set('ativo', valor); else url.searchParams.delete('ativo');
+          location.href = url.toString();
+        }
+        function filtrarPeriodoRotina(tipo, inicio, fim) {
+          const url = new URL(location.href);
+          ['dia_vencimento','sem_data','vencimento_inicio','vencimento_fim'].forEach(key => url.searchParams.delete(key));
+          if (tipo === 'sem') url.searchParams.set('sem_data', '1');
+          if (tipo === 'periodo') {url.searchParams.set('vencimento_inicio',inicio); url.searchParams.set('vencimento_fim',fim);}
+          location.href = url.toString();
+        }
+        function aplicarPeriodoRotina(event) {
+          event.preventDefault();
+          const form = event.target;
+          if (form.inicio.value > form.fim.value) {alert('A data inicial deve ser anterior ou igual à final.'); return;}
+          filtrarPeriodoRotina('periodo',form.inicio.value,form.fim.value);
+        }
+        function atualizarTotalEstimado() {
+          let total = 0, semValor = 0;
+          document.querySelectorAll('#rotinaTable .rotina-estimativa').forEach(input => {
+            if (input.dataset.valor === '') semValor++; else total += Number(input.dataset.valor || 0);
+          });
+          document.getElementById('totalEstimadoRotina').textContent = total.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+          document.querySelector('.rotina-total small').textContent = '• ' + semValor + ' sem valor';
+        }
+        async function salvarEstimativa(input) {
+          if (input.dataset.saving === 'true' || input.value === input.dataset.savedText) return;
+          input.dataset.saving = 'true';
+          input.readOnly = true;
+          try {
+            const response = await fetch('/rotina-despesas/valor-estimado/' + input.dataset.id, {
+              method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+              body:JSON.stringify({valor:input.value, mes_ano:'${mesAnoEdicao}'})
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'Não foi possível salvar.');
+            input.dataset.valor = data.valor == null ? '' : String(data.valor);
+            input.value = data.valor == null ? '' : Number(data.valor).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+            input.dataset.savedText = input.value;
+            input.classList.add('estimativa-editada');
+            atualizarTotalEstimado();
+          } catch (error) {input.value = input.dataset.savedText; alert(error.message);}
+          finally {input.readOnly = false; input.dataset.saving = 'false';}
+        }
+        document.querySelectorAll('.rotina-estimativa').forEach(input => {
+          input.dataset.savedText = input.value;
+          input.addEventListener('blur', () => salvarEstimativa(input));
+          input.addEventListener('keydown', event => {if (event.key === 'Enter') {event.preventDefault(); input.blur();}});
+        });
+
         function togglePainelColunasRotina() {
           const painel = document.getElementById('painel-colunas-rotina');
           painel.style.display = painel.style.display === 'none' ? 'flex' : 'none';
@@ -24816,6 +24971,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             'col-rot-cat-principal': true,
             'col-rot-subcategoria': true,
             'col-rot-vencimento': true,
+            'col-rot-estimado': true,
             'col-rot-status-pagto': true,
             'col-rot-status': true,
             'col-rot-ativo': true
@@ -24875,7 +25031,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             fixedHeaderTable.style.left = tableRect.left + 'px';
             fixedHeaderTable.style.width = tableRect.width + 'px';
             fixedHeaderTable.style.zIndex = '2147482500';
-            fixedHeaderTable.style.pointerEvents = 'none';
+            fixedHeaderTable.style.pointerEvents = 'auto';
             fixedHeaderTable.style.tableLayout = 'fixed';
             fixedHeaderTable.style.borderCollapse = 'collapse';
 
@@ -25109,6 +25265,24 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
     res.send(`<pre>Erro:\n${error.message}</pre>`);
   }
 });
+router.post('/rotina-despesas/valor-estimado/:id', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+  try {
+    if (!mesValido(req.body.mes_ano)) return res.status(400).json({ok:false, error:'Mês de competência inválido.'});
+    const valor = valorEstimado(req.body.valor);
+    await ensureRotinaDespesasColumns();
+    const result = await pool.query(`
+      INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, valor_estimado, valor_estimado_editado, status_linha, ativo)
+      SELECT id, $2, $3, true, COALESCE(status, 'PENDENTE'), COALESCE(ativo, true)
+      FROM rotina_despesas WHERE id = $1 AND COALESCE(vigorar_a_partir, '2026-01') <= $2
+      ON CONFLICT (rotina_id, mes_ano) DO UPDATE
+      SET valor_estimado = EXCLUDED.valor_estimado, valor_estimado_editado = true, atualizado_em = NOW()
+      RETURNING rotina_id
+    `, [req.params.id, req.body.mes_ano, valor]);
+    if (!result.rows.length) return res.status(404).json({ok:false,error:'Conta não disponível nesta competência.'});
+    res.json({ok:true, valor});
+  } catch (error) {res.status(400).json({ok:false,error:error.message});}
+});
+
 router.post('/rotina-despesas/mes-referencia', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
     await ensureRotinaDespesasColumns();
@@ -25853,6 +26027,15 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   ${gerarOpcoesDiaVencimento('', 'Selecione o dia')}
                 </select>
               </div>
+              <div>
+                <label for="valor_estimado">Valor estimado</label>
+                <input id="valor_estimado" name="valor_estimado" inputmode="decimal" placeholder="0,00" value="">
+                <small>Se vazio ou zero, buscar nos três meses anteriores.</small>
+              </div>
+              <div>
+                <label for="vigorar_a_partir">Vigorar a partir de</label>
+                <input id="vigorar_a_partir" name="vigorar_a_partir" type="month" required value="${getMesAnoAtual()}">
+              </div>
 
               <div class="full">
                 <label for="onde_encontrar_comprovante">Onde encontrar comprovante</label>
@@ -25939,9 +26122,12 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       status,
       ativo,
       ordem,
-      observacoes
+      observacoes, valor_estimado, vigorar_a_partir
     } = req.body;
 
+    const estimativa = valorEstimado(valor_estimado);
+    const vigencia = vigorar_a_partir || getMesAnoAtual();
+    if (!mesValido(vigencia)) return res.status(400).send('Selecione um mês de início válido.');
     await pool.query(`
       INSERT INTO rotina_despesas (
         fornecedor,
@@ -25955,8 +26141,8 @@ router.post('/rotina-despesas/novo', async (req, res) => {
         status,
         ativo,
         ordem,
-        observacoes
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        observacoes, valor_estimado, vigorar_a_partir
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
     `, [
       fornecedor,
       cnpj_cpf || null,
@@ -25969,7 +26155,7 @@ router.post('/rotina-despesas/novo', async (req, res) => {
       status || 'PENDENTE',
       ativo === 'true',
       Number(ordem || 0),
-      observacoes || null
+      observacoes || null, estimativa, vigencia
     ]);
 
     res.redirect('/rotina-despesas');
@@ -26624,6 +26810,15 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   ${gerarOpcoesDiaVencimento(item.dia_vencimento, 'Selecione o dia')}
                 </select>
               </div>
+              <div>
+                <label for="valor_estimado">Valor estimado</label>
+                <input id="valor_estimado" name="valor_estimado" inputmode="decimal" placeholder="0,00" value="${item.valor_estimado == null ? '' : Number(item.valor_estimado).toLocaleString('pt-BR',{minimumFractionDigits:2})}">
+                <small>Se vazio ou zero, buscar nos três meses anteriores.</small>
+              </div>
+              <div>
+                <label for="vigorar_a_partir">Vigorar a partir de</label>
+                <input id="vigorar_a_partir" name="vigorar_a_partir" type="month" required value="${item.vigorar_a_partir || '2026-01'}">
+              </div>
 
               <div class="full">
                 <label for="onde_encontrar_comprovante">Onde encontrar comprovante</label>
@@ -26710,11 +26905,14 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       status,
       ativo,
       ordem,
-      observacoes
+      observacoes, valor_estimado, vigorar_a_partir
     } = req.body;
 
     await ensureRotinaDespesasColumns();
 
+    const estimativa = valorEstimado(valor_estimado);
+    const vigencia = vigorar_a_partir || '2026-01';
+    if (!mesValido(vigencia)) return res.status(400).send('Selecione um mês de início válido.');
     await pool.query(`
       UPDATE rotina_despesas
       SET
@@ -26729,7 +26927,9 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
         status = $9,
         ativo = $10,
         ordem = $11,
-        observacoes = $12
+        observacoes = $12,
+        valor_estimado = $14,
+        vigorar_a_partir = $15
       WHERE id = $13
     `, [
       fornecedor,
@@ -26744,7 +26944,7 @@ router.post('/rotina-despesas/editar/:id', async (req, res) => {
       ativo === 'true',
       Number(ordem || 0),
       observacoes || null,
-      id
+      id, estimativa, vigencia
     ]);
 
     res.redirect('/rotina-despesas');
