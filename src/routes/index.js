@@ -23464,8 +23464,8 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
                 name="status"
                 class="status-select status-${normalizarStatusLinha(r.status_linha_mes)}"
               >
-                <option value="PENDENTE" ${normalizarStatusLinha(r.status_linha_mes) === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
-                <option value="FEITO" ${normalizarStatusLinha(r.status_linha_mes) === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                <option value="PENDENTE" ${normalizarStatusLinha(r.status_linha_mes) === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
+                <option value="FEITO" ${normalizarStatusLinha(r.status_linha_mes) === 'FEITO' ? 'selected' : ''}>Feito</option>
                 <option value="N/A" ${normalizarStatusLinha(r.status_linha_mes) === 'N/A' ? 'selected' : ''}>Não tem</option>
               </select>
             </form>
@@ -24711,7 +24711,11 @@ body.dm-global-page button.rotina-filter-btn[type="button"] {background:transpar
 body.dm-global-page button.rotina-filter-btn[data-filtered="true"] {background:#e8f7ee !important; color:#217346 !important;}
 body.dm-global-page .rotina-filter-menu[role="dialog"] button {background:white !important; color:#475569 !important; border:0 !important; box-shadow:none !important;}
 body.dm-global-page .rotina-filter-menu[role="dialog"] button.selected {background:#eff9f2 !important; color:#217346 !important;}
-body.dm-global-page .col-rot-estimado {width:110px !important; min-width:110px !important;}
+body.dm-global-page .col-rot-estimado {width:95px !important; min-width:95px !important;}
+body.dm-global-page #rotinaTable .col-rot-status,
+body.dm-global-page #rotinaTable .col-rot-status-pagto {width:90px !important; min-width:90px !important;}
+body.dm-global-page #rotinaTable .col-rot-ativo {width:65px !important; min-width:65px !important;}
+body.dm-global-page #rotinaTable .col-rot-ativo select.status-select {width:55px !important;}
 /* Controles compactos, no mesmo padrão da tabela de preços. */
 body.dm-global-page #rotinaTable input.rotina-estimativa,
 body.dm-global-page #rotinaTable select.status-select,
@@ -24719,17 +24723,19 @@ body.dm-global-page .rotina-filter-menu[role="dialog"] button,
 body.dm-global-page .rotina-filter-menu[role="dialog"] label,
 body.dm-global-page .rotina-filter-menu[role="dialog"] input {
   font-family:Arial, sans-serif !important;
-  font-size:12px !important;
+  font-size:10px !important;
   line-height:1.25 !important;
   font-weight:600 !important;
 }
 body.dm-global-page #rotinaTable input.rotina-estimativa {
-  width:100% !important; min-width:0 !important; max-width:100px !important;
-  height:28px !important; min-height:28px !important; padding:3px 7px !important;
+  width:100% !important; min-width:0 !important; max-width:85px !important;
+  height:22px !important; min-height:22px !important; padding:3px 7px !important;
   border-radius:6px !important;
 }
 body.dm-global-page #rotinaTable select.status-select {
-  height:26px !important; min-height:26px !important; padding:2px 8px !important;
+  width:80px !important; max-width:80px !important;
+  text-transform:none !important;
+  height:22px !important; min-height:22px !important; padding:1px 5px !important;
 }
 body.dm-global-page .rotina-filter-menu[role="dialog"] {
   width:230px; padding:7px; border-radius:12px;
@@ -24827,8 +24833,8 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
               <div class="filter-group">
                 <label for="status_mes">Status do mês</label>
                 <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="document.getElementById('mes_acao').value='status'; this.form.submit()">
-                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option>
-                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>FEITO</option>
+                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
+                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>Feito</option>
                 </select>
               </div>
             </form>
@@ -25301,8 +25307,8 @@ router.post('/rotina-despesas/valor-estimado/:id', protegerRota, permitirPerfis(
     await ensureRotinaDespesasColumns();
     const result = await pool.query(`
       INSERT INTO rotina_despesas_status_mensal (rotina_id, mes_ano, valor_estimado, valor_estimado_editado, status_linha, ativo)
-      SELECT id, $2, $3, true, COALESCE(status, 'PENDENTE'), COALESCE(ativo, true)
-      FROM rotina_despesas WHERE id = $1 AND COALESCE(vigorar_a_partir, '2026-01') <= $2
+      SELECT id, $2::varchar(7), $3::numeric(14,2), true, COALESCE(status, 'PENDENTE'), COALESCE(ativo, true)
+      FROM rotina_despesas WHERE id = $1 AND COALESCE(vigorar_a_partir, '2026-01') <= $2::varchar(7)
       ON CONFLICT (rotina_id, mes_ano) DO UPDATE
       SET valor_estimado = EXCLUDED.valor_estimado, valor_estimado_editado = true, atualizado_em = NOW()
       RETURNING rotina_id

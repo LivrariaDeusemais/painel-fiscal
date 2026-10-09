@@ -96,6 +96,8 @@ test('edição grava só valor e marca mensal, sem sobrescrever status, pagament
   await handler({params:{id:1},body:{mes_ano:'2026-10',valor:'1.234,56'}},res);
   assert.equal(resposta.valor,1234.56);
   assert.deepEqual(Array.from(consulta.values),[1,'2026-10',1234.56]);
+  assert.match(consulta.sql, /SELECT id, \$2::varchar\(7\), \$3::numeric\(14,2\)/);
+  assert.match(consulta.sql, /<= \$2::varchar\(7\)/);
   const update=consulta.sql.split('DO UPDATE')[1];
   assert.ok(!update.includes('status_linha ='));
   assert.ok(!update.includes('status_pagto ='));
