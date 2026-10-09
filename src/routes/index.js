@@ -24711,8 +24711,37 @@ body.dm-global-page button.rotina-filter-btn[type="button"] {background:transpar
 body.dm-global-page button.rotina-filter-btn[data-filtered="true"] {background:#e8f7ee !important; color:#217346 !important;}
 body.dm-global-page .rotina-filter-menu[role="dialog"] button {background:white !important; color:#475569 !important; border:0 !important; box-shadow:none !important;}
 body.dm-global-page .rotina-filter-menu[role="dialog"] button.selected {background:#eff9f2 !important; color:#217346 !important;}
-body.dm-global-page .col-rot-estimado {width:135px !important; min-width:135px !important;}
-body.dm-global-page input.rotina-estimativa {width:100% !important; min-width:0 !important;}
+body.dm-global-page .col-rot-estimado {width:110px !important; min-width:110px !important;}
+/* Controles compactos, no mesmo padrão da tabela de preços. */
+body.dm-global-page #rotinaTable input.rotina-estimativa,
+body.dm-global-page #rotinaTable select.status-select,
+body.dm-global-page .rotina-filter-menu[role="dialog"] button,
+body.dm-global-page .rotina-filter-menu[role="dialog"] label,
+body.dm-global-page .rotina-filter-menu[role="dialog"] input {
+  font-family:Arial, sans-serif !important;
+  font-size:12px !important;
+  line-height:1.25 !important;
+  font-weight:600 !important;
+}
+body.dm-global-page #rotinaTable input.rotina-estimativa {
+  width:100% !important; min-width:0 !important; max-width:100px !important;
+  height:28px !important; min-height:28px !important; padding:3px 7px !important;
+  border-radius:6px !important;
+}
+body.dm-global-page #rotinaTable select.status-select {
+  height:26px !important; min-height:26px !important; padding:2px 8px !important;
+}
+body.dm-global-page .rotina-filter-menu[role="dialog"] {
+  width:230px; padding:7px; border-radius:12px;
+}
+body.dm-global-page .rotina-filter-menu[role="dialog"] button {
+  height:auto !important; min-height:30px !important; padding:8px 10px !important;
+  border-radius:7px !important;
+}
+body.dm-global-page .rotina-filter-menu[role="dialog"] label {margin:5px;}
+body.dm-global-page .rotina-filter-menu[role="dialog"] input {
+  height:30px !important; min-height:30px !important; padding:4px 7px !important;
+}
 body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !important;}
 </style>
     </head>
