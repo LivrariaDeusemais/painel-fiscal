@@ -24723,6 +24723,9 @@ body.dm-global-page #rotinaTable .col-rot-status,
 body.dm-global-page #rotinaTable .col-rot-status-pagto {width:90px !important; min-width:90px !important;}
 body.dm-global-page #rotinaTable .col-rot-ativo {width:65px !important; min-width:65px !important;}
 body.dm-global-page #rotinaTable .col-rot-ativo select.status-select {width:55px !important;}
+/* Espaço suficiente para o rótulo completo Desc. Operação. */
+body.dm-global-page #rotinaTable .col-rot-status-pagto {width:112px !important; min-width:112px !important;}
+body.dm-global-page #rotinaTable .col-rot-status-pagto select.status-select {width:102px !important; max-width:102px !important; padding:1px 3px !important;}
 /* Controles compactos, no mesmo padrão da tabela de preços. */
 body.dm-global-page #rotinaTable input.rotina-estimativa,
 body.dm-global-page #rotinaTable select.status-select,
@@ -24762,7 +24765,7 @@ body.dm-global-page .rotina-filtros-compactos.top-bar {
   grid-template-columns:minmax(0,1fr) 240px !important; column-gap:14px !important;
 }
 body.dm-global-page .rotina-filtros-compactos form.filters {
-  grid-template-columns:minmax(140px,1.5fr) minmax(90px,1fr) minmax(100px,1fr) minmax(110px,1fr) auto auto !important;
+  grid-template-columns:minmax(140px,1.5fr) minmax(100px,1fr) minmax(110px,1fr) auto auto !important;
   gap:8px !important; max-width:none !important; min-height:0 !important;
 }
 body.dm-global-page .rotina-filtros-compactos .filter-group {min-width:0 !important;}
@@ -24838,15 +24841,7 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
                 </select>
               </div>
 
-              <div class="filter-group">
-                <label for="status">Status</label>
-                <select id="status" name="status">
-                  <option value="" ${statusFiltro === '' ? 'selected' : ''}>Todos</option>
-                  <option value="PENDENTE" ${statusFiltro === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
-                  <option value="FEITO" ${statusFiltro === 'FEITO' ? 'selected' : ''}>Feito</option>
-                  <option value="N/A" ${statusFiltro === 'N/A' ? 'selected' : ''}>Não tem</option>
-                </select>
-              </div>
+              <input type="hidden" name="status" value="${escapeHtmlGlobal(statusFiltro)}">
 
               <div class="filter-group">
                 <label for="dia_vencimento">Dia vencimento</label>
@@ -24920,6 +24915,9 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
 
 
           <div class="rotina-total">Total estimado dos itens filtrados: <strong id="totalEstimadoRotina">${totalEstimado.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</strong> <small>• ${result.rows.filter(r => resolverEstimativa(r) == null).length} sem valor</small></div>
+          <div id="rotinaStatusMenu" class="rotina-filter-menu" role="dialog" aria-label="Filtrar status" hidden>
+            ${[['','Todos'],['PENDENTE','Pendente'],['FEITO','Feito'],['N/A','Não tem']].map(([value,label]) => `<button type="button" class="${statusFiltro === value ? 'selected' : ''}" onclick="filtrarStatusRotina('${value}')">${label}${statusFiltro === value ? ' ✓' : ''}</button>`).join('')}
+          </div>
           <div id="rotinaAtivoMenu" class="rotina-filter-menu" role="dialog" aria-label="Filtrar atividade" hidden>
             ${[['true','Ativos'],['false','Inativos'],['','Todos']].map(([valor,label]) => `<button type="button" class="${ativoFiltro === valor ? 'selected' : ''}" onclick="filtrarAtivoRotina('${valor}')">${label}${ativoFiltro === valor ? ' ✓' : ''}</button>`).join('')}
           </div>
@@ -24945,7 +24943,7 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
                 <th class="col-vencimento col-rot-vencimento sortable-head" ><button type="button" class="rotina-filter-btn" data-filtered="${semDataFiltro || !!dataInicialFiltro || !!dataFinalFiltro}" onclick="abrirFiltroRotina(event, 'rotinaVencimentoMenu')">Vencimento ▾</button></th>
                 <th class="col-rot-estimado">Valor Estimado</th>
                 <th class="col-status-pagto col-rot-status-pagto sortable-head" onclick="ordenarRotinaTabela(9, 'statusPagto')">Status Pagto</th>
-                <th class="col-status col-rot-status sortable-head" onclick="ordenarRotinaTabela(10, 'text')">Status</th>
+                <th class="col-status col-rot-status"><button type="button" class="rotina-filter-btn" data-filtered="${!!statusFiltro}" onclick="abrirFiltroRotina(event, 'rotinaStatusMenu')">Status ▾</button></th>
                 <th class="col-ativo col-rot-ativo sortable-head" ><button type="button" class="rotina-filter-btn" data-filtered="${!!ativoFiltro}" onclick="abrirFiltroRotina(event, 'rotinaAtivoMenu')">Ativo ▾</button></th>
                 <th class="col-acoes col-rot-acoes">Ações</th>
               </tr>
@@ -24993,6 +24991,11 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
           const form = event.target;
           if (form.inicio.value > form.fim.value) {alert('A data inicial deve ser anterior ou igual à final.'); return;}
           filtrarPeriodoRotina('periodo',form.inicio.value,form.fim.value);
+        }
+        function filtrarStatusRotina(valor) {
+          const url = new URL(location.href);
+          if (valor) url.searchParams.set('status', valor); else url.searchParams.delete('status');
+          location.href = url.toString();
         }
         function atualizarTotalEstimado() {
           let total = 0, semValor = 0;
