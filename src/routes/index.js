@@ -17322,7 +17322,7 @@ router.get('/novo', async (req, res) => {
     if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
     for (const chave of ['ativo', 'sem_data', 'vencimento_inicio', 'vencimento_fim']) {
       const valor = retornoRecebido.get(chave);
-      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
+      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'status_pagto' && ['A_PAGAR','PAGO','DOP','NAO_TEM','VENCIDO'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
     }
     const retornoFiltros = retornoSeguro.toString();
 
@@ -18781,7 +18781,7 @@ const rotinaOrigem = String(rotina_id || '').trim();
         if (retornoDia) retornoSeguro.set('dia_vencimento', retornoDia);
     for (const chave of ['ativo', 'sem_data', 'vencimento_inicio', 'vencimento_fim']) {
       const valor = retornoRecebido.get(chave);
-      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
+      if ((chave === 'ativo' && ['true','false'].includes(valor)) || (chave === 'status_pagto' && ['A_PAGAR','PAGO','DOP','NAO_TEM','VENCIDO'].includes(valor)) || (chave === 'sem_data' && valor === '1') || (chave.startsWith('vencimento_') && dataValida(valor))) retornoSeguro.set(chave, valor);
     }
         const sufixoRetorno = retornoSeguro.toString() ? `?${retornoSeguro.toString()}` : '';
         return res.redirect(`/rotina-despesas${sufixoRetorno}#rotina-${rotinaOrigem}`);
@@ -23301,6 +23301,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const statusMesEdicao = await getStatusMesCompetencia(mesAnoEdicao);
     const fornecedorFiltro = String(req.query.fornecedor || '').trim();
     const statusFiltro = (req.query.status || '').trim();
+    const statusPagtoFiltro = ['A_PAGAR','PAGO','DOP','NAO_TEM','VENCIDO'].includes(req.query.status_pagto) ? req.query.status_pagto : '';
     const diaVencimentoFiltro = normalizarDiaVencimento(req.query.dia_vencimento || '');
     const vencimentoFiltro = diaVencimentoFiltro;
     const ativoFiltro = ['true', 'false'].includes(req.query.ativo) ? req.query.ativo : '';
@@ -23308,6 +23309,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const dataInicialFiltro = dataValida(req.query.vencimento_inicio) ? req.query.vencimento_inicio : '';
     const dataFinalFiltro = dataValida(req.query.vencimento_fim) ? req.query.vencimento_fim : '';
     const extraFiltros = new URLSearchParams();
+    if (statusPagtoFiltro) extraFiltros.set('status_pagto', statusPagtoFiltro);
     if (ativoFiltro) extraFiltros.set('ativo', ativoFiltro);
     if (semDataFiltro) extraFiltros.set('sem_data', '1');
     if (dataInicialFiltro) extraFiltros.set('vencimento_inicio', dataInicialFiltro);
@@ -23351,6 +23353,11 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     if (statusFiltro) {
       values.push(statusFiltro);
       whereParts.push(`COALESCE(sm.status_linha, r.status, 'PENDENTE') = $${values.length + 1}`);
+    }
+
+    if (statusPagtoFiltro) {
+      values.push(statusPagtoFiltro);
+      whereParts.push(`COALESCE(sm.status_pagto, 'A_PAGAR') = $${values.length + 1}`);
     }
 
     if (diaVencimentoFiltro) {
@@ -24749,6 +24756,41 @@ body.dm-global-page .rotina-filter-menu[role="dialog"] input {
   height:30px !important; min-height:30px !important; padding:4px 7px !important;
 }
 body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !important;}
+
+/* Faixa de filtros da rotina: compacta e em uma linha no desktop. */
+body.dm-global-page .rotina-filtros-compactos.top-bar {
+  grid-template-columns:minmax(0,1fr) 240px !important; column-gap:14px !important;
+}
+body.dm-global-page .rotina-filtros-compactos form.filters {
+  grid-template-columns:minmax(140px,1.5fr) minmax(90px,1fr) minmax(100px,1fr) minmax(110px,1fr) auto auto !important;
+  gap:8px !important; max-width:none !important; min-height:0 !important;
+}
+body.dm-global-page .rotina-filtros-compactos .filter-group {min-width:0 !important;}
+body.dm-global-page .rotina-filtros-compactos .filter-group label {font:600 10px Arial,sans-serif !important; margin-bottom:4px !important;}
+body.dm-global-page .rotina-filtros-compactos .filter-group select,
+body.dm-global-page .rotina-filtros-compactos form.filters .btn,
+body.dm-global-page .rotina-filtros-compactos .month-current-display,
+body.dm-global-page .rotina-filtros-compactos button.btn-month-open {
+  font:600 10px Arial,sans-serif !important; height:30px !important; min-height:30px !important;
+  padding:0 8px !important; border-radius:8px !important; box-sizing:border-box !important;
+}
+body.dm-global-page .rotina-filtros-compactos .filter-group select {width:100% !important; min-width:0 !important;}
+body.dm-global-page .rotina-filtros-compactos form.month-reference-form {
+  display:grid !important; grid-template-columns:120px minmax(0,1fr) !important;
+  gap:8px !important; min-width:0 !important; width:100% !important;
+}
+body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important;}
+body.dm-global-page .rotina-filtros-compactos .month-current-display {min-width:0 !important; flex:1; display:flex; align-items:center; justify-content:center;}
+body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px !important; min-width:24px !important; padding:0 !important; box-shadow:none !important;}
+@media(max-width:1050px) {
+  body.dm-global-page .rotina-filtros-compactos.top-bar {
+    grid-template-columns:1fr !important; grid-template-areas:"acoes" "colunas" "filtros" "mes" !important;
+  }
+  body.dm-global-page .rotina-filtros-compactos form.month-reference-form {max-width:260px !important;}
+}
+@media(max-width:650px) {
+  body.dm-global-page .rotina-filtros-compactos form.filters {grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
 </style>
     </head>
     <body class="dm-global-page">
@@ -24772,7 +24814,7 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
         <div class="card">
           <h1>📋 Lista de Contas à pagar</h1>
 
-          <div class="top-bar">
+          <div class="top-bar rotina-filtros-compactos">
             <div id="painel-colunas-rotina" class="painel-colunas" style="display:none;">
               <label><input type="checkbox" data-col="col-rot-cnpj"> CNPJ/CPF</label>
               <label><input type="checkbox" data-col="col-rot-fato"> Fato Gerador</label>
@@ -24797,7 +24839,7 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
               </div>
 
               <div class="filter-group">
-                <label for="status">Filtrar por status</label>
+                <label for="status">Status</label>
                 <select id="status" name="status">
                   <option value="" ${statusFiltro === '' ? 'selected' : ''}>Todos</option>
                   <option value="PENDENTE" ${statusFiltro === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
@@ -24807,13 +24849,21 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
               </div>
 
               <div class="filter-group">
-                <label for="dia_vencimento">Filtrar por dia vencimento</label>
+                <label for="dia_vencimento">Dia vencimento</label>
                 <select id="dia_vencimento" name="dia_vencimento">
                   ${gerarOpcoesDiaVencimento(diaVencimentoFiltro, 'Todos os dias')}
                 </select>
               </div>
 
-              ${Array.from(extraFiltros).map(([key,value]) => `<input type="hidden" name="${key}" value="${escapeHtmlGlobal(value)}">`).join('')}
+              <div class="filter-group">
+                <label for="status_pagto_filtro">Status Pagto</label>
+                <select id="status_pagto_filtro" name="status_pagto">
+                  <option value="" ${!statusPagtoFiltro ? 'selected' : ''}>Todos</option>
+                  ${[['A_PAGAR','À pagar'],['PAGO','Pago'],['DOP','Desc. Operação'],['NAO_TEM','Não tem'],['VENCIDO','Vencido']].map(([value,label]) => `<option value="${value}" ${statusPagtoFiltro === value ? 'selected' : ''}>${label}</option>`).join('')}
+                </select>
+              </div>
+
+              ${Array.from(extraFiltros).filter(([key]) => key !== 'status_pagto').map(([key,value]) => `<input type="hidden" name="${key}" value="${escapeHtmlGlobal(value)}">`).join('')}
               <button type="submit" class="btn btn-primary">Aplicar filtro</button>
               <a href="/rotina-despesas" class="btn btn-dark">Limpar</a>
             </form>
@@ -24826,7 +24876,7 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
                 <label>Mês de competência</label>
                 <div class="month-compact-row">
                   <span class="month-current-display" id="mesAtualLabel">${mesAnoEdicaoLabel}</span>
-                  <button type="button" class="btn btn-dark btn-month-open" onclick="abrirSeletorMes()">Escolher mês</button>
+                  <button type="button" class="btn btn-dark btn-month-open" aria-label="Escolher mês" title="Escolher mês" onclick="abrirSeletorMes()">▾</button>
                 </div>
               </div>
 

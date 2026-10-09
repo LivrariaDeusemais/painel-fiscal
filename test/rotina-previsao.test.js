@@ -128,3 +128,17 @@ test('Nova Conta grava início escolhido e valor padrão; editar preserva ID e p
     else assert.ok(consulta.sql.includes('$13,$14'));
   }
 });
+
+ test('filtro de pagamento usa competência mensal, mantém retorno e seleciona opção',async()=>{
+  const {ctx,consultas}=contextoRotina([{id:1,fornecedor:'Teste'}]);
+  let html;
+  await ctx.handler({query:{status_pagto:'PAGO',ativo:'true'}},{send:value=>html=value});
+  assert.deepEqual(Array.from(consultas.at(-1).values),['2026-10','PAGO',true]);
+  assert.ok(consultas.at(-1).sql.includes("COALESCE(sm.status_pagto, 'A_PAGAR') = $2"));
+  assert.ok(html.includes('value="PAGO" selected>Pago'));
+  assert.ok(html.includes('status_pagto%3DPAGO'));
+  assert.ok(html.includes('aria-label="Escolher mês"'));
+  const segundo=contextoRotina();
+  await segundo.ctx.handler({query:{status_pagto:'INVALIDO'}},{send:()=>{}});
+  assert.deepEqual(Array.from(segundo.consultas.at(-1).values),['2026-10']);
+});
