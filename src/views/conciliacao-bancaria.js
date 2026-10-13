@@ -5,7 +5,7 @@ function renderPage({ token, month, readonly }) {
   </style>
   <style>
     .cb .table-wrap{overflow:auto!important;max-height:65vh!important}
-    .cb #cbTable{min-width:0!important}
+    .cb #cbTable{min-width:0!important;overflow:visible!important}
     .cb #cbTable th,.cb #cbTable td{min-width:0!important;overflow-wrap:break-word!important}
     .cb #cbHead{position:sticky!important;top:0!important;z-index:4!important}
     .cb #cbTable th{position:sticky!important;top:0!important;background:#f1f7f3!important;white-space:nowrap!important}
@@ -79,7 +79,7 @@ function renderPage({ token, month, readonly }) {
     const normalize=v=>String(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase();
     const numeric=k=>['paidAmount','difference'].includes(k)||['VALOR','VALOR LANCAMENTO','SALDO'].includes(normalize(k.replace('raw:','')));
     const numberValue=(k,v)=>{if(v===''||v==null)return null;if(!k.startsWith('raw:'))return Number(v)/100;if(typeof v==='number')return v;let n=String(v).replace(/R\\$|\\s/g,'');if(n.includes(','))n=n.replace(/\\./g,'').replace(',','.');return Number(n)};
-    const display=(k,v)=>{if(numeric(k)){const n=numberValue(k,v);return n==null?'—':Number.isFinite(n)?n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):v}if(normalize(k.replace('raw:','')).startsWith('DATA')){const iso=String(v).match(/^(\\d{4})-(\\d{2})-(\\d{2})/),br=String(v).match(/^(\\d{2})[/-](\\d{2})[/-](\\d{4})$/);return iso?iso[3]+'-'+iso[2]+'-'+iso[1]:br?br[1]+'-'+br[2]+'-'+br[3]:v}return v};
+    const display=(k,v)=>{if(/CPF|CNPJ/.test(k)||k==='document')return doc(v);if(numeric(k)){const n=numberValue(k,v);return n==null?'—':Number.isFinite(n)?n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):v}if(normalize(k.replace('raw:','')).startsWith('DATA')){const iso=String(v).match(/^(\\d{4})-(\\d{2})-(\\d{2})/),br=String(v).match(/^(\\d{2})[/-](\\d{2})[/-](\\d{4})$/);return iso?iso[3]+'-'+iso[2]+'-'+iso[1]:br?br[1]+'-'+br[2]+'-'+br[3]:v}return v};
     const visible=()=>state.rows.filter(r=>Object.entries(filters).every(([k,v])=>!v||String(value(r,k))===(v==='__cb_empty__'?'':v)));
     const params=()=>new URLSearchParams({banco:$('cbBank').value,mes:$('cbMonth').value});
     function notice(text,error=false){$('cbNotice').hidden=false;$('cbNotice').textContent=text;$('cbNotice').className='notice'+(error?' error':'')}
@@ -89,7 +89,7 @@ function renderPage({ token, month, readonly }) {
     function render(){
       const rows=visible(),columns=[...(state.displayColumns||((state.sources||[]).filter(s=>s.type==='corrente'&&s.format==='table').flatMap(s=>s.columns||[]).length?[...new Set(state.sources.filter(s=>s.type==='corrente'&&s.format==='table').flatMap(s=>s.columns||[]))]:state.columns)).map(k=>['raw:'+k,k]),...extra];
       const measure=document.createElement('canvas').getContext('2d');measure.font='12px Arial';
-      const widths=columns.map(([k,label])=>Math.ceil(Math.max(measure.measureText(label).width+42,...state.rows.map(r=>Math.min(340,measure.measureText(String(display(k,value(r,k)))).width+24)),k==='observation'?180:80)));
+      const widths=columns.map(([k,label])=>Math.ceil(Math.max(measure.measureText(label).width+42,...state.rows.map(r=>Math.min(340,measure.measureText(String(display(k,value(r,k)))).width+24)),k==='observation'?180:/CPF|CNPJ/.test(k)||k==='document'?155:80)));
       const totalWidth=widths.reduce((a,b)=>a+b,0)+130;
       $('cbTable').style.setProperty('width',totalWidth+'px','important');
       $('cbTable').querySelector('colgroup')?.remove();$('cbTable').insertAdjacentHTML('afterbegin','<colgroup>'+widths.map(w=>'<col style="width:'+w+'px">').join('')+'<col style="width:130px"></colgroup>');
