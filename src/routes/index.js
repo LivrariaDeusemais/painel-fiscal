@@ -31561,6 +31561,7 @@ function renderFerramentasIaPage(req) {
         <div><h2>Ferramentas disponíveis</h2><p>Acesse os recursos internos da Deus é Mais.</p></div>
       </div>
       <div class="ai-tools-grid">
+        <article class="ai-tool-card"><h3>Gestão de Compras</h3><p>Arquivo NF de compras de estoque: PDF, XML e planos de pagamento.</p><a class="ai-tool-link" href="/ferramentas-ia/gestao-compras">Abrir ferramenta</a></article>
         <article class="ai-tool-card">
           <div class="ai-tool-card-header">
             <span class="ai-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
@@ -31704,7 +31705,9 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
         <form class="cod-form" method="post" action="/ferramentas-ia/codificador/processar" enctype="multipart/form-data">
           <label class="cod-field">
             <span>PDF da NF ou orçamento</span>
-            <input type="file" name="pdf" accept="application/pdf,.pdf" required>
+            <input type="file" name="pdf" accept="application/pdf,.pdf">
+            <span>Ou selecionar NF do arquivo de compras</span><select name="compra_nf" id="codCompraNF"><option value="">Selecionar NF arquivada</option></select>
+            <script>fetch('/ferramentas-ia/gestao-compras/notas').then(r=>r.json()).then(notes=>{if(!Array.isArray(notes))return;const select=document.getElementById('codCompraNF');notes.forEach(n=>{const option=document.createElement('option');option.value=n.id;option.textContent=n.supplier+' · NF '+n.number+' · '+(n.total/100).toLocaleString('pt-BR');select.append(option)})}).catch(()=>{});</script>
           </label>
           <div class="cod-form-grid">
             <label class="cod-field">
@@ -32338,7 +32341,16 @@ router.post('/ferramentas-ia/codificador/base', protegerRota, somenteAdmin, rece
 
 router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), receberArquivoCodificador('pdf'), async (req, res) => {
   try {
-    if (!req.file || path.extname(req.file.originalname).toLowerCase() !== '.pdf') {
+    let arquivo = req.file?.path;
+    if (req.body.compra_nf) {
+      if(req.file) throw new Error('Escolha uma NF arquivada ou um arquivo local, apenas uma opção.');
+      if(!/^[a-f0-9]{64}$/.test(req.body.compra_nf)) throw new Error('NF inválida.');
+      const compras = require('../services/compras-estoque'); await compras.ensure(pool);
+      const found = await pool.query('SELECT id FROM compras_estoque_nf WHERE id=$1',[req.body.compra_nf]);
+      if(!found.rows.length) throw new Error('NF arquivada não encontrada.');
+      arquivo = path.join(uploadsDir, '.compras-estoque', req.body.compra_nf+'.pdf');
+    }
+    if (!arquivo || (!req.body.compra_nf && path.extname(req.file.originalname).toLowerCase() !== '.pdf')) {
       throw new Error('Selecione um documento no formato PDF.');
     }
     const fornecedores = new Set(['auto', 'sbb', 'bv_books', 'cpp', 'penkal', 'adib']);
@@ -32347,7 +32359,7 @@ router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfi
     const tipo = tipos.has(req.body.tipo) ? req.body.tipo : 'auto';
     const resultado = await executarCodificador([
       'processar',
-      '--arquivo', req.file.path,
+      '--arquivo', arquivo,
       '--fornecedor', fornecedor,
       '--tipo', tipo
     ]);
@@ -32995,6 +33007,7 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
   }
 });
 
+router.use('/ferramentas-ia/gestao-compras', require('./compras-estoque').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir}));
 router.use('/conciliacao-bancaria', require('./conciliacao-bancaria').createRouter({
   pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir
 }));

@@ -225,7 +225,7 @@ function scoreCandidate(row, candidate) {
 function clientStatus(row) {
   if (row.amount >= 0) return 'Não somar Cliente';
   if (row.internal && !row.paymentType) return 'Não somar Cliente';
-  if (row.status !== 'Conciliado') return 'Pendente';
+  if (!['Conciliado', 'Revisado'].includes(row.status)) return 'Pendente';
   return norm(row.paymentType) === 'DOP' ? 'Somar Conta Cliente' : 'Não somar Cliente';
 }
 function applyLink(row, candidate, manual = false) {
@@ -339,8 +339,9 @@ function visibleColumns(state) {
 function exportWorkbook(state, bank, month, rows = state.rows) {
   const wb = new ExcelJS.Workbook(); wb.creator = 'PlennaTec';
   const ws = wb.addWorksheet('Conciliação');
-  const originalColumns = visibleColumns(state);
-  const columns = [...originalColumns, ...extraColumns];
+  const originalColumns = visibleColumns(state).filter(k => !/^(CPF|CNPJ)/.test(norm(k)));
+  const exportExtras = extraColumns.map(c => c === 'CPF/CNPJ conciliado' ? 'CPF/CNPJ' : c);
+  const columns = [...originalColumns, ...exportExtras];
   ws.columns = columns.map(c => ({ width: /NOME|FORNECEDOR|HISTORICO|DESCRICAO|OBSERVACAO|ORIGEM|CATEGORIA/.test(norm(c)) ? 42 : 24 }));
   const last = ws.getColumn(columns.length).letter;
   ws.mergeCells(`A1:${last}2`);
@@ -353,7 +354,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.getCell('A3').value = `Agência: ${state.account.branch || 'Não informada'} | Conta: ${state.account.number || 'Não informada no arquivo'} | Período por data da movimentação: ${month}`;
   ws.mergeCells(`A4:${last}4`);
   const selected = rows.filter(r => r.clientStatus === 'Somar Conta Cliente').reduce((s, r) => s + Math.abs(r.amount), 0);
-  ws.getCell('A4').value = `${rows.length} movimentações | Somar Conta Cliente: ${(selected / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Revisar/Não encontrado: ${rows.filter(r => r.status !== 'Conciliado').length}`;
+  ws.getCell('A4').value = `${rows.length} movimentações | Somar Conta Cliente: ${(selected / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Revisar/Não encontrado: ${rows.filter(r => !['Conciliado','Revisado'].includes(r.status)).length}`;
   ws.mergeCells(`A5:${last}5`); ws.getCell('A5').value = state.warnings.join(' | ') || 'Colunas originais preservadas. Diferença = valor absoluto do extrato menos valor do lançamento vinculado.';
   ws.getCell('A5').alignment = { wrapText: true }; ws.getRow(5).height = 34;
   ws.getRow(7).values = columns;

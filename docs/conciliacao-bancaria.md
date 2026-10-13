@@ -41,3 +41,15 @@ Acesso em `/conciliacao-bancaria`, pelo botão laranja no Dashboard ou pelo menu
 ## Validação com setembro de 2026
 
 Os arquivos fornecidos foram lidos localmente, sem gravação no banco real: Caixa com 114 movimentações e 95 PIX associados; Inter com 23 movimentações. Excel/CSV + OFX complementar mantêm essas contagens. O aviso de divergência de saldo do Inter é preservado, sem inventar ajuste.
+
+## NFs de compras de estoque
+
+Gestão de Compras (`/ferramentas-ia/gestao-compras`) arquiva PDF e XML em pares, deduplicados pela chave NF-e. O XML fornece fornecedor, CNPJ, número, emissão, total, itens e duplicatas. Os originais são privados e só podem ser obtidos por rotas autenticadas.
+
+O plano fecha em centavos: total NF = abatimento + partes de pagamento. Cada parte admite PIX, boleto ou cartão, datas/valores de parcelas e banco/cartão. Caixa VISA, Caixa ELO e Inter são os cartões permitidos. Crédito de troca/devolução não cria saída bancária.
+
+A conciliação automática exige fornecedor/documento compatível e saldo exato de uma única parcela PIX/boleto; parcelas de notas de outros meses também participam. Vínculo manual aceita pagamentos parciais até o saldo disponível. Vínculos de despesas e de NFs são mutuamente exclusivos. Pagamentos de cartão são exibidos para conferência da fatura, sem vincular automaticamente a saída integral da fatura a uma NF. A coluna Saldo no extrato mostra o valor ainda não associado a movimentações bancárias, incluindo as partes em cartão.
+
+Planos com pagamentos vinculados não podem remover ou reduzir suas parcelas abaixo do pago. O status da NF é calculado pelos vínculos de todos os bancos/meses e pelo abatimento. Compras não são inseridas em `lancamentos` nem nos totais de despesas. O Codificador pode reutilizar o PDF arquivado sem remover o original.
+
+`Revisado` é uma decisão manual finalizada, não soma Pendências e sobrevive a nova conciliação. A regra DOP permanece. A tela e o Excel contêm uma única coluna CPF/CNPJ com documento atualizado pelo cadastro.

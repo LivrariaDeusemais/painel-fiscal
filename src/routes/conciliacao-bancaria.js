@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { PDFParse } = require('pdf-parse');
 const service = require('../services/conciliacao-bancaria');
+const compras = require('../services/compras-estoque');
 const { renderPage } = require('../views/conciliacao-bancaria');
 
 function createRouter({ pool, protect, renderShell, uploadsDir }) {
@@ -187,6 +188,11 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const result = await mutate(bank, month, async (state, other, db) => {
       const blocked = await foreignLinks(db, bank, month);
       state.rows = service.reconcile(service.enrichPix(state.rows, state.pix), list.filter(c => !blocked.has(String(c.id))), bank, other.rows);
+      const invoices = await compras.list(db);
+      for (const row of state.rows) {
+        const match = compras.match(row, invoices, bank);
+        if(match){row.purchaseId=match.invoice.id;row.purchasePartId=match.installment.id;row.supplier=match.invoice.supplier;row.document=match.invoice.document;row.classification='Compra de mercadorias para revenda';row.paymentType=match.part.method;row.paidAmount=Math.abs(row.amount);row.difference=0;row.status='Conciliado';row.manual=true;row.clientStatus=service.clientStatus(row);row.reason='NF de estoque: fornecedor e valor da parcela compatíveis';match.invoice.links.push({partId:match.installment.id,amount:Math.abs(row.amount)});}
+      }
       if (failed) state.warnings = [...new Set([...state.warnings, `${failed} PDF(s) indisponível(is) ou sem leitura. Use revisão manual para conferir os comprovantes.`])];
       return { state };
     });
@@ -216,6 +222,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       pdfUrl: c.anexo_pdf ? `/conciliacao-bancaria/comprovante/${c.id}` : null
     })));
   }));
+  router.get('/notas-compras', run(async(req,res)=>{const list=await compras.list(pool);res.json(list)}));
   router.get('/original/:hash', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
     const state = await readState(pool, bank, month);
@@ -244,6 +251,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       if (req.body.onlyObservation) row = { ...row, observation: String(req.body.observation || '').slice(0, 2000) };
       else {
         const linkedId = req.body.linkedId;
+        if(req.body.purchaseId && linkedId) throw new Error('Escolha comprovante de despesa ou NF de estoque.');
         if (linkedId) {
           if (!/^\d+$/.test(String(linkedId))) throw new Error('Lançamento inválido.');
           if (row.amount >= 0) throw new Error('Vincule comprovantes de despesas somente a saídas.');
@@ -253,6 +261,17 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
           if (!list.length) throw new Error('Lançamento não encontrado.');
           row = service.applyLink(row, list[0], true);
         } else row = { ...row, manual: true, linkedId: null, supplier: '', category: '', paymentType: '', paidAmount: null, difference: null };
+        row.purchaseId = null; row.purchasePartId = null;
+        if (req.body.purchaseId) {
+          if(row.amount>=0)throw new Error('Vincule NF de compra somente a saídas.');
+          const invoices=await compras.list(db),invoice=invoices.find(n=>n.id===req.body.purchaseId);
+          const part=invoice?.plan?.parts.find(p=>p.method!=='Cartão'&&p.installments.some(i=>i.id===req.body.purchasePartId));
+          const installment=part?.installments.find(i=>i.id===req.body.purchasePartId);
+          if(!installment)throw new Error('Selecione uma parcela PIX/boleto válida. Compras no cartão são conferidas na fatura.');
+          const used=invoice.links.filter(l=>!(l.bank===bank&&l.month===month&&l.movementId===row.id)&&l.partId===installment.id).reduce((s,l)=>s+l.amount,0);
+          if(Math.abs(row.amount)>installment.amount-used)throw new Error('Este pagamento excede o saldo restante da parcela.');
+          row.purchaseId=invoice.id;row.purchasePartId=installment.id;row.supplier=invoice.supplier;row.document=invoice.document;row.classification='Compra de mercadorias para revenda';row.paymentType=part.method;row.paidAmount=Math.abs(row.amount);row.difference=0;
+        }
         const fields = { supplier: 200, document: 30, classification: 200, paymentType: 80, category: 200, observation: 2000 };
         for (const [key, max] of Object.entries(fields)) if (req.body[key] !== undefined) row[key] = String(req.body[key]).trim().slice(0, max);
         if (req.body.paidAmount !== undefined && req.body.paidAmount !== '') {
@@ -260,7 +279,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
           if (row.paidAmount === null || row.paidAmount < 0) throw new Error('Valor pago inválido.');
           row.difference = Math.abs(row.amount) - row.paidAmount;
         }
-        if (!['Conciliado', 'Revisar', 'Não encontrado'].includes(req.body.status)) throw new Error('Status inválido.');
+        if (!['Conciliado', 'Revisado', 'Revisar', 'Não encontrado'].includes(req.body.status)) throw new Error('Status inválido.');
         row.status = req.body.status;
         row.internal = /^TRANSFERENCIA (RECEBIDA|ENVIADA)/.test(service.norm(row.classification));
         if (row.status === 'Conciliado' && row.amount < 0 && !row.internal && !row.paymentType) throw new Error('Informe o tipo de pagamento antes de concluir a saída.');
@@ -272,7 +291,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       }
       row = service.applyPartnerRule(row);
       const before = state.rows[index];
-      row.history = [...(before.history || []), { at: new Date().toISOString(), by: req.session.usuario.id || req.session.usuario.nome, before: Object.fromEntries(['linkedId','document','classification','paymentType','status','observation','paidAmount'].map(k => [k, before[k] ?? null])) }];
+      row.history = [...(before.history || []), { at: new Date().toISOString(), by: req.session.usuario.id || req.session.usuario.nome, before: Object.fromEntries(['linkedId','purchaseId','purchasePartId','document','classification','paymentType','status','observation','paidAmount'].map(k => [k, before[k] ?? null])) }];
       state.rows[index] = row;
       return { state };
     });
