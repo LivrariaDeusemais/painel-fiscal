@@ -127,7 +127,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const known = [...saved.rows];
     for (const state of states.rows) for (const row of state.dados.rows || []) {
       const source_name = service.norm(row.name || row.supplier), document = String(row.document || '').replace(/\D/g, '');
-      if (!source_name || String(row.document).includes('*') || ![11, 14].includes(document.length) || known.some(p => p.source_name === source_name && p.document.replace(/\D/g, '') === document)) continue;
+      if (!source_name || String(row.document).includes('*') || ![11, 14].includes(document.length) || known.some(p => p.source_name === source_name && [p.document, ...(p.aliases || [])].some(d => d.replace(/\D/g, '') === document))) continue;
       known.push({ id: crypto.createHash('sha256').update(source_name + '|' + document).digest('hex'), source_name, name: row.name || row.supplier, document, inferred: true });
     }
     const list = new Map(known.map(p => [p.id, { ...p, count: 0, documents: [], saved: !p.inferred }]));
@@ -156,7 +156,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['conciliacao:vinculos']);
       const previous = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas WHERE id=$1 FOR UPDATE', [id]);
       if (previous.rows[0] && previous.rows[0].source_name !== sourceName) throw new Error('Cadastro incompatível. Reabra a janela de edição.');
-      const aliases = [...new Set([...(previous.rows[0]?.aliases || []), previous.rows[0]?.document].filter(Boolean))];
+      const sourceDocument = String(req.body.source_document || '').replace(/\D/g, '');
+      const aliases = [...new Set([...(previous.rows[0]?.aliases || []), previous.rows[0]?.document, !String(req.body.source_document || '').includes('*') && [11, 14].includes(sourceDocument.length) ? sourceDocument : null].filter(Boolean))];
       await db.query(`INSERT INTO conciliacao_pessoas (id,source_name,name,document,aliases) VALUES ($1,$2,$3,$4,$5::jsonb)
         ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases)]);
       await db.query('COMMIT');
