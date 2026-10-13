@@ -317,7 +317,8 @@ function visibleColumns(state) {
   // Extratos anteriores à gravação do formato: reconhece as colunas próprias do Excel/CSV.
   const columns = state.columns || [];
   const hasTable = columns.some(c => ['DATA LANCAMENTO', 'DATA MOVIMENTO', 'DESCRICAO'].includes(norm(c)));
-  const technical = new Set(['TIPO OFX', 'FITID', 'DATA DISPONIVEL OFX', 'REFERENCIA OFX', 'DTUSER', 'SRVRTID', 'CORRECTFITID', 'CORRECTACTION']);
+  const interTable = columns.some(c => norm(c) === 'DESCRICAO');
+  const technical = new Set([...(interTable ? ['HISTORICO', 'DOCUMENTO'] : []), 'TIPO OFX', 'FITID', 'DATA DISPONIVEL OFX', 'REFERENCIA OFX', 'DTUSER', 'SRVRTID', 'CORRECTFITID', 'CORRECTACTION']);
   return columns.filter(c => !technical.has(norm(c)) && (!hasTable || !['DATA', 'NOME', 'VALOR'].includes(norm(c)) || (norm(c) === 'VALOR' && !columns.some(x => norm(x) === 'VALOR LANCAMENTO'))));
 }
 function exportWorkbook(state, bank, month, rows = state.rows) {
