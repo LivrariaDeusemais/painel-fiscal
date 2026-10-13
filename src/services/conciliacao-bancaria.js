@@ -176,6 +176,8 @@ const MARKETPLACES = [
   { names: ['MERCADO PAGO'], cnpj: '', label: 'Recebíveis Mercado Livre' }
 ];
 function origin(row, bank, otherRows = []) {
+  const partner = partnerClassification(row);
+  if (partner) return { label: partner };
   const text = norm(`${row.name} ${row.description}`);
   const own = digits(row.document) === '18862388000103' || text.includes('DEUS E MAIS');
   if (own) {
@@ -193,6 +195,15 @@ function origin(row, bank, otherRows = []) {
     if (match) return { label: match.label, document: match.cnpj };
   }
   return { label: '' };
+}
+function partnerClassification(row) {
+  const text = norm(`${row.name || row.supplier || ''} ${row.description || ''}`);
+  if (!/\bGENIVALDO SESTARI\b/.test(text)) return '';
+  return row.amount < 0 ? 'Retirada Sócios - Distribuição' : row.amount > 0 ? 'Inserção de Capital pelo Sócio' : '';
+}
+function applyPartnerRule(row) {
+  const classification = partnerClassification(row);
+  return classification ? { ...row, classification } : row;
 }
 function scoreCandidate(row, candidate) {
   const amount = Math.round(Number(candidate.valor) * 100);
@@ -236,7 +247,7 @@ function reconcile(rows, candidates, bank, otherRows = []) {
   const demand = new Map();
   for (const ranking of rankings.values()) if (ranking[0]?.safe && (!ranking[1] || ranking[0].score - ranking[1].score >= 15)) demand.set(String(ranking[0].id), (demand.get(String(ranking[0].id)) || 0) + 1);
   return rows.map(original => {
-    if (original.manual) return { ...original, clientStatus: clientStatus(original) };
+    if (original.manual) return { ...applyPartnerRule(original), clientStatus: clientStatus(original) };
     let row = { ...original, linkedId: null, supplier: '', category: '', paymentType: '', paidAmount: null, difference: null, classification: '', internal: false, status: 'Não encontrado', reason: '' };
     const identified = origin(row, bank, otherRows);
     row.classification = identified.label;
@@ -343,4 +354,4 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
 }
-module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, enrichPix, extraColumns, extraValues, rawValue, exportWorkbook };
+module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, exportWorkbook };

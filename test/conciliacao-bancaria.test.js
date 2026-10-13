@@ -95,6 +95,17 @@ test('revisão manual e observações sobrevivem a uma nova conciliação', () =
   const result = s.reconcile([manual], [], 'caixa')[0];
   assert.equal(result.linkedId, 1); assert.equal(result.observation, 'Conferido');
 });
+test('Genivaldo Sestari tem finalidades distintas por direção, inclusive em linhas já revisadas', () => {
+  const withdrawal = row({ name:'GENIVALDO SESTARI' });
+  const deposit = row({ name:'Genivaldo Sestari',amount:10000 });
+  assert.equal(s.origin(withdrawal,'caixa').label,'Retirada Sócios - Distribuição');
+  assert.equal(s.origin(deposit,'inter').label,'Inserção de Capital pelo Sócio');
+  assert.equal(s.reconcile([deposit],[],'caixa')[0].clientStatus,'Não somar Cliente');
+  const manual = {...withdrawal,manual:true,status:'Conciliado',paymentType:'DOP',observation:'Conferido',linkedId:1};
+  const result = s.reconcile([manual],[],'caixa')[0];
+  assert.equal(result.classification,'Retirada Sócios - Distribuição'); assert.equal(result.clientStatus,'Somar Conta Cliente'); assert.equal(result.observation,'Conferido'); assert.equal(result.linkedId,1);
+  assert.equal(s.applyPartnerRule(row()).classification,undefined);
+});
 test('OFX e Excel com data de lançamento diferente da data de movimento não duplicam pagamentos', () => {
   const excel = row({ date: '2026-09-05', postedDate: '2026-09-08', description: 'DEB PIX CHAVE', reference: '000000', raw: { 'Data Movimento': '05/09/2026' } });
   const ofx = row({ id: 'ofx', date: '2026-09-08', postedDate: '2026-09-08', description: 'DEB PIX CHAVE', reference: '000000' });

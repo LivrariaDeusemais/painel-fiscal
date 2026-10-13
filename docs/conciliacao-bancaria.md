@@ -9,6 +9,7 @@ Acesso em `/conciliacao-bancaria`, pelo botão laranja no Dashboard ou pelo menu
 3. Importar o PIX separadamente, quando disponível. Pode ser enviado antes ou depois da Conta Corrente. O PIX enriquece as linhas, sem criar uma segunda despesa.
 4. Usar **Conciliar pagamentos** para cruzar os lançamentos e ler os PDFs locais que contêm texto.
 5. Clicar no status da linha para revisar campos, pesquisar comprovantes (inclusive de outros meses), ver o PDF e salvar o vínculo. Observações na tabela são salvas ao sair do campo.
+   A janela de comprovantes permanece fixa; a lista rola internamente e mostra Nome, Valor, Data, Subcategoria e Vínculo. Os já vinculados aparecem identificados e não podem ser escolhidos para outra movimentação. A busca funciona ao digitar, pelo botão Buscar ou por Enter.
 6. Conferir diferenças e pendências. Exportar gera Excel com as mesmas linhas filtradas na tela. **Limpar filtros** permite exportar o período inteiro.
 7. **Dados da conta** permite informar agência e conta quando esses dados não estiverem no arquivo original. O sistema rejeita uma conta diferente da já importada.
 
@@ -20,6 +21,7 @@ Acesso em `/conciliacao-bancaria`, pelo botão laranja no Dashboard ou pelo menu
 - Nomes, documentos completos/parciais compatíveis, valor, data e identificadores PIX são comparados. Um ID PIX também pode ser encontrado no texto do PDF. Vínculos ambíguos ou valores divergentes vão para revisão.
 - CPFs mascarados só são completados quando os dígitos disponíveis são compatíveis com uma fonte completa. O dado original permanece no JSON da movimentação e no arquivo original; a tabela e o Excel mostram a versão conciliada.
 - AIBR → AliExpress; HUB → Magazine Luiza; Amazon → Amazon; Pipo → TikTok; Maree → Shopee; Mercado Pago → Mercado Livre. As marcações antigas de Conta Cliente no Excel de agosto não são usadas para decidir a regra.
+- Movimentações de Genivaldo Sestari recebem `Retirada Sócios - Distribuição` nas saídas e `Inserção de Capital pelo Sócio` nas entradas, na coluna Origem / Finalidade. A regra também aparece nos períodos já importados, sem exigir reimportação; a regra DOP para Conta Cliente permanece a mesma.
 - Para o titular próprio, os identificadores PIX observados nos exemplos de agosto distinguem recebimentos do Inter e do Mercado Pago. O cruzamento com movimentação oposta da outra conta ajuda a confirmar transferências; somente nome/CNPJ próprio não basta.
 - Linhas `SALDO` são excluídas; a coluna Saldo é mantida. OFX sem saldo por linha deixa esse campo vazio até receber um Excel/CSV complementar.
 - Na Caixa, Data Movimento define o período do pagamento. Data Lançamento é preservada e também comparada ao OFX para evitar duplicação de lançamentos em fins de semana/feriados.

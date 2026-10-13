@@ -9,6 +9,16 @@ function renderPage({ token, month, readonly }) {
     .cb #cbTable .badge,.cb #cbTable .proof{height:26px!important;min-height:26px!important;padding:3px 8px!important;font-size:11px!important;line-height:1.2!important;border-radius:9px!important}
     .cb #cbTable .observation{width:100%!important;max-width:100%!important;height:28px!important;min-height:28px!important;padding:4px 8px!important;line-height:1.2!important;font-size:12px!important;resize:vertical}
     .cb #cbTable th .filter{height:22px!important;min-height:22px!important;padding:0 5px!important}
+    .cb #cbCandidates{position:fixed!important;inset:0!important;margin:auto!important;width:min(1120px,94vw)!important;max-height:82vh!important;height:fit-content!important;overflow:hidden!important}
+    .cb #cbCandidates[open]{display:flex!important;flex-direction:column!important}
+    .cb #cbReview{position:fixed!important;inset:0!important;margin:auto!important}
+    html:has(#cbCandidates[open]),body:has(#cbCandidates[open]),html:has(#cbReview[open]),body:has(#cbReview[open]){overflow:hidden!important}
+    .cb #cbCandidateList{min-height:0;max-height:48vh;overflow:auto;border:1px solid #e2e8f0;border-radius:12px}
+    .cb #cbCandidateTable{width:100%!important;max-width:100%!important;table-layout:fixed!important}
+    .cb #cbCandidateTable th,.cb #cbCandidateTable td{width:auto!important;min-width:0!important;max-width:none!important;padding:8px!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:left!important;font-size:12px!important;vertical-align:middle!important}
+    .cb #cbCandidateTable th{position:sticky!important;top:0;z-index:2}
+    .cb #cbCandidateTable button{height:28px!important;min-height:28px!important;padding:3px 8px!important;font-size:11px!important}
+    .cb .candidate-actions{display:flex;flex-wrap:wrap;gap:5px}
   </style>
   <section class="cb">
     <div class="panel toolbar">
@@ -47,13 +57,13 @@ function renderPage({ token, month, readonly }) {
       <div id="cbReviewError" role="alert" class="notice error" hidden></div>
       <div class="toolbar"><button type="submit" class="primary" ${readonly ? 'disabled' : ''}>Salvar revisão</button><button type="button" data-close="cbReview">Cancelar</button></div>
     </form></dialog>
-    <dialog id="cbCandidates"><div class="modal-head"><h2>Escolher comprovante de pagamento</h2><button data-close="cbCandidates">×</button></div><div class="toolbar"><input id="cbCandidateSearch" placeholder="Fornecedor, CPF/CNPJ, código ou documento" style="flex:1"><button id="cbSearch">Buscar</button><a href="/lancamentos" target="_blank" rel="noopener" class="action">Abrir Comprovantes</a></div><p class="muted">Sem busca: lançamentos do mês. Ao pesquisar, também serão consultados outros meses.</p><div id="cbCandidateList" class="candidates"></div></dialog>
+    <dialog id="cbCandidates"><div class="modal-head"><h2>Escolher comprovante de pagamento</h2><button data-close="cbCandidates">×</button></div><div class="toolbar"><input id="cbCandidateSearch" placeholder="Fornecedor, CPF/CNPJ, código, documento ou subcategoria" style="flex:1"><button id="cbSearch">Buscar</button><a href="/lancamentos" target="_blank" rel="noopener" class="action">Abrir Comprovantes</a></div><p class="muted">Sem busca: lançamentos do mês. Ao pesquisar, também serão consultados outros meses (até 100 resultados). A lista inclui vinculados, identificados na coluna Vínculo.</p><div id="cbCandidateList" class="candidates"></div></dialog>
     <dialog id="cbPdf"><div class="modal-head"><h2>Comprovante de pagamento</h2><button data-close="cbPdf">×</button></div><iframe id="cbPdfFrame" title="PDF do comprovante"></iframe></dialog>
   </section>
   <script>
   (() => {
     const token=${JSON.stringify(token)},readonly=${JSON.stringify(readonly)};
-    let state={rows:[],columns:[],sources:[],account:{},warnings:[]},filters={},editing=null,linkedId=null,activeFilter='',busy=false;
+    let state={rows:[],columns:[],sources:[],account:{},warnings:[]},filters={},editing=null,linkedId=null,activeFilter='',busy=false,candidateRequest=0,candidateTimer;
     const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const brl=v=>v==null?'—':(v/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const doc=v=>{const d=String(v||'').replace(/\\D/g,'');if(String(v).includes('*'))return v;if(d.length===11)return d.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/,'$1.$2.$3-$4');if(d.length===14)return d.replace(/(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/,'$1.$2.$3/$4-$5');return v||''};
@@ -63,7 +73,7 @@ function renderPage({ token, month, readonly }) {
     const params=()=>new URLSearchParams({banco:$('cbBank').value,mes:$('cbMonth').value});
     function notice(text,error=false){$('cbNotice').hidden=false;$('cbNotice').textContent=text;$('cbNotice').className='notice'+(error?' error':'')}
     async function api(url,options={}){const res=await fetch('/conciliacao-bancaria'+url,{...options,headers:{'x-conciliacao-token':token,...options.headers}});if(res.redirected)throw Error('Sua sessão expirou. Entre novamente no sistema.');const data=await res.json();if(!res.ok)throw Error(data.error||'Não foi possível concluir.');return data}
-    function lock(v){busy=v;document.querySelectorAll('.cb button').forEach(b=>b.disabled=v||(readonly&&['cbReconcile'].includes(b.id))||(readonly&&b.type==='submit'));$('cbBank').disabled=v;$('cbMonth').disabled=v}
+    function lock(v){busy=v;document.querySelectorAll('.cb button').forEach(b=>b.disabled=v||b.hasAttribute('data-linked-elsewhere')||(readonly&&['cbReconcile'].includes(b.id))||(readonly&&b.type==='submit'));$('cbBank').disabled=v;$('cbMonth').disabled=v}
     async function task(fn){if(busy)return;lock(true);try{await fn()}catch(e){notice(e.message,true)}finally{lock(false)}}
     function render(){
       const rows=visible(),columns=[...state.columns.map(k=>['raw:'+k,k]),...extra];$('cbTable').style.setProperty('width',((columns.length+1)*205)+'px','important');
@@ -93,9 +103,27 @@ function renderPage({ token, month, readonly }) {
     $('cbFilterSearch').oninput=filterOptions;
     $('cbFilterList').onclick=e=>{const b=e.target.closest('[data-filter-value]');if(!b)return;if(b.dataset.filterValue)filters[activeFilter]=b.dataset.filterValue;else delete filters[activeFilter];$('cbFilter').close();render()};
     function review(id){editing=state.rows.find(r=>r.id===id);linkedId=editing.linkedId||null;const form=$('cbReviewForm');for(const [k] of extra){if(form.elements[k])form.elements[k].value=k==='paidAmount'?(editing.paidAmount==null?'':(editing.paidAmount/100).toFixed(2).replace('.',',')):k==='document'?doc(value(editing,k)):value(editing,k)}$('cbReviewSummary').textContent=editing.date.split('-').reverse().join('/')+' · '+brl(editing.amount)+' · '+(editing.name||editing.description)+'\\n'+(editing.reason||'');$('cbLinked').textContent=linkedId?'Lançamento #'+linkedId:'Sem vínculo';$('cbReviewError').hidden=true;$('cbUnlink').hidden=readonly;$('cbLink').hidden=readonly||editing.amount>=0;$('cbReview').showModal()}
-    async function showCandidates(){const p=params();p.set('busca',$('cbCandidateSearch').value);const list=await api('/comprovantes?'+p);const ranking=new Map((editing.suggestions||[]).map(x=>[String(x.id),x]));list.sort((a,b)=>(ranking.get(String(b.id))?.score||0)-(ranking.get(String(a.id))?.score||0));$('cbCandidateList').innerHTML=list.map(c=>'<div class="candidate"><div><strong>'+esc(c.fornecedor)+' · '+brl(Math.round(Number(c.valor)*100))+'</strong><span class="muted">#'+c.id+' · '+esc(String(c.data_despesa).slice(0,10))+' · '+esc(c.tipo_pagamento)+' · '+esc(doc(c.cnpj_cpf))+'</span><div class="muted">'+esc(ranking.get(String(c.id))?.reason||'')+'</div></div><div>'+(c.pdfUrl?'<button data-proof="'+c.id+'">Ver PDF</button>':'')+' <button data-link="'+c.id+'">Vincular</button></div></div>').join('')||'<p>Nenhum lançamento encontrado. Pesquise para consultar outros meses.</p>';$('cbCandidateList')._list=list}
-    $('cbLink').onclick=()=>task(async()=>{$('cbCandidateSearch').value='';await showCandidates();$('cbCandidates').showModal()});$('cbSearch').onclick=()=>task(showCandidates);
-    $('cbCandidateSearch').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();task(showCandidates)}};
+    async function showCandidates(){
+      const request=++candidateRequest,p=params(),box=$('cbCandidateList');
+      p.set('busca',$('cbCandidateSearch').value.trim());
+      box._list=[];box.innerHTML='<p role="status" style="padding:12px">Buscando comprovantes…</p>';
+      try{
+        const list=await api('/comprovantes?'+p);if(request!==candidateRequest)return;
+        const ranking=new Map((editing.suggestions||[]).map(x=>[String(x.id),x]));
+        list.sort((a,b)=>(ranking.get(String(b.id))?.score||0)-(ranking.get(String(a.id))?.score||0));
+        box.innerHTML=list.length?'<table id="cbCandidateTable"><colgroup><col style="width:27%"><col style="width:12%"><col style="width:11%"><col style="width:17%"><col style="width:15%"><col style="width:18%"></colgroup><thead><tr><th>Nome</th><th>Valor</th><th>Data</th><th>Subcategoria</th><th>Vínculo</th><th>Ações</th></tr></thead><tbody>'+list.map(c=>{
+          const links=c.linkedTo||[],current=links.length&&links.every(l=>l.movementId===editing.id&&l.bank===$('cbBank').value&&l.month===$('cbMonth').value);
+          const blocked=links.length&&!current;
+          const label=links.length?(current?'Vínculo atual':'Já vinculado'):'Disponível';
+          const details=links.map(l=>(l.bank==='inter'?'Banco Inter':'Caixa')+' · '+l.month.split('-').reverse().join('/')).join('; ');
+          return '<tr><td><strong>'+esc(c.fornecedor)+'</strong><div class="muted">#'+esc(c.id)+' · '+esc(c.tipo_pagamento)+' · '+esc(doc(c.cnpj_cpf))+'</div><div class="muted">'+esc(ranking.get(String(c.id))?.reason||'')+'</div></td><td>'+brl(Math.round(Number(c.valor)*100))+'</td><td>'+esc(String(c.data_despesa).slice(0,10).split('-').reverse().join('/'))+'</td><td>'+esc(c.subcategoria||c.categoria||'—')+'</td><td><span class="badge '+(blocked?'missing':'')+'">'+label+'</span><div class="muted">'+esc(details)+'</div></td><td><div class="candidate-actions">'+(c.pdfUrl?'<button data-proof="'+esc(c.id)+'">Ver PDF</button>':'')+'<button data-link="'+esc(c.id)+'" '+(blocked?'disabled data-linked-elsewhere title="Já vinculado a outra movimentação"':'')+'>Vincular</button></div></td></tr>';
+        }).join('')+'</tbody></table>':'<p style="padding:12px">Nenhum lançamento encontrado. Pesquise para consultar outros meses.</p>';
+        box._list=list;
+      }catch(error){if(request===candidateRequest)box.innerHTML='<p role="alert" class="notice error">Não foi possível buscar: '+esc(error.message)+'</p>'}
+    }
+    $('cbLink').onclick=()=>task(async()=>{$('cbCandidateSearch').value='';await showCandidates();$('cbCandidates').showModal()});$('cbSearch').onclick=()=>{clearTimeout(candidateTimer);task(showCandidates)};
+    $('cbCandidateSearch').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(candidateTimer);task(showCandidates)}};
+    $('cbCandidateSearch').oninput=()=>{clearTimeout(candidateTimer);candidateTimer=setTimeout(()=>{if($('cbCandidates').open)showCandidates()},300)};
     $('cbCandidateList').addEventListener('click',e=>{const b=e.target.closest('[data-link]');if(!b)return;const c=$('cbCandidateList')._list.find(x=>String(x.id)===b.dataset.link);linkedId=c.id;const f=$('cbReviewForm');f.elements.supplier.value=c.fornecedor||'';if(c.cnpj_cpf)f.elements.document.value=doc(c.cnpj_cpf);f.elements.paymentType.value=c.tipo_pagamento||'';f.elements.category.value=[c.categoria_principal||c.categoria,c.subcategoria].filter(Boolean).join(' / ');f.elements.paidAmount.value=Number(c.valor).toFixed(2).replace('.',',');f.elements.status.value='Conciliado';$('cbLinked').textContent='Lançamento #'+c.id+' selecionado — salve para confirmar';$('cbCandidates').close()});
     $('cbUnlink').onclick=()=>{linkedId=null;$('cbLinked').textContent='Sem vínculo';const f=$('cbReviewForm');['supplier','paymentType','category','paidAmount'].forEach(k=>f.elements[k].value='');f.elements.status.value='Revisar'};
     $('cbReviewForm').onsubmit=async e=>{e.preventDefault();if(busy)return;lock(true);try{const body=Object.fromEntries(new FormData(e.target));body.linkedId=linkedId;const result=await api('/salvar/'+editing.id+'?'+params(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});state=result.state;$('cbReview').close();render();notice('Revisão salva.')}catch(error){$('cbReviewError').hidden=false;$('cbReviewError').textContent=error.message}finally{lock(false)}};

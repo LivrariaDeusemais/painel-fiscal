@@ -9,13 +9,20 @@ const { createRouter } = require('../src/routes/conciliacao-bancaria');
 test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e exporta sem acessar banco real', async t => {
   const stored = new Map(), sql = [];
   const candidate = { id: 1, fornecedor: 'Fornecedor Exemplo', cnpj_cpf: '12345678901', valor: '100', data_despesa: '2026-09-03', tipo_pagamento: 'DOP', categoria: 'Serviços', anexo_pdf: null };
+  const bianca = { ...candidate, id: 2, fornecedor: 'Bianca Macedo', data_despesa: '2026-08-15', subcategoria: 'Salários' };
   const pool = {
     async query(query, args = []) {
       sql.push(query);
       if (query.startsWith('SELECT dados')) return { rows: stored.has(args.slice(0, 2).join(':')) ? [{ dados: JSON.parse(JSON.stringify(stored.get(args.slice(0, 2).join(':')))) }] : [] };
       if (query.startsWith('INSERT INTO conciliacoes')) stored.set(args.slice(0, 2).join(':'), JSON.parse(args[2]));
       if (query.startsWith('SELECT DISTINCT movimento')) return { rows: [...stored.entries()].filter(([key]) => key !== args.slice(0,2).join(':')).flatMap(([,state]) => state.rows.filter(r => r.linkedId).map(r => ({ id: r.linkedId }))) };
-      if (query.includes('FROM lancamentos')) return { rows: [candidate] };
+      if (query.startsWith('SELECT banco, mes')) return { rows: [...stored.entries()].flatMap(([key,state]) => state.rows.filter(r => r.linkedId).map(r => ({ banco:key.split(':')[0], mes:key.split(':')[1], movimento_id:r.id, lancamento_id:String(r.linkedId) }))) };
+      if (query.includes('FROM lancamentos')) {
+        args.forEach((_,i) => assert.match(query,new RegExp('\\$'+(i+1)+'\\b'),'não deve haver parâmetro sem uso na consulta'));
+        if (query.includes('l.id=$1')) return { rows: [candidate,bianca].filter(c => String(c.id) === String(args[0])) };
+        if (query.includes('ILIKE')) return { rows: [candidate,bianca].filter(c => c.fornecedor.toLowerCase().includes(String(args[0]).replace(/%/g,'').toLowerCase())) };
+        return { rows: [candidate] };
+      }
       return { rows: [] };
     },
     async connect() { return { query: pool.query, release() {} }; }
@@ -52,6 +59,11 @@ test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e expor
   const post = body => get(`/salvar/${id}?banco=inter&mes=2026-09`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const saved = await (await post({ linkedId: 1, status: 'Conciliado', observation: 'Conferido manualmente' })).json(); assert.equal(saved.state.rows[0].manual, true);
   const observed = await (await post({ onlyObservation: true, observation: 'Texto revisado' })).json(); assert.equal(observed.state.rows[0].observation, 'Texto revisado');
+  const found = await get('/comprovantes?banco=inter&mes=2026-09&busca=Bianca');
+  assert.equal(found.status,200);
+  const matches = await found.json(); assert.deepEqual(matches.map(c => c.id),[2]); assert.equal(matches[0].subcategoria,'Salários'); assert.deepEqual(matches[0].linkedTo,[]);
+  const linked = await (await get('/comprovantes?banco=inter&mes=2026-09&busca=Fornecedor')).json();
+  assert.deepEqual(linked[0].linkedTo,[{bank:'inter',month:'2026-09',movementId:id}]);
   const excel = await get('/exportar?banco=inter&mes=2026-09'); assert.equal(excel.status, 200); assert.match(excel.headers.get('content-disposition'), /Extrato%20conciliado/); assert.ok((await excel.arrayBuffer()).byteLength > 1000);
   const october = new FormData();
   october.set('banco','caixa'); october.set('mes','2026-10'); october.set('tipo','corrente');

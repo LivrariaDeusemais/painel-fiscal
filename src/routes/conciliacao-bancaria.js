@@ -28,7 +28,9 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   function emptyState() { return { rows: [], pix: [], sources: [], columns: [], account: {}, warnings: [] }; }
   async function readState(db, bank, month, lock = false) {
     const result = await db.query(`SELECT dados FROM conciliacoes_bancarias WHERE banco=$1 AND mes=$2${lock ? ' FOR UPDATE' : ''}`, [bank, month]);
-    return result.rows[0]?.dados || emptyState();
+    const state = result.rows[0]?.dados || emptyState();
+    state.rows = state.rows.map(service.applyPartnerRule);
+    return state;
   }
   async function mutate(bank, month, operation) {
     await ensureSchema();
@@ -56,7 +58,10 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   async function candidates(db, month, search = '', id = null) {
     const args = id ? [id] : [`${month}-01`];
     let where = id ? 'l.id=$1' : `l.data_despesa >= $1::date AND l.data_despesa < $1::date + INTERVAL '1 month'`;
-    if (search) { args.push(`%${search}%`); where = '(l.fornecedor ILIKE $2 OR l.cnpj_cpf ILIKE $2 OR l.codigo_pagamento ILIKE $2 OR l.numero_documento ILIKE $2)'; }
+    if (search) {
+      args.splice(0, args.length, `%${search.trim()}%`);
+      where = `(l.fornecedor ILIKE $1 OR l.cnpj_cpf ILIKE $1 OR l.codigo_pagamento ILIKE $1 OR l.numero_documento ILIKE $1 OR c.nome ILIKE $1 OR p.nome ILIKE $1)`;
+    }
     const result = await db.query(`SELECT l.id,l.fornecedor,l.cnpj_cpf,l.valor,l.tipo_pagamento,l.codigo_pagamento,l.data_despesa,l.anexo_pdf,
       c.nome AS categoria, p.nome AS categoria_principal,
       CASE WHEN c.categoria_pai_id IS NULL THEN '' ELSE c.nome END AS subcategoria
@@ -148,9 +153,16 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     res.json(result);
   }));
   router.get('/comprovantes', run(async (req, res) => {
+    await ensureSchema();
     const { month } = selection(req);
     const list = await candidates(pool, month, String(req.query.busca || '').slice(0, 150));
-    res.json(list.map(c => ({ ...c, pdfUrl: c.anexo_pdf ? `/conciliacao-bancaria/comprovante/${c.id}` : null })));
+    const links = await pool.query(`SELECT banco, mes, movimento->>'id' AS movimento_id, movimento->>'linkedId' AS lancamento_id
+      FROM conciliacoes_bancarias CROSS JOIN LATERAL jsonb_array_elements(dados->'rows') AS movimentos(movimento)
+      WHERE movimento->>'linkedId' IS NOT NULL`);
+    res.json(list.map(c => ({ ...c,
+      linkedTo: links.rows.filter(link => String(link.lancamento_id) === String(c.id)).map(link => ({ bank: link.banco, month: link.mes, movementId: link.movimento_id })),
+      pdfUrl: c.anexo_pdf ? `/conciliacao-bancaria/comprovante/${c.id}` : null
+    })));
   }));
   router.get('/original/:hash', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
@@ -206,6 +218,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
         row.reviewedBy = req.session.usuario.id || req.session.usuario.nome;
         row.reviewedAt = new Date().toISOString();
       }
+      row = service.applyPartnerRule(row);
       const before = state.rows[index];
       row.history = [...(before.history || []), { at: new Date().toISOString(), by: req.session.usuario.id || req.session.usuario.nome, before: Object.fromEntries(['linkedId','document','classification','paymentType','status','observation','paidAmount'].map(k => [k, before[k] ?? null])) }];
       state.rows[index] = row;
