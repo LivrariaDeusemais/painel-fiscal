@@ -133,3 +133,14 @@ test('script da página é válido e token não permite injetar HTML', () => {
   new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]);
   assert.match(html, /Vincular comprovante/); assert.match(html, /Observação/);
 });
+
+test('colunas OFX complementares ficam internas, preservando as colunas do extrato principal', () => {
+  const service = require('../src/services/conciliacao-bancaria');
+  const columns = ['Data Movimento', 'Valor Lançamento', 'Saldo', 'Nome/Razão Social', 'Data', 'Valor', 'Nome', 'FITID', 'Tipo OFX'];
+  const state = { columns, sources: [] };
+  assert.deepEqual(service.visibleColumns(state), columns.slice(0, 4));
+  assert.equal(state.columns.length, 9);
+  state.sources = [{ type: 'corrente', format: 'table', columns: columns.slice(0, 4) }];
+  assert.deepEqual(service.visibleColumns(state), columns.slice(0, 4));
+  assert.deepEqual(service.visibleColumns({ columns: ['Data', 'Valor', 'Histórico', 'FITID', 'Tipo OFX'], sources: [] }), ['Data', 'Valor', 'Histórico']);
+});

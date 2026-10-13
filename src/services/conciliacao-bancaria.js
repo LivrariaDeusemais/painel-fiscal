@@ -66,6 +66,7 @@ async function parseStatement(buffer, filename, bank, type, month) {
     })];
   } else if (/<OFX>/i.test(decode(buffer))) {
     if (type === 'pix') throw new Error('Este OFX é de Conta Corrente. Selecione o tipo correto.');
+    result.format = 'ofx';
     const text = decode(buffer);
     const get = (s, key) => (s.match(new RegExp(`<${key}>([^<\\r\\n]+)`, 'i')) || [])[1]?.trim() || '';
     const bankId = get(text, 'BANKID').replace(/^0+/, '');
@@ -296,7 +297,7 @@ function mergeImport(state, parsed) {
   if (parsed.type === 'corrente') state.columns = [...new Set([...state.columns, ...parsed.columns])];
   state.account = { ...state.account, ...parsed.account };
   state.warnings = [...new Set([...state.warnings, ...parsed.warnings])];
-  state.sources.push({ filename: parsed.filename, fileHash: parsed.fileHash, type: parsed.type, count: parsed.rows.length, importedAt: new Date().toISOString() });
+  state.sources.push({ filename: parsed.filename, fileHash: parsed.fileHash, type: parsed.type, format: parsed.format || 'table', columns: parsed.columns, count: parsed.rows.length, importedAt: new Date().toISOString() });
   state.rows = enrichPix(state.rows, state.pix).sort((a, b) => a.date.localeCompare(b.date));
   if (state.rows.every(r => r.balance !== null)) state.warnings = state.warnings.filter(w => !w.startsWith('O OFX não informa saldo por movimentação'));
   if (state.account.closingBalance != null && state.rows.length && state.rows.at(-1).balance != null && state.account.closingBalance !== state.rows.at(-1).balance) state.warnings = [...new Set([...state.warnings, 'O saldo informado no cabeçalho diverge do saldo da última movimentação. Confira o arquivo original.'])];
@@ -310,10 +311,20 @@ function rawValue(row, key) {
 function extraValues(row) {
   return [row.supplier || row.name || '', document(row.document), row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.clientStatus, row.status, row.observation || ''];
 }
+function visibleColumns(state) {
+  const primary = (state.sources || []).filter(s => s.type === 'corrente' && s.format === 'table').flatMap(s => s.columns || []);
+  if (primary.length) return [...new Set(primary)];
+  // Extratos anteriores à gravação do formato: reconhece as colunas próprias do Excel/CSV.
+  const columns = state.columns || [];
+  const hasTable = columns.some(c => ['DATA LANCAMENTO', 'DATA MOVIMENTO', 'DESCRICAO'].includes(norm(c)));
+  const technical = new Set(['TIPO OFX', 'FITID', 'DATA DISPONIVEL OFX', 'REFERENCIA OFX', 'DTUSER', 'SRVRTID', 'CORRECTFITID', 'CORRECTACTION']);
+  return columns.filter(c => !technical.has(norm(c)) && (!hasTable || !['DATA', 'NOME', 'VALOR'].includes(norm(c)) || (norm(c) === 'VALOR' && !columns.some(x => norm(x) === 'VALOR LANCAMENTO'))));
+}
 function exportWorkbook(state, bank, month, rows = state.rows) {
   const wb = new ExcelJS.Workbook(); wb.creator = 'PlennaTec';
   const ws = wb.addWorksheet('Conciliação');
-  const columns = [...state.columns, ...extraColumns];
+  const originalColumns = visibleColumns(state);
+  const columns = [...originalColumns, ...extraColumns];
   ws.columns = columns.map(c => ({ width: /NOME|FORNECEDOR|HISTORICO|DESCRICAO|OBSERVACAO|ORIGEM|CATEGORIA/.test(norm(c)) ? 42 : 24 }));
   const last = ws.getColumn(columns.length).letter;
   ws.mergeCells(`A1:${last}2`);
@@ -333,7 +344,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.getRow(7).height = 34;
   ws.getRow(7).eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF008F48' } }; c.alignment = { wrapText: true, vertical: 'middle' }; });
   rows.forEach((row, i) => {
-    const raw = state.columns.map(key => {
+    const raw = originalColumns.map(key => {
       const v = rawValue(row, key);
       if (['VALOR', 'VALOR LANCAMENTO', 'SALDO'].includes(norm(key)) && v !== '') return money(v) / 100;
       if (norm(key).startsWith('DATA') && date(v)) return new Date(`${date(v)}T12:00:00Z`);
@@ -344,9 +355,9 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
       c.font = { name: 'Aptos', size: 11, color: { argb: 'FF172033' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: row.status === 'Conciliado' ? (i % 2 ? 'FFF0FDF4' : 'FFFFFFFF') : 'FFFFF8E7' } };
       c.alignment = { vertical: 'middle', wrapText: true };
-      if (c.value instanceof Date) c.numFmt = 'dd/mm/yyyy';
+      if (c.value instanceof Date) c.numFmt = 'dd-mm-yyyy';
       else if (['VALOR', 'VALOR LANCAMENTO', 'SALDO', 'VALOR PAGO REAL', 'DIFERENCA VALOR'].includes(norm(columns[j - 1]))) c.numFmt = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
-      if (columns[j - 1] === 'Diferença Valor' && row.difference) c.font.color = { argb: 'FFB91C1C' };
+      if (typeof c.value === 'number') c.font.color = { argb: c.value < 0 ? 'FFB91C1C' : 'FF000000' };
     });
   });
   ws.views = [{ state: 'frozen', ySplit: 7, xSplit: 1, showGridLines: false }];
@@ -354,4 +365,4 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
 }
-module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, exportWorkbook };
+module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, visibleColumns, exportWorkbook };

@@ -10487,7 +10487,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           })}
           <button type="button" class="btn-filter-apply" onclick="aplicarMesGlobal('dashboard')">Aplicar filtro&nbsp;⌁</button>
           <a href="/dashboard" class="btn-filter-clear">Limpar</a>
-          <a href="/conciliacao-bancaria" style="margin-left:auto;background:#ff9500;color:#fff;padding:13px 22px;border-radius:14px;text-decoration:none;font-weight:700;white-space:nowrap">Conciliações Bancárias</a>
+          <a href="/conciliacao-bancaria" style="margin-left:auto!important;background:#f29100!important;color:#fff!important;height:34px!important;min-height:34px!important;display:inline-flex!important;align-items:center!important;padding:0 18px!important;border-radius:10px!important;text-decoration:none!important;font-size:11.5px!important;font-weight:700!important;white-space:nowrap">Conciliações Bancárias</a>
         </form>
 
         <section class="charts-grid">

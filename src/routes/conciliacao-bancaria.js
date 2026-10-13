@@ -30,6 +30,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const result = await db.query(`SELECT dados FROM conciliacoes_bancarias WHERE banco=$1 AND mes=$2${lock ? ' FOR UPDATE' : ''}`, [bank, month]);
     const state = result.rows[0]?.dados || emptyState();
     state.rows = state.rows.map(service.applyPartnerRule);
+    state.displayColumns = service.visibleColumns(state);
     return state;
   }
   async function mutate(bank, month, operation) {
@@ -42,6 +43,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       const state = await readState(db, bank, month, true);
       const other = await readState(db, bank === 'caixa' ? 'inter' : 'caixa', month, true);
       const result = await operation(state, other, db);
+      result.state.displayColumns = service.visibleColumns(result.state);
       await db.query(`INSERT INTO conciliacoes_bancarias (banco,mes,dados) VALUES ($1,$2,$3::jsonb)
         ON CONFLICT (banco,mes) DO UPDATE SET dados=EXCLUDED.dados, atualizado_em=NOW()`, [bank, month, JSON.stringify(result.state)]);
       await db.query('COMMIT');
