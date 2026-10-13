@@ -4376,6 +4376,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
   const navItems = [
     { key:'dashboard', href:'/dashboard', label:'⌂ Dashboard' },
     { key:'rotina-despesas', href:'/rotina-despesas', label:'▦ Contas a Pagar' },
+    { key:'conciliacao-bancaria', href:'/conciliacao-bancaria', label:'⇄ Conciliações Bancárias' },
     { key:'lancamentos', href:'/lancamentos', label:'▤ Comprovantes' },
     { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
@@ -10476,6 +10477,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           })}
           <button type="button" class="btn-filter-apply" onclick="aplicarMesGlobal('dashboard')">Aplicar filtro&nbsp;⌁</button>
           <a href="/dashboard" class="btn-filter-clear">Limpar</a>
+          <a href="/conciliacao-bancaria" style="margin-left:auto;background:#ff9500;color:#fff;padding:13px 22px;border-radius:14px;text-decoration:none;font-weight:700;white-space:nowrap">Conciliações Bancárias</a>
         </form>
 
         <section class="charts-grid">
@@ -32982,5 +32984,9 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
     res.send(renderNfseNacionalPage(req, { erro: 'Não foi possível concluir a importação. Tente novamente ou contate o administrador.' }));
   }
 });
+
+router.use('/conciliacao-bancaria', require('./conciliacao-bancaria').createRouter({
+  pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir
+}));
 
 module.exports = router;
