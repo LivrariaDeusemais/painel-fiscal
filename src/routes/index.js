@@ -4370,6 +4370,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
   const nome = escapeHtmlGlobal(usuario.nome || usuario.email || 'Usuário');
   const perfil = escapeHtmlGlobal(usuario.perfil || '');
   const paginaAtual = String(config.paginaAtual || '');
+  const navegacaoSuperior = config.navegacaoSuperior === true;
   const titulo = escapeHtmlGlobal(config.titulo || 'PlennaTec');
   const subtitulo = escapeHtmlGlobal(config.subtitulo || 'Gestão inteligente de despesas.');
   const isAdmin = usuario.perfil === 'ADMIN';
@@ -5748,10 +5749,18 @@ body.plennatec-premium-admin-page{
 }
 
 </style>
+      ${navegacaoSuperior ? `<style>
+        body.plennatec-top-navigation-page .plennatec-app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:none!important;padding:14px 18px!important;margin:0!important}
+        body.plennatec-top-navigation-page .plennatec-main{width:100%!important;max-width:none!important;margin:0!important;min-width:0!important}
+        .plennatec-top-navigation-page .plennatec-top-nav{display:flex;flex-wrap:wrap;gap:8px;background:rgba(255,255,255,.9);border:1px solid #dce9e1;border-radius:16px;padding:10px 14px;margin-top:12px}
+        .plennatec-top-navigation-page .plennatec-main .plennatec-top-nav a{display:inline-flex!important;align-items:center;justify-content:center;padding:9px 12px!important;border:1px solid #d7e9dd;border-radius:10px;background:#f2faf5;color:#008e40!important;font-size:12px!important;font-weight:700;text-decoration:none;white-space:nowrap}
+        .plennatec-top-navigation-page .plennatec-main .plennatec-top-nav a.active{background:#00a947;color:white!important;border-color:#00a947}
+        @media(max-width:800px){body.plennatec-top-navigation-page .plennatec-app-shell{padding:10px!important}.plennatec-top-navigation-page .plennatec-top-nav{flex-wrap:nowrap;overflow-x:auto}}
+      </style>` : ''}
     </head>
-    <body class="plennatec-premium-admin-page">
+    <body class="plennatec-premium-admin-page${navegacaoSuperior ? ' plennatec-top-navigation-page' : ''}">
       <div class="plennatec-app-shell">
-        <aside class="plennatec-sidebar">
+        ${navegacaoSuperior ? '' : `<aside class="plennatec-sidebar">
           <div class="plennatec-side-logo">
             <img src="/assets/logo-plennatec-login.png" onerror="this.src='/assets/plennatec.png'" alt="PlennaTec">
           </div>
@@ -5765,7 +5774,7 @@ body.plennatec-premium-admin-page{
             <img src="/assets/logo-plennatec-perfil.png" onerror="this.src='/assets/plennatec.png'" alt="Perfil">
             <div><strong>${nome}</strong><span>${perfil}</span></div>
           </div>
-        </aside>
+        </aside>`}
         <main class="plennatec-main">
           <header class="plennatec-topbar">
             <div class="plennatec-title-wrap">
@@ -5788,6 +5797,7 @@ body.plennatec-premium-admin-page{
               <a class="plennatec-logout" href="/logout">Sair</a>
             </div>
           </header>
+          ${navegacaoSuperior ? `<nav class="plennatec-top-nav" aria-label="Menu principal">${nav}</nav>` : ''}
           ${innerHtml}
         </main>
       </div>

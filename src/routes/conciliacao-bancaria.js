@@ -101,7 +101,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   router.get('/', (req, res) => {
     req.session.conciliacaoToken ||= crypto.randomBytes(24).toString('hex');
     const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit' }).format(new Date());
-    res.send(renderShell(req, { titulo: 'Conciliações Bancárias', subtitulo: 'Extratos, pagamentos e recebíveis em uma única conferência.', paginaAtual: 'conciliacao-bancaria' }, renderPage({ token: req.session.conciliacaoToken, month, readonly: req.session.usuario?.perfil === 'CONTADOR' })));
+    res.send(renderShell(req, { titulo: 'Conciliações Bancárias', subtitulo: 'Extratos, pagamentos e recebíveis em uma única conferência.', paginaAtual: 'conciliacao-bancaria', navegacaoSuperior: true }, renderPage({ token: req.session.conciliacaoToken, month, readonly: req.session.usuario?.perfil === 'CONTADOR' })));
   });
   router.get('/dados', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
