@@ -144,3 +144,15 @@ test('colunas OFX complementares ficam internas, preservando as colunas do extra
   assert.deepEqual(service.visibleColumns(state), columns.slice(0, 4));
   assert.deepEqual(service.visibleColumns({ columns: ['Data', 'Valor', 'Histórico', 'FITID', 'Tipo OFX'], sources: [] }), ['Data', 'Valor', 'Histórico']);
 });
+
+test('cadastro completa documentos compatíveis sem misturar homônimos ou alterar comprovantes', () => {
+  const { applyPeople } = require('../src/services/conciliacao-bancaria');
+  const rows = [{ name: 'Pessoa Teste', document: '***.531.418-**', linkedId: 55, amount: -30000, raw: { CPF: '***.531.418-**' } }, { name: 'Pessoa Teste', document: '999.123.456-00' }, { name: 'Outra Pessoa', document: '***.531.418-**' }];
+  const people = [{ id: 'p1', source_name: 'PESSOA TESTE', name: 'Pessoa Teste', document: '12453141813' }];
+  const result = applyPeople(rows, people);
+  assert.equal(result[0].document, '124.531.418-13'); assert.equal(result[0].linkedId, 55); assert.equal(result[0].raw.CPF, '***.531.418-**');
+  assert.equal(result[1].document, rows[1].document); assert.equal(result[2].document, rows[2].document);
+  assert.equal(rows[0].document, '***.531.418-**');
+  assert.equal(applyPeople(rows, [...people, { ...people[0], id: 'p2', document: '55553141899' }])[0].document, rows[0].document);
+  assert.equal(applyPeople([{ name: 'Pessoa Teste', document: '124.531.418-13' }], [{ ...people[0], document: '12453141814', aliases: ['12453141813'] }])[0].document, '124.531.418-14');
+});

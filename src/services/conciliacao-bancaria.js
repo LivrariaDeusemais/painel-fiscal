@@ -311,6 +311,21 @@ function rawValue(row, key) {
 function extraValues(row) {
   return [row.supplier || row.name || '', document(row.document), row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.clientStatus, row.status, row.observation || ''];
 }
+function compatiblePersonDocument(partial, full) {
+  const a = String(partial || '').replace(/[^0-9*]/g, '');
+  const b = digits(full);
+  if (!a) return true;
+  if (!a.includes('*')) return a === b;
+  return a.length === b.length && [...a].every((c, i) => c === '*' || c === b[i]);
+}
+function applyPeople(rows, people) {
+  return rows.map(row => {
+    const name = norm(row.name || row.supplier);
+    const matches = people.filter(p => p.source_name === name && [p.document, ...(p.aliases || [])].some(d => compatiblePersonDocument(row.document, d)));
+    if (matches.length !== 1) return row;
+    return { ...row, supplier: matches[0].name, document: document(matches[0].document), personId: matches[0].id };
+  });
+}
 function visibleColumns(state) {
   const primary = (state.sources || []).filter(s => s.type === 'corrente' && s.format === 'table').flatMap(s => s.columns || []);
   if (primary.length) return [...new Set(primary)];
@@ -366,4 +381,4 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
 }
-module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, visibleColumns, exportWorkbook };
+module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, compatiblePersonDocument, applyPeople, visibleColumns, exportWorkbook };

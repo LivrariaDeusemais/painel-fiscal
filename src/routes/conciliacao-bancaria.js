@@ -16,6 +16,9 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     if (!schema) schema = pool.query(`CREATE TABLE IF NOT EXISTS conciliacoes_bancarias (
       banco TEXT NOT NULL, mes TEXT NOT NULL, dados JSONB NOT NULL,
       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (banco, mes)
+    ); CREATE TABLE IF NOT EXISTS conciliacao_pessoas (
+      id TEXT PRIMARY KEY, source_name TEXT NOT NULL, name TEXT NOT NULL, document TEXT NOT NULL, aliases JSONB NOT NULL DEFAULT '[]'::jsonb,
+      atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`).catch(e => { schema = null; throw e; });
     return schema;
   }
@@ -29,7 +32,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   async function readState(db, bank, month, lock = false) {
     const result = await db.query(`SELECT dados FROM conciliacoes_bancarias WHERE banco=$1 AND mes=$2${lock ? ' FOR UPDATE' : ''}`, [bank, month]);
     const state = result.rows[0]?.dados || emptyState();
-    state.rows = state.rows.map(service.applyPartnerRule);
+    const people = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas');
+    state.rows = service.applyPeople(state.rows, people.rows).map(service.applyPartnerRule);
     state.displayColumns = service.visibleColumns(state);
     return state;
   }
@@ -43,6 +47,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       const state = await readState(db, bank, month, true);
       const other = await readState(db, bank === 'caixa' ? 'inter' : 'caixa', month, true);
       const result = await operation(state, other, db);
+      const people = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas');
+      result.state.rows = service.applyPeople(result.state.rows, people.rows);
       result.state.displayColumns = service.visibleColumns(result.state);
       await db.query(`INSERT INTO conciliacoes_bancarias (banco,mes,dados) VALUES ($1,$2,$3::jsonb)
         ON CONFLICT (banco,mes) DO UPDATE SET dados=EXCLUDED.dados, atualizado_em=NOW()`, [bank, month, JSON.stringify(result.state)]);
@@ -113,6 +119,49 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   router.get('/dados', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
     res.json(await readState(pool, bank, month));
+  }));
+  router.get('/pessoas', run(async (req, res) => {
+    await ensureSchema();
+    const saved = await pool.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas ORDER BY name');
+    const states = await pool.query('SELECT banco, mes, dados FROM conciliacoes_bancarias');
+    const known = [...saved.rows];
+    for (const state of states.rows) for (const row of state.dados.rows || []) {
+      const source_name = service.norm(row.name || row.supplier), document = String(row.document || '').replace(/\D/g, '');
+      if (!source_name || String(row.document).includes('*') || ![11, 14].includes(document.length) || known.some(p => p.source_name === source_name && p.document.replace(/\D/g, '') === document)) continue;
+      known.push({ id: crypto.createHash('sha256').update(source_name + '|' + document).digest('hex'), source_name, name: row.name || row.supplier, document, inferred: true });
+    }
+    const list = new Map(known.map(p => [p.id, { ...p, count: 0, documents: [], saved: !p.inferred }]));
+    for (const state of states.rows) for (const row of state.dados.rows || []) {
+      const sourceName = service.norm(row.name || row.supplier);
+      if (!sourceName) continue;
+      const matches = known.filter(p => p.source_name === sourceName && [p.document, ...(p.aliases || [])].some(d => service.compatiblePersonDocument(row.document, d)));
+      const id = matches.length === 1 ? matches[0].id : crypto.createHash('sha256').update(sourceName + '|' + (row.document || '')).digest('hex');
+      if (!list.has(id)) list.set(id, { id, source_name: sourceName, name: row.name || row.supplier, document: row.document || '', documents: [], count: 0, saved: false });
+      const person = list.get(id); person.count++;
+      if (!person.documents.includes(row.document || '')) person.documents.push(row.document || '');
+    }
+    res.json([...list.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')));
+  }));
+  router.post('/pessoas', csrf, run(async (req, res) => {
+    await ensureSchema();
+    const { bank, month } = selection(req);
+    const name = String(req.body.name || '').trim();
+    const sourceName = service.norm(req.body.source_name);
+    const document = String(req.body.document || '').replace(/\D/g, '');
+    if (!name || name.length > 200 || !sourceName || sourceName.length > 200 || ![11, 14].includes(document.length)) throw new Error('Informe nome e CPF completo (11 dígitos) ou CNPJ completo (14 dígitos).');
+    const id = /^[a-f0-9]{64}$/.test(req.body.id || '') ? req.body.id : crypto.createHash('sha256').update(sourceName + '|' + document).digest('hex');
+    const db = await pool.connect();
+    try {
+      await db.query('BEGIN');
+      await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['conciliacao:vinculos']);
+      const previous = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas WHERE id=$1 FOR UPDATE', [id]);
+      if (previous.rows[0] && previous.rows[0].source_name !== sourceName) throw new Error('Cadastro incompatível. Reabra a janela de edição.');
+      const aliases = [...new Set([...(previous.rows[0]?.aliases || []), previous.rows[0]?.document].filter(Boolean))];
+      await db.query(`INSERT INTO conciliacao_pessoas (id,source_name,name,document,aliases) VALUES ($1,$2,$3,$4,$5::jsonb)
+        ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases)]);
+      await db.query('COMMIT');
+    } catch (e) { await db.query('ROLLBACK'); throw e; } finally { db.release(); }
+    res.json({ state: await readState(pool, bank, month), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
   }));
   router.post('/importar', csrf, (req, res, next) => upload.single('extrato')(req, res, e => e ? res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'O limite por arquivo é 15 MB.' : 'Não foi possível receber o extrato.' }) : next()), run(async (req, res) => {
     const { bank, month } = selection(req);
