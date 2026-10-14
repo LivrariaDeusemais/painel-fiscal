@@ -109,7 +109,16 @@ const codificadorStorageDir = path.join(uploadsDir, 'codificador');
 const codificadorPython = process.env.CODIFICADOR_PYTHON || 'python3';
 const codificadorPythonPackages = path.join(__dirname, '..', '..', '.python-packages');
 
-function executarCodificador(argumentos) {
+async function executarCodificador(argumentos) {
+  if (!['status', 'processar'].includes(argumentos[0])) return executarCodificadorProcesso(argumentos);
+  const products = await pool.query('SELECT sku,nome,marca,ean FROM tabela_preco_produtos WHERE bling_id IS NOT NULL ORDER BY sku');
+  fs.mkdirSync(codificadorStorageDir, { recursive: true });
+  const snapshot = path.join(codificadorStorageDir, 'bling-base-'+require('crypto').randomUUID()+'.json');
+  fs.writeFileSync(snapshot, JSON.stringify(products.rows), { flag: 'wx' });
+  try { return await executarCodificadorProcesso(argumentos, snapshot); }
+  finally { fs.unlinkSync(snapshot); }
+}
+function executarCodificadorProcesso(argumentos, snapshot = '') {
   return new Promise((resolve, reject) => {
     fs.mkdirSync(codificadorStorageDir, { recursive: true });
     const processo = spawn(codificadorPython, [codificadorCli, ...argumentos], {
@@ -117,6 +126,7 @@ function executarCodificador(argumentos) {
       env: {
         ...process.env,
         CODIFICADOR_STORAGE_DIR: codificadorStorageDir,
+        CODIFICADOR_BLING_SNAPSHOT: snapshot,
         PYTHONPATH: [codificadorPythonPackages, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
       }
     });
@@ -31696,7 +31706,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
           <span class="cod-base-status">${escapeHtmlGlobal(baseDescricao)}</span>
         </div>
         ${baseFormHtml}
-        <p class="cod-help">Use a planilha exportada do Bling preenchida conforme o modelo padrão. A integração automática será adicionada em uma próxima etapa.</p>
+        <p class="cod-help">SKU, GTIN/EAN, descrição e marca acompanham automaticamente a base sincronizada do Bling. O Excel permanece disponível para complementar códigos de fornecedor. Atualizações pela integração e seus botões são utilizadas ao abrir esta tela ou codificar um PDF.</p>
       </section>
       <section class="cod-section">
         <div class="cod-section-heading">

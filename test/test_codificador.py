@@ -1,4 +1,7 @@
 import sys
+import os
+import json
+from unittest.mock import patch
 import tempfile
 import unittest
 from decimal import Decimal
@@ -6,7 +9,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "codificador"))
 from codificador import construir_indices, criar_excel_orcamento, extrair_penkal_orcamento_por_coordenadas, Produto
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
+from codificador import carregar_base
+
+
+class BaseBlingTest(unittest.TestCase):
+    def test_atualiza_ean_e_sku_sem_perder_codigo_do_fornecedor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base.xlsx"
+            wb = Workbook()
+            ws = wb.active
+            ws.append(["Fornecedor", "Código Fornecedor", "EAN", "SKU", "Descrição", "Marca"])
+            ws.append(["SBB", "ABC123", "111", "sku1", "Descrição antiga", "SBB"])
+            wb.save(base)
+            snapshot = Path(directory) / "bling.json"
+            snapshot.write_text(json.dumps([{"sku":"SKU1", "ean":"9788531117701", "nome":"Descrição atualizada", "marca":"SBB"}, {"sku":"SKU2", "ean":"222", "nome":"Produto novo", "marca":"CPP"}]))
+            with patch.dict(os.environ, {"CODIFICADOR_BLING_SNAPSHOT":str(snapshot)}):
+                produtos = carregar_base(base)
+            self.assertEqual(len(produtos), 2)
+            self.assertEqual(produtos[0].codigo_fornecedor, "ABC123")
+            self.assertEqual(produtos[0].fornecedor, "SBB")
+            self.assertEqual(produtos[0].ean, "9788531117701")
+            self.assertEqual(produtos[0].sku, "SKU1")
+            self.assertEqual(produtos[0].descricao, "Descrição atualizada")
+            self.assertEqual(construir_indices(produtos)["ean"]["9788531117701"].sku, "SKU1")
 
 
 class OrcamentoPenkalTest(unittest.TestCase):

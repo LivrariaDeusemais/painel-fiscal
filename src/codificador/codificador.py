@@ -198,6 +198,27 @@ def carregar_base(path: Path | None = None) -> list[Produto]:
                 marca=limpar(linha[col_marca] if col_marca < len(linha) else ""),
             )
         )
+    snapshot = os.environ.get("CODIFICADOR_BLING_SNAPSHOT")
+    if snapshot:
+        atuais = json.loads(Path(snapshot).read_text(encoding="utf-8"))
+        por_sku = {p.sku.strip().upper(): p for p in produtos}
+        sincronizados = []
+        for atual in atuais:
+            sku = limpar(atual.get("sku"))
+            if not sku:
+                continue
+            anterior = por_sku.get(sku.upper())
+            produto = Produto(
+                fornecedor=anterior.fornecedor if anterior else "",
+                codigo_fornecedor=anterior.codigo_fornecedor if anterior else "",
+                ean=apenas_digitos(atual.get("ean")) or (anterior.ean if anterior else ""),
+                sku=sku,
+                descricao=limpar(atual.get("nome")) or (anterior.descricao if anterior else ""),
+                marca=limpar(atual.get("marca")) or (anterior.marca if anterior else ""),
+            )
+            por_sku.pop(sku.upper(), None)
+            sincronizados.append(produto)
+        produtos = sincronizados + list(por_sku.values())
     return produtos
 
 
