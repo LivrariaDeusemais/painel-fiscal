@@ -31706,9 +31706,20 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
           <label class="cod-field">
             <span>PDF da NF ou orçamento</span>
             <input type="file" name="pdf" accept="application/pdf,.pdf">
-            <span>Ou selecionar NF do arquivo de compras</span><select name="compra_nf" id="codCompraNF"><option value="">Selecionar NF arquivada</option></select>
-            <script>fetch('/ferramentas-ia/gestao-compras/notas').then(r=>r.json()).then(notes=>{if(!Array.isArray(notes))return;const select=document.getElementById('codCompraNF');notes.forEach(n=>{const option=document.createElement('option');option.value=n.id;option.textContent=n.supplier+' · NF '+n.number+' · '+(n.total/100).toLocaleString('pt-BR');select.append(option)})}).catch(()=>{});</script>
           </label>
+          <div class="cod-form-grid">
+            <label class="cod-field"><span>Fornecedor da NF arquivada</span><select id="codCompraFornecedor"><option value="">Selecionar fornecedor</option></select></label>
+            <label class="cod-field"><span>Número da NF arquivada</span><input id="codCompraNumero" inputmode="numeric" placeholder="Digite o número da NF" autocomplete="off" disabled></label>
+          </div>
+          <input type="hidden" name="compra_nf" id="codCompraNF">
+          <p id="codCompraStatus" aria-live="polite" style="margin:0;color:#64748b;font-size:12px"></p>
+          <script>(()=>{
+            const supplier=document.getElementById('codCompraFornecedor'),number=document.getElementById('codCompraNumero'),chosen=document.getElementById('codCompraNF'),status=document.getElementById('codCompraStatus'),form=chosen.closest('form');let request=0,timer,confirmed=false;
+            async function find(){const seq=++request;chosen.value='';if(!supplier.value&&!number.value){status.textContent='';return true}if(!supplier.value||!number.value.trim()){status.textContent='Selecione o fornecedor e digite o número da NF.';return false}status.textContent='Localizando NF…';try{const r=await fetch('/ferramentas-ia/gestao-compras/buscar-nota?'+new URLSearchParams({fornecedor:supplier.value,numero:number.value.trim()}));const n=await r.json();if(seq!==request)return false;if(!r.ok)throw Error(n.error||'Não foi possível localizar a NF.');chosen.value=n.id;status.textContent='NF '+n.number+' localizada · '+(n.total/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});return true}catch(e){if(seq===request)status.textContent=e.message;return false}}
+            fetch('/ferramentas-ia/gestao-compras/fornecedores').then(r=>r.json()).then(list=>{if(!Array.isArray(list))throw Error();list.forEach(n=>{const option=document.createElement('option');option.value=n.key;option.textContent=n.name;supplier.append(option)})}).catch(()=>{status.textContent='Não foi possível carregar os fornecedores. Atualize a página.'});
+            supplier.onchange=()=>{request++;chosen.value='';number.value='';number.disabled=!supplier.value;status.textContent=supplier.value?'Digite o número da NF desse fornecedor.':''};number.oninput=()=>{request++;chosen.value='';clearTimeout(timer);timer=setTimeout(find,300)};
+            form.addEventListener('submit',async e=>{if(confirmed||(!supplier.value&&!number.value))return;e.preventDefault();clearTimeout(timer);if(await find()){confirmed=true;form.requestSubmit();confirmed=false}});
+          })()</script>
           <div class="cod-form-grid">
             <label class="cod-field">
               <span>Fornecedor</span>
