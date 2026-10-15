@@ -175,6 +175,6 @@ test('exportação distingue cabeçalhos originais por banco e exclui Conta Clie
   assert.equal(ws.getCell('A7').fill.fgColor.argb,color);assert.equal(ws.getCell('C7').fill.fgColor.argb,color);assert.equal(ws.getCell('A7').font.color.argb,text);
   assert.equal(ws.getCell('D7').fill.fgColor.argb,'FF008F48');
   assert.ok(!ws.getRow(7).values.includes('Conta Cliente'));assert.doesNotMatch(ws.getCell('A4').value,/Somar Conta Cliente/);
-  const exported=await wb.xlsx.writeBuffer();const parsed=new ExcelJS.Workbook();await parsed.xlsx.load(exported);assert.equal(parsed.worksheets[0].getCell('A7').fill.fgColor.argb,color);
+  const exported=await wb.xlsx.writeBuffer();const parsed=new ExcelJS.Workbook();await parsed.xlsx.load(exported);assert.equal(parsed.worksheets[0].getCell('A7').fill.fgColor.argb,color);assert.equal(parsed.worksheets[0].views[0].ySplit,7);assert.equal(parsed.worksheets[0].views[0].xSplit||0,0);
  }
 });

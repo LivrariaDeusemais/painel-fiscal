@@ -382,7 +382,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
       if (typeof c.value === 'number') c.font.color = { argb: c.value < 0 ? 'FFB91C1C' : 'FF000000' };
     });
   });
-  ws.views = [{ state: 'frozen', ySplit: 7, xSplit: 1, showGridLines: false }];
+  ws.views = [{ state: 'frozen', ySplit: 7, xSplit: 0, showGridLines: false }];
   ws.autoFilter = `A7:${last}${Math.max(7, 7 + rows.length)}`;
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
