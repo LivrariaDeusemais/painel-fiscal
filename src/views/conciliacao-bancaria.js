@@ -6,7 +6,7 @@ function renderPage({ token, month, readonly }) {
   <style>
     .cb #cbFilter{padding:8px!important;border-radius:14px!important;width:280px!important}
     .cb #cbFilter .modal-head{font-size:12px!important}.cb #cbFilterSearch{font-size:12px!important;padding:7px 9px!important}
-    .cb #cbFilterList{gap:2px!important}.cb #cbFilterList button{display:block!important;width:100%!important;text-align:left!important;justify-content:flex-start!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:8px!important;color:#475569!important;font-size:12px!important;font-weight:600!important;line-height:1.35!important;padding:9px 10px!important;min-height:0!important;height:auto!important}
+    .cb #cbFilterList{gap:2px!important}.cb #cbFilterList button{display:block!important;flex-shrink:0!important;white-space:normal!important;width:100%!important;text-align:left!important;justify-content:flex-start!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:8px!important;color:#475569!important;font-size:12px!important;font-weight:600!important;line-height:1.35!important;padding:9px 10px!important;min-height:0!important;height:auto!important}
     .cb #cbFilterList button:hover,.cb #cbFilterList button.selected{background:#edf8f1!important;color:#16753c!important}
     .cb #cbTable[data-bank="caixa"] th.original-header,.cb #cbTable[data-bank="caixa"] th.original-header .filter{background:#005ca9!important;color:white!important}
     .cb #cbTable[data-bank="inter"] th.original-header,.cb #cbTable[data-bank="inter"] th.original-header .filter{background:#ff7a00!important;color:#000!important}
@@ -99,7 +99,7 @@ function renderPage({ token, month, readonly }) {
     function render(){
       $('cbTable').dataset.bank=$('cbBank').value;const rows=visible(),originalColumns=(state.displayColumns||state.columns).filter(k=>!/^CPF|^CNPJ/.test(normalize(k))),columns=[...originalColumns.map(k=>['raw:'+k,k]),...(!originalColumns.some(k=>/^(NOME|RAZAO SOCIAL)/.test(normalize(k)))?[['legalName','Nome / Razão Social']]:[]),...extra];
       const measure=document.createElement('canvas').getContext('2d');measure.font='12px Arial';
-      const widths=columns.map(([k,label])=>Math.ceil(Math.max(measure.measureText(label).width+42,...state.rows.map(r=>Math.min(340,measure.measureText(String(display(k,value(r,k)))).width+24)),k==='observation'?180:/CPF|CNPJ/.test(k)||k==='document'?185:80)));
+      const widths=columns.map(([k,label])=>Math.ceil(Math.max(measure.measureText(label).width+42,...state.rows.map(r=>Math.min(340,measure.measureText(String(display(k,value(r,k)))).width+(['supplier','classification','legalName','document'].includes(k)||k.startsWith('raw:')&&/^(NOME|RAZAO SOCIAL)/.test(normalize(k.slice(4)))?48:24))),k==='observation'?180:/CPF|CNPJ/.test(k)||k==='document'?185:80)));
       const totalWidth=widths.reduce((a,b)=>a+b,0)+130;
       $('cbTable').style.setProperty('width',totalWidth+'px','important');
       $('cbTable').querySelector('colgroup')?.remove();$('cbTable').insertAdjacentHTML('afterbegin','<colgroup>'+widths.map(w=>'<col style="width:'+w+'px">').join('')+'<col style="width:130px"></colgroup>');
