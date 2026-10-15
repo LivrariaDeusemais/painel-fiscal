@@ -35,6 +35,25 @@ class BaseBlingTest(unittest.TestCase):
             self.assertEqual(construir_indices(produtos)["ean"]["9788531117701"].sku, "SKU1")
 
 
+    def test_codigo_fornecedor_bling_completa_produto_novo_e_atualiza_existente(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base.xlsx"
+            wb = Workbook()
+            ws = wb.active
+            ws.append(["Fornecedor", "Código Fornecedor", "EAN", "SKU", "Descrição", "Marca"])
+            ws.append(["Penkal", "antigo", "111", "L1349", "Antigo", "Penkal"])
+            wb.save(base)
+            snapshot = Path(directory) / "bling.json"
+            snapshot.write_text(json.dumps([
+                {"sku":"L1349", "codigo_fornecedor":"34572", "ean":"9786500000123", "nome":"Período Interbíblico"},
+                {"sku":"L9999", "codigo_fornecedor":"00123", "ean":"9786500000456", "nome":"Novo"}]))
+            with patch.dict(os.environ, {"CODIFICADOR_BLING_SNAPSHOT":str(snapshot)}):
+                indices = construir_indices(carregar_base(base))
+            self.assertEqual(indices["codigo"]["34572"].sku, "L1349")
+            self.assertEqual(indices["codigo"]["00123"].sku, "L9999")
+            self.assertEqual(indices["ean"]["9786500000123"].sku, "L1349")
+
+
 class CpadTest(unittest.TestCase):
     def test_detecta_razao_social_e_nome_arquivo(self):
         self.assertEqual(detectar_fornecedor("CPAD COMERCIO E DISTRIBUIDORA LTDA"), "cpad")

@@ -29,4 +29,20 @@ function buildReport(job) {
   }
   return workbook;
 }
-module.exports = {buildReport};
+function buildDiagnosticReport(rows) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Diagnóstico', {views:[{state:'frozen',ySplit:1}]});
+  sheet.columns = [
+    {header:'Módulo',key:'modulo',width:28}, {header:'Resultado',key:'status',width:18},
+    {header:'SKU',key:'sku',width:18}, {header:'ID produto Bling',key:'produto_id',width:24},
+    {header:'Produto',key:'nome',width:50}, {header:'Código do fornecedor',key:'codigo_fornecedor',width:24},
+    {header:'EAN/GTIN',key:'ean',width:22}, {header:'Código do anúncio',key:'anuncio_id',width:28},
+    {header:'Detalhe',key:'detalhe',width:70}
+  ];
+  for (const key of ['sku','produto_id','codigo_fornecedor','ean','anuncio_id']) sheet.getColumn(key).numFmt='@';
+  sheet.addRows(rows);
+  sheet.getRow(1).font={bold:true};
+  sheet.autoFilter='A1:I1';
+  return workbook;
+}
+module.exports = {buildReport,buildDiagnosticReport};

@@ -132,10 +132,13 @@ function normalizedProduct(product) {
   return { sku, id: String(product.id), name: product.nome, brand: product.marca || '', status: product.situacao || '',
     weight: number(product.pesoLiquido), grossWeight: number(product.pesoBruto), price: number(product.preco), ean: product.gtin || '' };
 }
-function defaultSupplierCost(rows) {
+function defaultSupplier(rows) {
   const defaults = rows.filter(row => row.padrao === true);
   if (defaults.length !== 1) throw new Error(defaults.length ? 'Mais de um fornecedor padrão. Custo anterior preservado.' : 'Fornecedor padrão não encontrado. Custo anterior preservado.');
-  const supplier = defaults[0];
+  return defaults[0];
+}
+function defaultSupplierCost(rows) {
+  const supplier = defaultSupplier(rows);
   const value = supplier.precoCusto;
   if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '' || !Number.isFinite(Number(value)) || Number(value) <= 0) throw new Error('Preço de custo do fornecedor padrão inválido. Custo anterior preservado.');
   return { cost: Number(value), supplierId: String(supplier.id || '') };
@@ -250,7 +253,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
   let processed = 0, failures = 0, costsUpdated = 0, grossUpdated = 0;
   const issues = [], divergences = [], diagnostic = [];
   const productsForReport = new Map();
-  const record = (module, status, product={}, detail='') => diagnostic.push({modulo:module,status,sku:product.sku || product.codigo || '',produto_id:String(product.id || ''),nome:product.name || product.nome || '',anuncio_id:String(product.store_id || product.anuncio_id || ''),detalhe:detail});
+  const record = (module, status, product={}, detail='') => diagnostic.push({modulo:module,status,sku:product.sku || product.codigo || '',produto_id:String(product.id || ''),nome:product.name || product.nome || '',ean:String(product.ean || ''),codigo_fornecedor:String(product.supplierCode || ''),anuncio_id:String(product.store_id || product.anuncio_id || ''),detalhe:detail});
 
   const issue = (stage, marketplace, sku, productId, adId, reason) => {
     issues.push([marketplace, sku || productId, reason].filter(Boolean).join(': '));
@@ -298,10 +301,10 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
           processed++;
           continue;
         }
-        record('Cadastro','verificado',item);
         const p = normalizedProduct(await api.get('/produtos/' + item.id));
         const existing = (await client.query('SELECT sku,bling_id FROM tabela_preco_produtos WHERE UPPER(sku)=UPPER($1)', [p.sku])).rows;
         if (existing.length > 1 || (existing[0]?.bling_id && existing[0].bling_id !== p.id)) throw new Error('Identificação do produto divergente.');
+        record('Cadastro','verificado',p);
         p.isNew = existing.length === 0;
         p.sku = existing[0]?.sku || p.sku;
         await client.query(`INSERT INTO tabela_preco_produtos(sku,bling_id,nome,marca,situacao,peso,peso_bruto,preco_bling,ean,status_validacao,bling_atualizado_em)
@@ -333,6 +336,13 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
         byProduct.get(key).push(supplier);
       }
       for (const p of valid) {
+        try {
+          const supplier = defaultSupplier(byProduct.get(p.id) || []);
+          p.supplierCode = String(supplier.codigo ?? '').trim();
+          await client.query('UPDATE tabela_preco_produtos SET codigo_fornecedor=$2 WHERE sku=$1', [p.sku,p.supplierCode]);
+          for (const row of diagnostic) if (row.produto_id === p.id) row.codigo_fornecedor = p.supplierCode;
+          record('Código do fornecedor','atualizado',p,p.supplierCode ? 'Código do fornecedor padrão sincronizado' : 'Fornecedor padrão sem código cadastrado');
+        } catch (error) { failures++; issue('Código do fornecedor','',p.sku,p.id,'',error.message); }
         record('Custos','verificado',p);
         try {
           const cost = defaultSupplierCost(byProduct.get(p.id) || []);

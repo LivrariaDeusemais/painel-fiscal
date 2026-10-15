@@ -146,3 +146,43 @@ test('anúncios zero e repetidos têm referências no diagnóstico e não bloque
  const pending=report.filter(r=>r.status==='pendente');assert.deepEqual(pending.map(r=>r.sku),['B1','B2','B3']);assert.equal(pending[0].nome,'Produto um');assert.equal(pending[0].anuncio_id,'0');assert.equal(pending[1].anuncio_id,'999');
  assert.ok(report.some(r=>r.status==='atualizado'&&r.sku==='B4'&&r.anuncio_id==='888'));
 });
+
+test('código do fornecedor e EAN chegam ao diagnóstico mesmo com custo inválido',async()=>{
+  const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:sql.startsWith('SELECT sku')?[{sku:'L1349',bling_id:'16627644813'}]:[]};}};
+  const api={all:async(path,params)=>path==='/produtos/fornecedores'?
+    [{id:9,produto:{id:16627644813},padrao:false,codigo:'ANTIGO',precoCusto:10},
+     {id:10,produto:{id:16627644813},padrao:true,codigo:'34572',precoCusto:0}]:
+    params.criterio===2?[{id:16627644813,codigo:'L1349'}]:[],
+    get:async path=>path.startsWith('/produtos/')?{id:16627644813,codigo:'L1349',nome:'Período Interbíblico',gtin:'0978650000123'}:
+      [{produto:{id:16627644813},depositos:[{id:1,saldoFisico:3}]}]};
+  await runSync({},db,1,{matriz:'1',module:'data'},api);
+  assert.deepEqual(calls.find(c=>c.sql.includes('SET codigo_fornecedor=')).args,['L1349','34572']);
+  assert.equal(calls.some(c=>c.sql.includes('SET custo=')),false);
+  const diagnostic=JSON.parse(calls.find(c=>c.sql.includes('diagnostico=$3')).args[2]);
+  for(const row of diagnostic.filter(r=>r.modulo==='Cadastro'&&r.status==='atualizado')) {
+    assert.equal(row.ean,'0978650000123');assert.equal(row.codigo_fornecedor,'34572');
+  }
+});
+
+test('fornecedores ambíguos não sobrescrevem código anterior',async()=>{
+  const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:[]};}};
+  const api={all:async(path,params)=>path==='/produtos/fornecedores'?
+    [1,2].map(id=>({id,produto:{id:123},padrao:true,codigo:String(id),precoCusto:10})):
+    params.criterio===2?[{id:123,codigo:'A'}]:[],
+    get:async path=>path.startsWith('/produtos/')?{id:123,codigo:'A',nome:'A'}:[{produto:{id:123},depositos:[{id:1,saldoFisico:1}]}]};
+  await runSync({},db,1,{matriz:'1',module:'data'},api);
+  assert.equal(calls.some(c=>c.sql.includes('SET codigo_fornecedor=')),false);
+});
+
+test('Excel diagnóstico preserva EAN e código do fornecedor como texto',async()=>{
+  const {buildDiagnosticReport}=require('../src/integracoes/bling-report');
+  const workbook=buildDiagnosticReport([{modulo:'Cadastro',status:'atualizado',sku:'L1349',produto_id:'16627644813',nome:'Livro',codigo_fornecedor:'0034572',ean:'0978650000123'}]);
+  const reopened=new(require('exceljs').Workbook)();await reopened.xlsx.load(await workbook.xlsx.writeBuffer());
+  const sheet=reopened.getWorksheet('Diagnóstico');
+  assert.equal(sheet.getCell('F1').value,'Código do fornecedor');
+  assert.equal(sheet.getCell('G1').value,'EAN/GTIN');
+  assert.equal(sheet.getCell('F2').value,'0034572');
+  assert.equal(sheet.getCell('G2').value,'0978650000123');
+  assert.equal(sheet.getCell('G2').numFmt,'@');
+  assert.equal(sheet.autoFilter,'A1:I1');
+});
