@@ -318,14 +318,15 @@ function compatiblePersonDocument(partial, full) {
   if (!a.includes('*')) return a === b;
   return a.length === b.length && [...a].every((c, i) => c === '*' || c === b[i]);
 }
+function personSourceName(row) { return norm(row.name || row.supplier || row.description || row.id).slice(0,200); }
 function applyPeople(rows, people) {
   return rows.map(row => {
-    const name = norm(row.name || row.supplier);
+    const name = personSourceName(row);
     const matches = people.filter(p => p.source_name === name && [p.document, ...(p.aliases || [])].some(d => compatiblePersonDocument(row.document, d)));
-    if (matches.length !== 1) return row;
+    if (matches.length !== 1) return { ...row, personSourceName: name };
     const person = matches[0];
     const baseClassification = row.personBaseClassification ?? row.classification ?? '';
-    return { ...row, legalName: person.name, supplier: person.trade_name || person.name, document: document(person.document), personId: person.id, personBaseClassification: baseClassification, classification: partnerClassification(row) || (row.internal ? row.classification : person.purpose || baseClassification) };
+    return { ...row, personSourceName: name, legalName: person.name, supplier: person.trade_name || person.name, document: document(person.document), personId: person.id, personBaseClassification: baseClassification, classification: partnerClassification(row) || (row.internal ? row.classification : person.purpose || baseClassification) };
   });
 }
 function visibleColumns(state) {
@@ -385,4 +386,4 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
 }
-module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, compatiblePersonDocument, applyPeople, visibleColumns, exportWorkbook };
+module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, compatiblePersonDocument, personSourceName, applyPeople, visibleColumns, exportWorkbook };

@@ -127,17 +127,17 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const states = await pool.query('SELECT banco, mes, dados FROM conciliacoes_bancarias');
     const known = [...saved.rows];
     for (const state of states.rows) for (const row of state.dados.rows || []) {
-      const source_name = service.norm(row.name || row.supplier), document = String(row.document || '').replace(/\D/g, '');
+      const source_name = service.personSourceName(row), document = String(row.document || '').replace(/\D/g, '');
       if (!source_name || String(row.document).includes('*') || ![11, 14].includes(document.length) || known.some(p => p.source_name === source_name && [p.document, ...(p.aliases || [])].some(d => d.replace(/\D/g, '') === document))) continue;
-      known.push({ id: crypto.createHash('sha256').update(source_name + '|' + document).digest('hex'), source_name, name: row.name || row.supplier, document, inferred: true });
+      known.push({ id: crypto.createHash('sha256').update(source_name + '|' + document).digest('hex'), source_name, name: row.name || row.supplier || row.description || 'Sem identificação', document, inferred: true });
     }
     const list = new Map(known.map(p => [p.id, { ...p, count: 0, documents: [], saved: !p.inferred }]));
     for (const state of states.rows) for (const row of state.dados.rows || []) {
-      const sourceName = service.norm(row.name || row.supplier);
+      const sourceName = service.personSourceName(row);
       if (!sourceName) continue;
       const matches = known.filter(p => p.source_name === sourceName && [p.document, ...(p.aliases || [])].some(d => service.compatiblePersonDocument(row.document, d)));
       const id = matches.length === 1 ? matches[0].id : crypto.createHash('sha256').update(sourceName + '|' + (row.document || '')).digest('hex');
-      if (!list.has(id)) list.set(id, { id, source_name: sourceName, name: row.name || row.supplier, document: row.document || '', documents: [], count: 0, saved: false });
+      if (!list.has(id)) list.set(id, { id, source_name: sourceName, name: row.name || row.supplier || row.description || 'Sem identificação', document: row.document || '', documents: [], count: 0, saved: false });
       const person = list.get(id); person.count++;
       if(person.trade_name == null) person.trade_name = row.supplier || '';
       if(person.purpose == null) person.purpose = row.classification || '';
