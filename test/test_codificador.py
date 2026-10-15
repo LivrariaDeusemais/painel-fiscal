@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "codificador"))
 from codificador import construir_indices, criar_excel_orcamento, extrair_penkal_orcamento_por_coordenadas, Produto
 from openpyxl import load_workbook, Workbook
-from codificador import carregar_base
+from codificador import carregar_base, detectar_fornecedor, localizar_anotacoes
 
 
 class BaseBlingTest(unittest.TestCase):
@@ -33,6 +33,33 @@ class BaseBlingTest(unittest.TestCase):
             self.assertEqual(produtos[0].sku, "SKU1")
             self.assertEqual(produtos[0].descricao, "Descrição atualizada")
             self.assertEqual(construir_indices(produtos)["ean"]["9788531117701"].sku, "SKU1")
+
+
+class CpadTest(unittest.TestCase):
+    def test_detecta_razao_social_e_nome_arquivo(self):
+        self.assertEqual(detectar_fornecedor("CPAD COMERCIO E DISTRIBUIDORA LTDA"), "cpad")
+        self.assertEqual(detectar_fornecedor("Casa Publicadora das Assembleias de Deus"), "cpad")
+        self.assertEqual(detectar_fornecedor("", "CPAD-bonificacao.pdf"), "cpad")
+        self.assertEqual(detectar_fornecedor("CASA PUBLICADORA PAULISTA"), "cpp")
+
+    def test_nf_multipagina_ignora_cabecalho_e_preserva_faltantes(self):
+        def word(code, top):
+            return {"text": code, "x0": 7.2, "x1": 52, "top": top, "bottom": top + 7, "height": 7}
+        paginas = [{"page": n, "height": 841.89, "words": words} for n, words in (
+            (1, [word("1234567890123", 100), word("7898203061842", 491.4)]),
+            (2, [word("7898203061842", 272.4), word("7908234013861", 294.7)]),
+            (3, [word("7898203061842", 272.4)]))]
+        indices = construir_indices([Produto("CPAD", "", "7898203061842", "B1021", "", "")])
+        itens, faltantes = localizar_anotacoes(paginas, indices, "cpad", "nf")
+        self.assertEqual([i.pagina for i in itens], [1, 2, 3])
+        self.assertEqual(faltantes, ["7908234013861"])
+        for item in itens:
+            self.assertEqual(item.posicao, "abaixo_codigo")
+            self.assertEqual(item.x, 7.2)
+            top = 491.4 if item.pagina == 1 else 272.4
+            baseline = 841.89 - item.y
+            self.assertGreater(baseline, top + 7)
+            self.assertLess(baseline, top + 22.3)
 
 
 class OrcamentoPenkalTest(unittest.TestCase):

@@ -251,6 +251,8 @@ def detectar_fornecedor(texto: str, nome_arquivo: str = "") -> str:
         return "sbb"
     if "bkj1611" in base or "biblia king james" in base:
         return "bv_books"
+    if "cpad comercio" in base or "casa publicadora das assembleias" in base:
+        return "cpad"
     if "casa publicadora paulista" in base:
         return "cpp"
     if "editora penkal" in base:
@@ -261,6 +263,8 @@ def detectar_fornecedor(texto: str, nome_arquivo: str = "") -> str:
         return "sbb"
     if "bv books" in nome or "bkj1611" in nome:
         return "bv_books"
+    if "cpad" in nome:
+        return "cpad"
     if "cpp" in nome:
         return "cpp"
     if "penkal" in nome:
@@ -439,11 +443,11 @@ def localizar_anotacoes(paginas, indices, fornecedor: str, tipo: str) -> tuple[l
         return localizar_penkal_orcamento(paginas, indices)
     if fornecedor == "sbb":
         return localizar_generico_ean(paginas, indices, font_size=9, min_x=75, max_x=130, min_top=140, max_height=8, apos_descricao=True)
-    if fornecedor == "cpp":
+    if fornecedor in ("cpp", "cpad"):
         return localizar_generico_ean(
             paginas,
             indices,
-            font_size=6.2,
+            font_size=5.8 if fornecedor == "cpad" else 6.2,
             min_x=0,
             max_x=60,
             min_top=450,
@@ -903,6 +907,8 @@ def processar(pdf_path: Path, fornecedor: str = "auto", tipo: str = "auto") -> d
     font_size = 9 if fornecedor_final == "sbb" and tipo_final == "nf" else 8
     if fornecedor_final == "cpp":
         font_size = 6.2
+    if fornecedor_final == "cpad":
+        font_size = 5.8
     if fornecedor_final == "penkal":
         font_size = 6.5
     overlay_pdf(pdf_path, pdf_saida, paginas, anotacoes, font_size)

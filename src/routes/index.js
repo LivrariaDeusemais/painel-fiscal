@@ -31610,6 +31610,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
     sbb: 'SBB',
     bv_books: 'BV Books',
     cpp: 'CPP',
+    cpad: 'CPAD Editora',
     penkal: 'Penkal',
     adib: 'ADIB / Inteligência Bíblica',
     auto: 'Detecção automática'
@@ -31738,6 +31739,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
                 <option value="sbb">SBB</option>
                 <option value="bv_books">BV Books / BKJ1611</option>
                 <option value="cpp">CPP</option>
+                <option value="cpad">CPAD Editora</option>
                 <option value="penkal">Penkal</option>
                 <option value="adib">ADIB / Inteligência Bíblica</option>
               </select>
@@ -32374,7 +32376,7 @@ router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfi
     if (!arquivo || (!req.body.compra_nf && path.extname(req.file.originalname).toLowerCase() !== '.pdf')) {
       throw new Error('Selecione um documento no formato PDF.');
     }
-    const fornecedores = new Set(['auto', 'sbb', 'bv_books', 'cpp', 'penkal', 'adib']);
+    const fornecedores = new Set(['auto', 'sbb', 'bv_books', 'cpp', 'cpad', 'penkal', 'adib']);
     const tipos = new Set(['auto', 'nf', 'orcamento']);
     const fornecedor = fornecedores.has(req.body.fornecedor) ? req.body.fornecedor : 'auto';
     const tipo = tipos.has(req.body.tipo) ? req.body.tipo : 'auto';
