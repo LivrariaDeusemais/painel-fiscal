@@ -125,8 +125,8 @@ test('exportação tem originais, observação ao final, filtros, datas e valore
   assert.match(ws.getCell('A3').value, /000123/);
   assert.equal(ws.getCell('B8').value, -100); assert.equal(ws.getCell('C8').value, 1000);
   assert.ok(ws.getCell('A8').value instanceof Date);
-  assert.equal(ws.getCell('N7').value, 'Observação'); assert.equal(ws.getCell('N8').value, 'Conferido');
-  assert.equal(ws.autoFilter, 'A7:N8');
+  assert.equal(ws.getCell('O7').value, 'Observação'); assert.equal(ws.getCell('O8').value, 'Conferido');
+  assert.equal(ws.autoFilter, 'A7:O8');
 });
 test('script da página é válido e token não permite injetar HTML', () => {
   const html = renderPage({ token: 'abc', month: '2026-09', readonly: false });
@@ -155,4 +155,15 @@ test('cadastro completa documentos compatíveis sem misturar homônimos ou alter
   assert.equal(rows[0].document, '***.531.418-**');
   assert.equal(applyPeople(rows, [...people, { ...people[0], id: 'p2', document: '55553141899' }])[0].document, rows[0].document);
   assert.equal(applyPeople([{ name: 'Pessoa Teste', document: '124.531.418-13' }], [{ ...people[0], document: '12453141814', aliases: ['12453141813'] }])[0].document, '124.531.418-14');
+});
+
+test('pré-cadastro atualiza quatro campos, mantém original e preserva finalidade de sócio por direção', () => {
+ const s=require('../src/services/conciliacao-bancaria');
+ const people=[{id:'1',source_name:'EMPRESA ORIGINAL',name:'Razão corrigida',trade_name:'Loja',document:'12345678000199',purpose:'Compra para estoque'}];
+ const row={name:'Empresa Original',raw:{'Nome/Razão Social':'Empresa Original'},document:'12.345.678/0001-99',classification:'Anterior',amount:-10000};
+ const updated=s.applyPeople([row],people)[0];assert.equal(updated.legalName,'Razão corrigida');assert.equal(updated.supplier,'Loja');assert.equal(updated.classification,'Compra para estoque');assert.equal(s.rawValue(updated,'Nome/Razão Social'),'Razão corrigida');assert.equal(updated.raw['Nome/Razão Social'],'Empresa Original');
+ assert.equal(s.applyPeople([updated],[{...people[0],purpose:''}])[0].classification,'Anterior');
+ const partner={name:'GENIVALDO SESTARI',document:'12453141813',classification:'',amount:100};
+ const p={source_name:'GENIVALDO SESTARI',name:partner.name,document:partner.document,purpose:'Retirada'};
+ assert.equal(s.applyPeople([partner],[p])[0].classification,'Inserção de Capital pelo Sócio');assert.equal(s.applyPeople([{...partner,amount:-100}],[p])[0].classification,'Retirada Sócios - Distribuição');
 });

@@ -303,13 +303,13 @@ function mergeImport(state, parsed) {
   if (state.account.closingBalance != null && state.rows.length && state.rows.at(-1).balance != null && state.account.closingBalance !== state.rows.at(-1).balance) state.warnings = [...new Set([...state.warnings, 'O saldo informado no cabeçalho diverge do saldo da última movimentação. Confira o arquivo original.'])];
   return { state, added, duplicate: false };
 }
-const extraColumns = ['Fornecedor', 'CPF/CNPJ conciliado', 'Origem / Finalidade', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Conta Cliente', 'Status da Conciliação', 'Observação'];
+const extraColumns = ['Nome Fantasia', 'CPF/CNPJ conciliado', 'Status da Conciliação', 'Origem / Finalidade', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Conta Cliente', 'Observação'];
 function rawValue(row, key) {
-  const value = row.raw[key] ?? '';
+  const value = /^(NOME|RAZAO SOCIAL)/.test(norm(key)) ? row.legalName || row.raw[key] || '' : row.raw[key] ?? '';
   return /^(CPF|CNPJ)/.test(norm(key)) ? document(row.document || value) : value;
 }
 function extraValues(row) {
-  return [row.supplier || row.name || '', document(row.document), row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.clientStatus, row.status, row.observation || ''];
+  return [row.supplier || row.name || '', document(row.document), row.status, row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.clientStatus, row.observation || ''];
 }
 function compatiblePersonDocument(partial, full) {
   const a = String(partial || '').replace(/[^0-9*]/g, '');
@@ -323,7 +323,9 @@ function applyPeople(rows, people) {
     const name = norm(row.name || row.supplier);
     const matches = people.filter(p => p.source_name === name && [p.document, ...(p.aliases || [])].some(d => compatiblePersonDocument(row.document, d)));
     if (matches.length !== 1) return row;
-    return { ...row, supplier: matches[0].name, document: document(matches[0].document), personId: matches[0].id };
+    const person = matches[0];
+    const baseClassification = row.personBaseClassification ?? row.classification ?? '';
+    return { ...row, legalName: person.name, supplier: person.trade_name || person.name, document: document(person.document), personId: person.id, personBaseClassification: baseClassification, classification: partnerClassification(row) || (row.internal ? row.classification : person.purpose || baseClassification) };
   });
 }
 function visibleColumns(state) {
@@ -341,7 +343,8 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   const ws = wb.addWorksheet('Conciliação');
   const originalColumns = visibleColumns(state).filter(k => !/^(CPF|CNPJ)/.test(norm(k)));
   const exportExtras = extraColumns.map(c => c === 'CPF/CNPJ conciliado' ? 'CPF/CNPJ' : c);
-  const columns = [...originalColumns, ...exportExtras];
+  const addLegalName = !originalColumns.some(k => /^(NOME|RAZAO SOCIAL)/.test(norm(k)));
+  const columns = [...originalColumns, ...(addLegalName ? ['Nome / Razão Social'] : []), ...exportExtras];
   ws.columns = columns.map(c => ({ width: /NOME|FORNECEDOR|HISTORICO|DESCRICAO|OBSERVACAO|ORIGEM|CATEGORIA/.test(norm(c)) ? 42 : 24 }));
   const last = ws.getColumn(columns.length).letter;
   ws.mergeCells(`A1:${last}2`);
@@ -367,7 +370,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
       if (norm(key).startsWith('DATA') && date(v)) return new Date(`${date(v)}T12:00:00Z`);
       return v;
     });
-    const line = ws.addRow([...raw, ...extraValues(row)]); line.height = 32;
+    const line = ws.addRow([...raw, ...(addLegalName ? [row.legalName || row.name || row.supplier || ''] : []), ...extraValues(row)]); line.height = 32;
     line.eachCell({ includeEmpty: true }, (c, j) => {
       c.font = { name: 'Aptos', size: 11, color: { argb: 'FF172033' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: row.status === 'Conciliado' ? (i % 2 ? 'FFF0FDF4' : 'FFFFFFFF') : 'FFFFF8E7' } };

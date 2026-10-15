@@ -4391,7 +4391,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'lancamentos', href:'/lancamentos', label:'▤ Comprovantes' },
     { key:'documentos', href:'/arquivo', label:'▣ Arquivo' },
     { key:'categorias', href:'/categorias', label:'▫ Categorias' },
-    { key:'ferramentas-ia', href:'/ferramentas-ia', label:'◇ Ferramentas IA' },
+    { key:'ferramentas-ia', href:'/ferramentas-ia', label:'◇ Gestão Operacional' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
     ...(isAdmin ? [{ key:'alertas-vencimentos', href:'/alertas-vencimentos', label:'◌ Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
@@ -5917,7 +5917,7 @@ function renderGlobalHeader(req, config = {}) {
     { key: 'lancamentos', href: '/lancamentos', label: 'Comprovantes Fiscais' },
     { key: 'documentos', href: '/arquivo', label: 'Arquivo' },
     { key: 'categorias', href: '/categorias', label: 'Categorias' },
-    { key: 'ferramentas-ia', href: '/ferramentas-ia', label: 'Ferramentas IA' },
+    { key: 'ferramentas-ia', href: '/ferramentas-ia', label: 'Gestão Operacional' },
     { key: 'espaco-contador', href: '/espaco-contador', label: 'Espaço do Contador' },
     ...(isAdmin ? [{ key: 'alertas-vencimentos', href: '/alertas-vencimentos', label: 'Vencimentos hoje' }] : []),
     ...(isAdmin ? [{ key: 'usuarios', href: '/usuarios', label: 'Usuários' }] : [])
@@ -10405,7 +10405,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <a class="premium-side-link" href="/lancamentos"><span>▤</span>Comprovantes</a>
             <a class="premium-side-link" href="/arquivo"><span>▣</span>Arquivo</a>
             <a class="premium-side-link" href="/categorias"><span>□</span>Categorias</a>
-            <a class="premium-side-link" href="/ferramentas-ia"><span>◇</span>Ferramentas IA</a>
+            <a class="premium-side-link" href="/ferramentas-ia"><span>◇</span>Gestão Operacional</a>
             <a class="premium-side-link" href="/espaco-contador"><span>⚖</span>Espaço do Contador</a>
             <a class="premium-side-link" href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>
             <a class="premium-side-link" href="/usuarios"><span>◉</span>Usuários</a>
@@ -10458,7 +10458,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           <a class="nav-btn" href="/lancamentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 16h8"/></svg></span>Comprovantes Fiscais</a>
           <a class="nav-btn" href="/arquivo"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/></svg></span>Arquivo</a>
           <a class="nav-btn" href="/categorias"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 3h11v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7V5a2 2 0 0 1 2-2h4l2 4"/></svg></span>Categorias</a>
-          <a class="nav-btn" href="/ferramentas-ia"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M5.6 5.6l12.8 12.8"/><path d="M18.4 5.6L5.6 18.4"/></svg></span>Ferramentas IA</a>
+          <a class="nav-btn" href="/ferramentas-ia"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M5.6 5.6l12.8 12.8"/><path d="M18.4 5.6L5.6 18.4"/></svg></span>Gestão Operacional</a>
           <a class="nav-btn" href="/espaco-contador"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v7"/><circle cx="12" cy="11" r="3"/><path d="M5 22h14"/><path d="M8 22v-5a4 4 0 0 1 8 0v5"/></svg></span>Espaço do Contador</a>
           <a class="nav-btn" href="/alertas-vencimentos"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 15h4"/><path d="M8 18h8"/></svg></span>Vencimentos hoje</a>
           <a class="nav-btn" href="/usuarios"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Usuários</a>
@@ -29620,7 +29620,7 @@ body.contador-premium-page .trash-history {
               <a href="/lancamentos"><span>▤</span>Comprovantes</a>
               <a href="/arquivo"><span>▣</span>Arquivo</a>
               <a href="/categorias"><span>□</span>Categorias</a>
-              <a href="/ferramentas-ia"><span>◇</span>Ferramentas IA</a>
+              <a href="/ferramentas-ia"><span>◇</span>Gestão Operacional</a>
               <a class="active" href="/espaco-contador"><span>♙</span>Espaço do Contador</a>
               ${isAdmin ? `<a href="/alertas-vencimentos"><span>◌</span>Vencimentos hoje</a>` : ''}
               ${isAdmin ? `<a href="/usuarios"><span>◉</span>Usuários</a>` : ''}
@@ -31595,7 +31595,7 @@ function renderFerramentasIaPage(req) {
   `;
 
   return renderPremiumAdminShell(req, {
-    titulo: 'Ferramentas IA',
+    titulo: 'Gestão Operacional',
     subtitulo: 'Recursos internos da Deus é Mais reunidos no PlennaTec.',
     paginaAtual: 'ferramentas-ia'
   }, content);
@@ -32305,13 +32305,13 @@ function renderFerramentaEmPreparacao(req, ferramenta) {
       <span class="tool-stage-status">${status}</span>
       <h2>${titulo}</h2>
       <p>Este acesso já está reservado no menu do PlennaTec.</p>
-      <a href="/ferramentas-ia">Voltar para Ferramentas IA</a>
+      <a href="/ferramentas-ia">Voltar para Gestão Operacional</a>
     </section>
   `;
 
   return renderPremiumAdminShell(req, {
     titulo,
-    subtitulo: 'Ferramentas IA da Deus é Mais.',
+    subtitulo: 'Gestão Operacional da Deus é Mais.',
     paginaAtual: 'ferramentas-ia'
   }, content);
 }

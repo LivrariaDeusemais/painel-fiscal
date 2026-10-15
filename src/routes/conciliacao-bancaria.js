@@ -20,7 +20,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     ); CREATE TABLE IF NOT EXISTS conciliacao_pessoas (
       id TEXT PRIMARY KEY, source_name TEXT NOT NULL, name TEXT NOT NULL, document TEXT NOT NULL, aliases JSONB NOT NULL DEFAULT '[]'::jsonb,
       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`).catch(e => { schema = null; throw e; });
+    ); ALTER TABLE conciliacao_pessoas ADD COLUMN IF NOT EXISTS trade_name TEXT, ADD COLUMN IF NOT EXISTS purpose TEXT`).catch(e => { schema = null; throw e; });
     return schema;
   }
   function selection(req) {
@@ -33,7 +33,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   async function readState(db, bank, month, lock = false) {
     const result = await db.query(`SELECT dados FROM conciliacoes_bancarias WHERE banco=$1 AND mes=$2${lock ? ' FOR UPDATE' : ''}`, [bank, month]);
     const state = result.rows[0]?.dados || emptyState();
-    const people = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas');
+    const people = await db.query('SELECT id, source_name, name, document, aliases, trade_name, purpose FROM conciliacao_pessoas');
     state.rows = service.applyPeople(state.rows, people.rows).map(service.applyPartnerRule);
     state.displayColumns = service.visibleColumns(state);
     return state;
@@ -48,8 +48,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       const state = await readState(db, bank, month, true);
       const other = await readState(db, bank === 'caixa' ? 'inter' : 'caixa', month, true);
       const result = await operation(state, other, db);
-      const people = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas');
-      result.state.rows = service.applyPeople(result.state.rows, people.rows);
+      const people = await db.query('SELECT id, source_name, name, document, aliases, trade_name, purpose FROM conciliacao_pessoas');
+      result.state.rows = service.applyPeople(result.state.rows, people.rows).map(service.applyPartnerRule);
       result.state.displayColumns = service.visibleColumns(result.state);
       await db.query(`INSERT INTO conciliacoes_bancarias (banco,mes,dados) VALUES ($1,$2,$3::jsonb)
         ON CONFLICT (banco,mes) DO UPDATE SET dados=EXCLUDED.dados, atualizado_em=NOW()`, [bank, month, JSON.stringify(result.state)]);
@@ -123,7 +123,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   }));
   router.get('/pessoas', run(async (req, res) => {
     await ensureSchema();
-    const saved = await pool.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas ORDER BY name');
+    const saved = await pool.query('SELECT id, source_name, name, document, aliases, trade_name, purpose FROM conciliacao_pessoas ORDER BY name');
     const states = await pool.query('SELECT banco, mes, dados FROM conciliacoes_bancarias');
     const known = [...saved.rows];
     for (const state of states.rows) for (const row of state.dados.rows || []) {
@@ -139,6 +139,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       const id = matches.length === 1 ? matches[0].id : crypto.createHash('sha256').update(sourceName + '|' + (row.document || '')).digest('hex');
       if (!list.has(id)) list.set(id, { id, source_name: sourceName, name: row.name || row.supplier, document: row.document || '', documents: [], count: 0, saved: false });
       const person = list.get(id); person.count++;
+      if(person.trade_name == null) person.trade_name = row.supplier || '';
+      if(person.purpose == null) person.purpose = row.classification || '';
       if (!person.documents.includes(row.document || '')) person.documents.push(row.document || '');
     }
     res.json([...list.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')));
@@ -148,6 +150,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const { bank, month } = selection(req);
     const name = String(req.body.name || '').trim();
     const sourceName = service.norm(req.body.source_name);
+    const tradeName = String(req.body.trade_name || '').trim().slice(0,200);
+    const purpose = String(req.body.purpose || '').trim().slice(0,200);
     const document = String(req.body.document || '').replace(/\D/g, '');
     if (!name || name.length > 200 || !sourceName || sourceName.length > 200 || ![11, 14].includes(document.length)) throw new Error('Informe nome e CPF completo (11 dígitos) ou CNPJ completo (14 dígitos).');
     const id = /^[a-f0-9]{64}$/.test(req.body.id || '') ? req.body.id : crypto.createHash('sha256').update(sourceName + '|' + document).digest('hex');
@@ -155,12 +159,12 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     try {
       await db.query('BEGIN');
       await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['conciliacao:vinculos']);
-      const previous = await db.query('SELECT id, source_name, name, document, aliases FROM conciliacao_pessoas WHERE id=$1 FOR UPDATE', [id]);
+      const previous = await db.query('SELECT id, source_name, name, document, aliases, trade_name, purpose FROM conciliacao_pessoas WHERE id=$1 FOR UPDATE', [id]);
       if (previous.rows[0] && previous.rows[0].source_name !== sourceName) throw new Error('Cadastro incompatível. Reabra a janela de edição.');
       const sourceDocument = String(req.body.source_document || '').replace(/\D/g, '');
       const aliases = [...new Set([...(previous.rows[0]?.aliases || []), previous.rows[0]?.document, !String(req.body.source_document || '').includes('*') && [11, 14].includes(sourceDocument.length) ? sourceDocument : null].filter(Boolean))];
-      await db.query(`INSERT INTO conciliacao_pessoas (id,source_name,name,document,aliases) VALUES ($1,$2,$3,$4,$5::jsonb)
-        ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases)]);
+      await db.query(`INSERT INTO conciliacao_pessoas (id,source_name,name,document,aliases,trade_name,purpose) VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7)
+        ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, trade_name=EXCLUDED.trade_name, purpose=EXCLUDED.purpose, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases), tradeName, purpose]);
       await db.query('COMMIT');
     } catch (e) { await db.query('ROLLBACK'); throw e; } finally { db.release(); }
     res.json({ state: await readState(pool, bank, month), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
