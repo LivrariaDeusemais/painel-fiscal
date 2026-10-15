@@ -125,8 +125,8 @@ test('exportação tem originais, observação ao final, filtros, datas e valore
   assert.match(ws.getCell('A3').value, /000123/);
   assert.equal(ws.getCell('B8').value, -100); assert.equal(ws.getCell('C8').value, 1000);
   assert.ok(ws.getCell('A8').value instanceof Date);
-  assert.equal(ws.getCell('O7').value, 'Observação'); assert.equal(ws.getCell('O8').value, 'Conferido');
-  assert.equal(ws.autoFilter, 'A7:O8');
+  assert.equal(ws.getCell('N7').value, 'Observação'); assert.equal(ws.getCell('N8').value, 'Conferido');
+  assert.equal(ws.autoFilter, 'A7:N8');
 });
 test('script da página é válido e token não permite injetar HTML', () => {
   const html = renderPage({ token: 'abc', month: '2026-09', readonly: false });
@@ -166,4 +166,15 @@ test('pré-cadastro atualiza quatro campos, mantém original e preserva finalida
  const partner={name:'GENIVALDO SESTARI',document:'12453141813',classification:'',amount:100};
  const p={source_name:'GENIVALDO SESTARI',name:partner.name,document:partner.document,purpose:'Retirada'};
  assert.equal(s.applyPeople([partner],[p])[0].classification,'Inserção de Capital pelo Sócio');assert.equal(s.applyPeople([{...partner,amount:-100}],[p])[0].classification,'Retirada Sócios - Distribuição');
+});
+
+test('exportação distingue cabeçalhos originais por banco e exclui Conta Cliente', async () => {
+ const state={columns:['Data','Valor','Saldo'],sources:[],rows:[],account:{},warnings:[]};
+ for(const [bank,color,text] of [['inter','FFF79646','FF000000'],['caixa','FF005CA9','FFFFFFFF']]) {
+  const wb=s.exportWorkbook(state,bank,'2026-09'),ws=wb.worksheets[0];
+  assert.equal(ws.getCell('A7').fill.fgColor.argb,color);assert.equal(ws.getCell('C7').fill.fgColor.argb,color);assert.equal(ws.getCell('A7').font.color.argb,text);
+  assert.equal(ws.getCell('D7').fill.fgColor.argb,'FF008F48');
+  assert.ok(!ws.getRow(7).values.includes('Conta Cliente'));assert.doesNotMatch(ws.getCell('A4').value,/Somar Conta Cliente/);
+  const exported=await wb.xlsx.writeBuffer();const parsed=new ExcelJS.Workbook();await parsed.xlsx.load(exported);assert.equal(parsed.worksheets[0].getCell('A7').fill.fgColor.argb,color);
+ }
 });

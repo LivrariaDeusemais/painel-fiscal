@@ -303,13 +303,13 @@ function mergeImport(state, parsed) {
   if (state.account.closingBalance != null && state.rows.length && state.rows.at(-1).balance != null && state.account.closingBalance !== state.rows.at(-1).balance) state.warnings = [...new Set([...state.warnings, 'O saldo informado no cabeçalho diverge do saldo da última movimentação. Confira o arquivo original.'])];
   return { state, added, duplicate: false };
 }
-const extraColumns = ['Nome Fantasia', 'CPF/CNPJ conciliado', 'Status da Conciliação', 'Origem / Finalidade', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Conta Cliente', 'Observação'];
+const extraColumns = ['Nome Fantasia', 'CPF/CNPJ conciliado', 'Status da Conciliação', 'Origem / Finalidade', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Observação'];
 function rawValue(row, key) {
   const value = /^(NOME|RAZAO SOCIAL)/.test(norm(key)) ? row.legalName || row.raw[key] || '' : row.raw[key] ?? '';
   return /^(CPF|CNPJ)/.test(norm(key)) ? document(row.document || value) : value;
 }
 function extraValues(row) {
-  return [row.supplier || row.name || '', document(row.document), row.status, row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.clientStatus, row.observation || ''];
+  return [row.supplier || row.name || '', document(row.document), row.status, row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.observation || ''];
 }
 function compatiblePersonDocument(partial, full) {
   const a = String(partial || '').replace(/[^0-9*]/g, '');
@@ -341,6 +341,8 @@ function visibleColumns(state) {
 }
 function exportWorkbook(state, bank, month, rows = state.rows) {
   const wb = new ExcelJS.Workbook(); wb.creator = 'PlennaTec';
+  const originalColor = bank === 'inter' ? 'FFF79646' : 'FF005CA9';
+  const originalTextColor = bank === 'inter' ? 'FF000000' : 'FFFFFFFF';
   const ws = wb.addWorksheet('Conciliação');
   const originalColumns = visibleColumns(state).filter(k => !/^(CPF|CNPJ)/.test(norm(k)));
   const exportExtras = extraColumns.map(c => c === 'CPF/CNPJ conciliado' ? 'CPF/CNPJ' : c);
@@ -351,19 +353,18 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.mergeCells(`A1:${last}2`);
   ws.getCell('A1').value = `Extrato conciliado — ${BANKS[bank]} — ${month.split('-').reverse().join('/')}`;
   ws.getCell('A1').font = { name: 'Aptos', bold: true, size: 20, color: { argb: 'FFFFFFFF' } };
-  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF064E3B' } };
+  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bank === 'inter' ? 'FFE46C0A' : 'FF064E3B' } };
   ws.getCell('A1').alignment = { vertical: 'middle', wrapText: true };
   ws.getRow(1).height = 30; ws.getRow(2).height = 25;
   ws.mergeCells(`A3:${last}3`);
   ws.getCell('A3').value = `Agência: ${state.account.branch || 'Não informada'} | Conta: ${state.account.number || 'Não informada no arquivo'} | Período por data da movimentação: ${month}`;
   ws.mergeCells(`A4:${last}4`);
-  const selected = rows.filter(r => r.clientStatus === 'Somar Conta Cliente').reduce((s, r) => s + Math.abs(r.amount), 0);
-  ws.getCell('A4').value = `${rows.length} movimentações | Somar Conta Cliente: ${(selected / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} | Revisar/Não encontrado: ${rows.filter(r => !['Conciliado','Revisado'].includes(r.status)).length}`;
+  ws.getCell('A4').value = `${rows.length} movimentações | Revisar/Não encontrado: ${rows.filter(r => !['Conciliado','Revisado'].includes(r.status)).length}`;
   ws.mergeCells(`A5:${last}5`); ws.getCell('A5').value = state.warnings.join(' | ') || 'Colunas originais preservadas. Diferença = valor absoluto do extrato menos valor do lançamento vinculado.';
   ws.getCell('A5').alignment = { wrapText: true }; ws.getRow(5).height = 34;
   ws.getRow(7).values = columns;
   ws.getRow(7).height = 34;
-  ws.getRow(7).eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF008F48' } }; c.alignment = { wrapText: true, vertical: 'middle' }; });
+  ws.getRow(7).eachCell((c, index) => { const original = index <= originalColumns.length; c.font = { bold: true, color: { argb: original ? originalTextColor : 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: original ? originalColor : 'FF008F48' } }; c.alignment = { wrapText: true, vertical: 'middle' }; });
   rows.forEach((row, i) => {
     const raw = originalColumns.map(key => {
       const v = rawValue(row, key);
