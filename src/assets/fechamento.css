@@ -21,3 +21,12 @@
 .fx .fx-months input{width:16px;height:16px;margin:0;accent-color:#075438;flex-shrink:0}
 @media(max-width:850px){.fx .fx-months>div{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:500px){.fx .fx-months>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compras: quatro totalizadores preenchem a linha em notebooks e desktops. */
+@media(min-width:768px){
+ .fx .fx-stats.fx-stats-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .fx .fx-stats-4 strong{font-size:clamp(18px,1.8vw,24px);white-space:nowrap;overflow-wrap:normal}
+ .fx .fx-stats-4>div{padding:12px 10px}
+ .fx .fx-stats-4 span{font-size:clamp(11px,1vw,13px)}
+ .fx .fx-stats-4 small{white-space:normal}
+}
