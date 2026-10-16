@@ -52,3 +52,12 @@ html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form .c
 html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form>button{align-self:flex-start!important}
 html body.layout-executivo.layout-executivo.layout-executivo .tp-stat{text-align:center!important}
 html body.layout-executivo.layout-executivo.layout-executivo .cod-result-meta>div{text-align:center!important}
+
+/* Arquivo de compras: ações discretas e títulos fixos dentro da tabela. */
+html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel:first-child .bar>button,
+html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel:first-child .bar>.action,
+html body.layout-executivo.layout-executivo.layout-executivo .exec-local-actions>a,
+html body.layout-executivo.layout-executivo.layout-executivo .exec-local-actions>button{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:30px!important;height:auto!important;padding:6px 10px!important;font-size:12px!important;font-weight:600!important;border:1px solid #c4d9cd!important;border-radius:5px!important;background:#fff!important;background-image:none!important;color:#28543e!important;box-shadow:none!important;transform:none!important;text-decoration:none!important}
+html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll{max-height:70vh;max-height:70dvh;overflow:auto!important;position:relative;isolation:isolate;scrollbar-gutter:stable}
+html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll table{overflow:visible!important}
+html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll thead th{position:sticky!important;top:0!important;z-index:5!important;background:#f3f6f8!important;box-shadow:0 1px 0 #dce7df}
