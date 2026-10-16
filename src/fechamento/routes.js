@@ -26,20 +26,21 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  const latest=(await pool.query("SELECT mes FROM fechamentos_mensais WHERE status='fechado' ORDER BY mes DESC LIMIT 1")).rows[0]?.mes;
  const m=req.query.mes||latest||s.lastClosedMonth();if(!s.monthValid(m))throw new Error('Competência inválida.');
  const year=String(req.query.ano||m.slice(0,4));if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');
- const mode=req.query.visao==='anual'?'anual':'mensal';
- const closedRows=(await pool.query(`SELECT * FROM fechamentos_mensais WHERE status='fechado' AND ${mode==='anual'?"mes LIKE $1":"mes=$1"} ORDER BY mes`,[mode==='anual'?year+'-%':m])).rows;
+ const mode=['anual','personalizado'].includes(req.query.visao)?req.query.visao:'mensal';
+ const selectedMonths=s.period({mode,month:m,year,months:req.query.meses||[]});
+ const closedRows=(await pool.query("SELECT * FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes",[selectedMonths])).rows;
  const data=s.aggregate(closedRows),closed={data,count:closedRows.length,through:data.through,rows:closedRows};
- const start=mode==='anual'?year+'-01-01':m+'-01',end=mode==='anual'?(Number(year)+1)+'-01-01':new Date(Date.UTC(Number(m.slice(0,4)),Number(m.slice(5)),1)).toISOString().slice(0,10);
+
  let categories=[],suppliers=[],live={};
  if(['inicio','financeiro','contabil'].includes(area)){
- categories=(await pool.query(`SELECT COALESCE(p.nome,c.nome,'Sem categoria') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(l.valor),0) AS total FROM lancamentos l LEFT JOIN categorias c ON c.id=l.categoria_id LEFT JOIN categorias p ON p.id=c.categoria_pai_id WHERE l.data_despesa >= $1::date AND l.data_despesa < $2::date GROUP BY COALESCE(p.nome,c.nome,'Sem categoria') ORDER BY total DESC`,[start,end])).rows;
- suppliers=(await pool.query(`SELECT COALESCE(NULLIF(TRIM(fornecedor),''),'Sem fornecedor') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(valor),0) AS total FROM lancamentos WHERE data_despesa >= $1::date AND data_despesa < $2::date GROUP BY fornecedor ORDER BY total DESC LIMIT 10`,[start,end])).rows;
+ categories=(await pool.query(`SELECT COALESCE(p.nome,c.nome,'Sem categoria') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(l.valor),0) AS total FROM lancamentos l LEFT JOIN categorias c ON c.id=l.categoria_id LEFT JOIN categorias p ON p.id=c.categoria_pai_id WHERE to_char(l.data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY COALESCE(p.nome,c.nome,'Sem categoria') ORDER BY total DESC`,[selectedMonths])).rows;
+ suppliers=(await pool.query(`SELECT COALESCE(NULLIF(TRIM(fornecedor),''),'Sem fornecedor') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(valor),0) AS total FROM lancamentos WHERE to_char(data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY fornecedor ORDER BY total DESC LIMIT 10`,[selectedMonths])).rows;
  }
- if(area==='compras'&&await exists('compras_estoque_nf')){const r=(await pool.query("SELECT COUNT(*)::int AS count,COALESCE(SUM((dados->>'total')::numeric),0) AS total FROM compras_estoque_nf WHERE dados->>'date'>=$1 AND dados->>'date'<$2",[start,end])).rows[0];live.invoiceCount=r.count;live.invoiceTotal=Number(r.total);}
+ if(area==='compras'&&await exists('compras_estoque_nf')){const r=(await pool.query("SELECT COUNT(*)::int AS count,COALESCE(SUM((dados->>'total')::numeric),0) AS total FROM compras_estoque_nf WHERE LEFT(dados->>'date',7)=ANY($1::text[])",[selectedMonths])).rows[0];live.invoiceCount=r.count;live.invoiceTotal=Number(r.total);}
  if(area==='precos'){if(await exists('tabela_preco_produtos'))live.products=(await pool.query('SELECT COUNT(*)::int AS total FROM tabela_preco_produtos')).rows[0].total;if(await exists('tabela_preco_vinculos'))live.links=(await pool.query('SELECT COUNT(*)::int AS total FROM tabela_preco_vinculos')).rows[0].total;}
  if(area==='integracoes'&&await exists('bling_integracao')){const r=(await pool.query('SELECT ultima_sincronizacao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1')).rows[0];live.blingDate=r?.ultima_sincronizacao;live.blingConnected=r?.conectado;}
  if(area==='admin'){live.users=(await pool.query('SELECT COUNT(*)::int AS total FROM usuarios')).rows[0].total;live.categories=(await pool.query('SELECT COUNT(*)::int AS total FROM categorias')).rows[0].total;}
- return html(req,res,'Visão geral',views.dashboard({area,month:m,year,mode,closed,categories,suppliers,live,action:req.path}));
+ return html(req,res,'Visão geral',views.dashboard({area,month:m,year,mode,selectedMonths,closed,categories,suppliers,live,action:req.path}));
  }
  for(const [url,area] of [['/visao-geral','inicio'],['/financeiro','financeiro'],['/contabil','contabil'],['/compras','compras'],['/precos','precos'],['/integracoes','integracoes'],['/administracao','admin']])router.get(url,run((req,res)=>overview(req,res,area)));
  router.get('/contabil/fechamento',run(async(req,res)=>{

@@ -7,7 +7,7 @@
  input.addEventListener('keydown',e=>{if(e.key==='Escape')results.hidden=true;if(e.key==='Enter'&&results.querySelector('a'))location.href=results.querySelector('a').href;});
  document.addEventListener('click',e=>{if(!root.querySelector('.exec-search').contains(e.target))results.hidden=true;});
  // Mantém os controles locais dos menus antigos (Colunas, Nova conta, filtros etc.).
- const globalPaths=new Set(pages.map(p=>p.url.split('?')[0]).concat(['/dashboard','/logout','/espaco-contador','/conciliacao-bancaria']));
+ const globalPaths=new Set(pages.map(p=>p.url.split('?')[0]).concat(['/ferramentas-ia','/dashboard','/logout','/espaco-contador','/conciliacao-bancaria']));
  document.querySelectorAll('.dm-global-nav,.plennatec-top-nav,.nav-card,.nav-panel,main.shell > .nav').forEach(nav=>{
   if(nav.closest('#exec-header'))return;
   const actions=[];

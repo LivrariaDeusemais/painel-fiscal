@@ -1,8 +1,9 @@
 const test=require('node:test'),assert=require('node:assert/strict');const express=require('express'),fs=require('fs'),os=require('os'),path=require('path'),ExcelJS=require('exceljs');
 const {createRouter}=require('../src/fechamento/routes');const s=require('../src/fechamento/service');
 test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baixar e preservar auditoria',async t=>{
- const months=new Map(),files=new Map(),events=[],queries=[];
- const pool={async query(q,a=[]){queries.push(q);if(q.startsWith('SELECT * FROM fechamentos_mensais WHERE mes=$1'))return {rows:months.has(a[0])?[months.get(a[0])]:[]};
+ const months=new Map(),files=new Map(),events=[],queries=[],periodQueries=[];
+ const pool={async query(q,a=[]){queries.push(q);if(q.includes('ANY($1::text[])')){periodQueries.push([q,a[0]]);if(q.startsWith('SELECT * FROM fechamentos_mensais'))return {rows:[...months.values()].filter(r=>r.status==='fechado'&&a[0].includes(r.mes))};}
+ if(q.startsWith('SELECT * FROM fechamentos_mensais WHERE mes=$1'))return {rows:months.has(a[0])?[months.get(a[0])]:[]};
  if(q.startsWith('INSERT INTO fechamentos_mensais')){const prev=months.get(a[0]),r={mes:a[0],status:a[1],versao:(prev?.versao||0)+1,dados:JSON.parse(a[2]),atualizado_por:a[3],atualizado_em:new Date()};months.set(a[0],r);return {rows:[r]};}
  if(q.startsWith('INSERT INTO fechamento_arquivos')){files.set(a[0],{id:a[0],mes:a[1],tipo:a[2],nome_original:a[3],nome_arquivo:a[4],sha256:a[5],extraido:JSON.parse(a[6]),usuario:a[7],criado_em:new Date()});}
  if(q.startsWith('INSERT INTO fechamento_eventos'))events.push({mes:a[0],acao:a[1],usuario:a[2],dados:JSON.parse(a[3]),criado_em:new Date()});
@@ -29,6 +30,7 @@ test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baix
  const body={month:'2026-01',data,sourceFiles:{matriz:f.id},status:'fechado',version:0,reason:'Ajuste conforme conferência'};
  const post=body=>get('/contabil/fechamento/salvar',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
  const saved=await post(body);assert.equal(saved.status,200);assert.equal(months.get('2026-01').dados.stocks.matriz.value,2800);assert.equal(months.get('2026-01').dados.sourceNotes.matriz.value,3000);assert.equal((await post(body)).status,409);
+ const custom=await get('/financeiro?visao=personalizado&ano=2026&meses=2026-01&meses=2026-03');assert.equal(custom.status,200);assert.match(await custom.text(),/Acumulado de 1/);assert.ok(periodQueries.length>=3);assert.ok(periodQueries.every(([,months])=>JSON.stringify(months)===JSON.stringify(['2026-01','2026-03'])));
  session.usuario={id:2,nome:'Contadora',perfil:'CONTADOR'};
  assert.equal((await post({...body,version:1})).status,403);
  const read=await get('/contabil/fechamento?mes=2026-01');assert.equal(read.status,200);assert.match(await read.text(),/<fieldset disabled>/);

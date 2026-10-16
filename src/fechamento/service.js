@@ -9,6 +9,12 @@ const MONEY_FIELDS=['revenue','deductions','netRevenue','cmv','expenses','origin
 const DEPOSITS={matriz:'Santo André — Matriz',mercadoLivre:'Full Mercado Livre',shopee:'Full Shopee'};
 function monthValid(v){return /^\d{4}-(0[1-9]|1[0-2])$/.test(v||'') && Number(v.slice(0,4))>=2000 && Number(v.slice(0,4))<=2100;}
 function lastClosedMonth(now=new Date()) {const y=Number(now.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric'})), m=Number(now.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo',month:'2-digit'}));return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;}
+function period({mode='mensal',month,year,months=[]}){
+ if(!monthValid(month)||!/^20\d{2}$/.test(String(year)))throw new Error('Período inválido.');
+ const selected=mode==='anual'?Array.from({length:12},(_,i)=>`${year}-${String(i+1).padStart(2,'0')}`):mode==='personalizado'?[...new Set((Array.isArray(months)?months:[months]).map(String))].sort():[month];
+ if(!selected.length||selected.length>12||selected.some(m=>!monthValid(m)||(mode==='personalizado'&&m.slice(0,4)!==String(year))))throw new Error('Marque pelo menos um mês do ano selecionado.');
+ return selected;
+}
 function cents(v){
  if(typeof v==='number'){if(!Number.isFinite(v))throw new Error('Valor inválido.');return Math.round(v*100);}
  let s=String(v??'').trim().replace(/R\$/gi,'').replace(/\s/g,'');if(!s||s==='—'||s==='-')return 0;
@@ -80,4 +86,4 @@ function workbook(rows){const wb=new ExcelJS.Workbook();wb.creator='Plennatec';f
  ]){const ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});ws.addRow(headers);list.forEach(r=>ws.addRow(r));ws.autoFilter={from:'A1',to:{row:1,column:headers.length}};ws.columns.forEach((c,i)=>{c.width=i===0?16:24;});ws.getRow(1).eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'075438'}};c.font={bold:true,color:{argb:'FFFFFF'}};c.alignment={wrapText:true};});ws.eachRow((r,i)=>{if(i===1)return;r.eachCell((c,col)=>{if(typeof c.value==='number')c.numFmt=name==='Fechamentos'&&col===9?'0.00%':'#,##0.00;[Red]-#,##0.00';});});}
  return wb;
 }
-module.exports={norm,cents,monthValid,lastClosedMonth,blank,derive,validate,parseDre,parseStock,readSpreadsheet,ensure,save,aggregate,workbook,DEPOSITS,MONEY_FIELDS};
+module.exports={period,norm,cents,monthValid,lastClosedMonth,blank,derive,validate,parseDre,parseStock,readSpreadsheet,ensure,save,aggregate,workbook,DEPOSITS,MONEY_FIELDS};

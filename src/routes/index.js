@@ -12820,7 +12820,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <div class="card">
                 <h2>Novo usuário</h2>
 
-                <form method="POST" action="/usuarios/novo">
+                <form class="user-admin-form" method="POST" action="/usuarios/novo">
                   <label for="nome">Nome</label>
                   <input id="nome" name="nome" placeholder="Nome do usuário" required />
 
@@ -13553,7 +13553,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
           <div class="card">
             <h1>✏️ Editar Usuário</h1>
 
-            <form method="POST" action="/usuarios/editar/${user.id}">
+            <form class="user-admin-form" method="POST" action="/usuarios/editar/${user.id}">
               <label>Nome</label>
               <input name="nome" value="${escapeUsuarioHtml(user.nome || '')}" required />
 
@@ -31677,7 +31677,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
       .cod-kicker{color:#008f3a;font-size:10px;font-weight:900;text-transform:uppercase;}
       .cod-base-status,.cod-result-count{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;background:#eaf8f0;color:#087334;font-size:10px;font-weight:900;white-space:nowrap;}
       .cod-form{display:grid;gap:15px;}
-      .cod-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+      .cod-document-fields{grid-template-columns:repeat(3,minmax(0,1fr))!important}.cod-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
       .cod-field{display:grid;gap:7px;min-width:0;}
       .cod-field span{color:#334155;font-size:12px;font-weight:900;}
       .cod-field input,.cod-field select{width:100%;height:44px;border:1px solid #cfd9e4;border-radius:8px;background:#fff;padding:0 12px;color:#172033;font:700 13px Arial,Helvetica,sans-serif;}
@@ -31698,7 +31698,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
       .cod-pending strong{display:block;margin-bottom:9px;}
       .cod-pending div{display:flex;gap:7px;flex-wrap:wrap;}
       .cod-pending span{padding:5px 8px;border-radius:6px;background:#fff;border:1px solid #fed7aa;font-weight:900;}
-      @media(max-width:760px){.cod-form-grid,.cod-result-meta{grid-template-columns:1fr;}.cod-section-heading{flex-direction:column;}.cod-form-actions,.cod-downloads{align-items:stretch;flex-direction:column;}.cod-btn{width:100%;}}
+      @media(max-width:760px){.cod-form-grid,.cod-document-fields,.cod-result-meta{grid-template-columns:1fr!important;}.cod-section-heading{flex-direction:column;}.cod-form-actions,.cod-downloads{align-items:stretch;flex-direction:column;}.cod-btn{width:100%;}}
     </style>
     <div class="cod-shell">
       ${feedbackHtml}
@@ -31717,11 +31717,19 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
         <form class="cod-form" method="post" action="/ferramentas-ia/codificador/processar" enctype="multipart/form-data">
           <label class="cod-field">
             <span>PDF da NF ou orçamento</span>
-            <input type="file" name="pdf" accept="application/pdf,.pdf">
+            <input type="file" name="pdf" accept="application/pdf,.pdf"><small class="cod-help">Ao enviar um PDF, o fornecedor é detectado automaticamente. Para usar uma NF já arquivada, selecione o fornecedor e informe o número abaixo.</small>
           </label>
-          <div class="cod-form-grid">
-            <label class="cod-field"><span>Fornecedor da NF arquivada</span><select id="codCompraFornecedor"><option value="">Selecionar fornecedor</option></select></label>
+          <div class="cod-form-grid cod-document-fields">
+            <label class="cod-field"><span>Fornecedor (NF arquivada)</span><select id="codCompraFornecedor"><option value="">Selecionar fornecedor</option></select></label>
             <label class="cod-field"><span>Número da NF arquivada</span><input id="codCompraNumero" inputmode="numeric" placeholder="Digite o número da NF" autocomplete="off" disabled></label>
+            <label class="cod-field">
+              <span>Tipo de documento</span>
+              <select name="tipo">
+                <option value="auto">Detectar automaticamente</option>
+                <option value="nf">NF / DANFE</option>
+                <option value="orcamento">Orçamento</option>
+              </select>
+            </label>
           </div>
           <input type="hidden" name="compra_nf" id="codCompraNF">
           <p id="codCompraStatus" aria-live="polite" style="margin:0;color:#64748b;font-size:12px"></p>
@@ -31732,28 +31740,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
             supplier.onchange=()=>{request++;chosen.value='';number.value='';number.disabled=!supplier.value;status.textContent=supplier.value?'Digite o número da NF desse fornecedor.':''};number.oninput=()=>{request++;chosen.value='';clearTimeout(timer);timer=setTimeout(find,300)};
             form.addEventListener('submit',async e=>{if(confirmed||(!supplier.value&&!number.value))return;e.preventDefault();clearTimeout(timer);if(await find()){confirmed=true;form.requestSubmit();confirmed=false}});
           })()</script>
-          <div class="cod-form-grid">
-            <label class="cod-field">
-              <span>Fornecedor</span>
-              <select name="fornecedor">
-                <option value="auto">Detectar automaticamente</option>
-                <option value="sbb">SBB</option>
-                <option value="bv_books">BV Books / BKJ1611</option>
-                <option value="cpp">CPP</option>
-                <option value="cpad">CPAD Editora</option>
-                <option value="penkal">Penkal</option>
-                <option value="adib">ADIB / Inteligência Bíblica</option>
-              </select>
-            </label>
-            <label class="cod-field">
-              <span>Tipo de documento</span>
-              <select name="tipo">
-                <option value="auto">Detectar automaticamente</option>
-                <option value="nf">NF / DANFE</option>
-                <option value="orcamento">Orçamento</option>
-              </select>
-            </label>
-          </div>
+          <input type="hidden" name="fornecedor" value="auto">
           <div class="cod-form-actions"><button class="cod-btn cod-btn-primary" type="submit">Codificar PDF</button></div>
         </form>
       </section>

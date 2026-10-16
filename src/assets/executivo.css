@@ -42,3 +42,13 @@ html body.layout-executivo.layout-executivo.layout-executivo .ml-table-toolbar{p
 html body.layout-executivo.layout-executivo.layout-executivo:has(#rotinaTable) .top-bar.rotina-filtros-compactos{grid-template-areas:"colunas colunas" "filtros mes"!important;grid-template-columns:minmax(0,1fr) 240px!important;grid-template-rows:auto auto!important;gap:6px 10px!important}
 html body.layout-executivo.layout-executivo.layout-executivo:has(#rotinaTable) .container>.card,html body.layout-executivo.layout-executivo.layout-executivo:has(.ml-table) .container>.card{padding-top:10px!important;padding-bottom:12px!important}
 @media(max-width:1050px){html body.layout-executivo.layout-executivo.layout-executivo:has(#rotinaTable) .top-bar.rotina-filtros-compactos{grid-template-columns:1fr!important;grid-template-areas:"colunas" "filtros" "mes"!important;grid-template-rows:auto auto auto!important}}
+/* Cadastro e edição: campos verticais e alertas com controles compactos. */
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form>label{width:auto!important;min-width:0!important;margin:4px 0 0!important;white-space:normal!important}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form>input,html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form>select{width:100%!important;min-width:0!important;margin:0!important}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form .check-grid{display:grid!important;grid-template-columns:1fr!important;gap:12px!important;width:100%!important;padding:12px 0!important;margin:0!important}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form .check-item{display:flex!important;align-items:center!important;gap:9px!important;width:100%!important;margin:0!important;padding:0!important;white-space:normal!important;line-height:1.4!important}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form .check-item input{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;flex:0 0 16px!important;margin:0!important;padding:0!important;accent-color:#075438}
+html body.layout-executivo.layout-executivo.layout-executivo .user-admin-form>button{align-self:flex-start!important}
+html body.layout-executivo.layout-executivo.layout-executivo .tp-stat{text-align:center!important}
+html body.layout-executivo.layout-executivo.layout-executivo .cod-result-meta>div{text-align:center!important}
