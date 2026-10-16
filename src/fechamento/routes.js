@@ -25,16 +25,17 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  const profile=req.session.usuario.perfil;if(profile==='CONTADOR'&&!['inicio','contabil'].includes(area))return res.sendStatus(403);
  if(area==='admin'&&profile!=='ADMIN')return res.sendStatus(403);
  const canSeeClosing=['ADMIN','CONTADOR'].includes(profile);
- const latest=canSeeClosing?(await pool.query("SELECT mes FROM fechamentos_mensais WHERE status='fechado' ORDER BY mes DESC LIMIT 1")).rows[0]?.mes:null;
+ const latest=(await pool.query("SELECT mes FROM fechamentos_mensais WHERE status='fechado' ORDER BY mes DESC LIMIT 1")).rows[0]?.mes;
  const m=req.query.mes||latest||s.lastClosedMonth();if(!s.monthValid(m))throw new Error('Competência inválida.');
  const year=String(req.query.ano||m.slice(0,4));if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');
  const mode=['anual','personalizado'].includes(req.query.visao)?req.query.visao:'mensal';
  const selectedMonths=s.period({mode,month:m,year,months:req.query.meses||[]});
- const closedRows=canSeeClosing?(await pool.query("SELECT * FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes",[selectedMonths])).rows:[];
+ const columns=canSeeClosing?"*":"mes,status,jsonb_build_object('stocks',dados->'stocks','publishers',dados->'publishers') AS dados";
+ const closedRows=(await pool.query(`SELECT ${columns} FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes`,[selectedMonths])).rows;
  const data=s.aggregate(closedRows),closed={data,count:closedRows.length,through:data.through,rows:closedRows};
 
  let categories=[],suppliers=[],live={};
- if(canSeeClosing&&['inicio','financeiro','contabil'].includes(area)){
+ if(['inicio','financeiro','contabil'].includes(area)){
  categories=(await pool.query(`SELECT COALESCE(p.nome,c.nome,'Sem categoria') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(l.valor),0) AS total FROM lancamentos l LEFT JOIN categorias c ON c.id=l.categoria_id LEFT JOIN categorias p ON p.id=c.categoria_pai_id WHERE to_char(l.data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY COALESCE(p.nome,c.nome,'Sem categoria') ORDER BY total DESC`,[selectedMonths])).rows;
  suppliers=(await pool.query(`SELECT COALESCE(NULLIF(TRIM(fornecedor),''),'Sem fornecedor') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(valor),0) AS total FROM lancamentos WHERE to_char(data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY fornecedor ORDER BY total DESC LIMIT 10`,[selectedMonths])).rows;
  }

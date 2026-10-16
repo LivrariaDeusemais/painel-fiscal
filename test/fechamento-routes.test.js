@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict');const expre
 const {createRouter}=require('../src/fechamento/routes');const s=require('../src/fechamento/service');
 test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baixar e preservar auditoria',async t=>{
  const months=new Map(),files=new Map(),events=[],queries=[],periodQueries=[];
- const pool={async query(q,a=[]){queries.push(q);if(q.includes('ANY($1::text[])')){periodQueries.push([q,a[0]]);if(q.startsWith('SELECT * FROM fechamentos_mensais'))return {rows:[...months.values()].filter(r=>r.status==='fechado'&&a[0].includes(r.mes))};}
+ const pool={async query(q,a=[]){queries.push(q);if(q.includes('ANY($1::text[])')){periodQueries.push([q,a[0]]);if(q.includes('FROM fechamentos_mensais'))return {rows:[...months.values()].filter(r=>r.status==='fechado'&&a[0].includes(r.mes))};}
  if(q.startsWith('SELECT * FROM fechamentos_mensais WHERE mes=$1'))return {rows:months.has(a[0])?[months.get(a[0])]:[]};
  if(q.startsWith('INSERT INTO fechamentos_mensais')){const prev=months.get(a[0]),r={mes:a[0],status:a[1],versao:(prev?.versao||0)+1,dados:JSON.parse(a[2]),atualizado_por:a[3],atualizado_em:new Date()};months.set(a[0],r);return {rows:[r]};}
  if(q.startsWith('INSERT INTO fechamento_arquivos')){files.set(a[0],{id:a[0],mes:a[1],tipo:a[2],nome_original:a[3],nome_arquivo:a[4],sha256:a[5],extraido:JSON.parse(a[6]),usuario:a[7],criado_em:new Date()});}
@@ -35,7 +35,7 @@ test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baix
  for(const url of ['/contabil/fechamento?mes=2026-01','/contabil/historico?ano=2026','/contabil/fechamento/exportar?ano=2026','/contabil/fechamento/arquivo/'+f.id])assert.equal((await get(url)).status,403);
  assert.equal((await post({...body,version:1})).status,403);assert.equal((await get('/contabil/fechamento/importar',{method:'POST',headers,body:fd()})).status,403);
  assert.equal(queries.length,beforeRestricted,'acesso negado antes de consultar dados');
- for(const url of ['/visao-geral','/financeiro','/contabil','/compras']){const start=queries.length;const response=await get(url);assert.equal(response.status,200);const text=await response.text();assert.doesNotMatch(text,/Faturamento bruto|Margem líquida|Resultado líquido|Evolução dos fechamentos/);assert.ok(!queries.slice(start).some(q=>q.includes('SELECT')&&(q.includes('fechamentos_mensais')||q.includes('FROM lancamentos'))));}
+ for(const url of ['/visao-geral','/financeiro','/contabil','/compras']){const start=queries.length;const response=await get(url);assert.equal(response.status,200);const text=await response.text();assert.doesNotMatch(text,/Faturamento bruto|Margem líquida|Resultado líquido|Evolução dos fechamentos/);assert.ok(!queries.slice(start).some(q=>q.startsWith('SELECT * FROM fechamentos_mensais')));assert.match(text,/Compras para estoque por editora/);if(url!=='/compras')assert.match(text,/Despesas por categoria/);}
  session.usuario={id:2,nome:'Contadora',perfil:'CONTADOR'};
  assert.equal((await post({...body,version:1})).status,403);
  const read=await get('/contabil/fechamento?mes=2026-01');assert.equal(read.status,200);assert.match(await read.text(),/<fieldset disabled>/);
