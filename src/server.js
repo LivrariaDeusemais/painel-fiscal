@@ -28,6 +28,13 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Preferência visual individual; o layout legado e suas rotas permanecem disponíveis.
+const executiveUi = require('./services/ui-executivo');
+app.use(executiveUi.middleware);
+app.post('/aparencia', executiveUi.preference);
+// Relatórios de fechamento só são baixados pelas rotas autenticadas e auditadas.
+app.use('/uploads/fechamentos', (req,res) => res.sendStatus(403));
+
 // Servir arquivos estáticos
 app.use('/uploads', express.static(uploadsDir));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));

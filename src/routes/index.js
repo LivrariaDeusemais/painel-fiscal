@@ -33031,6 +33031,7 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
   }
 });
 
+router.use(require('../fechamento/routes').createRouter({ pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir }));
 router.use('/ferramentas-ia/gestao-compras', require('./compras-estoque').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir}));
 router.use('/conciliacao-bancaria', require('./conciliacao-bancaria').createRouter({
   pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir
