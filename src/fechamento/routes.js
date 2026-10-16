@@ -51,7 +51,7 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  html(req,res,'Fechamento mensal',views.editor({month:m,row:r,files,events,expenses:s.cents(Number(expense)),token:req.session.fechamentoToken,readonly:req.session.usuario.perfil==='CONTADOR'}));
  }));
  router.post('/contabil/fechamento/importar',operator,csrf,(req,res,next)=>upload.fields(['dre',...Object.keys(s.DEPOSITS)].map(name=>({name,maxCount:1})))(req,res,e=>e?res.status(400).json({error:'Envie até quatro planilhas Excel, com no máximo 15 MB cada.'}):next()),run(async(req,res)=>{
- const m=String(req.body.month||'');if(!s.monthValid(m)||m>s.lastClosedMonth())throw new Error('Selecione um mês já encerrado.');if(req.body.confirmed!=='true'||req.body.completeDre!=='true')throw new Error('Confirme o período completo do DRE e a data/critério dos estoques.');
+ const m=String(req.body.month||'');if(!s.monthValid(m)||m>s.lastClosedMonth())throw new Error('Selecione um mês já encerrado.');if(req.files?.dre?.length&&req.body.completeDre!=='true')throw new Error('Confirme o ano e o período completo do DRE.');if(Object.keys(s.DEPOSITS).some(k=>req.files?.[k]?.length)&&req.body.confirmed!=='true')throw new Error('Confirme a data e o critério dos arquivos de estoque enviados.');
  const entries=Object.entries(req.files||{});if(!entries.length)throw new Error('Escolha pelo menos uma planilha.');fs.mkdirSync(directory,{recursive:true});const parsed=[],created=[];
  try{
  for(const [type,list] of entries){const f=list[0],ext=path.extname(f.originalname).toLowerCase();if(!['.xls','.xlsx'].includes(ext))throw new Error('Use arquivos .xls ou .xlsx.');
