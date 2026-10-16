@@ -13,6 +13,7 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  const actor=req=>`${req.session.usuario.id} • ${req.session.usuario.nome||req.session.usuario.perfil}`;
  const run=fn=>async(req,res,next)=>{try{await ensure();await fn(req,res,next);}catch(e){console.error('[Fechamento]',e.message);const status=e.status||400;if(req.path.includes('/importar')||req.path.includes('/salvar'))return res.status(status).json({error:e.message});return res.status(status).send(renderShell(req,{titulo:'Fechamento mensal',navegacaoSuperior:true},views.base('Não foi possível concluir',`<div class="fx-notice error">${ui.esc(e.message)}</div><a href="/contabil">Voltar ao Contábil</a>`)));}};
  router.use(protect,(req,res,next)=>['ADMIN','USUARIO','CONTADOR'].includes(req.session.usuario?.perfil)?next():res.sendStatus(403));
+ router.use(['/contabil/fechamento','/contabil/historico'],(req,res,next)=>['ADMIN','CONTADOR'].includes(req.session.usuario.perfil)?next():res.status(403).send('Acesso restrito a administradores e contador.'));
  const operator=(req,res,next)=>req.session.usuario.perfil==='CONTADOR'?res.status(403).json({error:'Acesso somente para consulta.'}):next();
  const csrf=(req,res,next)=>{if(!req.session.fechamentoToken||req.headers['x-fechamento-token']!==req.session.fechamentoToken)return res.status(403).json({error:'Atualize a página antes de salvar.'});next();};
  const month=req=>{const m=req.query.mes||req.body?.month||s.lastClosedMonth();if(!s.monthValid(m))throw new Error('Competência inválida.');return m;};
@@ -23,16 +24,17 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  async function overview(req,res,area){
  const profile=req.session.usuario.perfil;if(profile==='CONTADOR'&&!['inicio','contabil'].includes(area))return res.sendStatus(403);
  if(area==='admin'&&profile!=='ADMIN')return res.sendStatus(403);
- const latest=(await pool.query("SELECT mes FROM fechamentos_mensais WHERE status='fechado' ORDER BY mes DESC LIMIT 1")).rows[0]?.mes;
+ const canSeeClosing=['ADMIN','CONTADOR'].includes(profile);
+ const latest=canSeeClosing?(await pool.query("SELECT mes FROM fechamentos_mensais WHERE status='fechado' ORDER BY mes DESC LIMIT 1")).rows[0]?.mes:null;
  const m=req.query.mes||latest||s.lastClosedMonth();if(!s.monthValid(m))throw new Error('Competência inválida.');
  const year=String(req.query.ano||m.slice(0,4));if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');
  const mode=['anual','personalizado'].includes(req.query.visao)?req.query.visao:'mensal';
  const selectedMonths=s.period({mode,month:m,year,months:req.query.meses||[]});
- const closedRows=(await pool.query("SELECT * FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes",[selectedMonths])).rows;
+ const closedRows=canSeeClosing?(await pool.query("SELECT * FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes",[selectedMonths])).rows:[];
  const data=s.aggregate(closedRows),closed={data,count:closedRows.length,through:data.through,rows:closedRows};
 
  let categories=[],suppliers=[],live={};
- if(['inicio','financeiro','contabil'].includes(area)){
+ if(canSeeClosing&&['inicio','financeiro','contabil'].includes(area)){
  categories=(await pool.query(`SELECT COALESCE(p.nome,c.nome,'Sem categoria') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(l.valor),0) AS total FROM lancamentos l LEFT JOIN categorias c ON c.id=l.categoria_id LEFT JOIN categorias p ON p.id=c.categoria_pai_id WHERE to_char(l.data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY COALESCE(p.nome,c.nome,'Sem categoria') ORDER BY total DESC`,[selectedMonths])).rows;
  suppliers=(await pool.query(`SELECT COALESCE(NULLIF(TRIM(fornecedor),''),'Sem fornecedor') AS nome,COUNT(*)::int AS quantidade,COALESCE(SUM(valor),0) AS total FROM lancamentos WHERE to_char(data_despesa,'YYYY-MM')=ANY($1::text[]) GROUP BY fornecedor ORDER BY total DESC LIMIT 10`,[selectedMonths])).rows;
  }
@@ -40,7 +42,7 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  if(area==='precos'){if(await exists('tabela_preco_produtos'))live.products=(await pool.query('SELECT COUNT(*)::int AS total FROM tabela_preco_produtos')).rows[0].total;if(await exists('tabela_preco_vinculos'))live.links=(await pool.query('SELECT COUNT(*)::int AS total FROM tabela_preco_vinculos')).rows[0].total;}
  if(area==='integracoes'&&await exists('bling_integracao')){const r=(await pool.query('SELECT ultima_sincronizacao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1')).rows[0];live.blingDate=r?.ultima_sincronizacao;live.blingConnected=r?.conectado;}
  if(area==='admin'){live.users=(await pool.query('SELECT COUNT(*)::int AS total FROM usuarios')).rows[0].total;live.categories=(await pool.query('SELECT COUNT(*)::int AS total FROM categorias')).rows[0].total;}
- return html(req,res,'Visão geral',views.dashboard({area,month:m,year,mode,selectedMonths,closed,categories,suppliers,live,action:req.path}));
+ return html(req,res,'Visão geral',views.dashboard({area,month:m,year,mode,selectedMonths,canSeeClosing,closed,categories,suppliers,live,action:req.path}));
  }
  for(const [url,area] of [['/visao-geral','inicio'],['/financeiro','financeiro'],['/contabil','contabil'],['/compras','compras'],['/precos','precos'],['/integracoes','integracoes'],['/administracao','admin']])router.get(url,run((req,res)=>overview(req,res,area)));
  router.get('/contabil/fechamento',run(async(req,res)=>{

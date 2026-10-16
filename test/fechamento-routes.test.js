@@ -31,6 +31,11 @@ test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baix
  const post=body=>get('/contabil/fechamento/salvar',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
  const saved=await post(body);assert.equal(saved.status,200);assert.equal(months.get('2026-01').dados.stocks.matriz.value,2800);assert.equal(months.get('2026-01').dados.sourceNotes.matriz.value,3000);assert.equal((await post(body)).status,409);
  const custom=await get('/financeiro?visao=personalizado&ano=2026&meses=2026-01&meses=2026-03');assert.equal(custom.status,200);assert.match(await custom.text(),/Acumulado de 1/);assert.ok(periodQueries.length>=3);assert.ok(periodQueries.every(([,months])=>JSON.stringify(months)===JSON.stringify(['2026-01','2026-03'])));
+ session.usuario.perfil='USUARIO';const beforeRestricted=queries.length;
+ for(const url of ['/contabil/fechamento?mes=2026-01','/contabil/historico?ano=2026','/contabil/fechamento/exportar?ano=2026','/contabil/fechamento/arquivo/'+f.id])assert.equal((await get(url)).status,403);
+ assert.equal((await post({...body,version:1})).status,403);assert.equal((await get('/contabil/fechamento/importar',{method:'POST',headers,body:fd()})).status,403);
+ assert.equal(queries.length,beforeRestricted,'acesso negado antes de consultar dados');
+ for(const url of ['/visao-geral','/financeiro','/contabil','/compras']){const start=queries.length;const response=await get(url);assert.equal(response.status,200);const text=await response.text();assert.doesNotMatch(text,/Faturamento bruto|Margem líquida|Resultado líquido|Evolução dos fechamentos/);assert.ok(!queries.slice(start).some(q=>q.includes('SELECT')&&(q.includes('fechamentos_mensais')||q.includes('FROM lancamentos'))));}
  session.usuario={id:2,nome:'Contadora',perfil:'CONTADOR'};
  assert.equal((await post({...body,version:1})).status,403);
  const read=await get('/contabil/fechamento?mes=2026-01');assert.equal(read.status,200);assert.match(await read.text(),/<fieldset disabled>/);
