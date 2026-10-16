@@ -56,7 +56,7 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  try{
  for(const [type,list] of entries){const f=list[0],ext=path.extname(f.originalname).toLowerCase();if(!['.xls','.xlsx'].includes(ext))throw new Error('Use arquivos .xls ou .xlsx.');
  const id=crypto.randomUUID(),name=id+ext,filePath=path.join(directory,name);fs.writeFileSync(filePath,f.buffer,{flag:'wx'});created.push(filePath);
- const sheets=await s.readSpreadsheet(filePath),extracted=type==='dre'?s.parseDre(sheets,m):s.parseStock(sheets);parsed.push({id,type,name,original:path.basename(f.originalname).slice(0,250),sha:crypto.createHash('sha256').update(f.buffer).digest('hex'),extracted});}
+ const sheets=await s.readSpreadsheet(filePath),extracted=type==='dre'?s.parseDre(sheets,m,{confirmedYear:m.slice(0,4)}):s.parseStock(sheets);parsed.push({id,type,name,original:path.basename(f.originalname).slice(0,250),sha:crypto.createHash('sha256').update(f.buffer).digest('hex'),extracted});}
  const db=await pool.connect();try{await db.query('BEGIN');for(const f of parsed)await db.query('INSERT INTO fechamento_arquivos (id,mes,tipo,nome_original,nome_arquivo,sha256,extraido,usuario) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8)',[f.id,m,f.type,f.original,f.name,f.sha,JSON.stringify(f.extracted),actor(req)]);await db.query('INSERT INTO fechamento_eventos (mes,acao,usuario,dados) VALUES ($1,$2,$3,$4::jsonb)',[m,'importar',actor(req),JSON.stringify({files:parsed.map(f=>({id:f.id,type:f.type,name:f.original}))})]);await db.query('COMMIT');}catch(e){await db.query('ROLLBACK');throw e;}finally{db.release();}
  res.json({files:parsed.map(f=>({id:f.id,type:f.type,name:f.original,extracted:f.extracted}))});
  }catch(e){for(const f of created)try{fs.unlinkSync(f);}catch{}throw e;}

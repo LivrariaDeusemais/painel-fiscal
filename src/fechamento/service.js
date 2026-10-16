@@ -27,11 +27,13 @@ function validate(input){
  for(const k of Object.keys(DEPOSITS)){const p=input.stocks?.[k]||{};const quantity=Number(p.quantity??0),value=Number(p.value??0);if(!Number.isFinite(quantity)||Math.abs(quantity)>1e9||!Number.isSafeInteger(value)||Math.abs(value)>1e14)throw new Error('Estoque inválido.');d.stocks[k]={quantity,value};}
  d.notes=String(input.notes||'').slice(0,5000);d.sourceFiles=input.sourceFiles||{};d.sourceNotes=input.sourceNotes||{};return d;
 }
-function parseDre(sheets,month){
+function parseDre(sheets,month,{confirmedYear}={}){
  if(!monthValid(month))throw new Error('Selecione mês e ano válidos.');
  const idx=Number(month.slice(5))-1,year=month.slice(0,4);let chosen;
  for(const sheet of sheets){for(let r=0;r<Math.min(sheet.rows.length,40);r++){const row=sheet.rows[r];const c=row.findIndex(v=>{const s=norm(v);return s.includes(MONTHS[idx])&&(s.includes(year)||s.includes('/'+year.slice(2))||s.includes('-'+year.slice(2)));});if(c>=0){chosen={rows:sheet.rows,start:r+1,col:c};break;}}if(chosen)break;}
- if(!chosen)throw new Error('Não foi encontrada a coluna do mês/ano selecionado no DRE. Exporte o DRE com os meses nas colunas.');
+ // Cabeçalho anual sem ano exige confirmação explícita da competência.
+ if(!chosen&&String(confirmedYear)===year){for(const sheet of sheets){for(let r=0;r<Math.min(sheet.rows.length,40);r++){const headers=sheet.rows[r].map(norm),start=headers.indexOf('jan');if(start>=0&&MONTHS.every((m,i)=>headers[start+i]===m)){chosen={rows:sheet.rows,start:r+1,col:start+idx};break;}}if(chosen)break;}}
+ if(!chosen)throw new Error('Não foi encontrada a coluna do mês/ano selecionado no DRE. Exporte o DRE com os meses nas colunas e confirme o ano.');
  const out={},publishers=[];let buying=false,found=new Set();
  for(const row of chosen.rows.slice(chosen.start)){
   const label=norm(row.slice(0,chosen.col).filter(v=>typeof v==='string').join(' ')).replace(/[()+−=\-]/g,'').replace(/\s+/g,' ').trim();if(!label)continue;

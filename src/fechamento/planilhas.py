@@ -1,5 +1,5 @@
 """Leitura de relatórios locais do Bling; não executa fórmulas ou macros."""
-import sys, json, os
+import sys, json, os, io
 
 def clean(v):
     if v is None: return ''
@@ -25,7 +25,12 @@ def read(path):
         w.close()
         return sheets
     import xlrd
-    w=xlrd.open_workbook(path, on_demand=True)
+    try:
+        w=xlrd.open_workbook(path, on_demand=True, logfile=io.StringIO())
+    except xlrd.compdoc.CompDocError as e:
+        # Exportações do Bling podem repetir setores do contêiner OLE.
+        if not str(e).startswith('Workbook corruption: seen['): raise
+        w=xlrd.open_workbook(path, on_demand=True, ignore_workbook_corruption=True, logfile=io.StringIO())
     sheets=[]
     for s in w.sheets()[:8]:
         if s.nrows > 30000 or s.ncols > 150: raise ValueError('Planilha excede limite de linhas/colunas.')
