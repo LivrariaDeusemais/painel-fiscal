@@ -18,7 +18,7 @@ function header(req){const currentPath=new URL(req.originalUrl||req.url||req.pat
 function decorate(req,html){if(!req.session?.usuario||typeof html!=='string'||!/<body\b/i.test(html)||html.includes('id="exec-header"')||html.includes('id="exec-old-choice"'))return html;
  const executive=layout(req)==='executivo';const links='<link rel="stylesheet" href="/assets/executivo.css?v=3">';html=html.replace(/<\/head>/i,links+'</head>');
  html=html.replace(/<body([^>]*)>/i,(m,attrs)=>{if(!executive)return m+`<div id="exec-old-choice">${switcher(req,'antigo')}</div>`;attrs=/class=["']/i.test(attrs)?attrs.replace(/class=(["'])(.*?)\1/i,(_,q,c)=>`class=${q}${c} layout-executivo${q}`):attrs+' class="layout-executivo"';return '<body'+attrs+'>'+header(req);});
- if(executive)html=html.replace(/<\/body>/i,'<script src="/assets/executivo.js?v=3" defer></script></body>');return html;
+ if(executive)html=html.replace(/<\/body>/i,'<script src="/assets/executivo.js?v=4" defer></script></body>');return html;
 }
 function middleware(req,res,next){if(req.session?.usuario){const requested=req.query.layout;if(['executivo','antigo'].includes(requested)){req.session.plennaLayout=requested;res.cookie('plenna_layout_'+req.session.usuario.id,requested,{maxAge:365*86400000,httpOnly:true,sameSite:'lax',secure:req.secure||req.headers['x-forwarded-proto']==='https'});}else if(!req.session.plennaLayout){const val=String(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('plenna_layout_'+req.session.usuario.id+'='))?.split('=')[1];req.session.plennaLayout=val==='antigo'?'antigo':'executivo';}}
  const send=res.send.bind(res);res.send=function(body){return send(decorate(req,body));};
