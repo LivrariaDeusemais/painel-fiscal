@@ -13900,22 +13900,7 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
             </section>
 
             <section class="card">
-              <h2>Usuários que recebem alertas</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>E-mail</th>
-                    <th>WhatsApp</th>
-                    <th>Canais</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${destinatariosHtml || '<tr><td colspan="4">Nenhum usuário marcado para receber alertas.</td></tr>'}
-                </tbody>
-              </table>
-
-              <h2 style="margin-top:24px;">Contas vencidas ou com vencimento hoje</h2>
+              <h2>Contas vencidas ou com vencimento hoje</h2>
               <table>
                 <thead>
                   <tr>
@@ -13930,6 +13915,21 @@ router.get('/alertas-vencimentos', protegerRota, somenteAdmin, async (req, res) 
                 </thead>
                 <tbody>
                   ${contasHtml || '<tr><td colspan="7">Nenhuma conta pendente até hoje dentro dos critérios.</td></tr>'}
+                </tbody>
+              </table>
+
+              <h2 style="margin-top:24px;">Usuários que recebem alertas</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>WhatsApp</th>
+                    <th>Canais</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${destinatariosHtml || '<tr><td colspan="4">Nenhum usuário marcado para receber alertas.</td></tr>'}
                 </tbody>
               </table>
             </section>

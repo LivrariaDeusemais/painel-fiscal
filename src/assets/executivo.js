@@ -15,4 +15,16 @@
   if(actions.length){const toolbar=document.createElement('div');toolbar.className='exec-local-actions';nav.parentNode.insertBefore(toolbar,nav);actions.forEach(el=>toolbar.appendChild(el));}
   nav.classList.add('exec-hidden-nav');
  });
+ // Reúne os botões originais junto aos totais, mantendo IDs, handlers e filtros.
+ const total=document.querySelector('.rotina-total') || (document.querySelector('.ml-table') && document.querySelector('.summary'));
+ if(total){
+  const bars=Array.from(document.querySelectorAll('.exec-local-actions'));
+  if(bars.length){
+   const row=document.createElement('div');row.className='exec-summary-row';
+   total.parentNode.insertBefore(row,total);row.appendChild(total);
+   const actions=document.createElement('div');actions.className='exec-summary-actions';
+   bars.forEach(bar=>{while(bar.firstChild)actions.appendChild(bar.firstChild);bar.remove();});
+   row.appendChild(actions);
+  }
+ }
 })();
