@@ -2345,7 +2345,9 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
                 Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
               </p>
-              <form method="POST" action="/arquivo/reprocessar" style="margin-top:12px" onsubmit="const botao=this.querySelector('button'); botao.textContent='Conciliando… aguarde'; botao.disabled=true;"><button class="btn-soft-mini" type="submit">Reconciliar PDF/XML${pendentesAnalise ? ` (${pendentesAnalise} para analisar)` : ''}</button></form>
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:12px"><form method="POST" action="/arquivo/reprocessar" style="margin:0" onsubmit="const botao=this.querySelector('button'); botao.textContent='Conciliando… aguarde'; botao.disabled=true;"><button class="btn-soft-mini" type="submit">Reconciliar PDF/XML${pendentesAnalise ? ` (${pendentesAnalise} para analisar)` : ''}</button></form>
+              ${!modoSelecao && podeVincularPares ? `<form id="arquivoVincularPar" method="POST" action="/arquivo/vincular-par" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0;flex:1"><input type="hidden" name="token" value="${escapeHtmlGlobal(paresToken)}"><button class="btn-soft-mini" type="submit" disabled>Vincular Arquivos pares</button><span id="arquivoParAviso" role="status" style="font-size:12px;color:#475569">Marque um PDF e um XML da mesma nota, um par por vez.</span></form>` : ''}
+              </div>
             </div>
           ` : ''}
 
@@ -2358,7 +2360,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             <a class="dm-menu-btn" href="/arquivo">Limpar</a>
           </form>
 
-          ${!modoSelecao && podeVincularPares ? `<form id="arquivoVincularPar" method="POST" action="/arquivo/vincular-par" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0 0 12px"><input type="hidden" name="token" value="${escapeHtmlGlobal(paresToken)}"><button class="btn-soft-mini" type="submit" disabled>Vincular Arquivos pares</button><span id="arquivoParAviso" role="status" style="font-size:12px;color:#475569">Marque um PDF e um XML da mesma nota, um par por vez.</span></form>` : ''}
+
           <label style="display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;cursor:pointer"><input type="checkbox" id="esconderChaveNF"> Esconder chave NF</label>
           <div class="table-wrap" id="arquivoTabela">
             <table>
