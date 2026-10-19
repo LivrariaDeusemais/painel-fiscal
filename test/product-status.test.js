@@ -21,3 +21,9 @@ test('Novo custo aparece na revisão de cada marketplace sem alterar a regra Rea
  item.row.status_validacao='Validado';assert.equal(marketplaceReviewStatus(item),'Manter preço');
  item.published.details.margin=0.01;assert.equal(marketplaceReviewStatus(item),'Reajustar');
 });
+test('resumo conta todos os itens com a classificação da tabela e inclui status zerados',()=>{
+ const {reviewSummary,REVIEW_STATUSES}=require('../src/tabela-precos/service');
+ const ok={row:{status_validacao:'Validado'},result:{status:'OK'},rule:{minMargin:.1,minProfit:4},published:{details:{margin:.2,netProfit:10},benefit:{status:'identified'}}};
+ const items=[...Array.from({length:205},()=>structuredClone(ok)),{...ok,row:{status_validacao:'Novo'}},{...ok,row:{status_validacao:'Novo custo'}},{...ok,row:{sem_vinculo:true}},{...ok,result:{status:'Revisar'}},{...ok,published:{details:{margin:0,netProfit:-1},benefit:{status:'identified'}}}];
+ const rows=reviewSummary(items),counts=Object.fromEntries(rows.map(r=>[r.status,r.count]));assert.deepEqual(rows.map(r=>r.status),REVIEW_STATUSES);assert.equal(counts['Manter preço'],205);assert.equal(counts.Novo,1);assert.equal(counts['Novo custo'],1);assert.equal(counts['Sem Vínculo'],1);assert.equal(counts.Revisar,1);assert.equal(counts.Reajustar,1);assert.equal(counts.Analisar,0);assert.equal(counts.Abaixou,0);assert.equal(rows.reduce((s,r)=>s+r.count,0),items.length);
+});

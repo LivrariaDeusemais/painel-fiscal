@@ -61,3 +61,13 @@ html body.layout-executivo.layout-executivo.layout-executivo .exec-local-actions
 html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll{max-height:70vh;max-height:70dvh;overflow:auto!important;position:relative;isolation:isolate;scrollbar-gutter:stable}
 html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll table{overflow:visible!important}
 html body.layout-executivo.layout-executivo.layout-executivo .ce>.panel.scroll thead th{position:sticky!important;top:0!important;z-index:5!important;background:#f3f6f8!important;box-shadow:0 1px 0 #dce7df}
+
+/* Preços usa somente a navegação principal, com calculadora em destaque. */
+html body.layout-executivo.layout-executivo.layout-executivo .tpw-header{display:none!important}
+html body.layout-executivo #exec-header .exec-subnav a[href="/ferramentas-ia/tabela-precos/promocoes"]{border:1px solid #b7d8c4;background:#edf7f1;color:#075438;font-weight:600}
+html body.layout-executivo .fx .fx-stats-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+html body.layout-executivo .tpt-filter{grid-template-columns:140px minmax(160px,1fr) 120px auto auto!important}
+html body.layout-executivo .tpt-table th.col-review-status,html body.layout-executivo .tpt-table th.col-gross-status{overflow:visible!important;z-index:6}
+html body.layout-executivo .tpt-table th:has(.status-filter-menu[open]){z-index:25!important}
+html body.layout-executivo .tpt-table .status-filter-menu form{left:auto;right:0;transform:none;max-height:340px;overflow-y:auto}
+@media(max-width:760px){html body.layout-executivo .tpt-filter{grid-template-columns:1fr 1fr!important}}

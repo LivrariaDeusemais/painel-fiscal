@@ -658,6 +658,9 @@ function marketplaceReviewStatus(item) {
   return 'Reajustar';
 }
 
+const REVIEW_STATUSES=['Sem Vínculo','Novo','Manter preço','Analisar','Novo custo','Reajustar','Abaixou','Revisar'];
+function reviewSummary(items){const counts=new Map(REVIEW_STATUSES.map(status=>[status,0]));for(const item of items){const status=marketplaceReviewStatus(item);counts.set(status,(counts.get(status)||0)+1);}return [...counts].map(([status,count])=>({status,count}));}
+
 async function mercadoLivreRows(pool) {
   return marketplaceRows(pool, { marketplace: 'Mercado Livre' });
 }
@@ -778,6 +781,7 @@ async function deleteLink(pool, fields) {
 }
 
 module.exports = {
+  REVIEW_STATUSES, reviewSummary,
   deleteProducts,
   deleteLink,
   managedLinkRows,
