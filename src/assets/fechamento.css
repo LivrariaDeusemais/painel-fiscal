@@ -30,3 +30,15 @@
  .fx .fx-stats-4 span{font-size:clamp(11px,1vw,13px)}
  .fx .fx-stats-4 small{white-space:normal}
 }
+
+/* Atalhos e contagens de Preços em duas linhas compactas. */
+.fx .fx-calculator-shortcut{display:flex;align-items:center;gap:14px;padding:14px 20px;margin:16px 0;background:#fff;border:1px solid #dce6df;border-radius:10px}
+.fx .fx-calculator-shortcut>svg{width:32px;height:40px;flex:none;color:#075438}
+.fx .fx-calculator-shortcut h2{margin:0!important;font-size:18px;line-height:1.3}
+.fx .fx-calculator-shortcut h2 a{color:#183029;text-decoration:none;font:inherit!important}
+.fx .fx-calculator-shortcut h2 a:hover{text-decoration:underline;color:#075438}
+.fx .fx-calculator-shortcut h2 a:focus-visible{outline:2px solid #168651;outline-offset:4px;border-radius:2px}
+.fx .fx-calculator-shortcut p{margin:3px 0 0;color:#4e6559;font-size:12px;line-height:1.4}
+.fx .fx-price-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.fx .fx-price-stats>div{padding:10px 14px}
+.fx .fx-price-stats strong{margin:3px 0 0}
