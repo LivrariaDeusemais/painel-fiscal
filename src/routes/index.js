@@ -2009,7 +2009,7 @@ function arquivoDataBr(valor) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false, filtros = {}, pagina = 1, totalPaginas = 1, totalItens = 0 } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false, podeVincularPares = false, paresToken = '', filtros = {}, pagina = 1, totalPaginas = 1, totalItens = 0 } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -2059,7 +2059,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
 
     return `
       <tr>
-        <td>${badge}</td>
+        <td>${!modoSelecao && podeVincularPares && !a.par_id && !(a.pdf_id && a.xml_id) && !['COMPLETO','DUPLICADO','ARQUIVO_AUSENTE'].includes(a.analise_status) ? `<input class="arquivo-par-check" type="checkbox" name="ids" value="${a.id}" data-tipo="${tipo}" form="arquivoVincularPar" aria-label="Selecionar ${tipo}: ${escapeHtmlGlobal(razaoSocial)}" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;accent-color:#168651">` : ''}${badge}</td>
         <td class="arquivo-nome" title="${escapeHtmlGlobal(razaoSocial)}"><strong>${escapeHtmlGlobal(razaoSocial)}</strong></td>
         <td title="${escapeHtmlGlobal(a.numero_documento || '')}">${escapeHtmlGlobal(a.numero_documento || '-')}</td>
         <td class="arquivo-chave" title="${escapeHtmlGlobal(a.chave_fiscal || '')}">${escapeHtmlGlobal(a.chave_fiscal || '-')}</td>
@@ -2358,6 +2358,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             <a class="dm-menu-btn" href="/arquivo">Limpar</a>
           </form>
 
+          ${!modoSelecao && podeVincularPares ? `<form id="arquivoVincularPar" method="POST" action="/arquivo/vincular-par" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0 0 12px"><input type="hidden" name="token" value="${escapeHtmlGlobal(paresToken)}"><button class="btn-soft-mini" type="submit" disabled>Vincular Arquivos pares</button><span id="arquivoParAviso" role="status" style="font-size:12px;color:#475569">Marque um PDF e um XML da mesma nota, um par por vez.</span></form>` : ''}
           <label style="display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;cursor:pointer"><input type="checkbox" id="esconderChaveNF"> Esconder chave NF</label>
           <div class="table-wrap" id="arquivoTabela">
             <table>
@@ -2384,6 +2385,13 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
       </div>
       <dialog id="xmlEspelho" style="width:min(1100px,94vw);height:88vh;padding:0;border:0;border-radius:12px;box-shadow:0 24px 70px rgba(15,23,42,.3)"><iframe title="Espelho do XML" style="width:100%;height:100%;border:0"></iframe></dialog>
       <script>
+      const parForm=document.getElementById('arquivoVincularPar');
+      if(parForm){
+        const boxes=[...document.querySelectorAll('.arquivo-par-check')],button=parForm.querySelector('button'),aviso=document.getElementById('arquivoParAviso');
+        const update=()=>{const selected=boxes.filter(b=>b.checked);boxes.forEach(b=>{b.disabled=!b.checked&&selected.some(s=>s.dataset.tipo===b.dataset.tipo);});button.disabled=selected.length!==2;aviso.textContent=selected.length===2?'PDF e XML selecionados. Confira se pertencem à mesma nota antes de vincular.':selected.length===1?'Selecione agora um arquivo '+(selected[0].dataset.tipo==='PDF'?'XML':'PDF')+' da mesma nota.':'Marque um PDF e um XML da mesma nota, um par por vez.';};
+        boxes.forEach(b=>b.addEventListener('change',update));update();
+        parForm.addEventListener('submit',e=>{const selected=boxes.filter(b=>b.checked);if(selected.length!==2||selected[0].dataset.tipo===selected[1].dataset.tipo){e.preventDefault();return;}button.disabled=true;button.textContent='Vinculando…';});
+      }
       const chaveControle = document.getElementById('esconderChaveNF');
       const chaveTabela = document.getElementById('arquivoTabela');
       try { chaveControle.checked = localStorage.getItem('arquivo_esconder_chave') === '1'; } catch(e) {}
@@ -2773,6 +2781,7 @@ async function analisarArquivoFilaParaConciliacao(id, { lerPdf = true } = {}) {
   const resultado = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
   const arquivo = resultado.rows[0];
   if (!arquivo || arquivo.status !== 'DISPONIVEL') return null;
+  if (arquivo.par_id && arquivo.metadados?.vinculoManual) return {id:arquivo.id,fiscal:true,chave:arquivo.chave_fiscal||'',analiseStatus:arquivo.analise_status};
 
   const filePath = getUploadFilePath(arquivo.nome_arquivo);
   if (!filePath || !fs.existsSync(filePath)) {
@@ -15924,6 +15933,8 @@ router.get('/arquivo', protegerRota, async (req, res) => {
       filtroSemResultado,
       pendentesAnalise: Number(pendentesResult.rows[0]?.total || 0),
       podeImportarNfse: ['ADMIN', 'USUARIO'].includes(req.session?.usuario?.perfil),
+      podeVincularPares: ['ADMIN','USUARIO'].includes(req.session.usuario.perfil),
+      paresToken: req.session.arquivoParesToken ||= crypto.randomBytes(24).toString('hex'),
       filtros: { busca, dataInicio, dataFim, conciliacao, query: queryFiltros },
       pagina,
       totalPaginas,
@@ -15967,6 +15978,16 @@ router.post('/arquivo/importar', protegerRota, uploadArquivoFila.array('arquivos
   } catch (error) {
     res.redirect(`/arquivo?erro=${encodeURIComponent(error.message)}`);
   }
+});
+
+router.post('/arquivo/vincular-par', protegerRota, async (req,res) => {
+  if (!['ADMIN','USUARIO'].includes(req.session.usuario?.perfil)) return res.sendStatus(403);
+  if (!req.session.arquivoParesToken || req.body.token !== req.session.arquivoParesToken) return res.status(403).send('Atualize a página antes de vincular os arquivos.');
+  try {
+    await ensureArquivoFilaTable();
+    await require('../services/arquivo-pares').vincularPar(pool,req.body.ids,req.session.usuario,arquivo=>{const file=getUploadFilePath(arquivo.nome_arquivo);return !!file&&fs.existsSync(file);});
+    res.redirect('/arquivo?ok='+encodeURIComponent('PDF e XML vinculados com sucesso. Os arquivos originais foram preservados.'));
+  } catch(error) { res.redirect('/arquivo?erro='+encodeURIComponent(error.message)); }
 });
 
 router.post('/arquivo/reprocessar', protegerRota, async (req, res) => {
