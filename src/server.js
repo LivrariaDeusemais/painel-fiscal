@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 10000;
 
 // Middlewares
 app.use(express.urlencoded({ extended: true }));
+app.use('/ferramentas-ia/tabela-precos/mercado-livre/central-promocoes', express.json({limit:'1mb'}));
 app.use(express.json());
 
 app.use(session({

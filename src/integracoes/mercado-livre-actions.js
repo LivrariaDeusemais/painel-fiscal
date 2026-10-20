@@ -42,12 +42,12 @@ async function preparePrices(pool,rows,op) {
     }catch(e){entry.status='Bloqueado';entry.motivo=e.message;}entries.push(entry);await service.appendResult(pool,op.id,{sku:entry.sku,anuncio:entry.anuncio,status:entry.status,motivo:entry.motivo});}
   await pool.query("UPDATE ml_operacoes SET status='previa',dados=$2,atualizado_em=NOW(),expira_em=NOW()+INTERVAL '20 minutes' WHERE id=$1",[op.id,JSON.stringify({entries})]);
 }
-async function claim(pool,id,owner,selected) {
+async function claim(pool,id,owner,selected,allowedTypes=['brutos','promocao']) {
   if(!/^[\da-f-]{36}$/i.test(id))throw new Error('Prévia inválida.');
   const client=await pool.connect();
   try{await client.query('BEGIN');const account=(await client.query('SELECT * FROM ml_integracao WHERE id=1 FOR UPDATE')).rows[0];
     const op=(await client.query("SELECT * FROM ml_operacoes WHERE id=$1 AND usuario=$2 AND status='previa' AND expira_em>NOW() FOR UPDATE",[id,owner])).rows[0];
-    if(!op || op.seller_id!==account.seller_id)throw new Error('Prévia expirada, já confirmada ou de outra conta. Prepare novamente.');
+    if(!op || !allowedTypes.includes(op.tipo) || op.seller_id!==account.seller_id)throw new Error('Prévia expirada, já confirmada ou de outra conta. Prepare novamente.');
     if((await client.query("SELECT id FROM ml_operacoes WHERE status='executando' LIMIT 1")).rows.length)throw new Error('Aguarde a operação atual terminar.');
     const wanted=new Set((Array.isArray(selected)?selected:[selected]).filter(Boolean).map(String));
     const entries=op.dados.entries.filter(e=>wanted.has(String(e.link)) && e.status==='Pronto');
@@ -87,7 +87,11 @@ const ACCEPT_OFFER=new Set(['SMART','PRICE_MATCHING','PRE_NEGOTIATED','UNHEALTHY
 const COFINANCED=new Set(['MARKETPLACE_CAMPAIGN',...ACCEPT_OFFER]);
 const SUPPORTED=new Set([...COFINANCED,'DEAL','SELLER_CAMPAIGN']);
 function campaignKey(c){if(!/^[-\w]+$/.test(String(c.id)) || !/^[A-Z_]+$/.test(String(c.type)))throw new Error('Campanha inválida.');return {promotion:c.id,type:c.type};}
-async function campaigns(api,seller) {const data=await api.get('/seller-promotions/users/'+seller,{app_version:'v2'});if(!Array.isArray(data.results))throw new Error('Lista de campanhas incompleta.');return data.results;}
+async function campaigns(api,seller) {
+  const rows=[],seen=new Set();
+  for(let offset=0;offset<50000;offset+=50){const data=await api.get('/seller-promotions/users/'+seller,{app_version:'v2',limit:50,offset});if(!Array.isArray(data.results))throw new Error('Lista de campanhas incompleta.');for(const c of data.results){const k=c.type+':'+c.id;if(seen.has(k))throw new Error('Paginação de campanhas repetida. Consulte novamente.');seen.add(k);rows.push(c);}if(data.paging?.total==null||rows.length>=Number(data.paging.total))return rows;if(!data.results.length)throw new Error('Lista de campanhas incompleta.');}
+  throw new Error('Lista de campanhas excedeu o limite de consulta.');
+}
 async function campaignItems(api,campaign) {
   campaignKey(campaign);const rows=[],seen=new Set();let after;
   for(let n=0;n<1000;n++) {const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{promotion_type:campaign.type,app_version:'v2',limit:50,...(after?{search_after:after}:{})});
@@ -233,7 +237,7 @@ function mount(router,pool,renderShell) {
     res.redirect(ROOT+'/precos?'+filters.toString());
   });
   route('/precos/previa','post',async(req,res)=>{const selected=new Set((Array.isArray(req.body.links)?req.body.links:[req.body.links]).filter(Boolean).map(String));const rows=(await localRows(pool,{stock:'all'})).filter(i=>selected.has(String(i.row.id)));if(!rows.length || rows.length!==selected.size)throw new Error('Selecione anúncios válidos.');const op=await previewPrices(pool,rows,user(req));req.session.mlFeedback={ok:true,message:'Preparando a prévia em segundo plano. Ao terminar, clique em Revisar prévia no histórico.'};res.redirect(ROOT);});
-  route('/previa/:id','get',async(req,res)=>{if(!/^[\da-f-]{36}$/i.test(req.params.id))throw new Error('Prévia inválida.');const op=(await pool.query("SELECT * FROM ml_operacoes WHERE id=$1 AND usuario=$2 AND status='previa' AND expira_em>NOW()",[req.params.id,user(req)])).rows[0];if(!op)throw new Error('Prévia expirada ou já confirmada.');show(req,res,previewTable(op,req));});
+  route('/previa/:id','get',async(req,res)=>{if(!/^[\da-f-]{36}$/i.test(req.params.id))throw new Error('Prévia inválida.');const op=(await pool.query("SELECT * FROM ml_operacoes WHERE id=$1 AND usuario=$2 AND status='previa' AND expira_em>NOW()",[req.params.id,user(req)])).rows[0];if(!op)throw new Error('Prévia expirada ou já confirmada.');if(op.tipo==='promo-central')return res.redirect(ROOT+'/central-promocoes/revisar/'+op.id);if(!['brutos','promocao'].includes(op.tipo))throw new Error('Tipo de prévia inválido.');show(req,res,previewTable(op,req));});
   route('/confirmar/:id','post',async(req,res)=>{if(req.body.confirm!=='yes')throw new Error('Confirme a publicação dos itens selecionados.');const op=await claim(pool,req.params.id,user(req),req.body.selected);setImmediate(()=>service.runLocked(pool,op,()=>op.tipo==='brutos'?executePrices(pool,op):executeCampaign(pool,op)).catch(()=>{}));req.session.mlFeedback={ok:true,message:'Envio confirmado. Acompanhe o resultado por anúncio no histórico.'};res.redirect(ROOT);});
   route('/promocoes','get',async(req,res)=>{const account=(await service.state(pool)).account;if(!account.seller_id)throw new Error('Conecte a conta primeiro.');const list=await campaigns(new service.MeliClient(pool),account.seller_id);
     show(req,res,page(`<h2>Promoções disponíveis</h2><p>Consulte as condições e selecione os itens antes de confirmar. A API determina a elegibilidade de cada anúncio.</p><div class="scroll"><table><thead><tr><th>Campanha</th><th>Tipo</th><th>Status</th><th>Benefício ML</th><th>Analisar</th></tr></thead><tbody>${list.map(c=>{const key=campaignKey(c);return `<tr><td>${escape(c.name)}<br>${escape(c.id)}</td><td>${escape(c.type)}</td><td>${escape(c.status)}</td><td>${c.benefits?.meli_percent!=null?percent(Number(c.benefits.meli_percent)/100):'-'}</td><td><a href="${ROOT}/promocoes/analisar?${new URLSearchParams(key)}">Consultar itens</a></td></tr>`;}).join('')}</tbody></table></div><h2>Criar campanha própria</h2><p>Use todos os itens filtrados com estoque positivo, o Novo Líquido calculado e o bruto já publicado no Mercado Livre. Descontos abaixo de 5% exigem ajustar o bruto primeiro. A campanha admite até 14 dias e depende da reputação e elegibilidade da conta.</p><form method="post" action="${ROOT}/promocoes/criar-previa">${csrf(req)}<label>Nome<input name="name" required minlength="3" maxlength="80"></label><label>Início<input type="date" name="start" required></label><label>Fim<input type="date" name="end" required></label><label>SKU ou produto<input name="search"></label><button>Preparar prévia da campanha própria</button></form>`));});
@@ -244,4 +248,4 @@ function mount(router,pool,renderShell) {
   route('/promocoes/criar-previa','post',async(req,res)=>{const creation=sellerCampaign(req.body),rows=await localRows(pool,{search:req.body.search,stock:'positive'});if(!rows.length)throw new Error('Nenhum anúncio com estoque para a campanha.');const op=await previewCampaign(pool,rows,user(req),{type:'SELLER_CAMPAIGN',name:creation.name},creation);req.session.mlFeedback={ok:true,message:'Preparando a prévia em segundo plano. Ao terminar, clique em Revisar prévia no histórico.'};res.redirect(ROOT);});
 }
 function selectionScript(){return `<script>document.querySelectorAll('[data-select-all]').forEach(el=>el.addEventListener('change',()=>el.closest('form').querySelectorAll('input[name="links"]:not(:disabled)').forEach(c=>c.checked=el.checked)))</script>`;}
-module.exports={mount,fingerprint,validateGross,campaignItems,campaignTerms,sellerCampaign,candidateKey,claim,previewPrices,executePrices,participationBody,previewTable,pricesTable};
+module.exports={campaigns,mount,fingerprint,validateGross,campaignItems,campaignTerms,sellerCampaign,candidateKey,claim,previewPrices,executePrices,participationBody,previewTable,pricesTable};

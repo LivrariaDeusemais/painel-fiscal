@@ -75,7 +75,7 @@ test('tokens criptografados não aparecem em texto simples e adulteração é re
   finally{if(old===undefined)delete process.env.ML_TOKEN_ENCRYPTION_KEY;else process.env.ML_TOKEN_ENCRYPTION_KEY=old;}
 });
 test('confirmação consome prévia uma única vez e recusa seleção adulterada ou outra conta',async()=>{
-  let updates=0,op={id:'a'.repeat(8)+'-aaaa-aaaa-aaaa-'+ 'a'.repeat(12),seller_id:'42',dados:{entries:[{link:'1',status:'Pronto'},{link:'2',status:'Bloqueado'}]}};
+  let updates=0,op={id:'a'.repeat(8)+'-aaaa-aaaa-aaaa-'+ 'a'.repeat(12),seller_id:'42',tipo:'brutos',dados:{entries:[{link:'1',status:'Pronto'},{link:'2',status:'Bloqueado'}]}};
   const client={release(){},query:async(sql,params)=>{
     if(sql.startsWith('SELECT * FROM ml_integracao'))return {rows:[{seller_id:'42'}]};
     if(sql.startsWith('SELECT * FROM ml_operacoes'))return {rows:op?[structuredClone(op)]:[]};
