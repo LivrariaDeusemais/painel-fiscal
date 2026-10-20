@@ -1,6 +1,8 @@
 const { parseStringPromise } = require('xml2js');
 const crypto = require('crypto');
 const { money, norm, compatiblePersonDocument } = require('./conciliacao-bancaria');
+const noPayment=p=>p.method==='Bonificação'||p.condition==='Bonificação';
+const unscheduled=p=>noPayment(p)||p.method==='À Combinar'||p.condition==='Consignação';
 const CARDS = ['Caixa VISA', 'Caixa ELO', 'Inter'];
 async function parseInvoice(buffer) {
   const text = buffer.toString('utf8');
@@ -20,9 +22,10 @@ function validatePlan(input, total) {
   if (credit == null || credit < 0 || credit > total) throw new Error('Abatimento inválido.');
   const parts = (input.parts || []).map((p, i) => {
     const amount = money(p.amount), count = Number(p.count || 1);
-    if (!['PIX', 'Boleto', 'Cartão'].includes(p.method) || !(amount > 0) || !Number.isInteger(count) || count < 1 || count > 60) throw new Error('Informe forma, valor e quantidade de parcelas válidos.');
-    if (p.method === 'Cartão' && !CARDS.includes(p.card)) throw new Error('Selecione Caixa VISA, Caixa ELO ou Inter.');
-    if (!['Antecipado', 'À vista', 'A prazo', 'Parcelado'].includes(p.condition)) throw new Error('Selecione a condição do pagamento.');
+    if (!['PIX', 'Boleto', 'Cartão', 'Bonificação', 'À Combinar'].includes(p.method) || !(amount > 0) || !Number.isInteger(count) || count < 1 || count > 60) throw new Error('Informe forma, valor e quantidade de parcelas válidos.');
+    if (!unscheduled(p) && p.method === 'Cartão' && !CARDS.includes(p.card)) throw new Error('Selecione Caixa VISA, Caixa ELO ou Inter.');
+    if (!['Antecipado', 'À vista', 'A prazo', 'Parcelado', 'Consignação', 'Bonificação'].includes(p.condition)) throw new Error('Selecione a condição do pagamento.');
+    if(unscheduled(p))return {id:String(p.id||crypto.randomUUID()).slice(0,80),method:p.method,condition:p.condition,amount,count:0,card:'',bank:'',installments:[]};
     const dates = p.dates || [];
     if (dates.length !== count || dates.some(d => !/^\d{4}-\d{2}-\d{2}$/.test(d) || new Date(d + 'T12:00:00Z').toISOString().slice(0,10) !== d)) throw new Error('Informe os vencimentos de todas as parcelas.');
     const amounts = p.amounts?.length ? p.amounts.map(money) : Array.from({length:count}, (_, n) => Math.floor(amount/count) + (n < amount%count ? 1 : 0));
@@ -40,10 +43,12 @@ async function list(db) {
   const states = await db.query('SELECT banco, mes, dados FROM conciliacoes_bancarias');
   return invoices.rows.map(n => {
     const links = states.rows.flatMap(s => (s.dados.rows||[]).filter(r=>r.purchaseId===n.id).map(r=>({bank:s.banco,month:s.mes,movementId:r.id,amount:Math.abs(r.amount),partId:r.purchasePartId,date:r.date})));
+    const bonus=(n.dados.plan?.parts||[]).filter(noPayment).reduce((sum,p)=>sum+p.amount,0);
+    const deferred=(n.dados.plan?.parts||[]).filter(p=>unscheduled(p)&&!noPayment(p)).reduce((sum,p)=>sum+p.amount,0);
     const paid = links.reduce((s,l)=>s+l.amount,0), credit=n.dados.plan?.credit||0;
-    const cardTotal=(n.dados.plan?.parts||[]).filter(p=>p.method==='Cartão').reduce((s,p)=>s+p.amount,0);
-    const cashTotal=(n.dados.plan?.parts||[]).filter(p=>p.method!=='Cartão').reduce((s,p)=>s+p.amount,0);
-    return { id:n.id,...n.dados,links,paid,remaining:Math.max(0,n.dados.total-credit-paid),cardTotal,cashTotal,status:paid+credit>=n.dados.total?'Conciliada':paid?'Parcialmente conciliada':cardTotal?'Pagamento em cartão — conferir fatura':'Não conciliada' };
+    const cardTotal=(n.dados.plan?.parts||[]).filter(p=>p.method==='Cartão'&&!unscheduled(p)).reduce((s,p)=>s+p.amount,0);
+    const cashTotal=(n.dados.plan?.parts||[]).filter(p=>p.method!=='Cartão'&&!unscheduled(p)).reduce((s,p)=>s+p.amount,0);
+    return { id:n.id,...n.dados,links,paid,remaining:Math.max(0,n.dados.total-credit-bonus-paid),bonus,deferred,cardTotal,cashTotal,status:bonus>0&&bonus+credit>=n.dados.total?'Bonificação — sem pagamento':paid+credit+bonus>=n.dados.total?'Conciliada':deferred?(paid?'Parcialmente paga — saldo a definir':'Pagamento a definir / consignação'):paid?'Parcialmente conciliada':cardTotal?'Pagamento em cartão — conferir fatura':'Não conciliada' };
   });
 }
 function match(row, invoices, bank) {
@@ -54,7 +59,7 @@ function match(row, invoices, bank) {
     const sameName=norm(row.name||row.supplier)===norm(n.supplier);
     if(!sameDoc&&!sameName)continue;
     if(row.document && !compatiblePersonDocument(row.document,n.document))continue;
-    for(const p of n.plan?.parts||[]) if(p.method!=='Cartão'&&(!p.bank||!bank||p.bank===bank)) for(const installment of p.installments) {
+    for(const p of n.plan?.parts||[]) if(!unscheduled(p)&&p.method!=='Cartão'&&(!p.bank||!bank||p.bank===bank)) for(const installment of p.installments) {
       const linked=n.links.filter(l=>l.partId===installment.id).reduce((s,l)=>s+l.amount,0);
       if(installment.amount-linked===Math.abs(row.amount)) found.push({invoice:n,part:p,installment});
     }
