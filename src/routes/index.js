@@ -182,7 +182,8 @@ function registrarResultadoCodificador(req, resultado) {
   if (!req.session.codificadorResultados) req.session.codificadorResultados = {};
   req.session.codificadorResultados[id] = {
     pdf: resultado.pdf || null,
-    excel: resultado.excel || null
+    excel: resultado.excel || null,
+    xml: resultado.xml_original || null
   };
   return id;
 }
@@ -31666,7 +31667,7 @@ function renderCodificadorPage(req, { statusBase = null, feedback = null } = {})
         </dl>
         ${faltantesHtml}
         <div class="cod-downloads">
-          <a class="cod-btn cod-btn-primary" href="/ferramentas-ia/codificador/download/${encodeURIComponent(resultadoId)}/pdf">Baixar PDF codificado</a>
+          <a class="cod-btn cod-btn-primary" href="/ferramentas-ia/codificador/download/${encodeURIComponent(resultadoId)}/${resultado.xml_original ? 'par' : 'pdf'}">${resultado.xml_original ? 'Baixa PDF Codificado e XML' : 'Baixar PDF codificado'}</a>
           ${resultado.excel ? `<a class="cod-btn cod-btn-secondary" href="/ferramentas-ia/codificador/download/${encodeURIComponent(resultadoId)}/excel">Baixar Excel</a>` : ''}
         </div>
       </section>
@@ -32381,6 +32382,7 @@ router.post('/ferramentas-ia/codificador/base', protegerRota, somenteAdmin, rece
 router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), receberArquivoCodificador('pdf'), async (req, res) => {
   try {
     let arquivo = req.file?.path;
+    let xmlOriginal = null;
     if (req.body.compra_nf) {
       if(req.file) throw new Error('Escolha uma NF arquivada ou um arquivo local, apenas uma opção.');
       if(!/^[a-f0-9]{64}$/.test(req.body.compra_nf)) throw new Error('NF inválida.');
@@ -32388,6 +32390,8 @@ router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfi
       const found = await pool.query('SELECT id FROM compras_estoque_nf WHERE id=$1',[req.body.compra_nf]);
       if(!found.rows.length) throw new Error('NF arquivada não encontrada.');
       arquivo = path.join(uploadsDir, '.compras-estoque', req.body.compra_nf+'.pdf');
+      xmlOriginal = path.join(uploadsDir, '.compras-estoque', req.body.compra_nf+'.xml');
+      if(!fs.existsSync(xmlOriginal)) throw new Error('XML original não encontrado na NF arquivada. Confira o par no Arquivo de Compras.');
     }
     if (!arquivo || (!req.body.compra_nf && path.extname(req.file.originalname).toLowerCase() !== '.pdf')) {
       throw new Error('Selecione um documento no formato PDF.');
@@ -32402,6 +32406,11 @@ router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfi
       '--fornecedor', fornecedor,
       '--tipo', tipo
     ]);
+    if(xmlOriginal){
+      const destino=path.join(codificadorStorageDir,'outputs',crypto.randomUUID()+'-original.xml');
+      fs.copyFileSync(xmlOriginal,destino,fs.constants.COPYFILE_EXCL);
+      resultado.xml_original=destino;
+    }
     const resultadoId = registrarResultadoCodificador(req, resultado);
     req.session.codificadorFeedback = { resultado, resultadoId };
   } catch (error) {
@@ -32414,6 +32423,17 @@ router.post('/ferramentas-ia/codificador/processar', protegerRota, permitirPerfi
 
 router.get('/ferramentas-ia/codificador/download/:id/:tipo', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), (req, res) => {
   const resultado = req.session.codificadorResultados?.[req.params.id];
+  if(req.params.tipo==='par'){
+    const root=path.resolve(codificadorStorageDir,'outputs')+path.sep;
+    const files=[resultado?.pdf,resultado?.xml];
+    if(files.some(file=>!file||!path.resolve(file).startsWith(root)||!fs.existsSync(file))) return res.status(404).send('PDF codificado ou XML original não encontrado. Codifique novamente a NF arquivada.');
+    const archive=archiver('zip',{zlib:{level:9}});
+    archive.on('error',error=>{console.error('Download codificador:',error.message);if(!res.headersSent)res.status(500).send('Não foi possível gerar o download.');else res.destroy();});
+    res.attachment('PDF-codificado-e-XML-original.zip');archive.pipe(res);
+    archive.file(files[0],{name:path.basename(files[0])});
+    archive.file(files[1],{name:'XML-original.xml'});
+    archive.finalize();return;
+  }
   const tipo = req.params.tipo === 'excel' ? 'excel' : 'pdf';
   const arquivo = resultado?.[tipo];
   if (!arquivo) return res.status(404).send('<pre>Arquivo não encontrado ou acesso expirado.</pre>');

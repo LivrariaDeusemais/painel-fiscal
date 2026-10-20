@@ -1,0 +1,5 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');
+const {supplierLabel}=require('../src/services/codificador-fornecedor');
+const xml=(city,district)=>Buffer.from(`<nfeProc><NFe><infNFe><emit><enderEmit><xMun>${city}</xMun><xBairro>${district}</xBairro></enderEmit></emit></infNFe></NFe></nfeProc>`);
+test('distingue unidades SBB pelo endereço original sem alterar o XML',async()=>{for(const [city,district,label] of [['Barueri','Centro','Barueri'],['São Paulo','Luz','Luz']]){const buffer=xml(city,district),copy=Buffer.from(buffer);assert.equal(await supplierLabel('SOCIEDADE BIBLICA DO BRASIL','123',buffer),'SOCIEDADE BIBLICA DO BRASIL - '+label);assert.deepEqual(buffer,copy)}});
+test('não adivinha unidade por cidade de São Paulo e preserva outros fornecedores',async()=>{assert.equal(await supplierLabel('Sociedade Bíblica do Brasil','123',xml('São Paulo','Outro')),'Sociedade Bíblica do Brasil - CNPJ 123');assert.equal(await supplierLabel('Outra Editora','456',xml('Barueri','Centro')),'Outra Editora');});
