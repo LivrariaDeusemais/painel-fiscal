@@ -31,6 +31,16 @@ Os tokens ficam cifrados com AES-256-GCM no PostgreSQL. A renovação usa bloque
 
 A carga por Excel e o botão de exportação para o Bling continuam disponíveis. Uma nova importação não invalida automaticamente a última observação direta do Mercado Livre; consulte novamente para atualizar esse preço.
 
+## Central de promoções: integração na própria tabela
+
+Em `Preços → Promoção Mercado Livre`, filtre a decisão Participar, marque as caixas junto do SKU e clique **Integrar decisões dos selecionados**. Esse botão inicia a publicação dos itens selecionados visíveis, sem uma segunda tela de prévia. Salvar decisões continua sendo apenas uma alteração local. As prévias descritas abaixo permanecem no fluxo legado e no envio de brutos.
+
+O servidor consulta cada anúncio individualmente e, quando necessário, busca a oferta pelo filtro `item_id` da campanha. Uma página global incompleta não bloqueia o lote. Antes de escrever, confere os dados analisados, margem/decisão, preço, benefício, elegibilidade, propriedade do anúncio e estoque. Um erro em um item não interrompe os demais. Tipos sem contrato de publicação validado e ofertas com boost continuam bloqueados individualmente.
+
+A coluna Participação tem filtro e guarda a confirmação por conta/campanha/anúncio: **Participando** inclui participação ativa ou programada; **Não participando** representa ausência confirmada; **Pendente de confirmação** representa leitura indisponível ou resposta de escrita incerta. Os motivos e a data aparecem no ícone de informação. O ícone ↻ do título consulta os itens visíveis sem publicar. A tabela acompanha o processamento sem recarregar e permite retomar a consulta após atualizar a página.
+
+Participações já confirmadas não recebem nova admissão. Campanhas próprias flexíveis podem atualizar um preço quando permitido pela API. A escolha Não participar não remove uma oferta existente. Uma escrita ambígua nunca é repetida automaticamente: fica persistida antes do envio, exige nova consulta e uma espera mínima de dois minutos antes de uma nova tentativa manual quando a API ainda indicar ausência. O relatório preserva os resultados por item.
+
 ## Envios e interrupções
 
 Nenhuma publicação ocorre na consulta ou preparação da prévia. As prévias expiram 20 minutos depois de preparadas, pertencem ao administrador e à conta que as criou e são consumidas uma única vez. Antes do envio, o sistema verifica propriedade, preço remoto, estoque e cálculo. Brutos são enviados somente ao canal Mercado Livre; anúncios com promoção ativa/programada ou automatização são bloqueados nesse fluxo.
