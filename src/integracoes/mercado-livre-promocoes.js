@@ -1,6 +1,6 @@
 const crypto=require('crypto');
 const ml=require('./mercado-livre'),pricing=require('../tabela-precos/service');
-const {calculateAtPrice}=require('../tabela-precos/pricing');
+const {calculatePriceSimulation}=require('../tabela-precos/pricing');
 const ROOT=ml.ROOT+'/central-promocoes',PATH='/central-promocoes';
 const decisions=['Participar','Analisar','Não participar'];
 const flexible=new Set(['SELLER_CAMPAIGN','DEAL','LIGHTNING','DOD','PRICE_DISCOUNT']);
@@ -28,7 +28,7 @@ function scenario(campaign,candidate,item,dynamic=[],input={}){
  if(candidate.boosted_offer){const boost=Number(candidate.discount_meli_boost_amount);if(!Number.isFinite(boost)||boost<0||!(Number(candidate.total_price_for_boosted_offer)>0))throw Error('Oferta com boost incompleto.');price=Number(candidate.total_price_for_boosted_offer);credit=round(credit+boost);}
  if(!(price>0)||!Number.isFinite(price)||!(gross>0)||price>=gross)throw Error('Preço deve ser positivo e menor que o bruto publicado.');
  if(!item.rule||!item.product||!(item.product.cost>0)||!(item.product.weight>0)||item.result.status!=='OK')throw Error('Custo, peso ou cálculo de preço incompleto.');
- const d=calculateAtPrice(item.product,item.rule,price,dynamic),profit=round(d.netProfit+credit),margin=profit/price;
+ const d=calculatePriceSimulation(item.product,item.rule,price,credit,dynamic),profit=round(d.netProfit),margin=profit/price;
  const problems=[];
  if(!flexible.has(type)&&!fixed.has(type))problems.push('Tipo disponível para análise; envio sem contrato de API validado.');
  if(candidate.boosted_offer)problems.push('Boost automático: revisar no portal; envio bloqueado para não alterar o benefício.');
@@ -47,7 +47,7 @@ function scenario(campaign,candidate,item,dynamic=[],input={}){
   quantity=Number(input.quantity||Math.min(stock,max||stock));
   if(!Number.isInteger(quantity)||!Number.isFinite(min)||!Number.isFinite(max)||quantity<min||quantity>max||quantity>stock)problems.push('Informe estoque de reserva dentro dos limites da oferta e do estoque disponível.');
  }
- return {price:round(price),gross,credit,estimated,editable,details:d,profit,margin,receivable:round(d.marketplaceReceivable+credit),quantity,discount:1-price/gross,problems,suggested:estimated?'Analisar':suggestion(margin,profit,Number(item.rule.minProfit)||0)};
+ return {price:round(price),gross,credit,estimated,editable,details:d,profit,margin,receivable:round(d.marketplaceReceivable),quantity,discount:1-price/gross,problems,suggested:estimated?'Analisar':suggestion(margin,profit,Number(item.rule.minProfit)||0)};
 }
 function payload(c,candidate,s){
  if(s.problems.length)throw Error(s.problems.join(' '));
