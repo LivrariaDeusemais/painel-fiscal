@@ -40,11 +40,11 @@ async function observe(api,campaign,id,cached={}){
 }
 function uncertainStillFresh(prior,current){return prior&&prior.phase!=='confirmed'&&!active(current)&&Date.now()-Date.parse(prior.checkedAt)<UNCERTAIN_WAIT;}
 async function saveDecision(pool,seller,campaign,entry,s){await pool.query('INSERT INTO ml_promo_decisoes(seller,campanha,anuncio,oferta,dados) VALUES($1,$2,$3,$4,$5) ON CONFLICT(seller,campanha,anuncio,oferta) DO UPDATE SET dados=EXCLUDED.dados,atualizado_em=NOW()',[seller,key(campaign),entry.anuncio,ref(entry.candidate),JSON.stringify({price:s.price,quantity:s.quantity,credit:s.creditOverride,creditBasis:s.creditOverride!=null?s.creditBasis:null,decision:'Participar',manual:entry.manual,basis:entry.basis,user:entry.user,at:new Date().toISOString()})]);}
-async function run(pool,op,readOnly=false){
+async function run(pool,op,readOnly=false,options={}){
  const api=new ml.MeliClient(pool),seller=op.seller||op.seller_id,campaign=op.dados.campaign;
  let failures=0;const rows=readOnly?[]:await pricing.marketplaceRows(pool,{marketplace:'Mercado Livre'}),dynamic=readOnly?[]:await pricing.freightRules(pool);
  const prior=new Map((await load(pool,seller,campaign)).map(r=>[r.anuncio,r.dados]));
- for(const entry of op.dados.entries){let current=null,observed=false,sending=false,record;const report={sku:entry.sku,anuncio:entry.anuncio};
+ for(const entry of op.dados.entries){let current=null,observed=false,sending=false,record;const report={sku:entry.sku,anuncio:entry.anuncio,campanha:key(campaign),nome_campanha:promo().campaignName(campaign),oferta:ref(entry.candidate),indice:entry.index};
   try{
    current=await observe(api,campaign,entry.anuncio,entry.candidate);observed=true;
    if(uncertainStillFresh(prior.get(entry.anuncio),current))throw Error('Envio anterior ainda sem confirmação. Aguarde dois minutos e consulte a participação antes de reenviar.');
@@ -89,7 +89,8 @@ async function run(pool,op,readOnly=false){
   }
   await ml.appendResult(pool,op.id,{...report,final:true});
  }
- await pool.query('UPDATE ml_operacoes SET status=$2,atualizado_em=NOW() WHERE id=$1',[op.id,failures?'parcial':'concluida']);
+ if(options.finalize!==false)await pool.query('UPDATE ml_operacoes SET status=$2,atualizado_em=NOW() WHERE id=$1',[op.id,failures?'parcial':'concluida']);
+ return {failures};
 }
 function mount({route,pool,account,owner,model}){
  const start=readOnly=>async(req,res)=>{
