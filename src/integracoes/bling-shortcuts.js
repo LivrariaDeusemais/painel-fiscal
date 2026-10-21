@@ -3,7 +3,7 @@ const service = require('./bling');
 const ROOT = '/ferramentas-ia/tabela-precos/bling';
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function state(pool,req) {
-  if(req.session.usuario?.perfil!=='ADMIN')return null;
+  if(!require('./access').canOperate(req.session.usuario))return null;
   if(!req.session.blingCsrf)req.session.blingCsrf=crypto.randomBytes(32).toString('hex');
   try {
     await service.ensureTables(pool);

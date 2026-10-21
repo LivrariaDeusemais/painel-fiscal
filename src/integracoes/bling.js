@@ -226,7 +226,7 @@ async function saveGrossLinks(pool, marketplace, links) {
   } catch(error) { await db.query('ROLLBACK');throw error; }
   finally { db.release(); }
 }
-async function startSync(pool, filter='', module='all', marketplaces=null) {
+async function startSync(pool, filter='', module='all', marketplaces=null, options={}) {
   const selectedSkus = require('./mercado-livre').syncSelectors(filter);
   await ensureTables(pool);
   const settings = (await pool.query('SELECT configuracao, refresh_token IS NOT NULL AS conectado FROM bling_integracao WHERE id=1')).rows[0];
@@ -240,9 +240,10 @@ async function startSync(pool, filter='', module='all', marketplaces=null) {
     await client.query("UPDATE bling_sincronizacoes SET status='interrompida', mensagem='A execução anterior foi interrompida. Os dados já atualizados foram preservados.', finalizado_em=NOW() WHERE status='executando'");
     const job = (await client.query("INSERT INTO bling_sincronizacoes(status,etapa) VALUES('executando','Consultando produtos') RETURNING id")).rows[0];
     // All progress is persisted; the HTTP response can return while the work continues.
-    runSync(pool, client, job.id, {...settings.configuracao, selectedSkus, module, marketplaces}).catch(() => {}).finally(async () => {
+    const completion = runSync(pool, client, job.id, {...settings.configuracao, selectedSkus, module, marketplaces}).catch(() => {}).finally(async () => {
       try { await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))"); } finally { client.release(); }
     }).catch(() => {});
+    if(options.wait) await completion;
     return job.id;
   } catch (error) {
     if (locked) await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))");

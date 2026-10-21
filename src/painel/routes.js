@@ -11,7 +11,7 @@ function createRouter({pool,protect,renderShell,downloads}){
   const user=req.session.usuario,p=s.period(req.query.periodo,req.query.data||s.today()),max=s.addDays(s.today(),366);if(p.end>max)throw Error('Consulte até um ano à frente.');
   await s.generate(pool,p.end>s.today()?p.end:s.today());
   const [people,tasks,files]=await Promise.all([s.users(pool),s.load(pool,user),downloads()]);
-  return {user,people,tasks,files,scope:req.query.escopo==='acompanho'?'acompanho':'minhas',period:p,token:ui.token(req),pages:pages(user.perfil)};
+  return {user,people,tasks,files,scope:req.query.escopo==='acompanho'?'acompanho':'minhas',period:p,token:ui.token(req),pages:pages(user)};
  }
  router.get('/visao-geral',run(async(req,res)=>res.send(renderShell(req,{titulo:'Painel',navegacaoSuperior:true},views.panel(await data(req))))));
  router.get('/painel/usuario/:id',run(async(req,res)=>{const m=await data(req);if(m.user.perfil!=='ADMIN'&&String(m.user.id)!==req.params.id)return res.sendStatus(403);const person=m.people.find(x=>x.id===req.params.id);if(!person)return res.sendStatus(404);res.send(renderShell(req,{titulo:'Tarefas de '+person.nome,navegacaoSuperior:true},views.person({...m,person})));}));
@@ -21,8 +21,8 @@ function createRouter({pool,protect,renderShell,downloads}){
  router.post('/painel/tarefas',csrf,run(async(req,res)=>{const id=await s.create(pool,req.session.usuario,req.body,p=>pages(p).map(x=>x.url));await s.generate(pool,req.body.inicio>s.today()?req.body.inicio:s.today());const task=(await pool.query('SELECT id FROM painel_tarefas WHERE rotina=$1 ORDER BY prazo LIMIT 1',[id])).rows[0];res.json({ok:true,url:task?'/painel/tarefa/'+task.id:'/painel/agenda'});}));
  router.post('/painel/tarefa/:id',csrf,run(async(req,res)=>{await s.change(pool,req.session.usuario,req.params.id,req.body);res.json({ok:true});}));
  router.post('/painel/rotina/:id/pausar',csrf,run(async(req,res)=>{if(!uuid(req.params.id))return res.sendStatus(404);await s.pause(pool,req.session.usuario,req.params.id);res.json({ok:true});}));
- router.get('/painel/favoritos',run(async(req,res)=>{const options=pages(req.session.usuario.perfil);const r=(await pool.query('SELECT urls FROM painel_favoritos WHERE usuario=$1',[String(req.session.usuario.id)])).rows[0];res.json({options,selected:(r?.urls||[]).filter(url=>options.some(p=>p.url===url))});}));
- router.post('/painel/favoritos',csrf,run(async(req,res)=>{const options=pages(req.session.usuario.perfil),urls=req.body.urls;if(!Array.isArray(urls)||urls.length>30||urls.some(url=>typeof url!=='string'||!options.some(p=>p.url===url)))throw Error('Escolha até 30 telas disponíveis para seu perfil.');await pool.query('INSERT INTO painel_favoritos(usuario,urls) VALUES($1,$2) ON CONFLICT(usuario) DO UPDATE SET urls=EXCLUDED.urls,atualizado_em=NOW()',[String(req.session.usuario.id),JSON.stringify([...new Set(urls)])]);res.json({ok:true});}));
+ router.get('/painel/favoritos',run(async(req,res)=>{const options=pages(req.session.usuario);const r=(await pool.query('SELECT urls FROM painel_favoritos WHERE usuario=$1',[String(req.session.usuario.id)])).rows[0];res.json({options,selected:(r?.urls||[]).filter(url=>options.some(p=>p.url===url))});}));
+ router.post('/painel/favoritos',csrf,run(async(req,res)=>{const options=pages(req.session.usuario),urls=req.body.urls;if(!Array.isArray(urls)||urls.length>30||urls.some(url=>typeof url!=='string'||!options.some(p=>p.url===url)))throw Error('Escolha até 30 telas disponíveis para seu perfil.');await pool.query('INSERT INTO painel_favoritos(usuario,urls) VALUES($1,$2) ON CONFLICT(usuario) DO UPDATE SET urls=EXCLUDED.urls,atualizado_em=NOW()',[String(req.session.usuario.id),JSON.stringify([...new Set(urls)])]);res.json({ok:true});}));
  return router;
 }
 module.exports={createRouter,pages};

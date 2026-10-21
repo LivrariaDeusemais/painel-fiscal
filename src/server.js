@@ -58,4 +58,5 @@ app.use('/', routes);
 // Start servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  require('./integracoes/scheduled-sync').start(require('./db'));
 });
