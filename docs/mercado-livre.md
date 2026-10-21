@@ -60,3 +60,9 @@ Campanhas próprias usam FLEXIBLE_PERCENTAGE, até 14 dias, e são criadas somen
 - https://developers.mercadolivre.com.br/pt_br/convivencia-me1-me2/campanha-com-co-participacao
 - https://developers.mercadolivre.com.br/pt_br/categorizacao-de-produtos/campanhas-smart-price-matching
 - https://developers.mercadolivre.com.br/pt_br/guia-para-produtos/automatizacoes-de-precos
+
+## Nomes e períodos das ofertas
+
+A central mostra PRICE_MATCHING como **Para ganhar competitividade** e UNHEALTHY_STOCK como **Acelere suas vendas de estoque Full**, mantendo o identificador e nome original da API para conferência. Não altera decisões nem preços por renomear a apresentação.
+
+A coluna **Período da oferta** usa `start_date` e `end_date` (ou `finish_date`) do item, em Brasília. Datas sem fuso são datas locais do calendário e não são deslocadas pelo fuso do servidor. A lista e o cabeçalho resumem esses períodos; prazos diferentes são indicados como variáveis por item. Datas não fornecidas ficam explicitamente não informadas, sem substituir pelo período geral do cadastro. A vigência geral da campanha fica recolhida em **Cadastro da campanha na API**, pois não equivale ao prazo específico de adesão/oferta. Nenhum prazo é deduzido do print ou de uma duração padrão.
