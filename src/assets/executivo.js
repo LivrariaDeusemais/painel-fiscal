@@ -1,5 +1,17 @@
 (function(){
  const root=document.getElementById('exec-header');if(!root)return;
+ const favorites=root.querySelector('.exec-favorites');
+ if(favorites){
+  let selected=[],options=[];const links=favorites.querySelector('.exec-favorites-links'),dialog=favorites.querySelector('dialog'),message=favorites.querySelector('.exec-favorites-message');
+  const render=()=>{links.replaceChildren();for(const url of selected){const p=options.find(p=>p.url===url);if(!p)continue;const a=document.createElement('a');a.href=p.url;a.textContent=p.label;links.append(a);}if(!selected.length){const label=document.createElement('span');label.textContent='Defina seus atalhos no lápis';links.append(label);}};
+  const load=async()=>{const response=await fetch('/painel/favoritos',{headers:{Accept:'application/json'}});if(!response.ok)throw Error('Não foi possível carregar favoritos. Atualize a página.');const data=await response.json();options=data.options;selected=data.selected;render();};
+  load().catch(e=>{message.textContent=e.message;});
+  favorites.querySelector('[data-favorites-open]')?.addEventListener('click',e=>{const open=favorites.classList.toggle('is-open');e.currentTarget.setAttribute('aria-expanded',String(open));});
+  favorites.querySelectorAll('[data-favorites-edit]').forEach(b=>b.addEventListener('click',async()=>{try{await load();message.textContent='';const list=favorites.querySelector('.exec-favorites-options');list.replaceChildren();for(const p of options){const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.name='url';check.value=p.url;check.checked=selected.includes(p.url);label.append(check,document.createTextNode(p.label));list.append(label);}dialog.showModal();}catch(e){message.textContent=e.message;dialog.showModal();}}));
+  favorites.querySelector('[data-favorites-close]').addEventListener('click',()=>dialog.close());
+  favorites.querySelector('form').addEventListener('submit',async e=>{e.preventDefault();const button=e.target.querySelector('[type=submit]');button.disabled=true;try{const urls=Array.from(new FormData(e.target).getAll('url'));const response=await fetch('/painel/favoritos',{method:'POST',headers:{'Content-Type':'application/json','X-Painel-Token':favorites.dataset.token},body:JSON.stringify({urls})});const data=await response.json();if(!response.ok)throw Error(data.error||'Não foi possível salvar.');selected=urls;render();dialog.close();}catch(error){message.textContent=error.message;}finally{button.disabled=false;}});
+  document.addEventListener('click',e=>{if(!favorites.contains(e.target)){favorites.classList.remove('is-open');favorites.querySelector('[data-favorites-open]')?.setAttribute('aria-expanded','false');}});
+ }
  const input=document.getElementById('exec-search-input'),results=document.getElementById('exec-search-results');
  const pages=JSON.parse(document.getElementById('exec-search-data').textContent);
  const norm=v=>v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();

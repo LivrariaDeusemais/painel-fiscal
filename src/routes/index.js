@@ -33066,6 +33066,11 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
   }
 });
 
+let painelContadorSchema;
+router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell,downloads:async()=>{
+  await (painelContadorSchema ||= ensureContadorTables().catch(error=>{painelContadorSchema=null;throw error;}));
+  return require('../painel/downloads').load(pool,getContadorArquivoConfig());
+}}));
 router.use(require('../fechamento/routes').createRouter({ pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir }));
 router.use('/ferramentas-ia/gestao-compras', require('./compras-estoque').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir}));
 router.use('/conciliacao-bancaria', require('./conciliacao-bancaria').createRouter({
