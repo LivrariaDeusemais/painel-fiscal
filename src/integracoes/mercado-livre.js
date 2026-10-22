@@ -218,4 +218,4 @@ async function startSync(pool,user,filter='') {
     const op=await operation(client,'consulta',user,{filter},'executando');await client.query('COMMIT');setImmediate(()=>runLocked(pool,op,()=>runSync(pool,op)).catch(()=>{}));return op.id;
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
-module.exports={syncSelectors,syncRows,ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};
+module.exports={runSync,syncSelectors,syncRows,ROOT,config,missingConfig,crypt,ensureTables,tokenRequest,connect,accessToken,MeliClient,itemId,assertOwned,standardPrice,activeBenefit,snapshot,readPrice,state,savePrice,operation,beginOperation,appendResult,startSync,runLocked,recoverInterrupted};

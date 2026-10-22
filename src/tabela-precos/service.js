@@ -576,13 +576,26 @@ async function calculatorContext(pool, marketplace, sku) {
   const rule = ruleResult.rows[0] ? databaseRule(ruleResult.rows[0]) : null;
   const product = productResult.rows[0] || null;
   const link = linkResult.rows[0] || null;
-  return {
-    rule,
-    dynamicRules,
-    product,
-    link,
-    published: link && rule ? publishedPrices(link, rule) : null
-  };
+  let priceWarning = '';
+  let published = link && rule ? publishedPrices(link, rule) : null;
+  if (link && rule && cleanMarketplace === 'Mercado Livre') {
+    try {
+      const ml = require('../integracoes/mercado-livre');
+      const observed = Date.parse(link.dados?.mercado_livre_preco?.observedAt || '');
+      if (!Number.isFinite(observed) || Date.now() - observed > 5 * 60000) {
+        const account = (await pool.query('SELECT seller_id FROM ml_integracao WHERE id=1')).rows[0];
+        if (!account?.seller_id) throw new Error('Conecte o Mercado Livre para consultar o preço atual.');
+        const { price } = await ml.snapshot(new ml.MeliClient(pool), ml.itemId(link.id_loja), account.seller_id);
+        await ml.savePrice(pool, link, price);
+        link.dados = { ...link.dados, mercado_livre_preco: price };
+        published = publishedPrices(link, rule);
+      }
+    } catch (error) {
+      published = null;
+      priceWarning = 'Não foi possível consultar o preço atual do Mercado Livre. O preço antigo não foi carregado. ' + error.message;
+    }
+  }
+  return { rule, dynamicRules, product, link, published, priceWarning };
 }
 
 async function saveCalculatorPrice(pool, marketplace, sku, price) {

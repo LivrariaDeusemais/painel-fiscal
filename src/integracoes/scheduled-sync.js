@@ -32,7 +32,16 @@ async function meliWorker(pool){
   if(!['concluida','parcial'].includes(job?.status))throw Error('Consulta automática Mercado Livre '+(job?.status||'não concluída')+'. Consulte o histórico.');
   return {status:job.status,job:op.id,mensagem:job.dados?.errors?.length?job.dados.errors.length+' pendência(s).':'Campanhas e ofertas atualizadas.'};
 }
-async function tick(pool,{now=new Date(),workers={bling:blingWorker,meli:meliWorker}}={}){
+async function meliPricesWorker(pool){
+  const ml=require('./mercado-livre');
+  await ml.ensureTables(pool);await ml.recoverInterrupted(pool);
+  const op=await ml.beginOperation(pool,'consulta','automatico-03h',{filter:'',origem:'Agendamento diário 03h — preços atuais'});
+  await ml.runLocked(pool,op,()=>ml.runSync(pool,op));
+  const job=(await pool.query('SELECT status FROM ml_operacoes WHERE id=$1',[op.id])).rows[0];
+  if(!['concluida','parcial'].includes(job?.status))throw Error('Consulta de preços atuais não concluída. Consulte o histórico.');
+  return {status:job.status,job:op.id,mensagem:job.status==='parcial'?'Consulta de preços atuais com pendências; consulte o histórico.':'Preços brutos e preços ao cliente consultados no Mercado Livre.'};
+}
+async function tick(pool,{now=new Date(),workers={bling:blingWorker,meli:meliWorker,meliPrecos:meliPricesWorker}}={}){
   await ensure(pool);
   const client=await pool.connect();let locked=false;
   try{
@@ -68,6 +77,6 @@ async function summary(pool){
   const [agenda,last]=await Promise.all([pool.query('SELECT proxima_em FROM integracao_agenda WHERE id=1'),pool.query('SELECT * FROM integracao_agenda_execucoes ORDER BY inicio_em DESC LIMIT 1')]);
   const escape=require('../services/ui-executivo').esc;
   const date=d=>new Date(d).toLocaleString('pt-BR',{timeZone:TZ});
-  return `<section class="panel bling-card ml-card"><strong>Atualização automática diária · 03h (Brasília)</strong><p>Produtos, custos, estoques, vínculos e preços brutos do Bling; campanhas e ofertas do Mercado Livre. A participação em promoções continua por comando manual.</p><p>Próxima execução: ${escape(date(agenda.rows[0].proxima_em))}.</p>${last.rows.length?`<p>Última execução: ${escape(date(last.rows[0].inicio_em))} · ${escape(({concluida:'Concluída',parcial:'Com pendências',falhou:'Falhou',executando:'Em andamento / aguardando nova tentativa'})[last.rows[0].status])}</p>${Object.entries(last.rows[0].resultados).map(([k,r])=>`<p>${k==='bling'?'Bling':'Mercado Livre'}: ${escape(r.mensagem||r.status)}</p>`).join('')}`:'<p>Aguardando a primeira execução automática.</p>'}</section>`;
+  return `<section class="panel bling-card ml-card"><strong>Atualização automática diária · 03h (Brasília)</strong><p>Produtos, custos, estoques, vínculos e preços brutos do Bling; campanhas, ofertas e preços atuais ao cliente do Mercado Livre. A participação em promoções continua por comando manual.</p><p>Próxima execução: ${escape(date(agenda.rows[0].proxima_em))}.</p>${last.rows.length?`<p>Última execução: ${escape(date(last.rows[0].inicio_em))} · ${escape(({concluida:'Concluída',parcial:'Com pendências',falhou:'Falhou',executando:'Em andamento / aguardando nova tentativa'})[last.rows[0].status])}</p>${Object.entries(last.rows[0].resultados).map(([k,r])=>`<p>${k==='bling'?'Bling':k==='meliPrecos'?'Mercado Livre — preços atuais':'Mercado Livre'}: ${escape(r.mensagem||r.status)}</p>`).join('')}`:'<p>Aguardando a primeira execução automática.</p>'}</section>`;
 }
 module.exports={nextRun,parts,ensure,tick,start,summary};

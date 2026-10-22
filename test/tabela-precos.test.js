@@ -426,3 +426,28 @@ test('TikTok promoção calcula SFP pelo preço da venda e aplica todas as taxas
   assert.ok(Math.abs(changed.adsValue-92.15*.12)<1e-9);
   assert.ok(Math.abs(changed.cardValue-92.15*.01)<1e-9);
 });
+
+test('calculadora renova preço Meli antigo, preserva manual e bloqueia cache em falha', async t => {
+  const ml = require('../src/integracoes/mercado-livre');
+  const { calculatorContext } = require('../src/tabela-precos/service');
+  const link = { id: 8825, marketplace: 'Mercado Livre', id_loja: 'MLB5886138198', preco_atual: 173.6,
+    dados: { preco_liquido_manual: 164.92, mercado_livre_preco: {itemId:'MLB5886138198',currency:'BRL',gross:173.6,amount:164.92,observedAt:'2026-10-05T17:34:07Z'} } };
+  const pool = { query: async sql => ({ rows:
+    sql.includes('FROM tabela_preco_regras') ? [{marketplace:'Mercado Livre',desconto:0.3}] :
+    sql.includes('FROM tabela_preco_vinculos') ? [link] :
+    sql.includes('FROM ml_integracao') ? [{seller_id:'42'}] : [] }) };
+  let calls = 0;
+  t.mock.method(ml, 'snapshot', async () => { calls++; return {price:{itemId:link.id_loja,currency:'BRL',gross:173.6,amount:157.42,observedAt:new Date().toISOString()}}; });
+  t.mock.method(ml, 'savePrice', async () => {});
+  const updated = await calculatorContext(pool,'Mercado Livre','B1577');
+  assert.equal(updated.published.liquidPrice,157.42);
+  assert.equal(updated.published.grossPrice,173.6);
+  assert.equal(link.dados.preco_liquido_manual,164.92);
+  await calculatorContext(pool,'Mercado Livre','B1577');
+  assert.equal(calls,1);
+  link.dados.mercado_livre_preco.observedAt='2026-10-05T17:34:07Z';
+  t.mock.method(ml,'snapshot',async()=>{throw Error('HTTP 503');});
+  const failed=await calculatorContext(pool,'Mercado Livre','B1577');
+  assert.equal(failed.published,null);
+  assert.match(failed.priceWarning,/preço antigo não foi carregado/);
+});
