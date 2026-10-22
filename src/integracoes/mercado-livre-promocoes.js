@@ -114,7 +114,7 @@ async function refresh(pool,op){
     for(const o of offers){const id=o.id||(o.type==='PRICE_DISCOUNT'?'DESCONTO-INDIVIDUAL':null);if(!id)continue;const c={...o,id},k=key(c);if(!by.has(k))by.set(k,{campaign:{id,type:o.type,name:o.name||({DOD:'Oferta do dia',LIGHTNING:'Oferta relâmpago',PRICE_DISCOUNT:'Desconto individual'}[o.type]||o.type),status:'started',sub_type:o.sub_type},items:[]});const b=by.get(k);const found=b.items.filter(i=>i.id===ids[n]);const enriched={...o,id:ids[n],offer_id:o.offer_id||(String(o.ref_id||'').startsWith('OFFER-')?o.ref_id:undefined)};
      const exact=enriched.offer_id?found.filter(i=>i.offer_id===enriched.offer_id):found;
      const match=exact.length===1?exact[0]:(found.length===1&&!found[0].offer_id?found[0]:null);
-     if(match)b.items[b.items.indexOf(match)]={...match,...enriched,offer_id:enriched.offer_id||match.offer_id};
+     if(match)b.items[b.items.indexOf(match)]={...enriched,...match,offer_id:match.offer_id||enriched.offer_id};
      else if(!found.length||enriched.offer_id&&!found.some(i=>i.offer_id===enriched.offer_id))b.items.push(enriched);
     }
    }catch(e){errors.push(ids[n]+': '+e.message);}
@@ -246,6 +246,9 @@ function mount(router,pool,renderShell){
   for(const [path,params] of [['/seller-promotions/items/'+id,{app_version:'v2'}],['/seller-promotions/items/'+id,{app_version:'v2',promotion_type:campaign.type}],['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50}]]){
    try{const data=await api.get(path,params);checks.push({path,params,data:Array.isArray(data)?data:(data.results||data)});}catch(e){checks.push({path,params,error:e.message});}
   }
+  try{checks.push({source:'campaign_all_items',data:(await require('./mercado-livre-actions').campaignItems(api,campaign)).filter(c=>c.id===id)});}catch(e){checks.push({source:'campaign_all_items',error:e.message});}
+  const refs=[...new Set(m.entries.filter(e=>e.candidate.id===id).map(e=>e.candidate.ref_id).filter(r=>/^CANDIDATE-MLB\d+-\d+$/.test(r)))];
+  for(const ref of refs)try{checks.push({source:'candidate_identity',data:await api.get('/seller-promotions/candidates/'+ref,{app_version:'v2'})});}catch(e){checks.push({source:'candidate_identity',error:e.message});}
   res.json({campaign,anuncio:id,imported:m.entries.filter(e=>e.candidate.id===id).map(e=>e.candidate),checks});
  });
  route('/atualizar','post',async(req,res)=>{const op=await ml.beginOperation(pool,'consulta-promocoes',owner(req),{progress:0});setImmediate(()=>ml.runLocked(pool,op,()=>refresh(pool,op)).catch(()=>{}));res.redirect(req.body.return_to==='produtos'?ROOT+'/por-produto':ROOT+'?visao=campanhas');});

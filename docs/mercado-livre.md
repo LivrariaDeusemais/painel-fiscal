@@ -82,3 +82,7 @@ A atualização manual e a consulta automática das 03h permanecem disponíveis.
 As campanhas Meli usam a sugestão da API dentro de min_discounted_price/max_discounted_price; a regra líquido menos dez centavos foi removida nas duas visões. Campanhas próprias continuam usando o líquido calculado. Ofertas relâmpago preenchem a reserva com stock.min, validada contra stock.max e estoque disponível, em vez de reservar todo o estoque. Ausência de limites de reserva exige revisão, sem inventar uma quantidade. A mudança da política invalida a base dos rascunhos anteriores para recalcular preços e decisões.
 
 Integrar na visão por campanha serializa e valida somente as linhas selecionadas; uma reserva inválida em outra linha não bloqueia o lote. A validação de preço, margem e estoque continua no servidor e na conferência da API antes de cada envio. Salvar decisões mantém seu escopo na análise completa.
+
+### Origem dos termos por campanha
+
+A consulta dos itens da campanha é prioritária para preço, prazo, limites e quantidade. A resposta genérica por anúncio apenas complementa campos ausentes: não deve sobrescrever esses termos. Na conferência anterior e posterior ao envio, LIGHTNING, DOD e DEAL consultam novamente a campanha pelo tipo, identificador e MLB; ausência ou ambiguidade bloqueia a operação. A consulta administrativa de diagnóstico compara as fontes e a identidade do candidato, sem publicar participações.

@@ -62,7 +62,7 @@ async function accessToken(pool) {
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }
 function validatePath(path,method) {
-  const reads=/^\/(?:users\/(?:me|\d+)|items\/MLB\d+(?:\/sale_price|\/prices)?|seller-promotions\/(?:users\/\d+|promotions\/[-\w]+(?:\/items)?|items\/MLB\d+))$/;
+  const reads=/^\/(?:users\/(?:me|\d+)|items\/MLB\d+(?:\/sale_price|\/prices)?|seller-promotions\/(?:users\/\d+|promotions\/[-\w]+(?:\/items)?|candidates\/CANDIDATE-MLB\d+-\d+|items\/MLB\d+))$/;
   const writes=/^\/(?:items\/MLB\d+(?:\/prices\/standard)?|seller-promotions\/(?:items\/MLB\d+|promotions))$/;
   if(!(method==='GET'?reads:writes).test(path) || !['GET','POST','PUT'].includes(method)) throw new Error('Operação Mercado Livre não permitida.');
 }

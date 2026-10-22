@@ -62,3 +62,10 @@ test('relâmpago prioriza a proposta price sobre a sugestão genérica de 15% e 
  assert.equal(p.scenario({type:'LIGHTNING'},c,i).price,16.83);
  const stale=p.scenario({type:'LIGHTNING'},c,i,[],{price:17.36});assert.equal(stale.suggested,'Revisar');assert.throws(()=>p.payload({type:'LIGHTNING'},c,stale),/proposta atual/);
 });
+test('importação não sobrescreve preço e período da campanha com condições da consulta genérica por anúncio',async()=>{
+ const ml=require('../src/integracoes/mercado-livre'),pricing=require('../src/tabela-precos/service'),old={Client:ml.MeliClient,rows:pricing.marketplaceRows};let catalog;
+ const lightning={id:'LGH-MLB1000',type:'LIGHTNING'},deal={id:'P-11',type:'DEAL',name:'11.11'};
+ ml.MeliClient=class{async get(path){if(path.includes('/users/'))return {results:[lightning,deal]};if(path.includes('/promotions/LGH-'))return {results:[{id:'MLB123',price:16.83,status:'candidate',stock:{min:5,max:99},start_date:'2026-10-22',finish_date:'2026-10-23'}]};if(path.includes('/promotions/P-11'))return {results:[{id:'MLB123',price:0,status:'candidate',max_discounted_price:17.36,suggested_discounted_price:14.8}]};return [{...lightning,price:17.36,ref_id:'CANDIDATE-123',status:'candidate',stock:{min:5,max:99},original_price:25.6,suggested_discounted_price:21.76},{...deal,price:0,status:'candidate',max_discounted_price:17.36,suggested_discounted_price:14.8}];}};
+ pricing.marketplaceRows=async()=>[item()];const pool={query:async(sql,args=[])=>{if(sql.includes('SELECT seller_id'))return {rows:[{seller_id:'123'}]};if(sql.includes('INSERT INTO ml_promo_catalogo'))catalog=JSON.parse(args[1]);return {rows:[]}},connect:async()=>({query:pool.query,release(){}})};
+ try{await p.refresh(pool,{id:'op',seller:'123'});const l=catalog.campaigns.find(g=>g.campaign.type==='LIGHTNING').items[0],d=catalog.campaigns.find(g=>g.campaign.type==='DEAL').items[0];assert.equal(l.price,16.83);assert.equal(l.finish_date,'2026-10-23');assert.equal(l.ref_id,'CANDIDATE-123');assert.equal(d.max_discounted_price,17.36);assert.equal(d.suggested_discounted_price,14.8);}finally{ml.MeliClient=old.Client;pricing.marketplaceRows=old.rows;}
+});

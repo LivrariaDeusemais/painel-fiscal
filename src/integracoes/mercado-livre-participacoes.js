@@ -28,13 +28,15 @@ async function observe(api,campaign,id,cached={}){
  const relevant=offers.filter(c=>c.type===campaign.type&&(String(c.id)===String(campaign.id)||campaign.type==='PRICE_DISCOUNT'&&!c.id));
  const current=unique(relevant,cached);if(!current)return null;
  const item={...current,id,offer_id:current.offer_id||(String(current.ref_id||'').startsWith('OFFER-')?current.ref_id:undefined)};
- if(!item.offer_id&&['SMART','PRICE_MATCHING','PRE_NEGOTIATED','UNHEALTHY_STOCK'].includes(campaign.type)&&!active(item)){
+ const scopedTerms=['LIGHTNING','DOD','DEAL'].includes(campaign.type);
+ if(scopedTerms||!item.offer_id&&['SMART','PRICE_MATCHING','PRE_NEGOTIATED','UNHEALTHY_STOCK'].includes(campaign.type)&&!active(item)){
   try{
    const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50});
    if(!Array.isArray(data.results))throw Error('Oferta individual incompleta.');
    const detail=unique(data.results.filter(c=>c.id===id),cached);
-   if(detail){if(detail.status!==item.status||detail.price>0&&item.price>0&&Math.abs(Number(detail.price)-Number(item.price))>.005)throw Error('Oferta mudou durante a consulta.');return {...item,...detail,id,offer_id:detail.offer_id||item.offer_id};}
-  }catch(error){item.lookupError=error.message;}
+   if(detail){if(detail.status!==item.status||!scopedTerms&&detail.price>0&&item.price>0&&Math.abs(Number(detail.price)-Number(item.price))>.005)throw Error('Oferta mudou durante a consulta.');return {...item,...detail,id,offer_id:detail.offer_id||item.offer_id};}
+   if(scopedTerms)throw Error('Condições da campanha não encontradas para este anúncio. Atualize as ofertas.');
+  }catch(error){if(scopedTerms)throw error;item.lookupError=error.message;}
  }
  return item;
 }
