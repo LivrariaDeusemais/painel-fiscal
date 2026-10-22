@@ -238,6 +238,16 @@ function mount(router,pool,renderShell){
  const show=(req,res,html)=>res.send(renderShell(req,html,{title:'Promoção Mercado Livre'}));
  require('./mercado-livre-produtos').mount({route,pool,account,owner,show});
  route('','get',async(req,res)=>{if(!req.query.campaign&&req.query.visao!=='campanhas')return res.redirect(ROOT+'/por-produto');const seller=await account(),m=await model(pool,seller,req.query.campaign);if(req.query.campaign&&!m.group)throw Error('Campanha não encontrada. Atualize as campanhas.');const jobs=(await pool.query("SELECT * FROM ml_operacoes WHERE seller_id=$1 AND (usuario=$2 OR usuario='automatico-03h') AND tipo IN ('consulta-promocoes','promo-central','integrar-promocoes','consultar-participacao') ORDER BY criado_em DESC LIMIT 12",[seller,owner(req)])).rows;m.jobs=jobs;m.automatico=await require('./scheduled-sync').summary(pool);show(req,res,m.group?analysis(req,m):listing(req,m,jobs));});
+ route('/conferir-oferta','get',async(req,res)=>{
+  if(req.session.usuario.perfil!=='ADMIN')throw Error('Conferência técnica disponível ao administrador.');
+  const seller=await account(),m=await model(pool,seller,req.query.campaign),id=ml.itemId(req.query.anuncio);
+  if(!m.group||!m.entries.some(e=>e.candidate.id===id&&e.item))throw Error('Anúncio não encontrado nesta campanha.');
+  const api=new ml.MeliClient(pool),campaign=m.group.campaign,checks=[];
+  for(const [path,params] of [['/seller-promotions/items/'+id,{app_version:'v2'}],['/seller-promotions/items/'+id,{app_version:'v2',promotion_type:campaign.type}],['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50}]]){
+   try{const data=await api.get(path,params);checks.push({path,params,data:Array.isArray(data)?data:(data.results||data)});}catch(e){checks.push({path,params,error:e.message});}
+  }
+  res.json({campaign,anuncio:id,imported:m.entries.filter(e=>e.candidate.id===id).map(e=>e.candidate),checks});
+ });
  route('/atualizar','post',async(req,res)=>{const op=await ml.beginOperation(pool,'consulta-promocoes',owner(req),{progress:0});setImmediate(()=>ml.runLocked(pool,op,()=>refresh(pool,op)).catch(()=>{}));res.redirect(req.body.return_to==='produtos'?ROOT+'/por-produto':ROOT+'?visao=campanhas');});
  async function save(req,seller,m){
   if(!m.group)throw Error('Selecione uma campanha importada.');
