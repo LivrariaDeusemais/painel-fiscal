@@ -85,7 +85,8 @@ async function executePrices(pool,op) {
       if(!Number.isFinite(entry.liquidoAtual))throw new Error('Prévia antiga. Prepare uma nova prévia antes de enviar.');
       if(Math.abs(snap.price.gross-entry.anterior)>0.005 || Math.abs(snap.price.amount-entry.liquidoAtual)>0.005)throw new Error('Preço bruto ou líquido publicado mudou desde a prévia. Prepare novamente.');
       await service.appendResult(pool,op.id,{...result,status:'Envio iniciado',motivo:'Confira o anúncio se a operação for interrompida antes da confirmação.'});
-      const response=await api.request('POST','/items/'+entry.anuncio+'/prices/standard',{}, {prices:[{conditions:{context_restrictions:['channel_marketplace']},amount:entry.bruto,currency_id:'BRL'}]});
+      // Standard-price editing endpoint is not available yet; the supported API updates price on the item.
+      const response=await api.request('PUT','/items/'+entry.anuncio,{}, {price:entry.bruto});
       if(response.warnings?.length)throw new Error('Mercado Livre retornou avisos. Confira o anúncio antes de repetir.');
       const confirmed=await service.snapshot(api,entry.anuncio,op.seller_id);
       if(Math.abs(confirmed.price.gross-entry.bruto)>0.005)throw new Error('Envio aceito, mas o preço ainda não foi confirmado. Consulte o anúncio antes de repetir.');

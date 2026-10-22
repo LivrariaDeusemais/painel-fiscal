@@ -30,7 +30,7 @@ test('preço remoto prevalece no anúncio certo e preserva os dados manuais para
 });
 test('escritas não se repetem em falha HTTP ou resposta ambígua; GET permite recuperação',async()=>{
   let calls=0;const api=new service.MeliClient({},async()=>{calls++;return {ok:false,status:503,json:async()=>({})};},async()=>{},async()=> 'token');
-  await assert.rejects(api.request('POST','/items/MLB123/prices/standard',{}, {prices:[]}),/HTTP 503/);assert.equal(calls,1);
+  await assert.rejects(api.request('PUT','/items/MLB123',{}, {price:120}),/HTTP 503/);assert.equal(calls,1);
   calls=0;await assert.rejects(api.get('/items/MLB123'),/HTTP 503/);assert.equal(calls,4);
   calls=0;await assert.rejects(api.request('DELETE','/items/MLB123'),/permitida/);assert.equal(calls,0);
   await assert.rejects(api.get('https://example.org'),/permitida/);assert.equal(calls,0);
@@ -164,8 +164,8 @@ test('envio escreve somente bruto e verifica líquido promocional depois sem alt
     service.appendResult=async(pool,id,result)=>reports.push(result);
     const pool={query:async()=>({rows:[]})},op={id:'op',seller_id:42,dados:{entries:[entry]}};
     await actions.executePrices(pool,op);
-    assert.equal(requests.length,1);assert.equal(requests[0][1],'/items/MLB123/prices/standard');
-    assert.deepEqual(requests[0][3],{prices:[{conditions:{context_restrictions:['channel_marketplace']},amount:120,currency_id:'BRL'}]});
+    assert.equal(requests.length,1);assert.equal(requests[0][0],'PUT');assert.equal(requests[0][1],'/items/MLB123');
+    assert.deepEqual(requests[0][3],{price:120});
     assert.equal(reports.at(-1).status,'Publicado');assert.match(reports.at(-1).motivo,/preservado/);
     changed=true;await actions.executePrices(pool,op);
     assert.equal(reports.at(-1).status,'Pendente');assert.match(reports.at(-1).motivo,/alterou o líquido/);assert.equal(saved.at(-1).amount,76);
