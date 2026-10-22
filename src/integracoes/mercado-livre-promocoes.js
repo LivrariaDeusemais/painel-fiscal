@@ -53,7 +53,7 @@ function scenario(campaign,candidate,item,dynamic=[],input={}){
  const editable=flexible.has(type)&&!bonus;
  // Meli's suggested price can exceed the admission ceiling. Use the current
  // allowed range, never a discount derived from our own campaign.
- const proposed=Number(candidate.suggested_discounted_price||candidate.price),ceiling=Number(candidate.max_discounted_price),floor=Number(candidate.min_discounted_price);
+ const proposed=Number(type==='LIGHTNING'?(candidate.price||candidate.suggested_discounted_price):(candidate.suggested_discounted_price||candidate.price)),ceiling=Number(candidate.max_discounted_price),floor=Number(candidate.min_discounted_price);
  let target=type==='SELLER_CAMPAIGN'?round(item.result.finalPrice):proposed;
  if(type!=='SELLER_CAMPAIGN'&&target>0){if(ceiling>0)target=Math.min(target,ceiling);if(floor>0)target=Math.max(target,floor);}
  let price=editable?(input.price==null||input.price===''?round(target):Number(String(input.price).replace(',','.'))):Number(candidate.price);
@@ -76,6 +76,7 @@ function scenario(campaign,candidate,item,dynamic=[],input={}){
  if(!flexible.has(type)&&!fixed.has(type))problems.push('Tipo disponível para análise; envio sem contrato de API validado.');
  if(candidate.boosted_offer)problems.push('Boost automático: revisar no portal; envio bloqueado para não alterar o benefício.');
  if(candidate.min_discounted_price>0&&price<Number(candidate.min_discounted_price)-.005||candidate.max_discounted_price>0&&price>Number(candidate.max_discounted_price)+.005)problems.push('Preço fora dos limites da oferta.');
+ if(type==='LIGHTNING'&&Number(candidate.price)>0&&price>Number(candidate.price)+.005)problems.push('Preço acima da proposta atual da oferta relâmpago. Atualize as campanhas.');
  if(type==='SELLER_CAMPAIGN'&&1-price/gross<.05-1e-9)problems.push('Campanha própria exige pelo menos 5% de desconto.');
  if(acceptOffer.has(type)&&!candidate.offer_id)problems.push('API não retornou offer_id para aceitar a oferta.');
  const status=candidate.status;

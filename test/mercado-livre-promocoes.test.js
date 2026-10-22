@@ -56,3 +56,9 @@ test('L1363 usa teto 16,83 mesmo com sugestão 21,76, e reserva mínima 5 sem re
 test('preço sem margem não é aprovado mesmo se o líquido calculado era maior',()=>{
  const i=item(),c={status:'candidate',price:170,max_discounted_price:170};const s=p.scenario({type:'DEAL'},c,i);assert.equal(s.price,170);assert.equal(s.suggested,'Não participar');
 });
+
+test('relâmpago prioriza a proposta price sobre a sugestão genérica de 15% e rejeita preço antigo',()=>{
+ const c={status:'candidate',price:16.83,suggested_discounted_price:21.76,max_discounted_price:23.04,min_discounted_price:5.13,stock:{min:5,max:99}},i=item();i.published.grossPrice=25.6;i.product.cost=5;i.rule.fixedFreight=2.82;
+ assert.equal(p.scenario({type:'LIGHTNING'},c,i).price,16.83);
+ const stale=p.scenario({type:'LIGHTNING'},c,i,[],{price:17.36});assert.equal(stale.suggested,'Revisar');assert.throws(()=>p.payload({type:'LIGHTNING'},c,stale),/proposta atual/);
+});
