@@ -179,3 +179,36 @@ test('consulta por lista usa códigos exatos e não transforma uma lista inváli
   await service.syncRows({query:async(q,p)=>{sql=q;params=p;return {rows:[]};}},'B1607, MLB123');
   assert.deepEqual(params,[['B1607','MLB123']]);assert.match(sql,/marketplace='Mercado Livre'/);assert.match(sql,/UPPER\(TRIM\(sku\)\)=ANY/);assert.ok(!sql.includes('ILIKE'));
 });
+
+test('prévia captura centavo editado apenas dos selecionados e rejeita preço inválido',()=>{
+  const selected=new Set(['1']);
+  assert.deepEqual(actions.selectedGrossEdits('{"1":"621,28","2":"invalido"}',selected),[['1',621.28]]);
+  assert.deepEqual(actions.selectedGrossEdits('',selected),[]);
+  assert.throws(()=>actions.selectedGrossEdits('{"1":"621,281"}',selected),/duas casas/);
+  assert.throws(()=>actions.selectedGrossEdits('{"1":"0"}',selected),/positivo/);
+  assert.throws(()=>actions.selectedGrossEdits('[]',selected),/inválidos/);
+});
+
+test('revisão salva edição sem Enter e redireciona diretamente à prévia',async t=>{
+  const pricing=require('../src/tabela-precos/service'),routes=new Map();
+  const router={get:(path,fn)=>routes.set('GET '+path,fn),post:(path,fn)=>routes.set('POST '+path,fn)};
+  let manual=null,loads=0;
+  const client={query:async(sql,args)=>{
+    if(sql.startsWith('UPDATE tabela_preco_vinculos')){manual=args[1];return {rowCount:1};}
+    return {rows:[]};
+  },release:()=>{}};
+  const pool={connect:async()=>client};
+  t.mock.method(service,'ensureTables',async()=>{});
+  t.mock.method(service,'beginOperation',async()=>({id:'7902a4d1-cf10-47f3-886a-0576bb12f7ea'}));
+  t.mock.method(service,'runLocked',async()=>{});
+  t.mock.method(pricing,'marketplaceRows',async()=>{
+    loads++;return [{row:{id:1,id_loja:'MLB123',sku:'B1612'},published:{grossPrice:621.29},result:{status:'OK',grossPrice:manual??621.29,grossManual:manual!==null,finalPrice:434.9}}];
+  });
+  actions.mount(router,pool,()=>{});
+  let redirect;
+  await routes.get('POST /precos/previa')({body:{links:'1',grossMode:'calculated',grossEdits:'{"1":"621,28"}'},session:{usuario:{id:1}}},{redirect:url=>{redirect=url;}});
+  assert.equal(manual,621.28);
+  assert.equal(loads,2);
+  assert.match(redirect,/\/previa\/7902a4d1/);
+  await new Promise(resolve=>setImmediate(resolve));
+});
