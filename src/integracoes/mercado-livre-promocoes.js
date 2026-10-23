@@ -255,9 +255,9 @@ function mount(router,pool,renderShell){
  route('/conferir-oferta','get',async(req,res)=>{
   if(req.session.usuario.perfil!=='ADMIN')throw Error('Conferência técnica disponível ao administrador.');
   const seller=await account(),m=await model(pool,seller,req.query.campaign),id=ml.itemId(req.query.anuncio);
-  if(!m.group||!m.entries.some(e=>e.candidate.id===id&&e.item))throw Error('Anúncio não encontrado nesta campanha.');
+  if(!m.group||!(await local(pool)).some(i=>String(i.row.id_loja).trim().toUpperCase()===id))throw Error('Anúncio sem vínculo nesta conta.');
   const api=new ml.MeliClient(pool),campaign=m.group.campaign,checks=[];
-  for(const [path,params] of [['/seller-promotions/items/'+id,{app_version:'v2'}],['/seller-promotions/items/'+id,{app_version:'v2',promotion_type:campaign.type}],['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50}]]){
+  for(const [path,params] of [['/seller-promotions/items/'+id,{app_version:'v2'}],['/seller-promotions/items/'+id,{app_version:'v2',promotion_type:campaign.type}],['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50}],...['candidate','pending','started'].map(status=>['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,status,limit:50}]) ]){
    try{const data=await api.get(path,params);checks.push({path,params,data:Array.isArray(data)?data:(data.results||data)});}catch(e){checks.push({path,params,error:e.message});}
   }
   try{checks.push({source:'campaign_all_items',data:(await require('./mercado-livre-actions').campaignItems(api,campaign)).filter(c=>c.id===id)});}catch(e){checks.push({source:'campaign_all_items',error:e.message});}

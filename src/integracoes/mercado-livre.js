@@ -79,7 +79,8 @@ class MeliClient {
       const data=await response.json().catch(()=>({}));
       if(!response.ok) {const known={401:'Autorização expirou. Reconecte o Mercado Livre.',403:'O aplicativo não tem permissão para esta consulta. Revise os acessos do aplicativo.',429:'Mercado Livre limitou as requisições. Aguarde antes de tentar novamente.'};
         const causes=(data.cause || []).map(c=>c.code).filter(c=>typeof c==='string' && /^[\w.:-]+$/.test(c)).slice(0,4).join(', ');
-        const error=new Error(known[response.status] || `Mercado Livre recusou a operação (HTTP ${response.status})${causes?': '+causes:'.'}${method==='GET'?'':' Confira o anúncio antes de repetir.'}`);error.status=response.status;throw error;}
+        const detail=[data.error,data.message,...(Array.isArray(data.cause)?data.cause:[]).flatMap(c=>[c.code||c.error_code,c.message||c.error_message])].filter(v=>typeof v==='string').join(' · ').replace(/Bearer\s+\S+/gi,'[credencial removida]').slice(0,1500);
+        const error=new Error((known[response.status] || `Mercado Livre recusou a operação (HTTP ${response.status}).`)+(detail?' Detalhe: '+detail:'')+(method==='GET'?'':' Confira o anúncio antes de repetir.'));error.status=response.status;throw error;}
       return data;
     }
   }
