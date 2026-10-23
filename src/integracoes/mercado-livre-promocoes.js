@@ -260,6 +260,17 @@ function mount(router,pool,renderShell){
  const show=(req,res,html)=>res.send(renderShell(req,html,{title:'Promoção Mercado Livre'}));
  require('./mercado-livre-produtos').mount({route,pool,account,owner,show});
  route('','get',async(req,res)=>{if(!req.query.campaign&&req.query.visao!=='campanhas')return res.redirect(ROOT+'/por-produto');const seller=await account(),m=await model(pool,seller,req.query.campaign);if(req.query.campaign&&!m.group)throw Error('Campanha não encontrada. Atualize as campanhas.');const jobs=(await pool.query("SELECT * FROM ml_operacoes WHERE seller_id=$1 AND (usuario=$2 OR usuario='automatico-03h') AND tipo IN ('consulta-promocoes','promo-central','integrar-promocoes','consultar-participacao') ORDER BY criado_em DESC LIMIT 12",[seller,owner(req)])).rows;m.jobs=jobs;if(m.catalog?.errors?.length&&!m.catalog.issues){const links=(await pool.query("SELECT sku,id_loja FROM tabela_preco_vinculos WHERE marketplace='Mercado Livre'")).rows;m.catalog.issues=m.catalog.errors.map(mensagem=>{const anuncio=mensagem.match(/^(MLB\d+):/)?.[1]||'';return {anuncio,sku:links.find(r=>r.id_loja===anuncio)?.sku||'',etapa:anuncio?'Consulta de ofertas do anúncio':'Lista de itens da campanha',mensagem,data:m.catalog.updatedAt};});}m.automatico=await require('./scheduled-sync').summary(pool);show(req,res,m.group?analysis(req,m):listing(req,m,jobs));});
+ route('/diagnosticar-lote','get',async(req,res)=>{
+  if(req.session.usuario.perfil!=='ADMIN')throw Error('Disponível ao administrador.');
+  if(!/^[0-9a-f-]{36}$/i.test(req.query.operation||''))throw Error('Operação inválida.');
+  const seller=await account(),op=(await pool.query('SELECT dados,resultados FROM ml_operacoes WHERE id=$1 AND seller_id=$2',[req.query.operation,seller])).rows[0];
+  if(!op)throw Error('Operação não encontrada.');
+  const ids=[...new Set(op.resultados.filter(r=>r.final&&String(r.motivo).startsWith('Situação do anúncio')).map(r=>r.anuncio))];
+  if(ids.length>50)throw Error('Limite de 50 diagnósticos por consulta.');
+  const api=new ml.MeliClient(pool),items=[];
+  for(const id of ids){const entry=op.dados.entries.find(e=>e.anuncio===id);try{const item=await api.get('/items/'+ml.itemId(id));ml.assertOwned(item,id,seller);const gross=ml.standardPrice(await api.get('/items/'+id+'/prices'),id);items.push({sku:entry?.sku,anuncio:id,status:item.status,condition:item.condition,quantity:item.available_quantity,logistic:item.shipping?.logistic_type,gross,expectedGross:entry?.candidate?.original_price});}catch(error){items.push({sku:entry?.sku,anuncio:id,error:error.message});}}
+  res.json({items});
+ });
  route('/conferir-oferta','get',async(req,res)=>{
   if(req.session.usuario.perfil!=='ADMIN')throw Error('Conferência técnica disponível ao administrador.');
   const seller=await account(),m=await model(pool,seller,req.query.campaign),id=ml.itemId(req.query.anuncio);
