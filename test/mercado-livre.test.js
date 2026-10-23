@@ -59,7 +59,7 @@ test('coparticipação estima benefício explícito e bloqueia condições incom
   assert.throws(()=>actions.campaignTerms({type:'MARKETPLACE_CAMPAIGN'},{...candidate,boosted_offer:true},local,100,[]),/adicional/);
 });
 test('paginação de campanhas usa cursor e recusa resultado incompleto',async()=>{
-  const calls=[];const api={get:async(path,params)=>{calls.push(params);return calls.length===1?{results:[{id:'MLB123'}],paging:{searchAfter:'cursor',total:2}}:{results:[{id:'MLB124'}],paging:{total:2}};}};
+  const calls=[];const api={get:async(path,params)=>{calls.push(params);return !params.search_after?{results:[{id:'MLB123'}],paging:{searchAfter:'cursor',total:2}}:{results:[{id:'MLB124'}],paging:{total:2}};}};
   assert.equal((await actions.campaignItems(api,{id:'P-MLB1',type:'DEAL'})).length,2);assert.equal(calls[1].search_after,'cursor');
   await assert.rejects(actions.campaignItems({get:async()=>({results:[],paging:{total:10}})},{id:'P-MLB1',type:'DEAL'}),/incompleta/);
 });
