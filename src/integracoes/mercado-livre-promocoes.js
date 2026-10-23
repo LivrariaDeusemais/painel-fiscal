@@ -267,9 +267,13 @@ function mount(router,pool,renderShell){
   if(!op)throw Error('Operação não encontrada.');
   const ids=[...new Set(op.resultados.filter(r=>r.final&&String(r.motivo).startsWith('Situação do anúncio')).map(r=>r.anuncio))];
   if(ids.length>50)throw Error('Limite de 50 diagnósticos por consulta.');
-  const api=new ml.MeliClient(pool),items=[];
-  for(const id of ids){const entry=op.dados.entries.find(e=>e.anuncio===id);try{const item=await api.get('/items/'+ml.itemId(id));ml.assertOwned(item,id,seller);const gross=ml.standardPrice(await api.get('/items/'+id+'/prices'),id);items.push({sku:entry?.sku,anuncio:id,status:item.status,condition:item.condition,quantity:item.available_quantity,logistic:item.shipping?.logistic_type,gross,expectedGross:entry?.candidate?.original_price});}catch(error){items.push({sku:entry?.sku,anuncio:id,error:error.message});}}
-  res.json({items});
+  const diagnostic=await ml.beginOperation(pool,'consulta-diagnostico',owner(req),{source:req.query.operation,total:ids.length});
+  setImmediate(()=>ml.runLocked(pool,diagnostic,async()=>{
+   const api=new ml.MeliClient(pool);let failures=0;
+   for(const id of ids){const entry=op.dados.entries.find(e=>e.anuncio===id);try{const item=await api.get('/items/'+ml.itemId(id));ml.assertOwned(item,id,seller);const gross=ml.standardPrice(await api.get('/items/'+id+'/prices'),id);await ml.appendResult(pool,diagnostic.id,{sku:entry?.sku,anuncio:id,status:item.status,condition:item.condition,quantity:item.available_quantity,logistic:item.shipping?.logistic_type,gross,expectedGross:entry?.candidate?.original_price});}catch(error){failures++;await ml.appendResult(pool,diagnostic.id,{sku:entry?.sku,anuncio:id,error:error.message});}}
+   await pool.query('UPDATE ml_operacoes SET status=$2,atualizado_em=NOW() WHERE id=$1',[diagnostic.id,failures?'parcial':'concluida']);
+  }).catch(()=>{}));
+  res.json({operation:diagnostic.id,total:ids.length,message:'Consulta de diagnóstico iniciada; nenhuma participação será enviada.'});
  });
  route('/conferir-oferta','get',async(req,res)=>{
   if(req.session.usuario.perfil!=='ADMIN')throw Error('Conferência técnica disponível ao administrador.');
