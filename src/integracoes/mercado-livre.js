@@ -75,7 +75,7 @@ class MeliClient {
       let response;try {response=await this.transport(url,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(30000)});}
       catch(e){throw new Error(method==='GET'?'Consulta interrompida. Os dados anteriores foram preservados.':'Resposta de publicação não confirmada. Consulte o anúncio antes de tentar novamente.');}
       // Writes are never automatically replayed, including ambiguous 5xx responses.
-      if(method==='GET' && (response.status===429 || response.status>=500) && attempt<3){await this.sleep(1000*2**attempt);continue;}
+      if(method==='GET' && (response.status===429 || response.status===409 || response.status>=500) && attempt<3){await this.sleep(1000*2**attempt);continue;}
       const data=await response.json().catch(()=>({}));
       if(!response.ok) {const known={401:'Autorização expirou. Reconecte o Mercado Livre.',403:'O aplicativo não tem permissão para esta consulta. Revise os acessos do aplicativo.',429:'Mercado Livre limitou as requisições. Aguarde antes de tentar novamente.'};
         const causes=(data.cause || []).map(c=>c.code).filter(c=>typeof c==='string' && /^[\w.:-]+$/.test(c)).slice(0,4).join(', ');

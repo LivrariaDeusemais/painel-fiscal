@@ -108,13 +108,27 @@ async function campaigns(api,seller) {
   throw new Error('Lista de campanhas excedeu o limite de consulta.');
 }
 async function campaignItems(api,campaign) {
-  campaignKey(campaign);const rows=[],seen=new Set();let after;
-  for(let n=0;n<1000;n++) {const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{promotion_type:campaign.type,app_version:'v2',limit:50,...(after?{search_after:after}:{})});
-    if(!Array.isArray(data.results))throw new Error('Lista de itens da campanha incompleta.');rows.push(...data.results);
-    const next=data.paging?.search_after || data.paging?.searchAfter || data.search_after || data.searchAfter;
-    if(!next){if(data.paging?.total>rows.length)throw new Error('Campanha retornou paginação incompleta. Consulte novamente.');return rows;}
-    if(seen.has(String(next)))throw new Error('Campanha repetiu a paginação. Consulte novamente.');seen.add(String(next));after=next;}
-  throw new Error('Campanha excedeu o limite de consulta.');
+  campaignKey(campaign);
+  const paginate=async(status)=>{
+    const rows=[],seen=new Set();let after;
+    try{for(let n=0;n<1000;n++) {
+      const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{promotion_type:campaign.type,app_version:'v2',limit:50,...(status?{status}:{}),...(after?{search_after:after}:{})});
+      const empty=data.results===null&&Number(data.paging?.total)===0;
+      if(!Array.isArray(data.results)&&!empty)throw new Error('Lista de itens da campanha incompleta.');
+      rows.push(...(data.results||[]));
+      const next=data.paging?.search_after||data.paging?.searchAfter||data.search_after||data.searchAfter;
+      if(!next){if(data.paging?.total>rows.length)throw new Error('Campanha retornou paginação incompleta. Consulte novamente.');return rows;}
+      if(seen.has(String(next)))throw new Error('Campanha repetiu a paginação. Consulte novamente.');seen.add(String(next));after=next;
+    }throw new Error('Campanha excedeu o limite de consulta.');}catch(error){error.partialItems=rows;throw error;}
+  };
+  try{return await paginate();}catch(initial){
+    // Partition a failed broad read; never manufacture offers from local prices.
+    const rows=[...(initial.partialItems||[])],failures=[];
+    for(const status of ['candidate','pending','started'])try{rows.push(...await paginate(status));}catch(error){rows.push(...(error.partialItems||[]));failures.push(status+': '+error.message);}
+    const unique=[...new Map(rows.map(row=>[row.id+':'+(row.offer_id||row.ref_id||'')+':'+row.status,row])).values()];
+    if(failures.length){const error=new Error(failures.join('; '));error.partialItems=unique;throw error;}
+    return unique;
+  }
 }
 function candidateKey(candidate) {return JSON.stringify({id:candidate.id,status:candidate.status,price:candidate.price,original:candidate.original_price,meli:candidate.meli_percentage,seller:candidate.seller_percentage,offer:candidate.offer_id,boost:candidate.boosted_offer,boostAmount:candidate.discount_meli_boost_amount,boostPrice:candidate.total_price_for_boosted_offer,min:candidate.min_discounted_price,max:candidate.max_discounted_price,suggested:candidate.suggested_discounted_price});}
 function campaignTerms(campaign,candidate,item,gross,dynamic) {

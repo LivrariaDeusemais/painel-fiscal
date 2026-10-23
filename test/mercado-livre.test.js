@@ -212,3 +212,20 @@ test('revisão salva edição sem Enter e redireciona diretamente à prévia',as
   assert.match(redirect,/\/previa\/7902a4d1/);
   await new Promise(resolve=>setImmediate(resolve));
 });
+
+test('lista vazia com results null e total zero é uma consulta completa',async()=>{
+ const rows=await actions.campaignItems({get:async()=>({results:null,paging:{total:0,limit:50}})},{id:'C-1',type:'SELLER_CAMPAIGN'});
+ assert.deepEqual(rows,[]);
+});
+test('listagem ampla com falha recupera as ofertas por status sem misturar campanhas',async()=>{
+ const calls=[];
+ const api={get:async(path,params)=>{calls.push(params);if(!params.status)throw Error('conflito');return {results:params.status==='candidate'?[{id:'MLB1',status:'candidate',price:31.68}]:null,paging:{total:params.status==='candidate'?1:0}};}};
+ const rows=await actions.campaignItems(api,{id:'C-1',type:'SELLER_CAMPAIGN'});
+ assert.deepEqual(rows,[{id:'MLB1',status:'candidate',price:31.68}]);assert.equal(calls.length,4);assert.ok(calls.every(c=>c.promotion_type==='SELLER_CAMPAIGN'));
+});
+test('GET 409 temporário é repetido mas PUT não é repetido',async()=>{
+ let calls=0;
+ const api=new service.MeliClient({},async()=>{calls++;return {ok:calls>1,status:calls>1?200:409,json:async()=>calls>1?[]:{error:'internal_capacity_conflict',message:'capacity'}};},async()=>{},async()=>'token');
+ assert.deepEqual(await api.get('/seller-promotions/items/MLB123'),[]);assert.equal(calls,2);
+ calls=0;await assert.rejects(api.request('PUT','/items/MLB123',{}, {price:120}),/capacity/);assert.equal(calls,1);
+});
