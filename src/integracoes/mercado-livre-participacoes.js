@@ -42,6 +42,25 @@ async function observe(api,campaign,id,cached={}){
 }
 function uncertainStillFresh(prior,current){return prior&&prior.phase!=='confirmed'&&!active(current)&&Date.now()-Date.parse(prior.checkedAt)<UNCERTAIN_WAIT;}
 async function saveDecision(pool,seller,campaign,entry,s){await pool.query('INSERT INTO ml_promo_decisoes(seller,campanha,anuncio,oferta,dados) VALUES($1,$2,$3,$4,$5) ON CONFLICT(seller,campanha,anuncio,oferta) DO UPDATE SET dados=EXCLUDED.dados,atualizado_em=NOW()',[seller,key(campaign),entry.anuncio,ref(entry.candidate),JSON.stringify({price:s.price,quantity:s.quantity,credit:s.creditOverride,creditBasis:s.creditOverride!=null?s.creditBasis:null,decision:'Participar',manual:entry.manual,basis:entry.basis,user:entry.user,at:new Date().toISOString()})]);}
+async function sendWithCapacityRecovery(send,check,price,preflight,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))){
+ for(let attempt=0;attempt<3;attempt++){
+  try{return await send();}catch(error){
+   if(error.status!==409||!/internal_capacity_conflict/.test(error.message)||attempt===2)throw error;
+   // A write is retried only after a new read proves the desired participation
+   // is absent. Ambiguous transport errors and other HTTP failures never replay.
+   const current=await check();
+   if(active(current)&&Math.abs(Number(current.price)-price)<.005)return {price};
+   if(active(current))throw Error('Participação mudou após o conflito temporário. Consulte antes de reenviar.');
+   await sleep(2000*(attempt+1));await preflight();
+  }
+ }
+}
+function assertListing(snap,scenario){
+ if(snap.item.status!=='active')throw Error('Anúncio no Mercado Livre está '+snap.item.status+'; confirme a situação antes de enviar.');
+ if(snap.item.condition!=='new')throw Error('Condição do anúncio não é novo.');
+ if(!(Number(snap.item.available_quantity)>0))throw Error('Mercado Livre informa estoque disponível zero para este anúncio. Confira o estoque do anúncio e do Full.');
+ if(Math.abs(snap.price.gross-scenario.gross)>.005)throw Error('Bruto no Mercado Livre mudou: R$ '+Number(snap.price.gross).toFixed(2)+'; análise: R$ '+Number(scenario.gross).toFixed(2)+'. Atualize a análise.');
+}
 async function run(pool,op,readOnly=false,options={}){
  const api=new ml.MeliClient(pool),seller=op.seller||op.seller_id,campaign=op.dados.campaign;
  let failures=0;const rows=readOnly?[]:await pricing.marketplaceRows(pool,{marketplace:'Mercado Livre'}),dynamic=readOnly?[]:await pricing.freightRules(pool);
@@ -69,13 +88,13 @@ async function run(pool,op,readOnly=false,options={}){
      if((entry.manual?entry.decision:s.suggested)!=='Participar')throw Error('A decisão deste item precisa ser Participar.');
      const request=promo().payload(campaign,fresh,s);
      const snap=await ml.snapshot(api,entry.anuncio,seller);
-     if(snap.item.status!=='active'||snap.item.condition!=='new'||!(Number(snap.item.available_quantity)>0)||Math.abs(snap.price.gross-s.gross)>.005)throw Error('Situação do anúncio, estoque ou bruto mudou. Atualize a análise.');
+     assertListing(snap,s);
      if(snap.item.tags?.includes('dynamic_standard_price'))throw Error('Anúncio com automatização de preços; confira no Mercado Livre.');
      if(s.quantity&&s.quantity>Number(snap.item.available_quantity))throw Error('Reserva maior que o estoque atual do anúncio.');
      await saveDecision(pool,seller,campaign,entry,s);
      record=await store(pool,seller,campaign,entry.anuncio,{phase:'sending',candidate:current,operation:op.id,note:'Envio iniciado; aguardando confirmação.'});sending=true;
      await ml.appendResult(pool,op.id,{...report,status:'Envio iniciado',liquido:s.price});
-     const response=await api.request(request.method,'/seller-promotions/items/'+entry.anuncio,{app_version:'v2'},request.body);
+     const response=await sendWithCapacityRecovery(()=>api.request(request.method,'/seller-promotions/items/'+entry.anuncio,{app_version:'v2'},request.body),()=>observe(api,campaign,entry.anuncio,fresh),s.price,async()=>{const latest=await ml.snapshot(api,entry.anuncio,seller);assertListing(latest,s);const offer=await observe(api,campaign,entry.anuncio,fresh);if(!offer)throw Error('Oferta não está mais elegível.');const verified=promo().scenario(campaign,{...fresh,...offer},item,dynamic,entry.input);if(verified.problems.length||Math.abs(verified.price-s.price)>.005)throw Error('Condições mudaram durante a nova tentativa. Atualize a análise.');});
      const checked=await observe(api,campaign,entry.anuncio,fresh);
      if(response?.price!=null&&(!Number.isFinite(Number(response.price))||Math.abs(Number(response.price)-s.price)>.005)||!active(checked)||Math.abs(Number(checked.price)-s.price)>.005)throw Error('Envio recebido, mas participação e preço ainda não confirmados. Consulte antes de repetir.');
      record=await store(pool,seller,campaign,entry.anuncio,{phase:'confirmed',candidate:checked,operation:op.id,note:'Preço e participação confirmados pelo Mercado Livre.'});sending=false;
@@ -125,4 +144,4 @@ function mount({route,pool,account,owner,model}){
   res.json({items:group.items.map(c=>({anuncio:c.id,...state(c,records.get(c.id),catalog.updatedAt)})),operation});
  });
 }
-module.exports={ensure,load,state,observe,run,mount,TYPES};
+module.exports={sendWithCapacityRecovery,assertListing,ensure,load,state,observe,run,mount,TYPES};

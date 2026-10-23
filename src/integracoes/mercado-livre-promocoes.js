@@ -265,6 +265,7 @@ function mount(router,pool,renderShell){
   const seller=await account(),m=await model(pool,seller,req.query.campaign),id=ml.itemId(req.query.anuncio);
   if(!m.group||!(await local(pool)).some(i=>String(i.row.id_loja).trim().toUpperCase()===id))throw Error('Anúncio sem vínculo nesta conta.');
   const api=new ml.MeliClient(pool),campaign=m.group.campaign,checks=[];
+  try{const item=await api.get('/items/'+id);ml.assertOwned(item,id,seller);checks.push({source:'listing_state',status:item.status,condition:item.condition,available_quantity:item.available_quantity,logistic_type:item.shipping?.logistic_type});}catch(error){checks.push({source:'listing_state',error:error.message});}
   for(const [path,params] of [['/seller-promotions/items/'+id,{app_version:'v2'}],['/seller-promotions/items/'+id,{app_version:'v2',promotion_type:campaign.type}],['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,limit:50}],...['candidate','pending','started'].map(status=>['/seller-promotions/promotions/'+campaign.id+'/items',{app_version:'v2',promotion_type:campaign.type,item_id:id,status,limit:50}]) ]){
    try{const data=await api.get(path,params);checks.push({path,params,data:Array.isArray(data)?data:(data.results||data)});}catch(e){checks.push({path,params,error:e.message});}
   }

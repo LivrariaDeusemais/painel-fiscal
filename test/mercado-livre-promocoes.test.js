@@ -85,3 +85,12 @@ test('relatório inclui não participantes de tentativas anteriores e exclui con
  const rows=await notParticipating({query:async()=>({rows:records})},{seller_id:'42',dados:{campaign:{type:'SELLER_CAMPAIGN',id:'C1',name:'Deus é Mais'}}});
  assert.equal(rows.length,1);assert.equal(rows[0].sku,'L1382');assert.equal(rows[0].status,'Não participando');assert.equal(rows[0].motivo,'Não encontrado');
 });
+
+test('conflito de capacidade só repete escrita após consultar ausência e revalidar condições',async()=>{
+ const {sendWithCapacityRecovery}=require('../src/integracoes/mercado-livre-participacoes');let writes=0,reads=0,preflight=0;
+ const conflict=()=>Object.assign(Error('internal_capacity_conflict'),{status:409});
+ const result=await sendWithCapacityRecovery(async()=>{if(++writes===1)throw conflict();return {price:282.9};},async()=>{reads++;return {status:'candidate'};},282.9,async()=>{preflight++;},async()=>{});
+ assert.equal(result.price,282.9);assert.equal(writes,2);assert.equal(reads,1);assert.equal(preflight,1);
+ writes=0;await sendWithCapacityRecovery(async()=>{writes++;throw conflict();},async()=>({status:'pending',price:282.9}),282.9,async()=>assert.fail(),async()=>{});assert.equal(writes,1);
+ writes=0;await assert.rejects(sendWithCapacityRecovery(async()=>{writes++;throw Error('Resposta ambígua');},async()=>assert.fail(),282.9,async()=>assert.fail(),async()=>{}),/ambígua/);assert.equal(writes,1);
+});
