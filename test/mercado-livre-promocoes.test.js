@@ -94,3 +94,12 @@ test('conflito de capacidade só repete escrita após consultar ausência e reva
  writes=0;await sendWithCapacityRecovery(async()=>{writes++;throw conflict();},async()=>({status:'pending',price:282.9}),282.9,async()=>assert.fail(),async()=>{});assert.equal(writes,1);
  writes=0;await assert.rejects(sendWithCapacityRecovery(async()=>{writes++;throw Error('Resposta ambígua');},async()=>assert.fail(),282.9,async()=>assert.fail(),async()=>{}),/ambígua/);assert.equal(writes,1);
 });
+
+test('diagnóstico distingue pausa, estoque remoto zero e mudança do bruto sem remover proteções',()=>{
+ const {assertListing}=require('../src/integracoes/mercado-livre-participacoes');
+ const s={gross:323.8},snap={item:{status:'active',condition:'new',available_quantity:10},price:{gross:323.8}};
+ assert.doesNotThrow(()=>assertListing(snap,s));
+ assert.throws(()=>assertListing({...snap,item:{...snap.item,status:'paused'}},s),/pausado/);
+ assert.throws(()=>assertListing({...snap,item:{...snap.item,available_quantity:0}},s),/estoque disponível zero/);
+ assert.throws(()=>assertListing({...snap,price:{gross:330}},s),/Bruto.*mudou/);
+});

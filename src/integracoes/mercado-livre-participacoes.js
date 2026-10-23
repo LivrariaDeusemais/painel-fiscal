@@ -56,6 +56,7 @@ async function sendWithCapacityRecovery(send,check,price,preflight,sleep=ms=>new
  }
 }
 function assertListing(snap,scenario){
+ if(snap.item.status==='paused')throw Error('Anúncio pausado no Mercado Livre. Reative o anúncio antes de integrar a campanha.');
  if(snap.item.status!=='active')throw Error('Anúncio no Mercado Livre está '+snap.item.status+'; confirme a situação antes de enviar.');
  if(snap.item.condition!=='new')throw Error('Condição do anúncio não é novo.');
  if(!(Number(snap.item.available_quantity)>0))throw Error('Mercado Livre informa estoque disponível zero para este anúncio. Confira o estoque do anúncio e do Full.');
