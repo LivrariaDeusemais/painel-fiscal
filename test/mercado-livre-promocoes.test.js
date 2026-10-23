@@ -74,3 +74,14 @@ test('importação não sobrescreve preço e período da campanha com condiçõe
  test('estoque matriz ou Full Meli positivo permite análise; saldo Shopee não conta',()=>{
  for(const [matrix,full,expected] of [[0,2,false],[3,0,false],[-1,2,false],[0,0,true]]){const i=item();i.row.estoque=matrix;i.row.estoque_matriz=matrix;i.row.estoque_full={'Mercado Livre':full,Shopee:10};const s=p.scenario({type:'SELLER_CAMPAIGN'},{status:'candidate'},i);assert.equal(s.problems.includes('Sem estoque disponível.'),expected);}
  });
+
+test('alerta de importação identifica anúncio, SKU e permite repetir apenas erros',()=>{
+ const html=p.integrationAlert({session:{mlCsrf:'token'}},{errors:['MLB123: HTTP 400'],issues:[{sku:'L1387',anuncio:'MLB123',mensagem:'HTTP 400',etapa:'Consulta de ofertas',data:'2026-10-23'}]});
+ assert.match(html,/Integração com erros/);assert.match(html,/L1387/);assert.match(html,/retryErrors/);assert.equal(p.integrationAlert({},{}),'');
+});
+test('relatório inclui não participantes de tentativas anteriores e exclui confirmados e incertos',async()=>{
+ const {notParticipating}=require('../src/integracoes/mercado-livre-report');
+ const records=[{sku:'L1382',anuncio:'MLB1',dados:{phase:'confirmed',candidate:null,note:'Não encontrado',checkedAt:'2026-10-23'}},{sku:'B1',anuncio:'MLB2',dados:{phase:'confirmed',candidate:{status:'started'}}},{sku:'B2',anuncio:'MLB3',dados:{phase:'uncertain'}}];
+ const rows=await notParticipating({query:async()=>({rows:records})},{seller_id:'42',dados:{campaign:{type:'SELLER_CAMPAIGN',id:'C1',name:'Deus é Mais'}}});
+ assert.equal(rows.length,1);assert.equal(rows[0].sku,'L1382');assert.equal(rows[0].status,'Não participando');assert.equal(rows[0].motivo,'Não encontrado');
+});
