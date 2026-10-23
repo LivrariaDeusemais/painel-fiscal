@@ -107,12 +107,12 @@ async function campaigns(api,seller) {
   for(let offset=0;offset<50000;offset+=50){const data=await api.get('/seller-promotions/users/'+seller,{app_version:'v2',limit:50,offset});if(!Array.isArray(data.results))throw new Error('Lista de campanhas incompleta.');for(const c of data.results){const k=c.type+':'+c.id;if(seen.has(k))throw new Error('Paginação de campanhas repetida. Consulte novamente.');seen.add(k);rows.push(c);}if(data.paging?.total==null||rows.length>=Number(data.paging.total))return rows;if(!data.results.length)throw new Error('Lista de campanhas incompleta.');}
   throw new Error('Lista de campanhas excedeu o limite de consulta.');
 }
-async function campaignItems(api,campaign) {
+async function campaignItemScope(api,campaign,statusItem) {
   campaignKey(campaign);
   const paginate=async(status)=>{
     const rows=[],seen=new Set();let after;
     try{for(let n=0;n<1000;n++) {
-      const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{promotion_type:campaign.type,app_version:'v2',limit:50,...(status?{status}:{}),...(after?{search_after:after}:{})});
+      const data=await api.get('/seller-promotions/promotions/'+campaign.id+'/items',{promotion_type:campaign.type,app_version:'v2',limit:50,status_item:statusItem,...(status?{status}:{}),...(after?{search_after:after}:{})});
       const empty=data.results===null&&Number(data.paging?.total)===0;
       if(!Array.isArray(data.results)&&!empty)throw new Error('Lista de itens da campanha incompleta.');
       rows.push(...(data.results||[]));
@@ -130,6 +130,14 @@ async function campaignItems(api,campaign) {
     return unique;
   }
 }
+async function campaignItems(api,campaign){
+ const rows=[],failures=[];
+ for(const scope of ['active','paused'])try{rows.push(...await campaignItemScope(api,campaign,scope));}catch(error){rows.push(...(error.partialItems||[]));failures.push(scope+': '+error.message);}
+ const unique=[...new Map(rows.map(row=>[row.id+':'+(row.offer_id||row.ref_id||'')+':'+row.status,row])).values()];
+ if(failures.length){const error=new Error(failures.join('; '));error.partialItems=unique;throw error;}
+ return unique;
+}
+
 function candidateKey(candidate) {return JSON.stringify({id:candidate.id,status:candidate.status,price:candidate.price,original:candidate.original_price,meli:candidate.meli_percentage,seller:candidate.seller_percentage,offer:candidate.offer_id,boost:candidate.boosted_offer,boostAmount:candidate.discount_meli_boost_amount,boostPrice:candidate.total_price_for_boosted_offer,min:candidate.min_discounted_price,max:candidate.max_discounted_price,suggested:candidate.suggested_discounted_price});}
 function campaignTerms(campaign,candidate,item,gross,dynamic) {
   const type=campaign.type;
