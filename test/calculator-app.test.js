@@ -11,3 +11,7 @@ test('manifesto tem ícones e início independente; worker não armazena preços
  routes.get('/ferramentas-ia/tabela-precos/promocoes/sw.js')({}, {set(){return this},type(){return this},send(value){worker=value}});
  assert.match(worker,/Sem conexão/);assert.doesNotMatch(worker,/caches\./);new Function(worker);
 });
+
+test('aplicativo mantém seu cabeçalho compacto mesmo com layout executivo',()=>{
+ const ui=require('../src/services/ui-executivo');const html=app.render('<p>Calculadora</p>');assert.equal(ui.decorate({path:'/ferramentas-ia/tabela-precos/promocoes',session:{usuario:{id:1,perfil:'ADMIN'}}},html),html);
+});
