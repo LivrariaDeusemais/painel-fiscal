@@ -15,3 +15,10 @@ test('manifesto tem ícones e início independente; worker não armazena preços
 test('aplicativo mantém seu cabeçalho compacto mesmo com layout executivo',()=>{
  const ui=require('../src/services/ui-executivo');const html=app.render('<p>Calculadora</p>');assert.equal(ui.decorate({path:'/ferramentas-ia/tabela-precos/promocoes',session:{usuario:{id:1,perfil:'ADMIN'}}},html),html);
 });
+test('compartilhamento envia só o endereço de acesso e permite copiar sem compartilhamento nativo',async()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),code=fs.readFileSync(require.resolve('../src/assets/calculator-app.js'),'utf8');
+ function setup(navigator){const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id,{value:'',textContent:'',addEventListener(event,fn){this[event]=fn;},showModal(){this.open=true},select(){},focus(){}});return elements.get(id)};vm.runInNewContext(code,{document:{querySelectorAll:()=>[],getElementById:element},window:{addEventListener(){}},navigator,location:{origin:'https://app.plennatecsistemas.com.br',search:'?custo=100&sku=privado'},URL});return element;}
+ let shared;const native=setup({share:async data=>{shared=data}});await native('share-app').click();assert.equal(shared.url,'https://app.plennatecsistemas.com.br/ferramentas-ia/tabela-precos/promocoes?app=1');assert.doesNotMatch(shared.url,/custo|sku/);
+ let copied;const fallback=setup({clipboard:{writeText:async value=>{copied=value}}});await fallback('share-app').click();assert.equal(fallback('share-dialog').open,true);await fallback('copy-share-link').click();assert.equal(copied,shared.url);
+ const canceled=setup({share:async()=>{throw Object.assign(new Error(),{name:'AbortError'})}});await canceled('share-app').click();assert.notEqual(canceled('share-dialog').open,true);
+});
