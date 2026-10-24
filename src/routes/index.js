@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+require('../tabela-precos/calculator-app').mount(router);
 const pool = require('../db');
 const bcrypt = require('bcrypt');
 function protegerRota(req, res, next) {
@@ -11656,7 +11657,9 @@ Tamanho do hash: ${hashBanco.length}
       perfil: String(usuario.perfil || '').toUpperCase()
     };
 
-    return res.redirect('/dashboard');
+    const calculatorApp = req.session.calculatorAppLogin === true;
+    delete req.session.calculatorAppLogin;
+    return res.redirect(calculatorApp ? '/ferramentas-ia/tabela-precos/promocoes?app=1' : '/dashboard');
   } catch (error) {
     return res.send(`<pre>Erro no login:\n${error.message}</pre>`);
   }
@@ -32274,7 +32277,8 @@ function renderTabelaPromocoesPage(req, model = {}) {
       <button id="price-calculator-load" type="submit" name="carregar" value="1" formnovalidate hidden></button>
       <div class="tpc-actions"><a class="tpc-btn soft" href="/ferramentas-ia/tabela-precos/promocoes">Limpar</a><button class="tpc-btn" type="submit" name="calcular" value="1">Calcular preço</button></div>
     </form></section>${resultHtml}</div><script>(()=>{const form=document.getElementById('price-calculator-form');const sku=document.getElementById('price-calculator-sku');const marketplace=document.getElementById('price-calculator-marketplace');const load=document.getElementById('price-calculator-load');if(!form||!sku||!marketplace||!load)return;const normalized=value=>String(value||'').trim().toUpperCase();const loadProduct=()=>{if(!marketplace.value||!normalized(sku.value))return;const unchanged=normalized(sku.value)===normalized(sku.dataset.loadedSku)&&marketplace.value===form.dataset.loadedMarketplace;if(!unchanged)form.requestSubmit(load);};sku.addEventListener('keydown',event=>{if(event.key!=='Enter'&&event.key!=='Tab')return;if(event.key==='Enter')event.preventDefault();setTimeout(loadProduct,0);});marketplace.addEventListener('change',()=>{if(normalized(sku.value))form.requestSubmit(load);});const manual=document.getElementById('price-current-input');const edited=document.getElementById('price-manual-edited');manual.addEventListener('input',()=>{edited.value='1';gross.value='';});const modes=[...form.querySelectorAll('input[name="modo"]')];const title=document.getElementById('price-condition-title');const newFields=document.getElementById('new-price-fields');const promotionFields=document.getElementById('promotion-fields');const promotionPrice=document.getElementById('promotion-price-input');const promotionCredit=document.getElementById('promotion-credit-input');const promotionDiscount=document.getElementById('promotion-discount-input');const liquid=document.getElementById('price-liquid-display');const discountInput=document.getElementById('price-discount-input');const gross=document.getElementById('price-gross-input');const skuHelp=document.getElementById('price-sku-help');const parse=value=>{const number=Number(String(value||'').trim().replace(',','.'));return Number.isFinite(number)?number:0;};const formatDecimal=value=>value>0?value.toLocaleString('pt-BR',{useGrouping:false,minimumFractionDigits:2,maximumFractionDigits:6}):'';const updateGross=()=>{const price=parse(liquid.dataset.liquid);const discount=Math.max(0,Math.min(99.99,parse(discountInput.value)))/100;gross.setCustomValidity('');gross.value=formatDecimal(discount>0?price/(1-discount):price);};const updateDiscount=()=>{const price=parse(liquid.dataset.liquid);const grossPrice=parse(gross.value);if(!(price>0))return;if(grossPrice<price){gross.setCustomValidity('O preço bruto não pode ser menor que o preço líquido calculado.');return;}gross.setCustomValidity('');discountInput.value=((1-(price/grossPrice))*100).toLocaleString('pt-BR',{useGrouping:false,maximumFractionDigits:6});};const hasValue=input=>input.value.trim()!=='';const syncPromotionFields=isNew=>{const hasCredit=hasValue(promotionCredit);const hasExtra=hasValue(promotionDiscount);promotionCredit.disabled=isNew||hasExtra&&!hasCredit;promotionDiscount.disabled=isNew||hasCredit&&!hasExtra;promotionPrice.required=!isNew&&hasCredit;};const applyMode=()=>{const isNew=form.querySelector('input[name="modo"]:checked')?.value!=='promocao';title.textContent=isNew?'Preço de venda Líquido':'Nova condição';newFields.hidden=!isNew;promotionFields.hidden=isNew;discountInput.disabled=!isNew;discountInput.required=isNew;gross.disabled=!isNew;promotionPrice.disabled=isNew;sku.required=!isNew;skuHelp.textContent=isNew?'Opcional. Pressione Enter ou Tab somente se desejar buscar um produto cadastrado.':'Pressione Enter ou Tab para carregar os dados cadastrados.';syncPromotionFields(isNew);if(isNew&&!gross.value)updateGross();};modes.forEach(item=>item.addEventListener('change',applyMode));promotionCredit.addEventListener('input',()=>syncPromotionFields(false));promotionDiscount.addEventListener('input',()=>syncPromotionFields(false));discountInput.addEventListener('input',updateGross);gross.addEventListener('input',updateDiscount);applyMode();})();</script>`;
-  return renderTabelaWideShell(req, content, { title: 'Calculadora de preços', subtitle: 'Preço individual, promoção e margem por marketplace' });
+  if (req.query.app === '1') return require('../tabela-precos/calculator-app').render(content);
+  return renderTabelaWideShell(req, `<a href="/ferramentas-ia/tabela-precos/promocoes?app=1" style="display:inline-block;margin-bottom:12px;color:#07543d;font-weight:bold">Abrir calculadora para celular / instalar</a>${content}`, { title: 'Calculadora de preços', subtitle: 'Preço individual, promoção e margem por marketplace' });
 }
 
 function renderTabelaFretesPage(req, rows, feedback = null) {
@@ -32556,10 +32560,11 @@ router.post('/ferramentas-ia/tabela-precos/promocoes/salvar-preco', protegerRota
     req.session.calculatorPriceFeedback = { ok: false, message: error.message };
   }
   const params = new URLSearchParams({ marketplace, sku, modo: 'novo', carregar: '1' });
+  if (req.body.app === '1') params.set('app', '1');
   res.redirect(`/ferramentas-ia/tabela-precos/promocoes?${params}`);
 });
 
-router.get('/ferramentas-ia/tabela-precos/promocoes', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
+router.get('/ferramentas-ia/tabela-precos/promocoes', (req,res,next)=>{if(req.query.app==='1'&&!req.session?.usuario)req.session.calculatorAppLogin=true;res.set('Cache-Control','no-store');next();}, protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   const parseDecimal = value => {
     let text = String(value ?? '').trim().replace(/[^\d,.-]/g, '');
     if (!text) return null;
