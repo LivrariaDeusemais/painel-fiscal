@@ -20,10 +20,10 @@ test('progresso separa pendências antigas de execuções realizadas no período
  const value=s.summarize([{status:'aberta',prazo:'2026-10-20'},{status:'aberta',prazo:'2026-10-21'},{status:'concluida',prazo:'2026-10-01',concluido_dia:'2026-10-21'},{status:'concluida',prazo:'2026-10-21',concluido_dia:'2026-10-20'},{status:'cancelada',prazo:'2026-10-21'}],s.period('diario','2026-10-21'));
  assert.equal(value.total,2);assert.equal(value.percent,50);assert.equal(value.overdue.length,1);
 });
-test('criador e participantes anteriores acompanham mas só responsável atual e admin alteram',()=>{
+test('somente criador, responsável atual e admin leem; participantes anteriores não veem tarefas alheias',()=>{
  const t={criador:'1',responsavel:'3',participantes:['1','2','3']};
- for(const id of [1,2,3])assert.equal(s.canRead({id,perfil:'USUARIO'},t),true);
- assert.equal(s.canRead({id:4,perfil:'USUARIO'},t),false);assert.equal(s.canWork({id:1,perfil:'USUARIO'},t),false);assert.equal(s.canWork({id:3,perfil:'CONTADOR'},t),true);assert.equal(s.canWork({id:4,perfil:'ADMIN'},t),true);
+ for(const id of [1,3])assert.equal(s.canRead({id,perfil:'USUARIO'},t),true);
+ assert.equal(s.canRead({id:2,perfil:'USUARIO'},t),false);assert.equal(s.canRead({id:4,perfil:'USUARIO'},t),false);assert.equal(s.canOwn({id:4,perfil:'ADMIN'},t),false);assert.equal(s.canOwn({id:1,perfil:'USUARIO'},t),true);assert.equal(s.canWork({id:1,perfil:'USUARIO'},t),false);assert.equal(s.canWork({id:3,perfil:'CONTADOR'},t),true);assert.equal(s.canWork({id:4,perfil:'ADMIN',team:['3']},t),true);
 });
 test('avisos usam Data Download, liberação, existência de arquivos e tipos ocultos da central',()=>{
  const base=[{key:'xml',label:'XML',auto:true,countKey:'xml',statusColumn:'status_xml',downloadAtColumn:'download_xml_at'},{key:'pdf',label:'PDF',auto:true,countKey:'pdf',statusColumn:'status_pdf',downloadAtColumn:'download_pdf_at'}];
@@ -35,4 +35,30 @@ test('avisos usam Data Download, liberação, existência de arquivos e tipos oc
 test('favoritos são restritos às telas permitidas ao perfil',()=>{
  assert.ok(pages('ADMIN').some(p=>p.url==='/usuarios'));assert.ok(!pages('USUARIO').some(p=>p.url==='/usuarios'));assert.ok(!pages('CONTADOR').some(p=>p.url==='/rotina-despesas'));assert.ok(pages('CONTADOR').some(p=>p.url==='/painel/agenda'));
  const req={originalUrl:'/visao-geral',session:{usuario:{id:1,nome:'Gestor',perfil:'ADMIN'}}};const header=ui.header(req);assert.match(header,/★ FAVORITOS/);assert.match(header,/aria-label="Definir favoritos"/);assert.ok(req.session.aparenciaToken);assert.equal(ui.areaFor('/painel/agenda'),'inicio');
+});
+test('área de tarefas restringe as tarefas de outra pessoa e oferece edição somente ao criador',()=>{
+ const views=require('../src/painel/views'),people=[{id:'1',nome:'Gestor',perfil:'ADMIN'},{id:'2',nome:'Ana',perfil:'USUARIO'},{id:'3',nome:'Beto',perfil:'USUARIO'}];
+ const base={user:people[1],people,period:s.period('diario'),files:[],notices:[],pages:[],person:people[2],events:[],tasks:[{id:'a',criador:'2',responsavel:'3',titulo:'Criada pela Ana',descricao:'',prazo:s.today(),status:'aberta',repeticao:'unica',versao:1},{id:'b',criador:'1',responsavel:'3',titulo:'Assunto privado do Beto',prazo:s.today(),status:'aberta',repeticao:'unica',versao:1}]};
+ let html=views.agenda(base);assert.match(html,/Criada pela Ana/);assert.doesNotMatch(html,/Assunto privado do Beto/);assert.match(html,/Somente as tarefas que você criou/);
+ html=views.agenda({...base,task:base.tasks[0]});assert.match(html,/data-pn-edit/);assert.match(html,/data-pn-delete/);assert.match(html,/data-pn-message/);
+ html=views.agenda({...base,user:people[2],task:base.tasks[0]});assert.doesNotMatch(html,/data-pn-delete/);assert.doesNotMatch(html,/data-pn-edit-form/);assert.match(html,/Registrar observação/);assert.match(html,/Responder Ana/);
+ html=views.agenda({...base,user:people[0],task:base.tasks[0]});assert.doesNotMatch(html,/data-pn-delete/,'ADMIN que não criou não exclui');
+});
+test('permissões de edição/exclusão são impostas no servidor, com conflito de versão',async()=>{
+ const t={id:'00000000-0000-4000-8000-000000000001',criador:'2',responsavel:'3',versao:2,status:'aberta',titulo:'Conferir preço',participantes:['2','3']},calls=[];
+ const pool={async connect(){return {async query(sql,args){calls.push([sql,args]);return {rows:sql.startsWith('SELECT * FROM painel_tarefas')?[t]:sql.startsWith('SELECT usuario FROM painel_equipe_membros')?[{usuario:'2'},{usuario:'3'}]:[]}},release(){}}}};
+ await assert.rejects(s.change(pool,{id:3,perfil:'USUARIO'},t.id,{acao:'editar',versao:2}),e=>e.status===403);
+ await assert.rejects(s.change(pool,{id:1,perfil:'ADMIN'},t.id,{acao:'excluir',versao:2}),e=>e.status===403);
+ await assert.rejects(s.change(pool,{id:2,perfil:'USUARIO'},t.id,{acao:'excluir',versao:1}),e=>e.status===409);
+ await s.change(pool,{id:3,nome:'Beto',perfil:'USUARIO'},t.id,{acao:'concluir',versao:2});
+ const notice=calls.find(([sql])=>sql.startsWith('INSERT INTO painel_notificacoes'));assert.equal(notice[1][1],'2');assert.match(notice[1][3],/Beto concluiu/);assert.ok(calls.some(([sql])=>sql==='COMMIT'));
+});
+test('administradores só leem e executam tarefas da própria equipe; criador conserva seu acesso',()=>{
+ const task={criador:'4',responsavel:'3'};
+ assert.equal(s.canRead({id:1,perfil:'ADMIN',team:['1','2']},task),false);
+ assert.equal(s.canWork({id:1,perfil:'ADMIN',team:['1','2']},task),false);
+ assert.equal(s.canRead({id:5,perfil:'ADMIN',team:['5','3']},task),true);
+ assert.equal(s.canWork({id:5,perfil:'ADMIN',team:['5','3']},task),true);
+ assert.equal(s.canRead({id:4,perfil:'USUARIO'},task),true);
+ assert.equal(s.canRead({id:5,perfil:'ADMIN'},task),false,'sem contexto de equipe não há acesso global implícito');
 });
