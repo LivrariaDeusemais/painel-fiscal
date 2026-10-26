@@ -1,7 +1,7 @@
 (function(scope){
  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
  const link=(url,text)=>`<a href="${esc(url)}">${esc(text)}</a>`;
- const table=(title,headers,rows)=>`<section class="pn-indicator"><h4>${esc(title)}</h4><div class="pn-indicator-scroll"><table class="pn-indicator-table"><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+ const table=(title,headers,rows)=>`<section class="pn-indicator"><h4>${esc(title)}</h4><div class="pn-indicator-scroll"><table class="pn-indicator-table"><thead><tr>${headers.map(h=>`<th scope="col" style="width:${100/headers.length}%!important">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
  function render(entries,{menu,closing=false}={}){
   let html='';const used=new Set();
   if(menu==='financeiro'){
