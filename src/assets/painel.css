@@ -21,3 +21,4 @@
 .pn-dashboard-grid{columns:unset;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start}.pn-dashboard-column{min-width:0}.pn-dashboard-grid>.pn-dash-module{min-width:0}.pn-dash-module{display:block}.pn-dashboard-column .pn-dash-module:last-child{margin-bottom:0}@media(max-width:1400px){.pn-dashboard-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:1050px){.pn-dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.pn-dashboard-grid{grid-template-columns:1fr}}
 
 .pn-heading-link{color:inherit;text-decoration:none}.pn-heading-link:hover{text-decoration:underline}.pn-heading-link:focus-visible{outline:2px solid #075438;outline-offset:4px;border-radius:3px}
+.pn h2>a.pn-heading-link,html body.layout-executivo.layout-executivo.layout-executivo .pn h2>a.pn-heading-link{font:inherit!important;color:inherit!important;line-height:inherit!important;letter-spacing:inherit!important}
