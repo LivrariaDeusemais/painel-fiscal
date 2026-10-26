@@ -13,7 +13,7 @@ function closingRecords({base,statuses,custom,types,hidden},date=today()){
    const source=config.custom?custom.find(r=>r.mes_ref===month&&r.tipo_key===config.key):row;
    const status=(config.custom?source?.status_pronto:source?.[config.statusColumn])||'Aguardar';
    if(normalize(status)==='liberado para baixar')continue;
-   out.push({menu:'contabil',capability:'fechamento-despesas',key:'fechamento:'+month+':'+config.key,month,label:`${month.split('-').reverse().join('/')} · ${config.label} — ${status}`,count:1,url:'/espaco-contador?mes='+encodeURIComponent(month)});
+   out.push({menu:'contabil',capability:'fechamento-despesas',key:'fechamento:'+month+':'+config.key,month,fileType:config.label,status,label:`${month.split('-').reverse().join('/')} · ${config.label} — ${status}`,count:1,url:'/espaco-contador?mes='+encodeURIComponent(month)});
   }
  }
  return out;
