@@ -36,7 +36,7 @@ O histórico atual da Central é compartilhado por competência e tipo, sem iden
 
 - Painel principal mostra resumos de tarefas próprias e da equipe mapeada, progresso individual, downloads liberados e pendências de preços (Sem Vínculo, Novo, Novo custo, Reajustar e Revisar). As tarefas criadas para pessoas fora da equipe ficam na agenda, sem somar as demais tarefas privadas do destinatário. Indicadores de preços usam a classificação da Tabela por Marketplace e não publicam alterações automaticamente.
 - Agenda tem pessoas à esquerda e tarefas/conversas à direita. Mostra pessoas mapeadas, o próprio usuário e pessoas para quem criou tarefas. Cada lista usa apenas tarefas autorizadas; criar uma tarefa para superior não revela as outras dele.
-- Filtro Situação: Todas inclui pendências anteriores ainda abertas; A concluir usa prazos dentro do período escolhido; Concluídas usa a data de conclusão em São Paulo dentro do período. Período/situação são preservados na navegação por pessoa e edição.
+- Filtro Situação: Todas inclui pendências anteriores ainda abertas; A concluir inclui tarefas com prazo até o fim do período, preservando as atrasadas anteriores; Concluídas usa a data de conclusão em São Paulo dentro do período. Período/situação são preservados na navegação por pessoa e edição.
 - Botão de retorno fica na barra de ações superior. Lápis ao lado de Concluir/Reabrir aparece apenas ao criador e abre o formulário de edição. Edição altera a execução selecionada, sem alterar próximas ocorrências. Exclusão é lógica, preservando auditoria e identidade da ocorrência.
 - Responsável atual e ADM mapeado podem registrar observações; criador e executores autorizados podem responder. Textos têm limite de 4.000 caracteres e são escapados. Alterações exigem versão atual, token e bloqueio transacional.
 - Respostas, observações e conclusão por outra pessoa geram aviso ao criador; respostas do criador vão ao responsável. Mensagens novas incluem texto da resposta. Avisos antigos preservam seu conteúdo original.
@@ -50,3 +50,7 @@ O histórico atual da Central é compartilhado por competência e tipo, sem iden
 - Migração copia uma única vez os vínculos anteriores de `painel_equipe_membros`, preservando acesso existente. Flag `mapeamento_migrado` impede recriar vínculos revogados em reinícios. Usuários novos começam com acesso às próprias tarefas, até serem mapeados por ADM. As tabelas anteriores permanecem para histórico.
 - Criação para qualquer destinatário não modifica vínculos de visualização. Contexto é recarregado no servidor a cada consulta/mutação; revogação é imediata. Autoria conserva acesso à tarefa criada.
 - O isolamento aplica-se ao Painel/Agenda/Tarefas. Demais módulos e catálogo compartilhado seguem suas permissões existentes.
+
+## Módulos, funções e alertas
+
+A definição atual está em [alertas-automaticos.md](alertas-automaticos.md). O painel agrupa tarefas/mensagens, preços, financeiro e contábil em blocos verticais. O cadastro de funções é aplicado por middleware antes das rotas; o mapeamento de equipes continua separado. Liberações contábeis geram aviso interno e fila de e-mail deduplicada, substituindo a regra anterior de ausência de comunicação externa exclusivamente para esses eventos autorizados.

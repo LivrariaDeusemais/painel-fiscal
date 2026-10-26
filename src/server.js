@@ -29,6 +29,9 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+app.use(require('./access/service').middleware(require('./db')));
+require('./painel/automatic').start(require('./db'));
+
 // Preferência visual individual; o layout legado e suas rotas permanecem disponíveis.
 const executiveUi = require('./services/ui-executivo');
 app.use(executiveUi.middleware);

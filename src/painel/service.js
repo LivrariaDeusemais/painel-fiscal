@@ -23,15 +23,15 @@ function occurrence(anchor,cadence,index){
 }
 function dates(schedule,from,to){const out=[];for(let n=0;n<40000;n++){const d=occurrence(schedule.inicio,schedule.repeticao,n);if(!d||d>to)break;if(d>=from&&(!schedule.dias_uteis||![0,6].includes(day(d).getUTCDay())))out.push(d);}return out;}
 function canRead(user,t){return !!t&&!t.excluido_em&&((user.team||[]).includes(String(t.responsavel))||[t.criador,t.responsavel].map(String).includes(String(user.id)));}
-function canOwn(user,t){return String(t.criador)===String(user.id);}
-function canWork(user,t){return user.perfil==='ADMIN'&&(user.workTeam||user.team||[]).includes(String(t.responsavel))||String(t.responsavel)===String(user.id);}
+function canOwn(user,t){if(require('../access/catalog').permitted(user,'tarefas',true)===false)return false;return String(t.criador)===String(user.id);}
+function canWork(user,t){if(require('../access/catalog').permitted(user,'tarefas',true)===false)return false;return user.perfil==='ADMIN'&&(user.workTeam||user.team||[]).includes(String(t.responsavel))||String(t.responsavel)===String(user.id);}
 function summarize(tasks,p){
  const completed=tasks.filter(t=>t.status==='concluida'&&t.concluido_dia>=p.start&&t.concluido_dia<=p.end);
  const open=tasks.filter(t=>t.status==='aberta'&&t.prazo>=p.start&&t.prazo<=p.end);
  const overdue=tasks.filter(t=>t.status==='aberta'&&t.prazo<p.start);
  const total=completed.length+open.length;return {completed,open,overdue,total,percent:total?Math.round(completed.length/total*100):0};
 }
-async function ensure(pool){await pool.query(`
+async function ensure(pool){await require('./automatic').ensure(pool);await pool.query(`
  CREATE TABLE IF NOT EXISTS painel_rotinas(id UUID PRIMARY KEY,titulo TEXT NOT NULL,descricao TEXT NOT NULL DEFAULT '',criador TEXT NOT NULL,responsavel TEXT NOT NULL,inicio TEXT NOT NULL,repeticao TEXT NOT NULL,dias_uteis BOOLEAN NOT NULL DEFAULT false,atalho TEXT NOT NULL DEFAULT '',ativa BOOLEAN NOT NULL DEFAULT true,gerado_ate TEXT,criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW());
  CREATE TABLE IF NOT EXISTS painel_tarefas(id UUID PRIMARY KEY,rotina UUID NOT NULL REFERENCES painel_rotinas(id),titulo TEXT NOT NULL,descricao TEXT NOT NULL DEFAULT '',criador TEXT NOT NULL,responsavel TEXT NOT NULL,participantes TEXT[] NOT NULL,prazo TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'aberta',versao INTEGER NOT NULL DEFAULT 1,concluido_em TIMESTAMPTZ,concluido_por TEXT,atalho TEXT NOT NULL DEFAULT '',criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(rotina,prazo));
  CREATE INDEX IF NOT EXISTS painel_tarefas_responsavel ON painel_tarefas(responsavel,prazo);
@@ -88,6 +88,7 @@ async function generate(pool,until){
  });
 }
 async function create(pool,user,input,allowedUrls){
+ if(require('../access/catalog').permitted(user,'tarefas',true)===false)throw Object.assign(Error('A função permite somente visualizar tarefas.'),{status:403});
  const title=String(input.titulo||'').trim(),description=String(input.descricao||'').trim(),owner=String(input.responsavel||''),start=String(input.inicio||''),cadence=input.repeticao;
  if(!title||title.length>160||description.length>4000)throw Error('Informe um título de até 160 caracteres e descrição de até 4.000.');
  if(!validDate(start)||start<'2025-01-01'||start>addDays(today(),730))throw Error('Escolha uma data entre 2025 e os próximos dois anos.');
@@ -105,7 +106,7 @@ async function notify(db,t,user,text,action){
  if(to===String(user.id))return;
  await db.query('INSERT INTO painel_notificacoes(id,usuario,tarefa,texto,chave) VALUES($1,$2,$3,$4,$5) ON CONFLICT(chave) DO NOTHING',[crypto.randomUUID(),to,t.id,text,[t.id,t.versao,action,to].join(':')]);
 }
-async function notices(pool,user){return (await pool.query(`SELECT n.*,t.titulo,t.responsavel,(SELECT e.id::text FROM painel_eventos e WHERE e.tarefa=n.tarefa AND e.criado_em=n.criado_em AND e.acao=split_part(n.chave,':',3) ORDER BY e.id DESC LIMIT 1) AS evento FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC`,[String(user.id)])).rows;}
+async function notices(pool,user){const tasks=(await pool.query(`SELECT n.*,t.titulo,t.responsavel,(SELECT e.id::text FROM painel_eventos e WHERE e.tarefa=n.tarefa AND e.criado_em=n.criado_em AND e.acao=split_part(n.chave,':',3) ORDER BY e.id DESC LIMIT 1) AS evento FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC`,[String(user.id)])).rows;const automatic=(await pool.query('SELECT * FROM painel_avisos_automaticos WHERE usuario=$1 AND lida_em IS NULL ORDER BY criado_em DESC',[String(user.id)])).rows.filter(n=>{const c=require('../access/catalog').capability(n.url);return !c||require('../access/catalog').permitted(user,c.id)!==false;}).map(n=>({...n,responsavel:String(user.id),automatic:true}));return [...tasks,...automatic].sort((a,b)=>new Date(b.criado_em)-new Date(a.criado_em));}
 async function change(pool,user,id,input){
  if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Tarefa inválida.');
  return transaction(pool,async db=>{

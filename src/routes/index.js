@@ -11,7 +11,7 @@ function protegerRota(req, res, next) {
 }
 
 function somenteAdmin(req, res, next) {
-  if (!req.session.usuario || req.session.usuario.perfil !== 'ADMIN') {
+  if ((!req.session.usuario || req.session.usuario.perfil !== 'ADMIN') && !require('../access/catalog').operationalGrant(req)) {
     return res.status(403).send('<pre>Acesso negado. Apenas ADMIN pode acessar esta área.</pre>');
   }
   next();
@@ -26,7 +26,7 @@ function permitirExportacaoMarketplace(req, res, next) {
 
 function permitirPerfis(...perfis) {
   return (req, res, next) => {
-    if (!req.session.usuario || !perfis.includes(req.session.usuario.perfil)) {
+    if ((!req.session.usuario || !perfis.includes(req.session.usuario.perfil)) && !require('../access/catalog').operationalGrant(req)) {
       return res.status(403).send('<pre>Acesso negado para este perfil de usuário.</pre>');
     }
     next();
@@ -27872,6 +27872,7 @@ router.get('/espaco-contador', protegerRota, permitirPerfis('ADMIN', 'USUARIO', 
 
       return `
         <form method="POST" action="/espaco-contador/salvar-status" class="status-form-inline">
+          <input type="hidden" name="token" value="${require('../services/ui-executivo').token(req)}">
           <input type="hidden" name="mes_ref" value="${escapeHtml(mes)}">
           <input type="hidden" name="tipo_status" value="${escapeHtml(tipoStatus)}">
           ${selectHtml}
@@ -30033,6 +30034,7 @@ ${error.message}</pre>`);
 
 router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   try {
+    if(!req.session.aparenciaToken||req.body.token!==req.session.aparenciaToken)return res.status(403).send('Atualize a página antes de salvar.');
     await ensureContadorTables();
     const { mes_ref, tipo_status, status } = req.body;
 
@@ -30040,35 +30042,11 @@ router.post('/espaco-contador/salvar-status', protegerRota, permitirPerfis('ADMI
       return res.send('<pre>Dados inválidos para salvar o status.</pre>');
     }
 
-    await pool.query(`
-      INSERT INTO contador_status_mensal (mes_ref)
-      VALUES ($1)
-      ON CONFLICT (mes_ref) DO NOTHING
-    `, [mes_ref]);
-
+    if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(mes_ref)||!['Aguardar','Em andamento','Liberado para baixar'].includes(status))return res.status(400).send('Status ou competência inválida.');
     const config = (await getContadorArquivoConfigCompleta(mes_ref)).find(item => item.key === tipo_status);
-
-    if (!config) {
-      return res.send('<pre>Tipo de status inválido.</pre>');
-    }
-
-    if (config.custom) {
-      await pool.query(`
-        INSERT INTO contador_status_custom_mensal (mes_ref, tipo_key, status_pronto, updated_at)
-        VALUES ($1, $2, $3, NOW())
-        ON CONFLICT (mes_ref, tipo_key)
-        DO UPDATE SET status_pronto = EXCLUDED.status_pronto, updated_at = NOW()
-      `, [mes_ref, tipo_status, status]);
-    } else {
-      const campo = config.statusColumn;
-      await pool.query(`
-        UPDATE contador_status_mensal
-        SET ${campo} = $1,
-            updated_at = NOW()
-        WHERE mes_ref = $2
-      `, [status, mes_ref]);
-    }
-
+    if(!config)return res.status(400).send('Tipo inválido.');
+    await require('../access/service').ensure(pool);
+    await require('../painel/automatic').releaseStatus(pool,{month:mes_ref,key:tipo_status,status,config,actor:req.session.usuario});
     res.redirect('/espaco-contador?mes=' + encodeURIComponent(mes_ref));
   } catch (error) {
     res.send(`<pre>Erro ao salvar status do mês:\n${error.message}</pre>`);
@@ -33109,8 +33087,9 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
   }
 });
 
-let painelContadorSchema;
-router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell,downloads:async()=>{
+router.use(require('../access/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell}));
+let painelContadorSchema,painelArquivoSchema;
+router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell,automaticAlerts:async(person,files)=>{const actor=await require('../access/service').hydrate(pool,person);await (painelArquivoSchema ||= ensureArquivoFilaTable().catch(error=>{painelArquivoSchema=null;throw error;}));return require('../painel/automatic').alerts(pool,actor,files,async()=>montarDocumentosConciliadosArquivo((await pool.query("SELECT * FROM arquivo_fila WHERE status='DISPONIVEL'")).rows,'').length);},downloads:async()=>{
   await (painelContadorSchema ||= ensureContadorTables().catch(error=>{painelContadorSchema=null;throw error;}));
   return require('../painel/downloads').load(pool,getContadorArquivoConfig());
 }}));
