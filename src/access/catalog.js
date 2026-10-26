@@ -29,5 +29,5 @@ const catalog=[
 ].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
 function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write?'edit':'view']===true;}
-function operationalGrant(req){const c=capability(req.originalUrl.split('?')[0]);return !!c&&!c.restriction&&c.editable&&permitted(req.session?.usuario,c.id,true)===true;}
+function operationalGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.editable&&permitted(req.session?.usuario,c.id,true)===true;}
 module.exports={catalog,capability,permitted,operationalGrant};

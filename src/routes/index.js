@@ -31885,7 +31885,7 @@ function renderTabelaPrecosHub(req, resumo = null, feedback = null) {
 }
 
 function renderTabelaBasePage(req, resumo = null, feedback = null) {
-  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
   const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
   const linkMap = new Map((resumo?.links || []).map(item => [item.marketplace, item]));
   const options = marketplaces.map(item => `<option value="${escapeHtmlGlobal(item)}">${escapeHtmlGlobal(item)}</option>`).join('');
@@ -31904,7 +31904,7 @@ function renderTabelaBasePage(req, resumo = null, feedback = null) {
 }
 
 function renderTabelaRulesPage(req, rules = [], feedback = null) {
-  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
   const inputPercent = value => (Number(value || 0) * 100).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
   const inputMoney = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
   const rows = rules.map((rule, index) => {
@@ -31943,7 +31943,7 @@ function renderTabelaWideShell(req, innerHtml, options = {}) {
 
 function renderTabelaProductsPage(req, { result = { rows: [], total: 0, page: 1, pageSize: 100 }, resumo = null, feedback = null, filters = {}, bling = null } = {}) {
   if (!req.session.productDeleteCsrf) req.session.productDeleteCsrf = require('crypto').randomBytes(32).toString('hex');
-  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
   const money = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const number = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
   const inputMoney = value => Number(value || 0).toLocaleString('pt-BR', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -31996,7 +31996,7 @@ function tabelaMarketplaceItemStatus(item) {
 }
 
 function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback = null, filtros = {}, bling = null } = {}) {
-  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
   const canExport = require('../integracoes/access').canOperate(req.session.usuario);
   const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
   const selected = (name, value) => filtros[name] === value ? 'selected' : '';
@@ -32237,7 +32237,7 @@ function renderTabelaPromocoesPage(req, model = {}) {
       <section class="tpc-section"><h2 class="tpc-section-title">Produto e preço atual</h2><div class="tpc-grid">
         <label class="tpc-field"><span>Custo R$</span><input name="custo" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(product?.custo ?? values.custo))}" ${product ? 'readonly' : ''} placeholder="0,00" required></label>
         <label class="tpc-field"><span>Peso kg</span><input name="peso" inputmode="decimal" value="${escapeHtmlGlobal(inputNumber(product?.peso ?? values.peso))}" ${product ? 'readonly' : ''} placeholder="0,000" required><small>Necessário para calcular o frete por faixa.</small></label>
-        <div class="tpc-field"><label class="tpc-label" for="price-current-input">Preço atual ao cliente (após desconto)</label><div class="tpc-price-save"><input id="price-current-input" name="preco_manual" inputmode="decimal" value="${escapeHtmlGlobal(values.preco_manual || (published ? inputNumber(published.liquidPrice) : ''))}" placeholder="R$"><button class="tpc-save" type="submit" formmethod="post" formaction="/ferramentas-ia/tabela-precos/promocoes/salvar-preco" formnovalidate ${product && context.rule && req.session.usuario?.perfil === 'ADMIN' ? '' : 'disabled'} title="Registrar preço líquido informado; não altera o anúncio no marketplace">Salvar</button></div><input id="price-manual-edited" type="hidden" name="usar_preco_manual" value="${values.usar_preco_manual ? '1' : '0'}"><small>${context.priceWarning ? escapeHtmlGlobal(context.priceWarning) : published ? `Bruto publicado: ${money(published.grossPrice)} · ${escapeHtmlGlobal(published.source || '')}${published.observedAt ? ' · Consulta: ' + escapeHtmlGlobal(new Date(published.observedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })) : ''}` : 'Preço ao cliente antes das tarifas; diferente do bruto publicado.'}</small></div>
+        <div class="tpc-field"><label class="tpc-label" for="price-current-input">Preço atual ao cliente (após desconto)</label><div class="tpc-price-save"><input id="price-current-input" name="preco_manual" inputmode="decimal" value="${escapeHtmlGlobal(values.preco_manual || (published ? inputNumber(published.liquidPrice) : ''))}" placeholder="R$"><button class="tpc-save" type="submit" formmethod="post" formaction="/ferramentas-ia/tabela-precos/promocoes/salvar-preco" formnovalidate ${product && context.rule && (req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req)) ? '' : 'disabled'} title="Registrar preço líquido informado; não altera o anúncio no marketplace">Salvar</button></div><input id="price-manual-edited" type="hidden" name="usar_preco_manual" value="${values.usar_preco_manual ? '1' : '0'}"><small>${context.priceWarning ? escapeHtmlGlobal(context.priceWarning) : published ? `Bruto publicado: ${money(published.grossPrice)} · ${escapeHtmlGlobal(published.source || '')}${published.observedAt ? ' · Consulta: ' + escapeHtmlGlobal(new Date(published.observedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })) : ''}` : 'Preço ao cliente antes das tarifas; diferente do bruto publicado.'}</small></div>
       </div></section>
       <section class="tpc-section"><h2 id="price-condition-title" class="tpc-section-title">${isNewPrice ? 'Preço de venda Líquido' : 'Nova condição'}</h2>
         <div id="new-price-fields" class="tpc-grid tpc-mode-panel" ${isNewPrice ? '' : 'hidden'}>
@@ -32260,7 +32260,7 @@ function renderTabelaPromocoesPage(req, model = {}) {
 }
 
 function renderTabelaFretesPage(req, rows, feedback = null) {
-  const isAdmin = req.session.usuario?.perfil === 'ADMIN';
+  const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
   const number = value => value == null ? '' : Number(value).toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 6 });
   const groups = new Map();
   for (const row of rows) {
