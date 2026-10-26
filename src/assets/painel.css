@@ -12,3 +12,5 @@
 .pn-contact>span:nth-child(2){flex:1;min-width:0}.pn-contact>.pn-unread{flex:0 0 auto}.pn-team-setting .pn-check{display:flex;align-items:center;gap:6px}.pn .pn-pencil{font-size:20px}
 
 .pn-contact>span.pn-unread{flex:0 0 auto}
+
+.pn-unread-total{display:inline-flex;align-items:center;justify-content:center;min-width:25px;padding:2px 7px;border-radius:15px;background:#d1f4df;color:#075438;font-size:13px;margin-left:6px}.pn-dashboard-heading+.pn-notifications{border-left:4px solid #075438}.pn-dashboard-heading+.pn-notifications [data-pn-notices]{max-height:300px;overflow:auto}

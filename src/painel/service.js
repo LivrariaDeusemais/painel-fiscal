@@ -105,7 +105,7 @@ async function notify(db,t,user,text,action){
  if(to===String(user.id))return;
  await db.query('INSERT INTO painel_notificacoes(id,usuario,tarefa,texto,chave) VALUES($1,$2,$3,$4,$5) ON CONFLICT(chave) DO NOTHING',[crypto.randomUUID(),to,t.id,text,[t.id,t.versao,action,to].join(':')]);
 }
-async function notices(pool,user){return (await pool.query(`SELECT n.*,t.titulo,t.responsavel FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC`,[String(user.id)])).rows;}
+async function notices(pool,user){return (await pool.query(`SELECT n.*,t.titulo,t.responsavel,(SELECT e.id::text FROM painel_eventos e WHERE e.tarefa=n.tarefa AND e.criado_em=n.criado_em AND e.acao=split_part(n.chave,':',3) ORDER BY e.id DESC LIMIT 1) AS evento FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC`,[String(user.id)])).rows;}
 async function change(pool,user,id,input){
  if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Tarefa inválida.');
  return transaction(pool,async db=>{
