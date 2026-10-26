@@ -46,7 +46,7 @@ test('área de tarefas restringe as tarefas de outra pessoa e oferece edição s
 });
 test('permissões de edição/exclusão são impostas no servidor, com conflito de versão',async()=>{
  const t={id:'00000000-0000-4000-8000-000000000001',criador:'2',responsavel:'3',versao:2,status:'aberta',titulo:'Conferir preço',participantes:['2','3']},calls=[];
- const pool={async connect(){return {async query(sql,args){calls.push([sql,args]);return {rows:sql.startsWith('SELECT * FROM painel_tarefas')?[t]:sql.startsWith('SELECT usuario FROM painel_equipe_membros')?[{usuario:'2'},{usuario:'3'}]:[]}},release(){}}}};
+ const pool={async connect(){return {async query(sql,args){calls.push([sql,args]);return {rows:sql.startsWith('SELECT * FROM painel_tarefas')?[t]:sql.startsWith('SELECT usuario FROM painel_equipe_acessos')?[{usuario:'2'},{usuario:'3'}]:[]}},release(){}}}};
  await assert.rejects(s.change(pool,{id:3,perfil:'USUARIO'},t.id,{acao:'editar',versao:2}),e=>e.status===403);
  await assert.rejects(s.change(pool,{id:1,perfil:'ADMIN'},t.id,{acao:'excluir',versao:2}),e=>e.status===403);
  await assert.rejects(s.change(pool,{id:2,perfil:'USUARIO'},t.id,{acao:'excluir',versao:1}),e=>e.status===409);
@@ -61,4 +61,25 @@ test('administradores só leem e executam tarefas da própria equipe; criador co
  assert.equal(s.canWork({id:5,perfil:'ADMIN',team:['5','3']},task),true);
  assert.equal(s.canRead({id:4,perfil:'USUARIO'},task),true);
  assert.equal(s.canRead({id:5,perfil:'ADMIN'},task),false,'sem contexto de equipe não há acesso global implícito');
+});
+test('acompanhamento mapeado permite leitura ao usuário comum sem liberar execução nem autoria',()=>{
+ const task={criador:'1',responsavel:'3'},viewer={id:2,perfil:'USUARIO',team:['2','3']};
+ assert.equal(s.canRead(viewer,task),true);assert.equal(s.canWork(viewer,task),false);assert.equal(s.canOwn(viewer,task),false);
+ assert.equal(s.canRead({...viewer,team:['2']},task),false);
+ assert.equal(s.canRead(viewer,{criador:'2',responsavel:'1'}),true,'criação para superior conserva acesso à própria solicitação');
+ assert.equal(s.canRead(viewer,{criador:'4',responsavel:'1'}),false,'solicitar tarefa não libera as outras do destinatário');
+});
+test('contexto não herda equipe por transitividade e criação permite destinatário fora da equipe',async()=>{
+ const calls=[],pool={async query(sql,args){calls.push([sql,args]);return {rows:sql.startsWith('SELECT usuario FROM painel_equipe_acessos')?[{usuario:'3'}]:sql.startsWith('SELECT id::text')?[{id:'1',nome:'Gestor',perfil:'ADMIN'}]:[]}}};
+ const actor=await s.context(pool,{id:2,perfil:'USUARIO'});assert.deepEqual(actor.team,['2','3']);assert.deepEqual(actor.workTeam,['2']);
+ await s.create(pool,actor,{titulo:'Pagar pedido',responsavel:'1',inicio:s.today(),repeticao:'unica'},()=>[]);
+ assert.ok(calls.some(([sql,args])=>sql.startsWith('INSERT INTO painel_rotinas')&&args[4]==='1'));
+});
+test('filtro de situação respeita o período e lista oferece lápis exclusivo do criador e mensagens por pessoa',()=>{
+ const views=require('../src/painel/views'),people=[{id:'1',nome:'Gestor',perfil:'ADMIN'},{id:'2',nome:'Filipe',perfil:'USUARIO'}],p=s.period('diario','2026-10-26');
+ const tasks=[{id:'a',criador:'1',responsavel:'2',titulo:'Pendente hoje',status:'aberta',prazo:p.start,repeticao:'unica'},{id:'b',criador:'1',responsavel:'2',titulo:'Concluída hoje',status:'concluida',concluido_dia:p.start,repeticao:'unica'},{id:'c',criador:'1',responsavel:'2',titulo:'Concluída fora',status:'concluida',concluido_dia:'2026-10-20',repeticao:'unica'},{id:'d',criador:'1',responsavel:'2',titulo:'Pendente anterior',status:'aberta',prazo:'2026-10-20',repeticao:'unica'}];
+ const m={user:{...people[0],team:['1','2']},people,person:people[1],tasks,period:p,files:[],pages:[],notices:[{id:'n',responsavel:'2',tarefa:'a',texto:'Mensagem de Filipe',criado_em:new Date()}]};
+ let html=views.agenda({...m,status:'aberta'});assert.match(html,/>Pendente hoje<\/a>/);assert.doesNotMatch(html,/>Concluída hoje<\/a>|>Pendente anterior<\/a>/);assert.match(html,/aria-label="Editar tarefa Pendente hoje"/);assert.match(html,/data-pn-unread="2"/);assert.match(html,/Mensagem de Filipe/);
+ html=views.agenda({...m,status:'concluida'});assert.match(html,/>Concluída hoje<\/a>/);assert.doesNotMatch(html,/>Concluída fora<\/a>|>Pendente hoje<\/a>/);
+ html=views.agenda({...m,user:people[1],status:'aberta'});assert.doesNotMatch(html,/aria-label="Editar tarefa/);
 });

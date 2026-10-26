@@ -22,9 +22,9 @@ function occurrence(anchor,cadence,index){
  target.setUTCDate(Math.min(d.getUTCDate(),new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate()));return iso(target);
 }
 function dates(schedule,from,to){const out=[];for(let n=0;n<40000;n++){const d=occurrence(schedule.inicio,schedule.repeticao,n);if(!d||d>to)break;if(d>=from&&(!schedule.dias_uteis||![0,6].includes(day(d).getUTCDay())))out.push(d);}return out;}
-function canRead(user,t){return !!t&&!t.excluido_em&&(user.perfil==='ADMIN'&&(user.team||[]).includes(String(t.responsavel))||[t.criador,t.responsavel].map(String).includes(String(user.id)));}
+function canRead(user,t){return !!t&&!t.excluido_em&&((user.team||[]).includes(String(t.responsavel))||[t.criador,t.responsavel].map(String).includes(String(user.id)));}
 function canOwn(user,t){return String(t.criador)===String(user.id);}
-function canWork(user,t){return user.perfil==='ADMIN'&&(user.team||[]).includes(String(t.responsavel))||String(t.responsavel)===String(user.id);}
+function canWork(user,t){return user.perfil==='ADMIN'&&(user.workTeam||user.team||[]).includes(String(t.responsavel))||String(t.responsavel)===String(user.id);}
 function summarize(tasks,p){
  const completed=tasks.filter(t=>t.status==='concluida'&&t.concluido_dia>=p.start&&t.concluido_dia<=p.end);
  const open=tasks.filter(t=>t.status==='aberta'&&t.prazo>=p.start&&t.prazo<=p.end);
@@ -49,28 +49,33 @@ async function ensure(pool){await pool.query(`
  CREATE TABLE IF NOT EXISTS painel_equipe_historico(id BIGSERIAL PRIMARY KEY,usuario TEXT NOT NULL,admin_anterior TEXT,admin_novo TEXT NOT NULL,alterado_por TEXT NOT NULL,criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW());
  INSERT INTO painel_equipe_config(id,principal) SELECT 1,id::text FROM usuarios WHERE UPPER(perfil)='ADMIN' ORDER BY id LIMIT 1 ON CONFLICT(id) DO NOTHING;
  INSERT INTO painel_equipe_membros(usuario,admin) SELECT u.id::text,c.principal FROM usuarios u CROSS JOIN painel_equipe_config c WHERE UPPER(u.perfil) IN ('USUARIO','CONTADOR') ON CONFLICT(usuario) DO NOTHING;
+ CREATE TABLE IF NOT EXISTS painel_equipe_acessos(gestor TEXT NOT NULL,usuario TEXT NOT NULL,PRIMARY KEY(gestor,usuario));
+ CREATE TABLE IF NOT EXISTS painel_equipe_acessos_historico(id BIGSERIAL PRIMARY KEY,gestor TEXT NOT NULL,antes JSONB NOT NULL,depois JSONB NOT NULL,alterado_por TEXT NOT NULL,criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW());
+ ALTER TABLE painel_equipe_config ADD COLUMN IF NOT EXISTS mapeamento_migrado BOOLEAN NOT NULL DEFAULT false;
+ INSERT INTO painel_equipe_acessos(gestor,usuario) SELECT m.admin,m.usuario FROM painel_equipe_membros m CROSS JOIN painel_equipe_config c WHERE NOT c.mapeamento_migrado ON CONFLICT DO NOTHING;
+ UPDATE painel_equipe_config SET mapeamento_migrado=true WHERE id=1;
  CREATE TABLE IF NOT EXISTS painel_favoritos(usuario TEXT PRIMARY KEY,urls JSONB NOT NULL DEFAULT '[]',atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW());
  `);}
 async function users(pool){return (await pool.query("SELECT id::text AS id,nome,perfil FROM usuarios WHERE UPPER(perfil) IN ('ADMIN','USUARIO','CONTADOR') ORDER BY nome,id")).rows.map(u=>({...u,perfil:u.perfil.toUpperCase()}));}
 async function context(pool,user){
- const config=(await pool.query('SELECT principal FROM painel_equipe_config WHERE id=1')).rows[0];
- if(config)await pool.query("INSERT INTO painel_equipe_membros(usuario,admin) SELECT u.id::text,$1 FROM usuarios u WHERE UPPER(u.perfil) IN ('USUARIO','CONTADOR') AND NOT EXISTS(SELECT 1 FROM painel_equipe_membros m WHERE m.usuario=u.id::text) ON CONFLICT(usuario) DO NOTHING",[config.principal]);
- const membership=(await pool.query('SELECT admin FROM painel_equipe_membros WHERE usuario=$1',[String(user.id)])).rows[0];
- const admin=user.perfil==='ADMIN'?String(user.id):membership?.admin;
- const team=admin?(await pool.query('SELECT usuario FROM painel_equipe_membros WHERE admin=$1',[admin])).rows.map(r=>String(r.usuario)):[];
- return {...user,admin,team:[...new Set([String(user.id),...(admin?[admin]:[]),...team])],principal:String(config?.principal)===String(user.id)};
+ const mapped=(await pool.query('SELECT usuario FROM painel_equipe_acessos WHERE gestor=$1',[String(user.id)])).rows.map(r=>String(r.usuario));
+ const workTeam=user.perfil==='ADMIN'?mapped:[];
+ return {...user,team:[...new Set([String(user.id),...mapped])],workTeam:[String(user.id),...workTeam]};
 }
-async function teamPeople(pool,user){const actor=await context(pool,user);return (await users(pool)).filter(p=>actor.team.includes(p.id));}
-async function teamSettings(pool,user){const actor=await context(pool,user),people=await users(pool),members=(await pool.query('SELECT * FROM painel_equipe_membros ORDER BY usuario')).rows;return {actor,admins:people.filter(p=>p.perfil==='ADMIN'),members:members.filter(m=>actor.principal||m.admin===String(user.id)),people:people.filter(p=>actor.principal||actor.team.includes(p.id))};}
+async function teamPeople(pool,user){return users(pool);}
+async function teamSettings(pool,user){return {actor:await context(pool,user),people:await users(pool),members:(await pool.query('SELECT gestor,usuario FROM painel_equipe_acessos ORDER BY gestor,usuario')).rows};}
 async function saveTeam(pool,user,input){return transaction(pool,async db=>{
- const actor=await context(db,user);if(user.perfil!=='ADMIN'||!actor.principal)throw Object.assign(Error('Somente o administrador principal configura a composição das equipes.'),{status:403});
- const people=await users(db),member=people.find(p=>p.id===String(input.usuario)),admin=people.find(p=>p.id===String(input.admin)&&p.perfil==='ADMIN');
- if(!member||member.perfil==='ADMIN'||!admin)throw Error('Escolha um usuário e um administrador válidos.');
- const current=(await db.query('SELECT admin FROM painel_equipe_membros WHERE usuario=$1 FOR UPDATE',[member.id])).rows[0];
- if(String(current?.admin||'')!==String(input.anterior||''))throw Object.assign(Error('A equipe mudou. Atualize a página antes de continuar.'),{status:409});
- if(current?.admin===admin.id)return;
- await db.query('INSERT INTO painel_equipe_membros(usuario,admin) VALUES($1,$2) ON CONFLICT(usuario) DO UPDATE SET admin=EXCLUDED.admin',[member.id,admin.id]);
- await db.query('INSERT INTO painel_equipe_historico(usuario,admin_anterior,admin_novo,alterado_por) VALUES($1,$2,$3,$4)',[member.id,current?.admin||null,admin.id,String(user.id)]);
+ if(user.perfil!=='ADMIN')throw Object.assign(Error('Somente um ADM pode configurar o acompanhamento de tarefas.'),{status:403});
+ const people=await users(db),gestor=people.find(p=>p.id===String(input.gestor));
+ if(!gestor||!Array.isArray(input.usuarios)||!Array.isArray(input.anterior))throw Error('Escolha uma pessoa e sua equipe.');
+ const selected=[...new Set(input.usuarios.map(String))].sort();
+ if(selected.some(id=>id===gestor.id||!people.some(p=>p.id===id)))throw Error('Pessoa inválida na equipe.');
+ await db.query('SELECT id FROM painel_equipe_config WHERE id=1 FOR UPDATE');
+ const before=(await db.query('SELECT usuario FROM painel_equipe_acessos WHERE gestor=$1 ORDER BY usuario',[gestor.id])).rows.map(r=>String(r.usuario)).sort();
+ if(JSON.stringify(before)!==JSON.stringify([...new Set(input.anterior.map(String))].sort()))throw Object.assign(Error('O mapeamento mudou. Atualize a página antes de continuar.'),{status:409});
+ await db.query('DELETE FROM painel_equipe_acessos WHERE gestor=$1',[gestor.id]);
+ for(const id of selected)await db.query('INSERT INTO painel_equipe_acessos(gestor,usuario) VALUES($1,$2)',[gestor.id,id]);
+ await db.query('INSERT INTO painel_equipe_acessos_historico(gestor,antes,depois,alterado_por) VALUES($1,$2,$3,$4)',[gestor.id,JSON.stringify(before),JSON.stringify(selected),String(user.id)]);
  });}
 async function transaction(pool,fn){const db=await pool.connect();try{await db.query('BEGIN');const value=await fn(db);await db.query('COMMIT');return value;}catch(e){await db.query('ROLLBACK');throw e;}finally{db.release();}}
 async function event(db,id,user,action,data={}){await db.query('INSERT INTO painel_eventos(tarefa,usuario,nome,acao,dados) VALUES($1,$2,$3,$4,$5)',[id,String(user.id),user.nome||'Usuário',action,JSON.stringify(data)]);}
@@ -93,14 +98,14 @@ async function create(pool,user,input,allowedUrls){
 }
 async function load(pool,user){
  user=await context(pool,user);
- return (await pool.query(`SELECT t.*,r.repeticao,r.ativa AS rotina_ativa,r.responsavel AS rotina_responsavel,(t.concluido_em AT TIME ZONE 'America/Sao_Paulo')::date::text AS concluido_dia FROM painel_tarefas t JOIN painel_rotinas r ON r.id=t.rotina WHERE t.excluido_em IS NULL AND (t.responsavel=ANY($1::text[]) OR t.criador=$2 OR t.responsavel=$2) ORDER BY t.prazo,t.criado_em,t.id`,[user.perfil==='ADMIN'?user.team:[],String(user.id)])).rows;
+ return (await pool.query(`SELECT t.*,r.repeticao,r.ativa AS rotina_ativa,r.responsavel AS rotina_responsavel,(t.concluido_em AT TIME ZONE 'America/Sao_Paulo')::date::text AS concluido_dia FROM painel_tarefas t JOIN painel_rotinas r ON r.id=t.rotina WHERE t.excluido_em IS NULL AND (t.responsavel=ANY($1::text[]) OR t.criador=$2 OR t.responsavel=$2) ORDER BY t.prazo,t.criado_em,t.id`,[user.team,String(user.id)])).rows;
 }
 async function notify(db,t,user,text,action){
  const to=String(t.criador)===String(user.id)?String(t.responsavel):String(t.criador);
  if(to===String(user.id))return;
  await db.query('INSERT INTO painel_notificacoes(id,usuario,tarefa,texto,chave) VALUES($1,$2,$3,$4,$5) ON CONFLICT(chave) DO NOTHING',[crypto.randomUUID(),to,t.id,text,[t.id,t.versao,action,to].join(':')]);
 }
-async function notices(pool,user){return (await pool.query(`SELECT n.*,t.titulo FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC LIMIT 50`,[String(user.id)])).rows;}
+async function notices(pool,user){return (await pool.query(`SELECT n.*,t.titulo,t.responsavel FROM painel_notificacoes n JOIN painel_tarefas t ON t.id=n.tarefa WHERE n.usuario=$1 AND n.lida_em IS NULL AND t.excluido_em IS NULL AND (t.criador=$1 OR t.responsavel=$1 ) ORDER BY n.criado_em DESC`,[String(user.id)])).rows;}
 async function change(pool,user,id,input){
  if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Tarefa inválida.');
  return transaction(pool,async db=>{
@@ -120,7 +125,7 @@ async function change(pool,user,id,input){
    if(input.acao==='observacao'&&!canWork(user,t))throw Object.assign(Error('Somente o responsável ou administrador pode registrar observação.'),{status:403});
    const texto=String(input.texto||'').trim();if(!texto||texto.length>4000)throw Error('Escreva uma mensagem de até 4.000 caracteres.');
    await db.query('UPDATE painel_tarefas SET versao=versao+1 WHERE id=$1',[id]);await event(db,id,user,input.acao,{texto});
-   await notify(db,t,user,user.nome+(input.acao==='responder'?' respondeu à tarefa “':' registrou uma observação em “')+t.titulo+'”.',input.acao);
+   await notify(db,t,user,user.nome+(input.acao==='responder'?' respondeu à tarefa “':' registrou uma observação em “')+t.titulo+'”. '+texto,input.acao);
   }else if(input.acao==='delegar'){
    if(t.status!=='aberta')throw Error('Reabra a tarefa antes de delegar.');const to=String(input.responsavel||''),reason=String(input.motivo||'').trim();if(!reason||reason.length>1000)throw Error('Informe um motivo de até 1.000 caracteres.');
    if(to===t.responsavel||!(await teamPeople(db,user)).some(u=>u.id===to))throw Error('Escolha outro responsável válido.');

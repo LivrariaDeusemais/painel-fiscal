@@ -11,20 +11,20 @@ function createRouter({pool,protect,renderShell,downloads}){
   const user=await s.context(pool,req.session.usuario),p=s.period(req.query.periodo,req.query.data||s.today()),max=s.addDays(s.today(),366);if(p.end>max)throw Error('Consulte até um ano à frente.');
   await s.generate(pool,p.end>s.today()?p.end:s.today());
   const [directory,tasks,files,notices]=await Promise.all([s.users(pool),s.load(pool,user),downloads(),s.notices(pool,user)]);
-  const recipients=directory.filter(p=>user.team.includes(p.id)),related=new Set(tasks.flatMap(t=>[String(t.criador),String(t.responsavel)])),people=directory.filter(p=>user.team.includes(p.id)||related.has(p.id));
+  const recipients=directory,related=new Set(tasks.flatMap(t=>[String(t.criador),String(t.responsavel)])),people=directory.filter(p=>user.team.includes(p.id)||related.has(p.id));
   let priceSummary=null,priceError=false;
   if(req.path==='/visao-geral'&&['ADMIN','USUARIO'].includes(user.perfil))try{const pricing=require('../tabela-precos/service');priceSummary=pricing.reviewSummary(await pricing.marketplaceRows(pool,{}));}catch(error){priceError=true;console.error('[Painel preços]',error.message);}
   let task=null,events=[];
   if(req.query.tarefa){task=tasks.find(t=>t.id===req.query.tarefa);if(!task||!s.canRead(user,task))throw Object.assign(Error('Tarefa não encontrada.'),{status:404});events=(await pool.query('SELECT * FROM painel_eventos WHERE tarefa=$1 ORDER BY criado_em,id',[task.id])).rows;}
   const personId=String(req.query.pessoa||task?.responsavel||user.id);
-  const permitted=user.perfil==='ADMIN'&&user.team.includes(personId)||personId===String(user.id)||tasks.some(t=>String(t.criador)===String(user.id)&&String(t.responsavel)===personId);
+  const permitted=user.team.includes(personId)||personId===String(user.id)||tasks.some(t=>String(t.criador)===String(user.id)&&String(t.responsavel)===personId);
   if(!permitted)throw Object.assign(Error('Acesso não autorizado às tarefas desta pessoa.'),{status:403});
   const person=people.find(p=>p.id===personId);if(!person)throw Object.assign(Error('Pessoa não encontrada.'),{status:404});
   if(task&&String(task.responsavel)!==personId)throw Object.assign(Error('Tarefa não pertence a esta pessoa.'),{status:404});
-  return {user,people,recipients,tasks,files,notices,priceSummary,priceError,task,events,person,scope:req.query.escopo==='acompanho'?'acompanho':'minhas',period:p,token:ui.token(req),pages:pages(user)};
+  return {user,people,recipients,tasks,files,notices,priceSummary,priceError,task,events,person,status:['aberta','concluida'].includes(req.query.status)?req.query.status:'todas',edit:req.query.editar==='1',scope:req.query.escopo==='acompanho'?'acompanho':'minhas',period:p,token:ui.token(req),pages:pages(user)};
  }
  router.get('/visao-geral',run(async(req,res)=>res.send(renderShell(req,{titulo:'Painel',navegacaoSuperior:true},views.panel(await data(req))))));
- router.get('/painel/usuario/:id',run(async(req,res)=>{const m=await data(req);if(!(m.user.perfil==='ADMIN'&&m.user.team.includes(req.params.id))&&String(m.user.id)!==req.params.id&&!m.tasks.some(t=>String(t.criador)===String(m.user.id)&&t.responsavel===req.params.id))return res.sendStatus(403);res.redirect('/painel/agenda?pessoa='+encodeURIComponent(req.params.id)+'&periodo='+m.period.mode+'&data='+m.period.date);}));
+ router.get('/painel/usuario/:id',run(async(req,res)=>{const m=await data(req);if(!(m.user.team.includes(req.params.id))&&String(m.user.id)!==req.params.id&&!m.tasks.some(t=>String(t.criador)===String(m.user.id)&&t.responsavel===req.params.id))return res.sendStatus(403);res.redirect('/painel/agenda?pessoa='+encodeURIComponent(req.params.id)+'&periodo='+m.period.mode+'&data='+m.period.date);}));
  router.get('/painel/avisos/:id',run(async(req,res)=>{const m=await data(req);if(!(m.user.perfil==='ADMIN'&&m.user.team.includes(req.params.id))&&String(m.user.id)!==req.params.id)return res.sendStatus(403);const person=m.people.find(x=>x.id===req.params.id);if(!person)return res.sendStatus(404);res.send(renderShell(req,{titulo:'Avisos',navegacaoSuperior:true},views.alerts({...m,person})));}));
  router.get('/painel/tarefa/:id',run(async(req,res)=>{if(!uuid(req.params.id))return res.sendStatus(404);const m=await data(req),t=m.tasks.find(x=>x.id===req.params.id);if(!t||!s.canRead(m.user,t))return res.sendStatus(404);res.redirect('/painel/agenda?pessoa='+encodeURIComponent(t.responsavel)+'&tarefa='+t.id+'&periodo='+m.period.mode+'&data='+m.period.date);}));
  router.get('/painel/agenda',run(async(req,res)=>res.send(renderShell(req,{titulo:'Agenda e tarefas',navegacaoSuperior:true},views.agenda(await data(req))))));
@@ -33,6 +33,7 @@ function createRouter({pool,protect,renderShell,downloads}){
  router.get('/painel/equipes',run(async(req,res)=>{if(req.session.usuario.perfil!=='ADMIN')return res.sendStatus(403);const m=await data(req);res.send(renderShell(req,{titulo:'Equipes',navegacaoSuperior:true},views.teams({...m,settings:await s.teamSettings(pool,req.session.usuario)})));}));
  router.post('/painel/equipes',csrf,run(async(req,res)=>{await s.saveTeam(pool,req.session.usuario,req.body);res.json({ok:true});}));
  router.get('/painel/notificacoes',run(async(req,res)=>res.json({items:await s.notices(pool,req.session.usuario)})));
+ router.post('/painel/tarefa/:id/lidas',csrf,run(async(req,res)=>{if(!uuid(req.params.id))return res.sendStatus(404);await pool.query('UPDATE painel_notificacoes SET lida_em=NOW() WHERE tarefa=$1 AND usuario=$2 AND lida_em IS NULL',[req.params.id,String(req.session.usuario.id)]);res.json({ok:true});}));
  router.post('/painel/notificacao/:id/lida',csrf,run(async(req,res)=>{if(!uuid(req.params.id))return res.sendStatus(404);const result=await pool.query('UPDATE painel_notificacoes SET lida_em=NOW() WHERE id=$1 AND usuario=$2 RETURNING id',[req.params.id,String(req.session.usuario.id)]);if(!result.rowCount)return res.sendStatus(404);res.json({ok:true});}));
  router.post('/painel/rotina/:id/pausar',csrf,run(async(req,res)=>{if(!uuid(req.params.id))return res.sendStatus(404);await s.pause(pool,req.session.usuario,req.params.id);res.json({ok:true});}));
  router.get('/painel/favoritos',run(async(req,res)=>{const options=pages(req.session.usuario);const r=(await pool.query('SELECT urls FROM painel_favoritos WHERE usuario=$1',[String(req.session.usuario.id)])).rows[0];res.json({options,selected:(r?.urls||[]).filter(url=>options.some(p=>p.url===url))});}));

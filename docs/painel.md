@@ -13,10 +13,10 @@
 
 ## Acesso
 
-- Administrador vê e atua nas tarefas de sua equipe. Outros perfis veem a própria rotina e as tarefas que criaram; participação anterior em delegação não mantém acesso.
-- Apenas responsável atual e administrador da equipe concluem, reabrem ou delegam. Somente criador e administrador da equipe pausam uma programação.
-- Usuários comuns só abrem tarefas de outra pessoa se forem os criadores dessas tarefas; avisos contábeis de outra pessoa não são liberados. Atalhos e favoritos são validados contra as telas disponíveis ao perfil; as rotas de destino continuam aplicando suas próprias permissões.
-- Todos os POST usam o token individual de sessão (`X-Painel-Token`). Respostas de dados não usam cache. Nenhum e-mail ou mensagem externa é enviado.
+- Todo usuário vê suas próprias tarefas e as que criou para outras pessoas. Qualquer pessoa pode criar ou delegar (quando autorizada a executar a tarefa) para qualquer usuário ativo dos perfis suportados.
+- Um ADM configura os usuários cujas tarefas cada pessoa pode acompanhar, independentemente do perfil dessa pessoa. O vínculo é direto, sem herdar as equipes dos acompanhados. Acompanhamento por usuário comum concede leitura, sem ações de execução ou autoria.
+- Apenas responsável atual e ADM com acesso mapeado concluem, reabrem ou delegam. Editar/excluir permanece exclusivo do criador. Antigos responsáveis não mantêm acesso apenas por participação passada.
+- Todos os POST usam token individual de sessão (`X-Painel-Token`). URLs e consultas são autorizadas no servidor. Nenhum e-mail ou mensagem externa é enviado.
 
 ## Avisos da Central de downloads
 
@@ -34,19 +34,19 @@ O histórico atual da Central é compartilhado por competência e tipo, sem iden
 
 ## Painel e tarefas por pessoa (26/10/2026)
 
-- O painel principal mostra resumos de tarefas pendentes, progresso individual, downloads liberados e pendências de preços (Sem Vínculo, Novo, Novo custo, Reajustar e Revisar). Preços usam a mesma classificação da Tabela por Marketplace, com acesso ao filtro correspondente. Esses indicadores não geram nem publicam alterações automaticamente.
-- A agenda tem pessoas à esquerda e tarefas da pessoa selecionada à direita. ADMIN acompanha sua equipe, definida em Administração → Equipes dos administradores. O administrador principal distribui as pessoas; os demais ADMs apenas consultam sua equipe.
-- Usuário comum vê todas as tarefas de sua responsabilidade e, em outras pessoas, somente tarefas que ele criou. Participação anterior em uma delegação não concede mais leitura após sair da responsabilidade; isso substitui a regra anterior documentada acima. A mesma restrição vale para URLs e consultas no servidor.
-- Somente o criador edita ou exclui uma tarefa, inclusive quando o solicitante é ADMIN. A edição modifica apenas a execução selecionada. Exclusão é lógica (`excluido_em`), preservando auditoria e a identidade da ocorrência; próximas ocorrências de uma rotina continuam programadas.
-- Responsável atual e ADMIN registram observações. Criador, responsável atual e ADMIN podem responder na conversa da tarefa. Textos têm limite de 4.000 caracteres e são escapados na exibição. Alterações e mensagens exigem versão atual, token de sessão e bloqueio transacional.
-- Respostas, observações e conclusão por outra pessoa geram aviso interno ao criador (respostas do criador são dirigidas ao responsável). `painel_notificacoes` guarda destinatário e chave única por tarefa/versão/ação. Conclusão já realizada não gera novo aviso; reabrir e concluir novamente cria um novo evento legítimo.
-- Mensagens e avisos atualizam a cada 30 segundos enquanto a página está visível, sem recarregar formulários em edição. Marcar como lida exige o próprio destinatário. Avisos de tarefas excluídas ou sem acesso atual não são exibidos. Nenhuma comunicação é enviada por WhatsApp, e-mail ou serviços externos.
+- Painel principal mostra resumos de tarefas próprias e da equipe mapeada, progresso individual, downloads liberados e pendências de preços (Sem Vínculo, Novo, Novo custo, Reajustar e Revisar). As tarefas criadas para pessoas fora da equipe ficam na agenda, sem somar as demais tarefas privadas do destinatário. Indicadores de preços usam a classificação da Tabela por Marketplace e não publicam alterações automaticamente.
+- Agenda tem pessoas à esquerda e tarefas/conversas à direita. Mostra pessoas mapeadas, o próprio usuário e pessoas para quem criou tarefas. Cada lista usa apenas tarefas autorizadas; criar uma tarefa para superior não revela as outras dele.
+- Filtro Situação: Todas inclui pendências anteriores ainda abertas; A concluir usa prazos dentro do período escolhido; Concluídas usa a data de conclusão em São Paulo dentro do período. Período/situação são preservados na navegação por pessoa e edição.
+- Botão de retorno fica na barra de ações superior. Lápis ao lado de Concluir/Reabrir aparece apenas ao criador e abre o formulário de edição. Edição altera a execução selecionada, sem alterar próximas ocorrências. Exclusão é lógica, preservando auditoria e identidade da ocorrência.
+- Responsável atual e ADM mapeado podem registrar observações; criador e executores autorizados podem responder. Textos têm limite de 4.000 caracteres e são escapados. Alterações exigem versão atual, token e bloqueio transacional.
+- Respostas, observações e conclusão por outra pessoa geram aviso ao criador; respostas do criador vão ao responsável. Mensagens novas incluem texto da resposta. Avisos antigos preservam seu conteúdo original.
+- Ícone de conversa por pessoa mostra mensagens/avisos não lidos do próprio usuário, agrupados pelo responsável da tarefa. Clique no nome ou ícone abre as mensagens dessa pessoa; abrir a tarefa marca apenas avisos daquele destinatário/tarefa como lidos. Também há baixa manual. Contagens não dependem do filtro de situação/período, para não ocultar mensagens antigas ainda não lidas.
+- Atualização a cada 30 segundos enquanto a página está visível, sem recarregar formulários. Não há comunicação por WhatsApp/e-mail.
 
-## Configuração de equipes
+## Configuração de equipes e acompanhamento
 
-- `painel_equipe_config` fixa o administrador principal na primeira inicialização (primeiro ADMIN existente por ID). Não depende da ordem de login nem muda automaticamente a cada consulta.
-- `painel_equipe_membros` vincula cada usuário/contador a um único ADM. Cada administrador pertence implicitamente à própria equipe. Na implantação e na criação posterior de usuários sem equipe, o vínculo inicial é com o administrador principal, que pode redistribuí-los.
-- `/painel/equipes` oferece a configuração com responsável atual, escolha de ADM e histórico de transferências em `painel_equipe_historico`. Somente o principal pode alterar; alteração concorrente do vínculo é recusada.
-- Criação e delegação exigem destinatário da equipe atual. Consultas e mutações recarregam os vínculos no servidor. O ADM principal também fica limitado à própria equipe na leitura de tarefas; a autoridade de configuração não dá leitura global das conversas.
-- O criador mantém acesso ao que criou após uma transferência, preservando acompanhamento e autoria. Essa exceção não dá acesso às demais tarefas da pessoa transferida.
-- O isolamento aqui se aplica ao Painel/Agenda/Tarefas. Permissões dos outros módulos, catálogo de preços compartilhado e baixa compartilhada de downloads continuam seguindo suas regras existentes.
+- Administração → Equipes e acompanhamento (`/painel/equipes`) permite a qualquer ADM mapear, para cada usuário, uma ou mais pessoas cujas tarefas ele pode visualizar. Uma pessoa pode ser acompanhada por mais de um usuário.
+- `painel_equipe_acessos(gestor,usuario)` guarda os vínculos diretos; `painel_equipe_acessos_historico` registra antes/depois, autor e data. A gravação compara a seleção anterior e bloqueia a configuração, recusando alterações concorrentes.
+- Migração copia uma única vez os vínculos anteriores de `painel_equipe_membros`, preservando acesso existente. Flag `mapeamento_migrado` impede recriar vínculos revogados em reinícios. Usuários novos começam com acesso às próprias tarefas, até serem mapeados por ADM. As tabelas anteriores permanecem para histórico.
+- Criação para qualquer destinatário não modifica vínculos de visualização. Contexto é recarregado no servidor a cada consulta/mutação; revogação é imediata. Autoria conserva acesso à tarefa criada.
+- O isolamento aplica-se ao Painel/Agenda/Tarefas. Demais módulos e catálogo compartilhado seguem suas permissões existentes.
