@@ -22,3 +22,12 @@ test('compartilhamento envia só o endereço de acesso e permite copiar sem comp
  let copied;const fallback=setup({clipboard:{writeText:async value=>{copied=value}}});await fallback('share-app').click();assert.equal(fallback('share-dialog').open,true);await fallback('copy-share-link').click();assert.equal(copied,shared.url);
  const canceled=setup({share:async()=>{throw Object.assign(new Error(),{name:'AbortError'})}});await canceled('share-app').click();assert.notEqual(canceled('share-dialog').open,true);
 });
+test('SKU carrega ao sair pelo Próximo sem keydown e não duplica Enter/blur',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),source=fs.readFileSync(require.resolve('../src/routes/index'),'utf8');
+ const start=source.indexOf("<script>(()=>{const form=document.getElementById('price-calculator-form')");const fragment=source.slice(start+'<script>'.length,source.indexOf('const manual=',start))+'})();';
+ function setup(value,loaded='',market='Mercado Livre'){let calls=0;const handlers={},timers=[];const sku={value,dataset:{loadedSku:loaded},addEventListener:(name,fn)=>handlers[name]=fn};const elements={'price-calculator-form':{dataset:{loadedMarketplace:market},requestSubmit:()=>calls++},'price-calculator-sku':sku,'price-calculator-marketplace':{value:market,addEventListener(){}},'price-calculator-load':{}};vm.runInNewContext(fragment,{document:{getElementById:id=>elements[id]},setTimeout:fn=>timers.push(fn)});return {handlers,timers,calls:()=>calls};}
+ const android=setup('B1253');android.handlers.blur();assert.equal(android.calls(),1);
+ const desktop=setup('B1253');desktop.handlers.keydown({key:'Enter',preventDefault(){}});desktop.handlers.blur();desktop.timers.forEach(fn=>fn());assert.equal(desktop.calls(),1);
+ const unchanged=setup(' b1253 ','B1253');unchanged.handlers.blur();assert.equal(unchanged.calls(),0);
+ for(const args of [[''],['B1253','','']]){const missing=setup(...args);missing.handlers.blur();assert.equal(missing.calls(),0);}
+});
