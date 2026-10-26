@@ -11,14 +11,14 @@ function protegerRota(req, res, next) {
 }
 
 function somenteAdmin(req, res, next) {
-  if ((!req.session.usuario || req.session.usuario.perfil !== 'ADMIN') && !require('../access/catalog').operationalGrant(req)) {
+  if ((!req.session.usuario || req.session.usuario.perfil !== 'ADMIN') && !require('../access/catalog').operationalGrant(req) && !require('../access/catalog').downloadGrant(req)) {
     return res.status(403).send('<pre>Acesso negado. Apenas ADMIN pode acessar esta área.</pre>');
   }
   next();
 }
 
 function permitirExportacaoMarketplace(req, res, next) {
-  if (!require('../integracoes/access').canOperate(req.session?.usuario)) {
+  if (!(require('../access/catalog').actionFor(req)==='download' ? require('../integracoes/access').canDownload(req.session?.usuario,'tabela') : require('../integracoes/access').canOperate(req.session?.usuario))) {
     return res.status(403).send('Exportação de preços não autorizada para este usuário.');
   }
   next();
@@ -26,7 +26,7 @@ function permitirExportacaoMarketplace(req, res, next) {
 
 function permitirPerfis(...perfis) {
   return (req, res, next) => {
-    if ((!req.session.usuario || !perfis.includes(req.session.usuario.perfil)) && !require('../access/catalog').operationalGrant(req)) {
+    if ((!req.session.usuario || !perfis.includes(req.session.usuario.perfil)) && !require('../access/catalog').operationalGrant(req) && !require('../access/catalog').downloadGrant(req)) {
       return res.status(403).send('<pre>Acesso negado para este perfil de usuário.</pre>');
     }
     next();
@@ -31997,7 +31997,8 @@ function tabelaMarketplaceItemStatus(item) {
 
 function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback = null, filtros = {}, bling = null } = {}) {
   const isAdmin = req.session.usuario?.perfil === 'ADMIN' || require('../access/catalog').operationalGrant(req);
-  const canExport = require('../integracoes/access').canOperate(req.session.usuario);
+  const canExport = require('../integracoes/access').canDownload(req.session.usuario,'tabela');
+  const canPublish = require('../integracoes/access').canOperate(req.session.usuario);
   const marketplaces = (resumo?.rules || []).map(item => item.marketplace).filter(item => item !== 'Bling');
   const selected = (name, value) => filtros[name] === value ? 'selected' : '';
   const money = value => value == null || !Number.isFinite(Number(value)) ? '-' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -32032,7 +32033,7 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
   if (filtros.statusBruto) exportParams.set('statusBruto', filtros.statusBruto);
   if (filtros.status) exportParams.set('status', filtros.status);
   const completeExportUrl = `/ferramentas-ia/tabela-precos/exportar-completa?${exportParams.toString()}`;
-  const marketplaceSendButton = canExport ? `<form method="post" action="/ferramentas-ia/tabela-precos/publicar-marketplace" id="marketplace-send" style="display:inline-flex;margin:0"><input type="hidden" name="csrf" value="${escapeHtmlGlobal(req.session.grossCsrf)}">${[...exportParams].map(([name,value])=>`<input type="hidden" name="${escapeHtmlGlobal(name)}" value="${escapeHtmlGlobal(value)}">`).join('')}<input type="hidden" name="grossEdits" value="{}"><button class="tpt-btn" type="submit" title="Revisar os preços de todos os itens filtrados antes de publicar">Exportar Valor mkt</button></form><script>document.getElementById('marketplace-send').addEventListener('submit',function(e){const edits={};for(const input of document.querySelectorAll('.gross-edit input[name=valor]')){const id=input.form.action.split('/').pop();edits[id]=input.value;}this.elements.grossEdits.value=JSON.stringify(edits);this.querySelector('button').textContent='Preparando revisão…';});</script>` : '';
+  const marketplaceSendButton = canPublish ? `<form method="post" action="/ferramentas-ia/tabela-precos/publicar-marketplace" id="marketplace-send" style="display:inline-flex;margin:0"><input type="hidden" name="csrf" value="${escapeHtmlGlobal(req.session.grossCsrf)}">${[...exportParams].map(([name,value])=>`<input type="hidden" name="${escapeHtmlGlobal(name)}" value="${escapeHtmlGlobal(value)}">`).join('')}<input type="hidden" name="grossEdits" value="{}"><button class="tpt-btn" type="submit" title="Revisar os preços de todos os itens filtrados antes de publicar">Exportar Valor mkt</button></form><script>document.getElementById('marketplace-send').addEventListener('submit',function(e){const edits={};for(const input of document.querySelectorAll('.gross-edit input[name=valor]')){const id=input.form.action.split('/').pop();edits[id]=input.value;}this.elements.grossEdits.value=JSON.stringify(edits);this.querySelector('button').textContent='Preparando revisão…';});</script>` : '';
 
   const cargaBlingParams = new URLSearchParams(exportParams);
   cargaBlingParams.delete('marketplace');
@@ -32095,9 +32096,9 @@ function renderTabelaMarketplacePage(req, { resumo = null, itens = [], feedback 
     .replace('<th class="g-base">Status</th>', '<th class="g-base col-review-status">'+statusHeader('status','Status',tabelaPrecosService.REVIEW_STATUSES)+'</th>')
     .replace('<th class="g-new">Novo Líquido</th>', '<th class="g-base col-gross-status">'+statusHeader('statusBruto','Status do Bruto',['Aumentar valor','Manter valor','Reduzir valor','Revisar'])+'</th><th class="g-cost col-new-gross">' + grossModeControl + '</th><th class="g-cost col-new-discount">Desconto</th><th class="g-new">Novo Líquido</th>')
     .replace(`<tbody>${rows}</tbody>`, `<tbody>${rowsWithGross}</tbody>`);
-  if (isAdmin && filtros.marketplace) {
+  if (canExport && filtros.marketplace) {
     contentWithGross = contentWithGross.replace(cargaBlingButton, exportButtons);
-  } else if (isAdmin) {
+  } else if (canExport) {
     contentWithGross = contentWithGross.replace('Esconder descrição</label></div></div>', `Esconder descrição</label></div>${exportButtons}</div>`);
   }
   const pageContent = contentWithGross.replace(

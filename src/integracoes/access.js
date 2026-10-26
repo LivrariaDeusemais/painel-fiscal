@@ -4,4 +4,5 @@ function canOperate(user) {
   return user?.perfil === 'ADMIN' || user?.perfil === 'USUARIO' && String(user.id) === '3' && String(user.nome).trim().toLocaleLowerCase('pt-BR') === 'filipe';
 }
 function isAdmin(user) { return user?.perfil === 'ADMIN'; }
-module.exports = {canOperate,isAdmin};
+function canDownload(user,id){if(user?.perfil==='ADMIN')return true;if(user?.functionAccess)return user.functionAccess[id]?.view===true&&user.functionAccess[id]?.download===true;return canOperate(user);}
+module.exports = {canOperate,isAdmin,canDownload};

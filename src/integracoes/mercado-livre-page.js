@@ -20,7 +20,7 @@ function render(model,csrf,feedback) {
 }
 function createRouter(pool,renderShell) {
   const router=express.Router();
-  router.use((req,res,next)=>{if(!req.session.usuario)return res.redirect('/login');if(!access.canOperate(req.session.usuario))return res.status(403).send('Acesso às integrações não autorizado para este usuário.');
+  router.use((req,res,next)=>{if(!req.session.usuario)return res.redirect('/login');if(!access.canOperate(req.session.usuario)&&!(require('../access/catalog').actionFor(req)==='view'&&require('../access/catalog').permitted(req.session.usuario,'meli')===true)&&!require('../access/catalog').downloadGrant(req))return res.status(403).send('Acesso às integrações não autorizado para este usuário.');
     if(!access.isAdmin(req.session.usuario) && ['/conectar','/callback','/depositos','/configuracao','/lojas','/lojas/configuracao'].includes(req.path.toLowerCase().replace(/\/+$/, '') || '/')) return res.status(403).send('Configuração da conta restrita ao administrador.');
     res.set('Cache-Control','no-store');res.set('Referrer-Policy','no-referrer');req.session.mlCsrf ||= crypto.randomBytes(32).toString('hex');
     if(req.method==='POST' && req.body.csrf!==req.session.mlCsrf)return res.status(403).send('Sessão inválida. Atualize a página.');next();});

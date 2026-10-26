@@ -26,8 +26,23 @@ const catalog=[
  ['admin','Administração','backup','Backup',['/backup'],true,'admin'],
  ['painel','Painel','alertas','Bloco: alertas automáticos',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
-].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction}));
+].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
-function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write?'edit':'view']===true;}
+function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write===true?'edit':write===false?'view':write]===true;}
+function downloadGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.downloadable&&actionFor(req)==='download'&&permitted(req.session?.usuario,c.id,'download')===true;}
 function operationalGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.editable&&permitted(req.session?.usuario,c.id,true)===true;}
-module.exports={catalog,capability,permitted,operationalGrant};
+// As rotas que entregam arquivos exigem download, mesmo quando abrem PDF em uma aba.
+function actionFor(req){
+ const path=(req.originalUrl||req.path||'').split('?')[0];
+ if(!['GET','HEAD','OPTIONS'].includes(req.method))return 'edit';
+ if(/\/(usar|renomear|excluir|reprocessar|gerar-lancamento)(\/|$|-)/.test(path))return 'edit';
+ if(/\/(exportar(?:-[^/]*)?|download(?:-[^/]*)?|relatorio|modelo)(\/|$)/.test(path)
+  || /^\/(uploads|documentos|documentos-antigo)\//.test(path)
+  || /^\/arquivo\/ver\//.test(path)
+  || /^\/contabil\/fechamento\/arquivo\//.test(path)
+  || /^\/(compras|ferramentas-ia\/gestao-compras)\/arquivo\//.test(path)
+  || /^\/conciliacao-bancaria\/(original|comprovante)\//.test(path)
+  || /^\/ferramentas-ia\/tabela-precos\/bling\/(divergencias|diagnostico)\//.test(path))return 'download';
+ return 'view';
+}
+module.exports={catalog,capability,permitted,operationalGrant,downloadGrant,actionFor};

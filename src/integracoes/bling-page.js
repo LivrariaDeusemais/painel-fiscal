@@ -41,7 +41,7 @@ function createRouter(pool, renderShell) {
   const router = express.Router();
   router.use((req,res,next)=>{
     if (!req.session.usuario) return res.redirect('/login');
-    if (!access.canOperate(req.session.usuario)) return res.status(403).send('Acesso às integrações não autorizado para este usuário.');
+    if (!access.canOperate(req.session.usuario) && !(require('../access/catalog').actionFor(req)==='view' && require('../access/catalog').permitted(req.session.usuario,'bling')===true) && !require('../access/catalog').downloadGrant(req)) return res.status(403).send('Acesso às integrações não autorizado para este usuário.');
     if(!access.isAdmin(req.session.usuario) && ['/conectar','/callback','/depositos','/configuracao','/lojas','/lojas/configuracao'].includes(req.path.toLowerCase().replace(/\/+$/, '') || '/')) return res.status(403).send('Configuração da conta restrita ao administrador.');
     res.set('Cache-Control','no-store'); res.set('Referrer-Policy','no-referrer');
     if (!req.session.blingCsrf) req.session.blingCsrf=crypto.randomBytes(32).toString('hex');
