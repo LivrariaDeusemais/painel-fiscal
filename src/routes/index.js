@@ -23371,6 +23371,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     const extraFiltros = new URLSearchParams();
     if (statusPagtoFiltro) extraFiltros.set('status_pagto', statusPagtoFiltro);
     if (ativoFiltro) extraFiltros.set('ativo', ativoFiltro);
+    if (req.query.pendentes === '1') extraFiltros.set('pendentes','1');
     if (semDataFiltro) extraFiltros.set('sem_data', '1');
     if (dataInicialFiltro) extraFiltros.set('vencimento_inicio', dataInicialFiltro);
     if (dataFinalFiltro) extraFiltros.set('vencimento_fim', dataFinalFiltro);
@@ -23415,6 +23416,9 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
       whereParts.push(`COALESCE(sm.status_linha, r.status, 'PENDENTE') = $${values.length + 1}`);
     }
 
+    if (req.query.pendentes === '1') {
+      whereParts.push(`UPPER(translate(COALESCE(sm.status_pagto,'A_PAGAR'),'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ','AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) NOT IN ('PAGO','DOP','NAO_TEM','NAOTEM')`);
+    }
     if (statusPagtoFiltro) {
       values.push(statusPagtoFiltro);
       whereParts.push(`COALESCE(sm.status_pagto, 'A_PAGAR') = $${values.length + 1}`);
@@ -33092,8 +33096,11 @@ router.post('/nfse-nacional/importar', protegerRota, permitirPerfis('ADMIN', 'US
 });
 
 router.use(require('../access/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell}));
-let painelContadorSchema,painelArquivoSchema;
-router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell,automaticAlerts:async(person,files)=>{const actor=await require('../access/service').hydrate(pool,person);await (painelArquivoSchema ||= ensureArquivoFilaTable().catch(error=>{painelArquivoSchema=null;throw error;}));return require('../painel/automatic').alerts(pool,actor,files,async()=>montarDocumentosConciliadosArquivo((await pool.query("SELECT * FROM arquivo_fila WHERE status='DISPONIVEL'")).rows,'').length);},downloads:async()=>{
+let painelContadorSchema,painelArquivoSchema,painelRotinaSchema;
+router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,renderShell:renderPremiumAdminShell,automaticAlerts:async(person,files)=>{const actor=await require('../access/service').hydrate(pool,person);await (painelArquivoSchema ||= ensureArquivoFilaTable().catch(error=>{painelArquivoSchema=null;throw error;}));return require('../painel/automatic').alerts(pool,actor,files,async()=>montarDocumentosConciliadosArquivo((await pool.query("SELECT * FROM arquivo_fila WHERE status='DISPONIVEL'")).rows,'').length,{
+ dueToday:async()=>{await (painelRotinaSchema ||= ensureRotinaDespesasColumns().catch(error=>{painelRotinaSchema=null;throw error;}));return require('../painel/workflow').dueToday(pool);},
+ closing:async()=>{await (painelContadorSchema ||= ensureContadorTables().catch(error=>{painelContadorSchema=null;throw error;}));return require('../painel/workflow').closing(pool,getContadorArquivoConfig());}
+ });},downloads:async()=>{
   await (painelContadorSchema ||= ensureContadorTables().catch(error=>{painelContadorSchema=null;throw error;}));
   return require('../painel/downloads').load(pool,getContadorArquivoConfig());
 }}));

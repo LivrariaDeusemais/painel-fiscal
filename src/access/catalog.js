@@ -25,6 +25,8 @@ const catalog=[
  ['admin','Administração','categorias','Categorias',['/categorias'],true],
  ['admin','Administração','backup','Backup',['/backup'],true,'admin'],
  ['painel','Painel','alertas','Bloco: alertas automáticos',[],false],
+ ['financeiro','Financeiro','vencimentos-hoje','Bloco: contas a vencer hoje',[],false],
+ ['contabil','Contábil','fechamento-despesas','Bloco: fechamento de despesas',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
 ].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
