@@ -4,3 +4,8 @@ body .tpc-field small{display:none}body.show-help .tpc-field small{display:block
 body .tpc-field small.app-price-warning{display:block;color:#b91c1c}
 body .tpc-breakdown{background:#e4f2de}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #ed9c33;outline-offset:2px}
 #share-app,#install-help{display:inline-flex;align-items:center;justify-content:center;width:24px;height:30px;min-width:24px;min-height:30px;flex:0 0 24px;padding:4px;border-radius:8px;line-height:1;font-size:13px}#share-app svg{width:16px;height:16px;flex:none}#share-dialog{width:min(92vw,420px);padding:20px;border:1px solid #bbd9c8;border-radius:12px;color:#18372d}#share-dialog::backdrop{background:#122c2466}#share-dialog h2{margin:0 0 10px;font-size:18px}#share-dialog p{font-size:14px;line-height:1.5}#share-dialog label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px}#share-link{width:100%;padding:10px;font-size:16px;border:1px solid #9dbce0;border-radius:7px;background:#eaf3ff}#share-dialog>div{display:flex;gap:8px;justify-content:flex-end}#share-dialog form{margin:0}#share-dialog button{padding:10px;border:0;border-radius:7px;background:#07543d;color:white;font-weight:bold;cursor:pointer}
+/* Installed desktop apps: reserve the native controls on either side. */
+@media(display-mode:window-controls-overlay){
+ .app-header{app-region:drag;-webkit-app-region:drag;user-select:none;min-height:max(48px,env(titlebar-area-height,0px));padding-left:calc(env(titlebar-area-x,0px) + 12px);padding-right:max(12px,calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 12px))}
+ .app-header button,.app-header a{app-region:no-drag;-webkit-app-region:no-drag}
+}

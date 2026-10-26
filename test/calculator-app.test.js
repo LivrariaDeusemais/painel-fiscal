@@ -7,7 +7,7 @@ test('app preserva modo celular e recolhe custos sem perder resultado',()=>{
 test('manifesto tem ícones e início independente; worker não armazena preços nem sessão',()=>{
  const routes=new Map();app.mount({get:(path,handler)=>routes.set(path,handler)});let manifest,worker;
  routes.get('/ferramentas-ia/tabela-precos/promocoes/manifest.webmanifest')({}, {type(){return this},send(value){manifest=value}});
- assert.equal(manifest.display,'standalone');assert.match(manifest.start_url,/app=1/);assert.deepEqual(manifest.icons.map(i=>i.sizes),['192x192','512x512']);
+ assert.equal(manifest.display,'standalone');assert.deepEqual(manifest.display_override,['window-controls-overlay']);assert.match(manifest.start_url,/app=1/);assert.deepEqual(manifest.icons.map(i=>i.sizes),['192x192','512x512']);
  routes.get('/ferramentas-ia/tabela-precos/promocoes/sw.js')({}, {set(){return this},type(){return this},send(value){worker=value}});
  assert.match(worker,/Sem conexão/);assert.doesNotMatch(worker,/caches\./);new Function(worker);
 });
