@@ -27,3 +27,7 @@ test('download é independente de gestão e identifica arquivos e planilhas',()=
  assert.equal(require('../src/integracoes/access').canDownload(user,'tabela'),true);
  assert.equal(require('../src/integracoes/access').canOperate(user),false);
 });
+test('títulos do painel abrem consultas de mensagens, próprias e equipe com o período',()=>{
+ const user={id:'1',nome:'Usuário',perfil:'USUARIO',team:['1','2']},m={user,people:[user,{id:'2',nome:'Equipe'}],recipients:[],tasks:[],notices:[],period:s.period('mensal','2026-10-26'),pages:[],files:[]};
+ const html=views.panel(m);assert.match(html,/href="\/painel\/mensagens\?periodo=mensal/);assert.match(html,/href="\/painel\/agenda\?[^"<>]+&pessoa=1">Minhas Tarefas/);assert.match(html,/href="\/painel\/agenda\?[^"<>]+&escopo=equipe">Tarefas da Equipe/);
+});

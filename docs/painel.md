@@ -55,6 +55,8 @@ O histórico atual da Central é compartilhado por competência e tipo, sem iden
 
 A definição atual está em [alertas-automaticos.md](alertas-automaticos.md). O painel agrupa tarefas/mensagens, preços, financeiro e contábil em blocos verticais. O cadastro de funções é aplicado por middleware antes das rotas; o mapeamento de equipes continua separado. Liberações contábeis geram aviso interno e fila de e-mail deduplicada, substituindo a regra anterior de ausência de comunicação externa exclusivamente para esses eventos autorizados.
 
-## Ajustes registrados para a próxima rodada (26/10/2026)
-- Tornar clicáveis os títulos Tarefas e Mensagens, Minhas Tarefas e Tarefas da Equipe, abrindo as respectivas consultas.
-- Reduzir pela metade a fonte dos números do módulo Preços.
+## Ajustes aplicados em 26/10/2026
+- Títulos clicáveis: Tarefas e Mensagens abre a agenda; Mensagens não lidas abre a caixa de entrada completa; Minhas Tarefas abre o próprio usuário; Tarefas da Equipe abre a agenda das pessoas diretamente mapeadas. Os links preservam o período.
+- Fonte dos números do módulo Preços reduzida de 22px para 11px.
+
+A tela de usuários permite escolher a função no cadastro e na edição; a tabela mostra Função e Perfil técnico separadamente. Perfil não é substituído: preserva as restrições administrativas/financeiras existentes. Dados e vínculo de função são gravados na mesma transação, com validação e auditoria.

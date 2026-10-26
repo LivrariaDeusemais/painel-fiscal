@@ -12004,6 +12004,9 @@ function iniciarAgendadorAlertasVencimento() {
 
 iniciarAgendadorAlertasVencimento();
 
+// As rotas modernizadas atendem cadastro/listagem/edição; reset e exclusão mantêm o fluxo legado.
+router.use('/usuarios', protegerRota, somenteAdmin, require('../access/users').createRouter({pool,ensureUsers:ensureUsuariosAlertasColumns,renderShell:renderPremiumAdminShell}));
+
 router.get('/usuarios', protegerRota, somenteAdmin, async (req, res) => {
   try {
     await ensureUsuariosAlertasColumns();
