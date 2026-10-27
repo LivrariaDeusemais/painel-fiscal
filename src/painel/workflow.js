@@ -23,12 +23,17 @@ async function closing(pool,base,date=today()){
  return closingRecords({base,statuses:statuses.rows,custom:custom.rows,types:types.rows,hidden:hidden.rows.map(r=>r.chave.replace('contador_tipo_oculto_',''))},date);
 }
 async function dueToday(pool,date=today()){
- const result=await pool.query(`SELECT r.valor_estimado,sm.valor_estimado AS valor_estimado_mes,sm.valor_estimado_editado,historico.valor_historico FROM rotina_despesas r LEFT JOIN rotina_despesas_status_mensal sm ON sm.rotina_id=r.id AND sm.mes_ano=$1 ${historicoEstimativaSql}
+ const effectiveDay="LEAST(COALESCE(NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text,''),'[^0-9]','','g'),'')::int,EXTRACT(DAY FROM r.data_vencimento)::int),EXTRACT(DAY FROM (date_trunc('month',$2::date)+INTERVAL '1 month - 1 day'))::int)";
+ const result=await pool.query(`SELECT r.valor_estimado,sm.valor_estimado AS valor_estimado_mes,sm.valor_estimado_editado,historico.valor_historico,${effectiveDay}<EXTRACT(DAY FROM $2::date)::int AS atrasada FROM rotina_despesas r LEFT JOIN rotina_despesas_status_mensal sm ON sm.rotina_id=r.id AND sm.mes_ano=$1 ${historicoEstimativaSql}
  WHERE COALESCE(sm.ativo,r.ativo,true)=true
  AND UPPER(translate(COALESCE(sm.status_pagto,'A_PAGAR'),'ÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇáàâãéèêíìîóòôõúùûç ','AAAAEEEIIIOOOOUUUCaaaaeeeiiioooouuuc_')) NOT IN ('PAGO','DOP','NAO_TEM','NAOTEM')
  AND COALESCE(NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text,''),'[^0-9]','','g'),'')::int,EXTRACT(DAY FROM r.data_vencimento)::int) IS NOT NULL
- AND LEAST(COALESCE(NULLIF(regexp_replace(COALESCE(r.dia_vencimento::text,''),'[^0-9]','','g'),'')::int,EXTRACT(DAY FROM r.data_vencimento)::int),EXTRACT(DAY FROM (date_trunc('month',$2::date)+INTERVAL '1 month - 1 day'))::int)=EXTRACT(DAY FROM $2::date)::int`,[date.slice(0,7),date]);
- const values=result.rows.map(resolverEstimativa),cents=values.reduce((sum,value)=>sum+(value==null?0:Math.round(value*100)),0),unknown=values.filter(v=>v==null).length,amount=cents/100;
- return {menu:'financeiro',capability:'vencimentos-hoje',key:'vencimentos-hoje',count:values.length,amount,unknown,label:`Contas a vencer hoje: ${values.length} conta(s) · Valor previsto ${amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}${unknown?' · '+unknown+' sem valor informado':''}`,url:'/rotina-despesas?'+new URLSearchParams({mes_ano:date.slice(0,7),vencimento_inicio:date,vencimento_fim:date,ativo:'true',pendentes:'1'})};
+ AND ${effectiveDay}<=EXTRACT(DAY FROM $2::date)::int`,[date.slice(0,7),date]);
+ const summarize=rows=>{const values=rows.map(resolverEstimativa);return {count:values.length,amount:values.reduce((sum,v)=>sum+(v==null?0:Math.round(v*100)),0)/100,unknown:values.filter(v=>v==null).length};};
+ const current=summarize(result.rows.filter(r=>r.atrasada!==true)),overdue=summarize(result.rows.filter(r=>r.atrasada===true));
+ const params={mes_ano:date.slice(0,7),ativo:'true',pendentes:'1'},url='/rotina-despesas?'+new URLSearchParams({...params,vencimento_inicio:date,vencimento_fim:date});
+ const yesterday=new Date(date+'T12:00:00Z');yesterday.setUTCDate(yesterday.getUTCDate()-1);
+ overdue.url='/rotina-despesas?'+new URLSearchParams({...params,vencimento_inicio:date.slice(0,7)+'-01',vencimento_fim:yesterday.toISOString().slice(0,10)});
+ return {menu:'financeiro',capability:'vencimentos-hoje',key:'vencimentos-hoje',...current,overdue,month:date.slice(0,7),label:`Contas a vencer hoje: ${current.count} conta(s) · Valor previsto ${current.amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}${current.unknown?' · '+current.unknown+' sem valor informado':''}${overdue.count?' · Em atraso no mês: '+overdue.count+' conta(s)':''}`,url};
 }
 module.exports={START,closedMonths,closingRecords,closing,dueToday};

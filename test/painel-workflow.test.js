@@ -14,3 +14,8 @@ test('permissões novas negam consultas e permitem gestores autorizados sem conc
  const denied={perfil:'USUARIO',functionAccess:{arquivo:{view:true},downloads:{view:true,edit:true}}};assert.deepEqual(await automatic.alerts(pool,denied,[],null,workflow),[]);assert.equal(calls,0);
  const allowed={...denied,functionAccess:{...denied.functionAccess,'fechamento-despesas':{view:true}}};assert.deepEqual(await automatic.alerts(pool,allowed,[],null,workflow),[{key:'fechamento'}]);assert.equal(calls,1);
 });
+test('separa os totais de hoje dos atrasados sem misturar estimativas',async()=>{
+ const row=await w.dueToday({query:async()=>({rows:[{valor_estimado:'100.10',atrasada:false},{valor_estimado_mes:'12.30',valor_estimado_editado:true,atrasada:true},{valor_historico:'5.50',atrasada:true},{atrasada:true}]})},'2026-10-27');
+ assert.equal(row.count,1);assert.equal(row.amount,100.10);assert.equal(row.overdue.count,3);assert.equal(row.overdue.amount,17.80);assert.equal(row.overdue.unknown,1);
+ assert.match(row.overdue.url,/vencimento_inicio=2026-10-01/);assert.match(row.overdue.url,/vencimento_fim=2026-10-26/);assert.match(row.url,/vencimento_inicio=2026-10-27/);
+});
