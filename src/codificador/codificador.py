@@ -259,6 +259,12 @@ def detectar_fornecedor(texto: str, nome_arquivo: str = "") -> str:
         return "penkal"
     if "adib editora" in base or "inteligencia biblica" in base:
         return "adib"
+    # Alguns orçamentos CPP têm a razão social apenas no logotipo (imagem).
+    # Reconheça o conjunto de campos deste modelo, sem depender do nome do upload.
+    assinatura_cpp = ("descricao produto", "qtde", "vl. unit", "vl. total",
+                      "vl. pedido c/ desconto", "nr pedido de compra do cliente")
+    if "orcamento" in base and all(normalizar_texto(campo) in base for campo in assinatura_cpp):
+        return "cpp"
     if "sbb" in nome:
         return "sbb"
     if "bv books" in nome or "bkj1611" in nome:
@@ -291,6 +297,7 @@ def extrair_paginas(pdf_path: Path):
                     "width": page.width,
                     "height": page.height,
                     "rotation": page.rotation,
+                    "chars": page.chars,
                     "words": page.extract_words(
                         x_tolerance=1.2,
                         y_tolerance=3,
@@ -749,7 +756,9 @@ def extrair_decimal_de_texto(valor: str) -> Decimal | None:
 
 def extrair_cpp_orcamento_por_coordenadas(paginas, indices) -> list[ItemPdf]:
     itens: list[ItemPdf] = []
+    vias_vistas = set()
     for pagina in paginas:
+        inicio_pagina = len(itens)
         words = pagina["words"]
         codigos = sorted(
             [
@@ -769,21 +778,24 @@ def extrair_cpp_orcamento_por_coordenadas(paginas, indices) -> list[ItemPdf]:
             produto = buscar_produto(code_word["text"], bloco, indices)
             same_line = [w for w in words if abs(w["top"] - code_word["top"]) <= 2.5]
 
-            quantidade = None
-            for word in sorted(same_line, key=lambda item: item["x0"]):
-                if 455 <= word["x0"] <= 505:
-                    if re.fullmatch(r"\d+", word["text"]):
-                        quantidade = decimal_br(word["text"])
-                        break
-                    digitos = re.sub(r"\D+", "", word["text"])
-                    if "," not in word["text"] and len(digitos) == 1:
-                        quantidade = decimal_br(digitos)
-                        break
+            # Leia cada coluna pela posição dos caracteres: descrições extensas
+            # podem se juntar à quantidade no extract_words (ex.: PRETA8).
+            def coluna(inicio, fim):
+                chars = pagina.get("chars", [])
+                if chars:
+                    centro = (code_word["top"] + code_word["bottom"]) / 2
+                    return "".join(c["text"] for c in sorted(chars, key=lambda c: c["x0"])
+                                   if inicio <= (c["x0"] + c["x1"]) / 2 < fim
+                                   and abs((c["top"] + c["bottom"]) / 2 - centro) <= 3)
+                return " ".join(w["text"] for w in sorted(same_line, key=lambda w: w["x0"])
+                                if inicio <= w["x0"] < fim)
 
-            total_word = next((w for w in same_line if 545 <= w["x0"] <= 585 and "," in w["text"]), None)
-            total = extrair_decimal_de_texto(total_word["text"]) if total_word else None
-            unitario = None
-            if quantidade and total and quantidade != 0:
+            texto_qtd = limpar(coluna(465, 500))
+            match_qtd = re.search(r"(\d+(?:,\d+)?)$", texto_qtd)
+            quantidade = decimal_br(match_qtd.group(1)) if match_qtd else None
+            unitario = extrair_decimal_de_texto(coluna(500, 540))
+            total = extrair_decimal_de_texto(coluna(540, 600))
+            if unitario is None and quantidade and total is not None:
                 unitario = (total / quantidade).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             itens.append(
                 ItemPdf(
@@ -799,6 +811,18 @@ def extrair_cpp_orcamento_por_coordenadas(paginas, indices) -> list[ItemPdf]:
                     "excel",
                 )
             )
+        # Duas impressões da mesma via não representam duas compras.
+        texto_pagina = normalizar_texto(pagina.get("text", ""))
+        pedido = re.search(r"orcamento no (\d+)", texto_pagina)
+        numero_pagina = re.search(r"pagina (\d+) de (\d+)", texto_pagina)
+        if pedido and numero_pagina and len(itens) > inicio_pagina:
+            assinatura = (pedido.group(1), numero_pagina.groups(),
+                          tuple((i.codigo, i.quantidade, i.valor_unitario, i.valor_total)
+                                for i in itens[inicio_pagina:]))
+            if assinatura in vias_vistas:
+                del itens[inicio_pagina:]
+            else:
+                vias_vistas.add(assinatura)
     return itens
 
 
@@ -864,6 +888,9 @@ def criar_excel_orcamento(output_xlsx: Path, itens: list[ItemPdf], formulas: boo
     widths = [22, 18, 20, 18, 18]
     for idx, width in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(idx)].width = width
+    for row in ws.iter_rows(min_row=2, max_row=total_row - 1, min_col=1, max_col=2):
+        for cell in row:
+            cell.number_format = "@"
     for row in ws.iter_rows(min_row=2, min_col=3, max_col=5):
         for cell in row:
             cell.number_format = '#,##0.00'

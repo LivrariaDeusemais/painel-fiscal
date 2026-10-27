@@ -118,5 +118,44 @@ class OrcamentoPenkalTest(unittest.TestCase):
                 wb.close()
 
 
+class OrcamentoCppTest(unittest.TestCase):
+    def test_reconhece_modelo_com_logo_em_imagem_e_upload_numerico(self):
+        text = "ORÇAMENTO CODIGO DESCRIÇÃO PRODUTO QTDE Vl. Unit Vl. Total Vl. Pedido c/ desconto Nr Pedido de Compra do Cliente"
+        self.assertEqual(detectar_fornecedor(text, "1793121771708.pdf"), "cpp")
+        self.assertEqual(detectar_fornecedor("ORÇAMENTO CODIGO DESCRIÇÃO QTDE", "upload.pdf"), "auto")
+
+    def pagina(self, number=1, order="1006393", page_label="1 de 1"):
+        def word(text,x,top=254,width=20):
+            return {"text":text,"x0":x,"x1":x+width,"top":top,"bottom":top+8,"height":8}
+        words=[word("7908084623029",30.72,width=58),word("PRETA8",454),word("45,15",510),word("361,20",555)]
+        chars=[word("E",465),word("T",470),word("A",475)]
+        chars=[{**c,"x1":c["x0"]+5} for c in chars]
+        chars += [{**word("8",479),"x1":483}]
+        for value,x in [("45,15",510),("361,20",555)]:
+            chars += [{**word(ch,x+n*4),"x1":x+n*4+4} for n,ch in enumerate(value)]
+        return {"page":number,"height":780,"width":609,"words":words,"chars":chars,
+                "text":f"Orçamento Nº {order} Página {page_label}"}
+
+    def test_extrai_colunas_e_anota_na_margem_sem_sobrepor_ean(self):
+        from codificador import extrair_cpp_orcamento_por_coordenadas
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        indices=construir_indices([Produto("CPP","","7908084623029","B1539","","")])
+        pagina=self.pagina()
+        item=extrair_cpp_orcamento_por_coordenadas([pagina],indices)[0]
+        self.assertEqual((item.quantidade,item.valor_unitario,item.valor_total),(Decimal(8),Decimal('45.15'),Decimal('361.20')))
+        anotacoes,_=localizar_anotacoes([pagina],indices,'cpp','orcamento')
+        self.assertGreaterEqual(anotacoes[0].x,2)
+        self.assertLess(anotacoes[0].x+stringWidth('B1539','Helvetica',6.2),30.72)
+        self.assertEqual(anotacoes[0].posicao,'antes_codigo')
+        self.assertAlmostEqual(780-anotacoes[0].y,260.2)
+
+    def test_excel_nao_duplica_vias_mas_preserva_pedidos_e_paginas_distintas(self):
+        from codificador import extrair_cpp_orcamento_por_coordenadas
+        indices=construir_indices([])
+        self.assertEqual(len(extrair_cpp_orcamento_por_coordenadas([self.pagina(),self.pagina(2)],indices)),1)
+        self.assertEqual(len(extrair_cpp_orcamento_por_coordenadas([self.pagina(),self.pagina(2,order='1006394')],indices)),2)
+        self.assertEqual(len(extrair_cpp_orcamento_por_coordenadas([self.pagina(page_label='1 de 2'),self.pagina(2,page_label='2 de 2')],indices)),2)
+
+
 if __name__ == "__main__":
     unittest.main()
