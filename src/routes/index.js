@@ -24844,9 +24844,9 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {
 body.dm-global-page .rotina-filtros-compactos .filter-group select {width:100% !important; min-width:0 !important;}
 body.dm-global-page .rotina-filtros-compactos form.month-reference-form {
   display:grid !important; grid-template-columns:minmax(0,1fr) !important; align-items:end !important;
-  gap:8px !important; min-width:0 !important; width:100% !important;
+  gap:8px !important; min-width:0 !important; width:100% !important; min-height:0 !important; align-self:end !important;
 }
-body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important;}
+body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important; height:30px !important; margin:0 !important; padding:0 !important;}
 body.dm-global-page .rotina-filtros-compactos .month-current-display {min-width:0 !important; flex:1; display:flex; align-items:center; justify-content:center;}
 body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px !important; min-width:24px !important; padding:0 !important; box-shadow:none !important;}
 @media(max-width:1050px) {
