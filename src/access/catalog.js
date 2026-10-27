@@ -26,6 +26,7 @@ const catalog=[
  ['admin','Administração','backup','Backup',['/backup'],true,'admin'],
  ['painel','Painel','alertas','Bloco: alertas automáticos',[],false],
  ['financeiro','Financeiro','vencimentos-hoje','Bloco: contas a vencer hoje',[],false],
+ ['contabil','Contábil','atualizar-faturamento','Bloco: atualizar faturamento',['/painel/faturamento'],true,'sensitive'],
  ['contabil','Contábil','fechamento-despesas','Bloco: fechamento de despesas',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
 ].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));

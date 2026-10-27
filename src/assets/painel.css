@@ -45,3 +45,7 @@ html body.layout-executivo.layout-executivo.layout-executivo .pn-dashboard-grid 
 .pn-title:has([data-pn-auto-filter]) .pn-actions>.pn-button,.pn-title [data-pn-auto-filter] input,.pn-title [data-pn-auto-filter] select{height:40px;min-height:40px;box-sizing:border-box}
 @media(max-width:1000px){.pn-title .pn-filter[data-pn-auto-filter]{padding-right:24px}}
 @media(max-width:650px){.pn-title .pn-filter[data-pn-auto-filter]{padding-right:0;flex-basis:100%}}
+
+.pn-revenue-done{display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;color:#b42318;font:12px Arial,sans-serif}.pn-revenue-done input{width:15px!important;height:15px!important;accent-color:#075438}.pn-revenue-table th,.pn-revenue-table td{padding:8px 4px!important;font-size:11px!important}.pn-revenue-table a{white-space:normal!important}
+
+.pn-indicator h4>a{color:inherit!important;text-decoration:none}.pn-indicator h4>a:hover{text-decoration:underline}

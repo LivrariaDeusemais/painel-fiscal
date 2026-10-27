@@ -24844,11 +24844,21 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {
 body.dm-global-page .rotina-filtros-compactos .filter-group select {width:100% !important; min-width:0 !important;}
 body.dm-global-page .rotina-filtros-compactos form.month-reference-form {
   display:grid !important; grid-template-columns:minmax(0,1fr) !important; align-items:end !important;
-  gap:8px !important; min-width:0 !important; width:100% !important; min-height:0 !important; align-self:end !important;
+  gap:8px !important; min-width:0 !important; width:100% !important; min-height:0 !important; height:50px !important; align-self:end !important;
 }
-body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important; height:30px !important; margin:0 !important; padding:0 !important;}
+body.dm-global-page .rotina-filtros-compactos .month-compact-group{height:50px !important;gap:0 !important;}
+body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important; height:30px !important; margin:0 !important; padding:0 !important; align-items:center !important;}
 body.dm-global-page .rotina-filtros-compactos .month-current-display {min-width:0 !important; flex:1; display:flex; align-items:center; justify-content:center;}
 body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px !important; min-width:24px !important; padding:0 !important; box-shadow:none !important;}
+/* Competência e filtros usam a mesma grade: rótulo 16 + intervalo 4 + controle 32. */
+body.dm-global-page .rotina-filtros-compactos form.month-reference-form,
+body.dm-global-page .rotina-filtros-compactos .filter-group {height:52px !important; min-height:0 !important; gap:0 !important;}
+body.dm-global-page .rotina-filtros-compactos .filter-group label {height:16px !important; line-height:16px !important; margin:0 0 4px !important; padding:0 !important;}
+body.dm-global-page .rotina-filtros-compactos .filter-group select,
+body.dm-global-page .rotina-filtros-compactos .month-compact-row,
+body.dm-global-page .rotina-filtros-compactos .month-current-display,
+body.dm-global-page .rotina-filtros-compactos button.btn-month-open,
+body.dm-global-page .rotina-filtros-compactos form.filters .btn {height:32px !important; min-height:32px !important; max-height:32px !important; margin:0 !important;}
 @media(max-width:1050px) {
   body.dm-global-page .rotina-filtros-compactos.top-bar {
     grid-template-columns:1fr !important; grid-template-areas:"acoes" "colunas" "filtros" "mes" !important;

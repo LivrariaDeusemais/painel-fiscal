@@ -1,0 +1,13 @@
+// Origem: mês civil encerrado (São Paulo), desde Set/26 para o teste solicitado.
+// Responsável: Genivaldo, vinculado uma única vez por ID. Resolução: marcação manual por competência.
+const {permitted}=require('../access/catalog');
+const first='2026-09';
+function months(now=new Date()){const last=require('../fechamento/service').lastClosedMonth(now),out=[];for(let month=first;month<=last;){out.push(month);const [y,m]=month.split('-').map(Number);month=m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`;}return out;}
+async function ensure(pool){await pool.query(`CREATE TABLE IF NOT EXISTS painel_faturamento_responsavel(chave TEXT PRIMARY KEY,usuario TEXT NOT NULL);`);await pool.query(`CREATE TABLE IF NOT EXISTS painel_faturamento_feito(usuario TEXT NOT NULL,competencia TEXT NOT NULL,feito_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(usuario,competencia));`);
+ await pool.query(`INSERT INTO painel_faturamento_responsavel(chave,usuario) SELECT 'principal',MIN(id)::text FROM usuarios WHERE LOWER(TRIM(nome))='genivaldo' AND UPPER(perfil)='ADMIN' HAVING COUNT(*)=1 ON CONFLICT(chave) DO NOTHING`);
+}
+async function owner(pool){return (await pool.query("SELECT usuario FROM painel_faturamento_responsavel WHERE chave='principal'")).rows[0]?.usuario;}
+function allowed(user){return permitted(user,'atualizar-faturamento')===true&&permitted(user,'fechamento')===true;}
+async function alerts(pool,user,now){if(!allowed(user))return [];await ensure(pool);if(String(await owner(pool))!==String(user.id))return [];const done=new Set((await pool.query('SELECT competencia FROM painel_faturamento_feito WHERE usuario=$1',[String(user.id)])).rows.map(r=>r.competencia));return months(now).filter(m=>!done.has(m)).map(month=>({menu:'contabil',capability:'atualizar-faturamento',key:'faturamento:'+month,month,label:'Atualizar Faturamento',url:'/contabil/fechamento?mes='+month,canComplete:permitted(user,'atualizar-faturamento',true)===true}));}
+async function complete(pool,user,month,now){if(!allowed(user)||permitted(user,'atualizar-faturamento',true)!==true||permitted(user,'fechamento',true)!==true)throw Object.assign(Error('Sem permissão para concluir este alerta.'),{status:403});if(!months(now).includes(month))throw Object.assign(Error('Competência ainda não encerrada ou inválida.'),{status:400});await ensure(pool);if(String(await owner(pool))!==String(user.id))throw Object.assign(Error('Somente o responsável pode concluir este alerta.'),{status:403});await pool.query('INSERT INTO painel_faturamento_feito(usuario,competencia) VALUES($1,$2) ON CONFLICT DO NOTHING',[String(user.id),month]);}
+module.exports={months,alerts,complete};

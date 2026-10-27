@@ -1,0 +1,17 @@
+(()=>{
+ const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+ document.querySelectorAll('input[type="month"]:not([hidden]):not([data-month-native])').forEach(input=>{
+  if(input.dataset.plMonth)return;input.dataset.plMonth='true';
+  const trigger=document.createElement('button');trigger.type='button';trigger.className='pl-month-trigger';trigger.setAttribute('aria-label','Escolher competência');
+  const label=()=>{trigger.textContent=/^\d{4}-\d{2}$/.test(input.value)?names[Number(input.value.slice(5))-1]+'-'+input.value.slice(2,4)+'　▾':'Escolher mês　▾';trigger.disabled=input.disabled;};
+  input.hidden=true;input.style.setProperty('display','none','important');input.after(trigger);input.addEventListener('change',label);label();
+  trigger.addEventListener('click',()=>{
+   let chosen=input.value||new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}).slice(0,7),year=Number(chosen.slice(0,4));
+   const dialog=document.createElement('dialog');dialog.className='pl-month-dialog';dialog.setAttribute('aria-label','Escolher competência');
+   dialog.innerHTML='<h2>Escolher competência</h2><p>Selecione o mês que deseja consultar.</p><div class="month-picker-head"><button type="button" class="month-nav-btn" data-prev aria-label="Ano anterior">‹</button><strong class="pl-month-year"></strong><button type="button" class="month-nav-btn" data-next aria-label="Próximo ano">›</button></div><div class="month-grid-picker"></div><p class="month-selected-preview"></p><div class="month-picker-footer"><div class="month-picker-footer-actions"><button type="button" class="btn" data-cancel>Cancelar</button><button type="button" class="btn btn-primary" data-apply>Aplicar mês</button></div></div>';
+   const valid=value=>(!input.min||value>=input.min)&&(!input.max||value<=input.max);
+   function render(){dialog.querySelector('.pl-month-year').textContent=year;dialog.querySelector('.month-selected-preview').textContent='Selecionado: '+names[Number(chosen.slice(5))-1]+'/'+chosen.slice(0,4);dialog.querySelector('[data-apply]').disabled=!valid(chosen);dialog.querySelector('[data-prev]').disabled=year<=Number((input.min||'1900').slice(0,4));dialog.querySelector('[data-next]').disabled=year>=Number((input.max||'2100').slice(0,4));dialog.querySelector('.month-grid-picker').replaceChildren(...names.map((name,i)=>{const value=year+'-'+String(i+1).padStart(2,'0'),button=document.createElement('button');button.type='button';button.className='month-cell'+(value===chosen?' active':'');button.textContent=name;button.disabled=!valid(value);button.setAttribute('aria-pressed',String(value===chosen));button.onclick=()=>{chosen=value;render()};return button}));}
+   dialog.querySelector('[data-prev]').onclick=()=>{year--;render()};dialog.querySelector('[data-next]').onclick=()=>{year++;render()};dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();dialog.querySelector('[data-apply]').onclick=()=>{if(!valid(chosen))return;input.value=chosen;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));label();dialog.close();};dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});dialog.addEventListener('close',()=>{dialog.remove();trigger.focus()},{once:true});document.body.append(dialog);render();dialog.showModal();
+  });
+ });
+})();

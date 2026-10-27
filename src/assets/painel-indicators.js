@@ -1,7 +1,7 @@
 (function(scope){
  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
  const link=(url,text)=>`<a href="${esc(url)}">${esc(text)}</a>`;
- const table=(title,headers,rows,{widths=[],className=''}={})=>`<section class="pn-indicator"><h4>${esc(title)}</h4><div class="pn-indicator-scroll"><table class="pn-indicator-table ${className}"><thead><tr>${headers.map((h,i)=>`<th scope="col" style="width:${widths[i]||100/headers.length}%!important">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+ const table=(title,headers,rows,{widths=[],className='',titleUrl=''}={})=>`<section class="pn-indicator"><h4>${titleUrl?link(titleUrl,title):esc(title)}</h4><div class="pn-indicator-scroll"><table class="pn-indicator-table ${className}"><thead><tr>${headers.map((h,i)=>`<th scope="col" style="width:${widths[i]||100/headers.length}%!important">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
  function render(entries,{menu,closing=false}={}){
   let html='';const used=new Set();
   if(menu==='financeiro'){
@@ -13,6 +13,11 @@
     html+=Number.isFinite(due.amount)?table('Contas a vencer',['Qtde Contas','Valor estimado','Status'],row(due,'No prazo')+(due.overdue?.count?row(due.overdue,'Atraso',true):''),{widths:[28,44,28],className:'pn-due-table'})+`<p class="pn-note pn-indicator-context">Hoje e atrasos do mês atual.</p>`+(unknown?`<p class="pn-note">${esc(unknown)} conta(s) sem valor informado.</p>`:''):`<section class="pn-indicator"><h4>Contas a vencer</h4><p>${link(due.url,due.label)}</p></section>`;
    }
    const archive=entries.find(e=>e.key==='arquivo');if(archive){used.add(archive);html+=table('Arquivos para lançar',['Qtde Arquivos'],`<tr><td>${link(archive.url,archive.count)}</td></tr>`);}
+  }
+  if(menu==='contabil'){
+   const revenue=entries.filter(e=>/^faturamento:\d{4}-\d{2}$/.test(e.key));revenue.forEach(e=>used.add(e));
+   const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+   if(revenue.length)html+=table('Atualizar Faturamento',['Competência','Como fazer?','Marcar como feito'],revenue.map(e=>`<tr class="pn-indicator-overdue"><td>${esc(names[Number(e.month.slice(5))-1]+'-'+e.month.slice(2,4))}</td><td>${link(e.url,'Importar DRE Bling')}</td><td>${e.canComplete?`<label class="pn-revenue-done"><input type="checkbox" data-pn-revenue-done="${esc(e.month)}"> Feito</label>`:'Aguardando responsável'}</td></tr>`).join(''),{widths:[26,40,34],className:'pn-revenue-table',titleUrl:'/contabil/fechamento'});
   }
   if(menu==='contabil'&&closing){
    const rows=entries.filter(e=>e.key.startsWith('fechamento:')&&e.month);rows.forEach(e=>used.add(e));
