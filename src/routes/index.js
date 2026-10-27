@@ -24826,7 +24826,7 @@ body.dm-global-page input.rotina-estimativa.estimativa-editada {color:#2563eb !i
 
 /* Faixa de filtros da rotina: compacta e em uma linha no desktop. */
 body.dm-global-page .rotina-filtros-compactos.top-bar {
-  grid-template-columns:minmax(0,1fr) 240px !important; column-gap:14px !important;
+  grid-template-columns:minmax(0,1fr) 160px !important; column-gap:14px !important; align-items:end !important;
 }
 body.dm-global-page .rotina-filtros-compactos form.filters {
   grid-template-columns:minmax(140px,1.5fr) minmax(100px,1fr) minmax(110px,1fr) auto auto !important;
@@ -24843,7 +24843,7 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {
 }
 body.dm-global-page .rotina-filtros-compactos .filter-group select {width:100% !important; min-width:0 !important;}
 body.dm-global-page .rotina-filtros-compactos form.month-reference-form {
-  display:grid !important; grid-template-columns:120px minmax(0,1fr) !important;
+  display:grid !important; grid-template-columns:minmax(0,1fr) !important; align-items:end !important;
   gap:8px !important; min-width:0 !important; width:100% !important;
 }
 body.dm-global-page .rotina-filtros-compactos .month-compact-row {display:flex !important; gap:3px !important;}
@@ -24871,9 +24871,6 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
           { key: 'novo-lancamento-avulso', href: '/novo', label: 'Novo Lançamento +' }
         ],
         extraActions: `
-          <form method="POST" action="/rotina-despesas/reset-status" class="dm-menu-extra-form">
-            <button type="submit" class="dm-menu-btn" onclick="return confirm('Tem certeza que deseja mudar todos os STATUS para pendente?');">🔄 Zerar Status</button>
-          </form>
           <button type="button" class="dm-menu-btn" onclick="togglePainelColunasRotina()">Colunas</button>
         `
       })}
@@ -24939,13 +24936,7 @@ body.dm-global-page .rotina-filtros-compactos button.btn-month-open {width:24px 
                 </div>
               </div>
 
-              <div class="filter-group">
-                <label for="status_mes">Status do mês</label>
-                <select id="status_mes" name="status_mes" class="status-mes-select status-${statusMesEdicao || 'PENDENTE'}" onchange="document.getElementById('mes_acao').value='status'; this.form.submit()">
-                  <option value="PENDENTE" ${statusMesEdicao === 'PENDENTE' ? 'selected' : ''}>Pendente</option>
-                  <option value="FEITO" ${statusMesEdicao === 'FEITO' ? 'selected' : ''}>Feito</option>
-                </select>
-              </div>
+
             </form>
 
             <div id="monthPickerOverlay" class="month-picker-overlay" onclick="fecharSeletorMes(event)">

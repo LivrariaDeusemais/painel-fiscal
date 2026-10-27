@@ -117,3 +117,7 @@ html body.layout-executivo #exec-header .exec-nav .exec-favorites-dropdown a:hov
 .exec-panel-favorites .exec-favorites-links>span{font-size:12px;color:#52675c}
 
 .exec-panel-favorites>strong{align-self:stretch;border-right:1px solid #dce7e0;padding-right:16px}
+
+/* Impede que estilos globais das telas antigas pintem os atalhos do menu. */
+html body.layout-executivo.layout-executivo.layout-executivo #exec-header .exec-nav>.exec-favorites>button{background:transparent!important;background-image:none!important;color:#fff!important;border:0!important;box-shadow:none!important;transform:none!important;width:auto!important;min-width:0!important;height:36px!important;min-height:36px!important;padding:8px!important;font:400 13px Arial,sans-serif!important;border-radius:6px!important}
+html body.layout-executivo #exec-header .exec-favorites-star{color:#f59e0b!important}
