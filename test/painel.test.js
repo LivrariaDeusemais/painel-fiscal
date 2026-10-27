@@ -34,7 +34,7 @@ test('avisos usam Data Download, liberação, existência de arquivos e tipos oc
 });
 test('favoritos são restritos às telas permitidas ao perfil',()=>{
  assert.ok(pages('ADMIN').some(p=>p.url==='/usuarios'));assert.ok(!pages('USUARIO').some(p=>p.url==='/usuarios'));assert.ok(!pages('CONTADOR').some(p=>p.url==='/rotina-despesas'));assert.ok(pages('CONTADOR').some(p=>p.url==='/painel/agenda'));
- const req={originalUrl:'/visao-geral',session:{usuario:{id:1,nome:'Gestor',perfil:'ADMIN'}}};const header=ui.header(req);assert.match(header,/★ FAVORITOS/);assert.match(header,/aria-label="Definir favoritos"/);assert.ok(req.session.aparenciaToken);assert.equal(ui.areaFor('/painel/agenda'),'inicio');
+ const req={originalUrl:'/visao-geral',session:{usuario:{id:1,nome:'Gestor',perfil:'ADMIN'}}};const header=ui.header(req);assert.match(header,/exec-favorites-star/);assert.ok(header.indexOf('class="exec-favorites"')<header.indexOf('class="exec-subnav"'));assert.doesNotMatch(header,/★ FAVORITOS/);assert.match(header,/aria-label="Definir favoritos"/);assert.ok(req.session.aparenciaToken);assert.equal(ui.areaFor('/painel/agenda'),'inicio');
 });
 test('área de tarefas restringe as tarefas de outra pessoa e oferece edição somente ao criador',()=>{
  const views=require('../src/painel/views'),people=[{id:'1',nome:'Gestor',perfil:'ADMIN'},{id:'2',nome:'Ana',perfil:'USUARIO'},{id:'3',nome:'Beto',perfil:'USUARIO'}];
@@ -82,4 +82,18 @@ test('filtro de situação respeita o período e lista oferece lápis exclusivo 
  let html=views.agenda({...m,status:'aberta'});assert.match(html,/>Pendente hoje<\/a>/);assert.doesNotMatch(html,/>Concluída hoje<\/a>/);assert.match(html,/>Pendente anterior<\/a>/);assert.match(html,/aria-label="Editar tarefa Pendente hoje"/);assert.match(html,/data-pn-unread="2"/);assert.match(html,/Mensagem de Filipe/);
  html=views.agenda({...m,status:'concluida'});assert.match(html,/>Concluída hoje<\/a>/);assert.doesNotMatch(html,/>Concluída fora<\/a>|>Pendente hoje<\/a>/);
  html=views.agenda({...m,user:people[1],status:'aberta'});assert.doesNotMatch(html,/aria-label="Editar tarefa/);
+});
+test('contadores incluem atrasadas e conclusões do período, sem incluir equipe alheia ou canceladas',()=>{
+ const views=require('../src/painel/views'),user={id:'1',nome:'Eu',perfil:'ADMIN',team:['1','2']},people=[user,{id:'2',nome:'Equipe',perfil:'USUARIO'}];
+ const task=(responsavel,status,prazo,concluido_dia)=>({id:Math.random().toString(),responsavel,criador:'1',titulo:'Teste',status,prazo,concluido_dia,repeticao:'unica'});
+ const m={user,people,period:s.period('diario','2026-10-27'),pages:[],files:[],notices:[],tasks:[task('1','aberta','2026-10-01'),task('1','concluida','2026-10-01','2026-10-27'),task('1','cancelada','2026-10-27'),task('1','concluida','2026-10-01','2026-10-26'),task('2','concluida','2026-10-27','2026-10-27'),task('3','aberta','2026-10-27')]};
+ const html=views.panel(m);assert.match(html,/data-pn-task-total="mine">2</);assert.match(html,/data-pn-task-total="team">1</);
+ const agenda=views.agenda({...m,automaticByUser:{'1':[{key:'arquivo',menu:'financeiro',count:4,url:'/arquivo',label:'Arquivos'}]}});
+ assert.match(agenda,/class="pn-work-columns"/);assert.match(agenda,/class="pn-work-alerts"/);assert.match(agenda,/Qtde Arquivos/);assert.match(agenda,/data-indicator-layout="table"/);
+});
+test('consulta de compras permite mês corrente sem ampliar competência de fechamento financeiro',()=>{
+ const views=require('../src/fechamento/views'),service=require('../src/fechamento/service'),current=new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}).slice(0,7);
+ const model={area:'compras',month:current,year:Number(current.slice(0,4)),mode:'mensal',selectedMonths:[current],action:'/compras',closed:{count:0,data:service.blank()},live:{},categories:[],suppliers:[]};
+ assert.match(views.dashboard(model),new RegExp('name="mes" value="'+current+'" max="'+current+'"'));
+ assert.match(views.dashboard({...model,area:'financeiro',canSeeClosing:false}),new RegExp('name="mes" value="'+current+'" max="'+service.lastClosedMonth()+'"'));
 });

@@ -83,7 +83,7 @@ html body.layout-executivo .tpt-table .status-filter-menu form{left:auto;right:0
 #exec-header .exec-favorites-links>a:hover{background:#eaf5ee}
 #exec-header .exec-favorites-links>span{font-size:12px;color:#5c7266;padding:8px}
 #exec-header .exec-favorites-dropdown{display:none;position:absolute;right:0;top:100%;width:260px;background:#fff;border:1px solid #dce7df;border-radius:10px;padding:7px;box-shadow:0 15px 32px #18372b22;z-index:120}
-#exec-header .exec-favorites:not(.exec-favorites-home):hover .exec-favorites-dropdown,#exec-header .exec-favorites:not(.exec-favorites-home):focus-within .exec-favorites-dropdown,#exec-header .exec-favorites.is-open .exec-favorites-dropdown{display:block}
+#exec-header .exec-favorites.is-open .exec-favorites-dropdown{display:block}
 #exec-header .exec-favorites-dropdown .exec-favorites-links{display:grid;gap:0}
 #exec-header .exec-favorites-dropdown>button{width:100%;text-align:left;border-top:1px solid #dce7df;border-radius:0}
 #exec-header .exec-favorites-dialog{margin:auto;padding:22px;border:1px solid #dce7df;border-radius:12px;max-width:calc(100vw - 30px);width:540px;max-height:85vh;overflow:auto;background:#fff;color:#18372b}
@@ -96,3 +96,10 @@ html body.layout-executivo .tpt-table .status-filter-menu form{left:auto;right:0
 #exec-header .exec-favorites-dialog button[type=submit]{background:#075438;color:#fff;padding:10px 15px;margin-top:10px}
 #exec-header .exec-favorites-options{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
 @media(max-width:650px){#exec-header .exec-favorites-home{margin:0;flex-basis:100%}#exec-header .exec-favorites-options{grid-template-columns:1fr}}
+
+/* Atalhos globais ficam no menu principal, separados das telas da área. */
+#exec-header .exec-nav{overflow:visible;flex-wrap:wrap}
+#exec-header .exec-nav>.exec-favorites{margin-left:auto;padding:0 16px;gap:2px;align-self:center}
+#exec-header .exec-nav>.exec-favorites>button{color:#fff;white-space:nowrap}
+#exec-header .exec-favorites-star{color:#f59e0b;font-size:18px}
+#exec-header .exec-favorites-dropdown a{border:0;color:#075438}
