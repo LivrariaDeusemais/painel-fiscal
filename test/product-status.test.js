@@ -27,3 +27,10 @@ test('resumo conta todos os itens com a classificação da tabela e inclui statu
  const items=[...Array.from({length:205},()=>structuredClone(ok)),{...ok,row:{status_validacao:'Novo'}},{...ok,row:{status_validacao:'Novo custo'}},{...ok,row:{sem_vinculo:true}},{...ok,result:{status:'Revisar'}},{...ok,published:{details:{margin:0,netProfit:-1},benefit:{status:'identified'}}}];
  const rows=reviewSummary(items),counts=Object.fromEntries(rows.map(r=>[r.status,r.count]));assert.deepEqual(rows.map(r=>r.status),REVIEW_STATUSES);assert.equal(counts['Manter preço'],205);assert.equal(counts.Novo,1);assert.equal(counts['Novo custo'],1);assert.equal(counts['Sem Vínculo'],1);assert.equal(counts.Revisar,1);assert.equal(counts.Reajustar,1);assert.equal(counts.Analisar,0);assert.equal(counts.Abaixou,0);assert.equal(rows.reduce((s,r)=>s+r.count,0),items.length);
 });
+test('Novo do painel conta produtos da base mesmo sem vínculo e não multiplica por marketplace',async()=>{
+ const {dashboardSummary}=require('../src/tabela-precos/service');const calls=[],pool={async query(sql,args){calls.push({sql,args});return {rows:[{total:7}]};}};
+ const items=Array.from({length:35},()=>({row:{status_validacao:'Novo',sem_vinculo:true}}));
+ const summary=await dashboardSummary(pool,items),fresh=summary.find(r=>r.status==='Novo');
+ assert.equal(fresh.count,7);assert.equal(fresh.url,'/ferramentas-ia/tabela-precos/produtos?status=Novo');assert.equal(summary.find(r=>r.status==='Sem Vínculo').count,35);assert.match(calls[0].sql,/FROM tabela_preco_produtos WHERE status_validacao = \$1/);assert.deepEqual(calls[0].args,['Novo']);
+ const restricted=await dashboardSummary({query(){throw Error('Não deve consultar produtos sem acesso');}},items,{includeNewProducts:false});assert.equal(restricted.some(r=>r.status==='Novo'),false);
+});

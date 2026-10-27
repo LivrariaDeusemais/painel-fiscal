@@ -674,6 +674,16 @@ function marketplaceReviewStatus(item) {
 const REVIEW_STATUSES=['Sem Vínculo','Novo','Manter preço','Analisar','Novo custo','Reajustar','Abaixou','Revisar'];
 function reviewSummary(items){const counts=new Map(REVIEW_STATUSES.map(status=>[status,0]));for(const item of items){const status=marketplaceReviewStatus(item);counts.set(status,(counts.get(status)||0)+1);}return [...counts].map(([status,count])=>({status,count}));}
 
+// O painel mostra produtos novos da base; os demais indicadores continuam por anúncio/marketplace.
+async function dashboardSummary(pool,items,{includeNewProducts=true}={}) {
+  const summary=reviewSummary(items).filter(row=>includeNewProducts||row.status!=='Novo');
+  if(includeNewProducts){
+    const result=await pool.query("SELECT COUNT(*)::int AS total FROM tabela_preco_produtos WHERE status_validacao = $1",['Novo']);
+    const row=summary.find(row=>row.status==='Novo');row.count=Number(result.rows[0]?.total||0);row.url='/ferramentas-ia/tabela-precos/produtos?status=Novo';row.description='Produtos novos na base de dados';
+  }
+  return summary;
+}
+
 async function mercadoLivreRows(pool) {
   return marketplaceRows(pool, { marketplace: 'Mercado Livre' });
 }
@@ -794,7 +804,7 @@ async function deleteLink(pool, fields) {
 }
 
 module.exports = {
-  REVIEW_STATUSES, reviewSummary,
+  REVIEW_STATUSES, reviewSummary, dashboardSummary,
   deleteProducts,
   deleteLink,
   managedLinkRows,
