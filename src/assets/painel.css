@@ -36,3 +36,5 @@ html body.layout-executivo.layout-executivo.layout-executivo .pn-dashboard-grid 
 .pn-work-alerts>h3{margin:0 0 20px;color:#334155;font-size:17px}
 .pn-work-alerts .pn-indicator-table{font-size:12px}
 @media(max-width:1150px){.pn-work-columns{display:block;overflow:auto}.pn-work-columns>.pn-work-body{overflow:visible}.pn-work-alerts{max-width:none;min-width:0;overflow:visible;border-left:0;border-top:1px solid #dce7e1}}
+
+.pn-title:has(.pn-filter){flex-wrap:wrap}.pn-title .pn-actions{justify-content:flex-end}.pn-title .pn-filter{margin:0;padding:0}.pn-title .pn-filter input,.pn-title .pn-filter select{width:145px}@media(max-width:1000px){.pn-title .pn-actions{justify-content:flex-start}}

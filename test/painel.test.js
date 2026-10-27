@@ -97,3 +97,10 @@ test('consulta de compras permite mês corrente sem ampliar competência de fech
  assert.match(views.dashboard(model),new RegExp('name="mes" value="'+current+'" max="'+current+'"'));
  assert.match(views.dashboard({...model,area:'financeiro',canSeeClosing:false}),new RegExp('name="mes" value="'+current+'" max="'+service.lastClosedMonth()+'"'));
 });
+test('painel oferece barra própria de favoritos e mantém filtro junto ao título, agenda só usa menu global',()=>{
+ const views=require('../src/painel/views'),user={id:'1',nome:'Eu',perfil:'ADMIN',team:['1']},m={user,people:[user],period:s.period('diario'),tasks:[],pages:[],files:[],notices:[]};
+ const panel=views.panel(m),agenda=views.agenda(m);
+ assert.match(panel,/aria-label="Favoritos do painel"/);assert.match(panel,/data-favorites-edit aria-label="Editar favoritos do painel"/);
+ assert.ok(panel.indexOf('class="pn-filter"')<panel.indexOf('aria-label="Favoritos do painel"'));
+ assert.doesNotMatch(agenda,/aria-label="Favoritos do painel"/);
+});

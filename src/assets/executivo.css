@@ -103,3 +103,15 @@ html body.layout-executivo .tpt-table .status-filter-menu form{left:auto;right:0
 #exec-header .exec-nav>.exec-favorites>button{color:#fff;white-space:nowrap}
 #exec-header .exec-favorites-star{color:#f59e0b;font-size:18px}
 #exec-header .exec-favorites-dropdown a{border:0;color:#075438}
+
+/* O menu principal usa texto branco; dentro da janela os atalhos têm fundo branco. */
+html body.layout-executivo #exec-header .exec-nav .exec-favorites-dropdown a{color:#164d38!important;background:#fff!important;border:0;padding:10px 12px}
+html body.layout-executivo #exec-header .exec-nav .exec-favorites-dropdown a:hover{background:#eaf2ee!important}
+.exec-panel-favorites{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;padding:10px 16px;border:1px solid #dce7e0;border-radius:10px;background:#eaf2ee;color:#164d38;font:14px Arial,sans-serif}
+.exec-panel-favorites strong{display:inline-flex;align-items:center;gap:7px;color:#164d38;white-space:nowrap}
+.exec-panel-favorites .exec-favorites-star{color:#f59e0b;font-size:20px}
+.exec-panel-favorites .exec-favorites-links{display:flex;align-items:center;flex-wrap:wrap;gap:5px;flex:1}
+.exec-panel-favorites .exec-favorites-links a{color:#164d38!important;text-decoration:none;padding:8px 12px;border-radius:6px;font-weight:600}
+.exec-panel-favorites .exec-favorites-links a:hover{background:#dcebe3}
+.exec-panel-favorites button{background:transparent;border:0;color:#164d38;padding:8px;cursor:pointer}
+.exec-panel-favorites .exec-favorites-links>span{font-size:12px;color:#52675c}
