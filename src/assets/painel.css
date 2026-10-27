@@ -38,3 +38,10 @@ html body.layout-executivo.layout-executivo.layout-executivo .pn-dashboard-grid 
 @media(max-width:1150px){.pn-work-columns{display:block;overflow:auto}.pn-work-columns>.pn-work-body{overflow:visible}.pn-work-alerts{max-width:none;min-width:0;overflow:visible;border-left:0;border-top:1px solid #dce7e1}}
 
 .pn-title:has(.pn-filter){flex-wrap:wrap}.pn-title .pn-actions{justify-content:flex-end}.pn-title .pn-filter{margin:0;padding:0}.pn-title .pn-filter input,.pn-title .pn-filter select{width:145px}@media(max-width:1000px){.pn-title .pn-actions{justify-content:flex-start}}
+
+/* Filtros automáticos preservam o espaço do antigo botão Consultar. */
+.pn-title:has([data-pn-auto-filter]) .pn-actions{align-items:flex-end}
+.pn-title .pn-filter[data-pn-auto-filter]{padding-right:80px;align-items:flex-end}
+.pn-title:has([data-pn-auto-filter]) .pn-actions>.pn-button,.pn-title [data-pn-auto-filter] input,.pn-title [data-pn-auto-filter] select{height:40px;min-height:40px;box-sizing:border-box}
+@media(max-width:1000px){.pn-title .pn-filter[data-pn-auto-filter]{padding-right:24px}}
+@media(max-width:650px){.pn-title .pn-filter[data-pn-auto-filter]{padding-right:0;flex-basis:100%}}
