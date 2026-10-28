@@ -239,7 +239,8 @@ async function importProducts(pool, products) {
         peso_bruto=EXCLUDED.peso_bruto, preco_bling=EXCLUDED.preco_bling,
         ean=EXCLUDED.ean, importado_em=NOW()
     `, [JSON.stringify(products)]);
-    await client.query(`DELETE FROM tabela_preco_produtos WHERE NOT (sku = ANY($1::text[]))`, [products.map(item => item.sku)]);
+    // A planilha pode ser parcial: ausência de um SKU não significa exclusão.
+    // Remoções pertencem ao fluxo explícito de exclusão de produtos.
     await client.query('COMMIT');
     return {
       imported: products.length,

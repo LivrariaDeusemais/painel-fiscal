@@ -97,3 +97,11 @@ A execução 49 fornecida pelo usuário registrou apenas erro de preço/identifi
 na Amazon; não permite determinar a situação remota de L1397. Não foi possível
 reproduzir a consulta autenticada localmente por ausência da chave de tokens no
 ambiente local. Nenhum preço ou vínculo foi alterado manualmente em produção.
+
+## Importação parcial do cadastro por planilha
+
+A carga XLS/XLSX inclui produtos novos e atualiza os SKUs presentes no arquivo.
+Produtos ausentes da planilha são preservados integralmente; ausência não é
+critério de exclusão, mesmo em uma planilha vazia. A remoção manual continua no
+fluxo explícito de exclusão de produtos. A alteração não executa sincronização
+nem modifica o processo de integração Bling em andamento.
