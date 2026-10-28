@@ -63,3 +63,37 @@ Falhas ou modalidade desconhecida interrompem a exportação com aviso, sem gera
 arquivo parcial ou assumir Clássico. As cargas dos demais marketplaces continuam
 no CSV anterior. Não altera preços remotamente: o usuário importa o XLSX no Bling.
 A permissão de download da rota continua obrigatória e separada de gerenciar.
+
+### Desempenho da leitura de anúncios Mercado Livre
+
+A consulta de vínculos reutiliza registros completos e válidos da listagem atual
+(identificação do produto, anúncio e preço bruto), sem usar cache de preços antigo.
+Detalhes incompletos são buscados em grupos de até três consultas concorrentes;
+o cliente serializa o início de cada requisição com o intervalo existente de
+400 ms, inclusive nas tentativas seguintes. Repetições do mesmo ID Bling usam uma
+única consulta de detalhes na execução, mas permanecem na verificação de vínculos
+duplicados. A tela informa anúncios processados/total a cada grupo. Falha de um
+anúncio gera pendência individual e não descarta os anúncios válidos do canal.
+Validações de produto ativo, seleção de SKUs, duplicidade e propriedade dos
+vínculos na gravação continuam aplicadas. Não há escrita na API do Bling.
+A redução real do tempo depende da latência e da completude da listagem do Bling;
+não foi medida em produção durante uma sincronização do usuário.
+
+### Cobertura Mercado Livre e ausência de anúncio
+
+A consulta passou a incluir situações 1 (Publicado), 2 (Rascunho), 3 (Com
+problema) e 4 (Pausado). Em atualização de SKUs selecionados, cada listagem usa
+`idProduto` do Bling: não percorre os demais anúncios da loja. A listagem filtrada
+permite relacionar o produto e o preço publicado numérico sem consultar detalhes
+quando todos os campos necessários estão válidos. Havendo produto explícito
+divergente na resposta, o vínculo não é gravado. A API é somente consultada.
+Todo canal consultado aparece no diagnóstico, inclusive quando retornar zero.
+Para Mercado Livre, cada produto do escopo sem anúncio retornado gera pendência
+com SKU, ID Bling e orientação para revisar a loja/associação. Não significa que
+o Mercado Livre recusou o anúncio: pode haver ausência de associação no Bling.
+Referência oficial: https://developer.bling.com.br/referencia (GET /anuncios,
+filtros idProduto e situacao; preço numérico na listagem e objeto no detalhe).
+A execução 49 fornecida pelo usuário registrou apenas erro de preço/identificação
+na Amazon; não permite determinar a situação remota de L1397. Não foi possível
+reproduzir a consulta autenticada localmente por ausência da chave de tokens no
+ambiente local. Nenhum preço ou vínculo foi alterado manualmente em produção.

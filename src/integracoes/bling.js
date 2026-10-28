@@ -89,7 +89,7 @@ async function accessToken(pool) {
   finally { client.release(); }
 }
 class BlingClient {
-  constructor(pool, transport = fetch, sleep = delay) { this.pool = pool; this.transport = transport; this.sleep = sleep; this.lastRequest = 0; }
+  constructor(pool, transport = fetch, sleep = delay) { this.pool = pool; this.transport = transport; this.sleep = sleep; this.lastRequest = 0; this.requestQueue = Promise.resolve(); }
   async get(path, params = {}) {
     if (!/^\/(produtos(?:\/\d+|\/fornecedores|\/lojas)?|anuncios(?:\/\d+)?|canais-venda|estoques\/saldos|depositos)$/.test(path)) throw new Error('Consulta Bling não permitida.');
     const url = new URL(API + path);
@@ -97,9 +97,16 @@ class BlingClient {
       for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, item);
     }
     for (let attempt = 0; attempt < 4; attempt++) {
-      await this.sleep(Math.max(0, 400 - (Date.now() - this.lastRequest)));
-      const token = await accessToken(this.pool);
-      this.lastRequest = Date.now();
+      // Serialize request starts, not network responses: concurrent reads still
+      // respect the existing 400 ms spacing, including retries.
+      const start = this.requestQueue.then(async () => {
+        await this.sleep(Math.max(0, 400 - (Date.now() - this.lastRequest)));
+        const token = await accessToken(this.pool);
+        this.lastRequest = Date.now();
+        return token;
+      });
+      this.requestQueue = start.then(() => {}, () => {});
+      const token = await start;
       const response = await this.transport(url, { headers: { Authorization: 'Bearer ' + token, 'enable-jwt': '1' }, signal: AbortSignal.timeout(30000) });
       if (response.status === 429 || response.status >= 500) {
         if (attempt === 3) throw new Error('O Bling está indisponível ou limitou as consultas. Tente novamente em alguns minutos.');
@@ -204,6 +211,46 @@ function grossLink(row, product, storeId, isAd = false) {
   if (!code || /^0+$/.test(code) || (typeof price !== 'number' && typeof price !== 'string') || String(price).trim()==='' || !Number.isFinite(Number(price)) || Number(price)<=0) throw new Error('Anúncio sem identificação ou preço bruto válido.');
   if (String(row.produto?.id)!==product.id) throw new Error('Produto do vínculo divergente.');
   return {sku:product.sku,product_id:product.id,store_id:code,name:product.name,current_price:Number(price),raw:{bling_loja_id:String(storeId),bling_vinculo_id:String(row.id || ''),bruto_origem:'Bling',bruto_bling_em:new Date().toISOString()}};
+}
+async function listMercadoLivreAds(api, storeId, products = null) {
+  const result = [], seen = new Set();
+  // idProduto is documented by Bling; filtered list rows need not repeat it.
+  for (const product of products || [null]) {
+    for (const situacao of [1,2,3,4]) {
+      const rows = await api.all('/anuncios', {idLoja:storeId,tipoIntegracao:'MercadoLivre',situacao,...(product?{idProduto:product.id}:{})});
+      for (const row of rows) {
+        const key = String(row.id) + ':' + (product?.id || '');
+        if (row.id && seen.has(key)) continue;
+        if (row.id) seen.add(key);
+        const scoped = product && !row.produto?.id ? {...row,produto:{id:product.id}} : row;
+        // The list exposes a numeric published price, unlike the detail object.
+        result.push({...scoped,preco:typeof scoped.preco==='number'?{valor:scoped.preco}:scoped.preco,
+          _requestedProductId:product?.id || null,_storeId:storeId});
+      }
+    }
+  }
+  return result;
+}
+async function adDetails(api, sources, onProgress = async () => {}) {
+  const cache = new Map(), results = [];
+  for (let offset = 0; offset < sources.length; offset += 3) {
+    const batch = await Promise.all(sources.slice(offset, offset + 3).map(async source => {
+      try {
+        // Reuse only complete, valid records from this fresh list response.
+        const product = {id:String(source.produto?.id || ''),sku:'',name:''};
+        if (product.id) {
+          try { grossLink(source, product, '', true); return {source,row:source}; } catch {}
+        }
+        const id = String(source.id || '');
+        if (!/^\d+$/.test(id)) throw new Error('Anúncio sem identificador Bling válido.');
+        if (!cache.has(id)) cache.set(id, api.get('/anuncios/' + id, {idLoja:source._storeId,tipoIntegracao:'MercadoLivre'}));
+        return {source,row:await cache.get(id)};
+      } catch (error) { return {source,error}; }
+    }));
+    results.push(...batch);
+    await onProgress(results.length, sources.length);
+  }
+  return results;
 }
 async function saveGrossLinks(pool, marketplace, links) {
   if (!links.length) return 0;
@@ -384,12 +431,19 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
       await progress('Consultando preços brutos: '+marketplace);
       try {
         const isML = marketplace === 'Mercado Livre';
-        const rows = await api.all(isML ? '/anuncios' : '/produtos/lojas', isML ? {idLoja:storeId,tipoIntegracao:'MercadoLivre',situacao:1} : {idLoja:storeId});
+        const rows = isML ? await listMercadoLivreAds(api, storeId, selected.size ? valid : null) : await api.all('/produtos/lojas', {idLoja:storeId});
+        record('Vínculos: '+marketplace,'consulta',{},rows.length+' registro(s) retornado(s) pela API.');
+        const covered = new Set();
         const links = [];
-        for (const source of rows) {
-          if(source.produto?.id && !activeIds.has(String(source.produto.id))) continue;
-          if(selected.size && source.produto?.id && !productsById.has(String(source.produto.id))) continue;
-          const row = isML ? await api.get('/anuncios/'+source.id,{idLoja:storeId,tipoIntegracao:'MercadoLivre'}) : source;
+        const sources = rows.filter(source => (!source.produto?.id || activeIds.has(String(source.produto.id))) && (!selected.size || !source.produto?.id || productsById.has(String(source.produto.id))));
+        const details = isML
+          ? await adDetails(api, sources.map(source=>({...source,_storeId:storeId})), (done,total)=>progress('Consultando preços brutos: '+marketplace+' — anúncios '+done+'/'+total))
+          : sources.map(source=>({source,row:source}));
+        for (const {source,row,error:detailError} of details) {
+          if (source.produto?.id) covered.add(String(source.produto.id));
+          if (row?.produto?.id) covered.add(String(row.produto.id));
+          if(detailError) { failures++;issue('Preços brutos',marketplace,'',source.produto?.id,source.anuncioLoja?.id || source.id,detailError.message);continue; }
+          if (source._requestedProductId && String(row.produto?.id)!==source._requestedProductId) { failures++;issue('Preços brutos',marketplace,productsById.get(source._requestedProductId)?.sku,source._requestedProductId,row.anuncioLoja?.id,'A consulta por produto retornou um anúncio de outro produto. Vínculo preservado.');continue; }
           if (!isML && String(row.loja?.id)!==String(storeId)) throw new Error('Loja do vínculo divergente.');
           if (row.produto?.id && !activeIds.has(String(row.produto.id))) continue;
           const product = productsById.get(String(row.produto?.id));
@@ -398,6 +452,11 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
           record('Vínculos: '+marketplace,'verificado',{...product,anuncio_id:isML?row.anuncioLoja?.id:row.codigo});
           try { links.push(grossLink(row,product,storeId,isML)); }
           catch(error) { failures++;issue('Preços brutos',marketplace,product.sku,product.id,isML?row.anuncioLoja?.id:row.codigo,error.message); }
+        }
+        if (isML) {
+          for (const product of valid) {
+            if (!covered.has(product.id)) { failures++;issue('Preços brutos',marketplace,product.sku,product.id,'','Nenhum anúncio retornado pelo Bling para este produto nas situações Publicado, Rascunho, Com problema ou Pausado. Confira a loja e a associação do produto no Bling.'); }
+          }
         }
         const counts = new Map();
         for (const link of links) counts.set(link.store_id,(counts.get(link.store_id) || 0)+1);
@@ -427,4 +486,4 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
     await client.query("UPDATE bling_sincronizacoes SET status='falhou', mensagem=$2,finalizado_em=NOW(),atualizado_em=NOW() WHERE id=$1", [id,error.message]);
   }
 }
-module.exports = { ensureTables, state, connect, loadDeposits, loadStores, saveStores, grossLink, saveGrossLinks, saveSettings, startSync, config, normalizedProduct, defaultSupplierCost, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };
+module.exports = { listMercadoLivreAds, adDetails, ensureTables, state, connect, loadDeposits, loadStores, saveStores, grossLink, saveGrossLinks, saveSettings, startSync, config, normalizedProduct, defaultSupplierCost, balancesByMarketplace, encrypt, decrypt, BlingClient, runSync };

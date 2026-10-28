@@ -186,3 +186,42 @@ test('Excel diagnóstico preserva EAN e código do fornecedor como texto',async(
   assert.equal(sheet.getCell('G2').numFmt,'@');
   assert.equal(sheet.autoFilter,'A1:I1');
 });
+
+test('detalhes ML reutilizam listagem completa e consultam demais com concorrência limitada',async()=>{
+ const {adDetails}=require('../src/integracoes/bling');
+ let active=0,max=0;const calls=[],progress=[];
+ const sources=[{id:1,produto:{id:10},anuncioLoja:{id:'MLB1'},preco:{valor:50}},...[2,3,4,5,6,7].map(id=>({id,_storeId:'9'}))];
+ const results=await adDetails({get:async(path,params)=>{calls.push([path,params]);active++;max=Math.max(max,active);await new Promise(r=>setTimeout(r,5));active--;if(path==='/anuncios/4')throw Error('Falha simulada');return {id:path};}},sources,(done,total)=>{progress.push([done,total]);});
+ assert.equal(calls.length,6);assert.equal(max,3);assert.equal(results.length,7);assert.equal(results[0].row,sources[0]);assert.equal(results[3].error.message,'Falha simulada');assert.deepEqual(progress.at(-1),[7,7]);
+ assert.ok(calls.every(([,p])=>p.idLoja==='9'));
+});
+test('detalhes duplicados são consultados uma vez e mantidos para conferência de duplicidade',async()=>{
+ const {adDetails}=require('../src/integracoes/bling');let calls=0;
+ const result=await adDetails({get:async()=>{calls++;return {id:1};}},[{id:1},{id:1}]);
+ assert.equal(calls,1);assert.equal(result.length,2);
+});
+test('consultas concorrentes mantêm intervalo de partida sem esperar resposta anterior',async()=>{
+ process.env.BLING_TOKEN_ENCRYPTION_KEY='test-only-key-with-at-least-32-characters';
+ const pool={connect:async()=>({query:async sql=>({rows:sql.includes('FOR UPDATE')?[{access_token:encrypt('test'),refresh_token:encrypt('refresh'),expira_em:new Date(Date.now()+3600000)}]:[]}),release(){}})};
+ const starts=[];let active=0,max=0;
+ const api=new BlingClient(pool,async()=>{starts.push(Date.now());active++;max=Math.max(max,active);await new Promise(r=>setTimeout(r,650));active--;return {status:200,ok:true,json:async()=>({data:[]})};});
+ await Promise.all([api.get('/anuncios/1'),api.get('/anuncios/2'),api.get('/anuncios/3')]);
+ assert.equal(starts.length,3);assert.ok(starts[1]-starts[0]>=390);assert.ok(starts[2]-starts[1]>=390);assert.ok(max>=2);
+});
+test('consulta ML selecionada usa idProduto e cobre as quatro situações sem varrer a loja inteira',async()=>{
+ const {listMercadoLivreAds,adDetails}=require('../src/integracoes/bling');const calls=[];
+ const rows=await listMercadoLivreAds({all:async(path,params)=>{calls.push({path,params});return params.situacao===4?[{id:11,anuncioLoja:{id:'MLB123'},preco:35.57}]:[];}},'9',[{id:'123',sku:'L1397'}]);
+ assert.deepEqual(calls.map(c=>c.params.situacao),[1,2,3,4]);assert.ok(calls.every(c=>c.params.idProduto==='123' && c.params.idLoja==='9'));
+ const result=await adDetails({get:async()=>{throw Error('Detalhe desnecessário');}},rows);
+ assert.equal(result[0].row.produto.id,'123');assert.equal(result[0].row.preco.valor,35.57);
+});
+test('Mercado Livre sem anúncio gera pendência por SKU e módulo visível no diagnóstico',async()=>{
+ const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return {rows:[]};}};
+ const api={all:async(path,params)=>path==='/produtos' && params.criterio===2?[{id:123,codigo:'L1397',nome:'Livro'}]:[]};
+ await runSync({},db,49,{module:'links',selectedSkus:['L1397'],lojas:{'Mercado Livre':'9'}},api);
+ const saved=calls.filter(c=>c.sql.includes('diagnostico=$3')).at(-1);
+ const diagnostic=JSON.parse(saved.args[2]),errors=JSON.parse(saved.args[1]);
+ assert.ok(diagnostic.some(r=>r.modulo==='Vínculos: Mercado Livre' && r.status==='consulta'));
+ assert.ok(errors.some(r=>r.marketplace==='Mercado Livre' && r.sku==='L1397' && /Nenhum anúncio/.test(r.motivo)));
+ assert.ok(calls.some(c=>c.sql.includes('status=$2')&&c.args[1]==='parcial'));
+});
