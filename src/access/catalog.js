@@ -1,6 +1,7 @@
 // Cada nova tela/bloco deve ser registrado aqui; funções não recebem novos acessos implicitamente.
 const catalog=[
  ['painel','Painel','tarefas','Tarefas e mensagens',['/visao-geral','/painel'],true],
+ ['financeiro','Financeiro','scanner','Escâner de documentos (aplicativo)',['/arquivo/escanear'],true],
  ['financeiro','Financeiro','arquivo','Arquivos de comprovantes',['/arquivo'],true],
  ['financeiro','Financeiro','contas','Contas a pagar',['/rotina-despesas','/alertas-vencimentos'],true],
  ['financeiro','Financeiro','comprovantes','Lançamentos e comprovantes',['/lancamentos','/novo','/editar','/excluir','/download','/exportar-excel','/uploads','/documentos','/documentos-antigo'],true],
