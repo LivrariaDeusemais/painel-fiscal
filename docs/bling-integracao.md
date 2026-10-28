@@ -34,4 +34,6 @@ A leitura dos preços efetivamente praticados e a análise/exportação de campa
 - https://developer.bling.com.br/limites
 
 ### Preservação de produtos novos
-Produtos com status Novo permanecem Novo nas próximas sincronizações de cadastro, custo e estoque, até a validação manual. O custo é atualizado normalmente; em produtos já validados, uma alteração de custo continua gerando Novo custo. A correção não restaura automaticamente status antigos, para não desfazer validações manuais realizadas entre sincronizações.
+Produtos com status Novo permanecem Novo nas próximas sincronizações de cadastro, custo e estoque, até a validação manual. O valor do custo é atualizado em qualquer status. Somente o status Validado passa para Novo custo quando o custo muda; Novo e Novo custo permanecem como estão até mudança manual. Sem mudança de custo, o status é preservado. A correção não restaura automaticamente status antigos, para não desfazer validações manuais realizadas entre sincronizações.
+
+Publicação pendente a pedido do usuário: não enviar estas alterações à produção enquanto ele estiver utilizando o sistema. Aguardar sua autorização para publicar.
