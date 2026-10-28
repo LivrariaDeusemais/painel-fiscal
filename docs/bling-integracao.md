@@ -37,3 +37,29 @@ A leitura dos preços efetivamente praticados e a análise/exportação de campa
 Produtos com status Novo permanecem Novo nas próximas sincronizações de cadastro, custo e estoque, até a validação manual. O valor do custo é atualizado em qualquer status. Somente o status Validado passa para Novo custo quando o custo muda; Novo e Novo custo permanecem como estão até mudança manual. Sem mudança de custo, o status é preservado. A correção não restaura automaticamente status antigos, para não desfazer validações manuais realizadas entre sincronizações.
 
 Publicação pendente a pedido do usuário: não enviar estas alterações à produção enquanto ele estiver utilizando o sistema. Aguardar sua autorização para publicar.
+
+### Ajuste local pendente — seleção na base de produtos
+
+Não publicar sem autorização do usuário. A seleção acumula SKUs entre pesquisas,
+filtros e páginas da listagem, com contador de itens inclusive ocultos. A alteração
+em lote confirma quantidade e status antes de enviar todos os SKUs. Cancelar ou
+falhar preserva a seleção; sucesso, Limpar ou saída da tela encerra a seleção.
+Limpar retorna à listagem sem filtros. Ao voltar pelo histórico após sair, os
+filtros antigos também são descartados. A exclusão usa a mesma seleção e mantém
+confirmação explícita com os SKUs. A autorização ADMIN e a validação de sessão
+continuam no servidor, inclusive na alteração de status em lote.
+
+### Carga Bling do Mercado Livre — modelo de edição massiva
+
+Alteração local pendente de publicação: o botão da Tabela por Marketplace para
+Mercado Livre gera XLSX, aba `ag-grid`, com as seis colunas do modelo fornecido
+`edicao-massiva (1).xlsx`, na ordem e com os títulos originais. Exporta o título do
+anúncio, loja `Mercado Livre`, ID MLB, SKU textual, preço bruto calculado numérico
+com até quatro casas e modalidade real (Clássico/Premium). Preserva os filtros da
+rota e as verificações de custo/peso. Não usa IDs internos do Bling como ID MLB.
+A modalidade vem da consulta do anúncio gravada na sincronização; quando ausente,
+faz consulta de leitura à API do Mercado Livre, validando a conta proprietária.
+Falhas ou modalidade desconhecida interrompem a exportação com aviso, sem gerar
+arquivo parcial ou assumir Clássico. As cargas dos demais marketplaces continuam
+no CSV anterior. Não altera preços remotamente: o usuário importa o XLSX no Bling.
+A permissão de download da rota continua obrigatória e separada de gerenciar.
