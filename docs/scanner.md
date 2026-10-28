@@ -24,7 +24,7 @@ As imagens são processadas no aparelho; só as páginas revisadas são enviadas
 A sugestão de bordas examina papel claro ou escuro, compensa iluminação lateral
 e evita recortes pequenos que cortem o texto. Em baixo contraste pode usar um
 enquadramento conservador da região de texto, com margem, ou a foto inteira.
-Sempre há revisão. Os quatro pontos têm área de toque ampliada e margem em volta
+A revisão do recorte fica disponível ao tocar na página. Os quatro pontos têm área de toque ampliada e margem em volta
 da foto, com lupa durante o arraste. Não há números, setas ou checkbox de leitura.
 A melhoria de contraste é automática. Girar, Usar Foto (sem recorte),
 + Substituir foto e Continuar ficam na revisão da captura. A câmera aberta mostra
@@ -85,4 +85,20 @@ contorno antigo desenhado sobre a foto; essa comparação não substitui valida�
 com fotografias originais e novas capturas no iOS/Android. Teste sintético cobre
 papel inclinado com margens brancas largas, fundo claro com variação de luz e
 marcas fora do documento, verificando distância de cada canto à borda conhecida.
-Não foi adicionado enquadramento ao vivo antes da captura nesta alteração.
+O enquadramento ao vivo analisa amostras de até 320 px, sem sobrepor análises.
+A captura automática exige bordas identificadas, documento inteiro dentro da
+imagem, iluminação e nitidez suficientes e pelo menos três observações estáveis
+durante 1,3 segundo. O contorno aparece na câmera; Escanear mantém captura manual.
+O modo nativo alternativo e fotos da galeria não oferecem enquadramento ao vivo.
+
+Cada captura vai diretamente para as páginas. Tocar na miniatura abre a prévia
+com Ajustar recorte, Girar, Substituir foto e Excluir. O ajuste usa a fotografia
+original e substitui a página existente. As fotografias originais ficam somente
+na memória do aparelho, junto dos cantos; apenas os JPEGs processados são enviados.
+O limite temporário agregado é 40 MB, além do limite de 20 MB para envio.
+Ao fechar/recarregar, os originais e páginas ainda não enviados são perdidos.
+
+Uma assinatura visual da última página impede captura automática repetida ao
+reabrir a câmera com o mesmo documento. A captura manual permite repetir quando
+intencional. Esses critérios são conservadores e dependem de iluminação, fundo
+e câmera; precisam de validação em iPhone e Android reais.

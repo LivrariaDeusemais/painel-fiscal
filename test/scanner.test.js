@@ -65,8 +65,8 @@ test('papel cinza em fundo claro mantém o texto completo dentro do contorno aut
 test('câmera ativa mostra somente Escanear e restaura opções ao interromper',async()=>{
  const vm=require('node:vm'),fs=require('node:fs'),elements=new Map(),handlers={};let stopped=0;
  const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,open:true,dataset:{},textContent:'',value:'',getContext:()=>({}),addEventListener(){},querySelectorAll:()=>[],play:async()=>{},getTracks:()=>[],focus(){},replaceChildren(){},close(){this.open=false;}});return elements.get(id);};
- vm.runInNewContext(fs.readFileSync(require.resolve('../src/assets/scanner'),'utf8'),{document:{getElementById:el,addEventListener:(name,fn)=>handlers[name]=fn},window:{ScannerImage:geometry,addEventListener(){}},crypto:{randomUUID:()=> 'test'},navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++;}}]})}},confirm:()=>true});
- await el('scanner-start').onclick();assert.equal(el('scanner-start').hidden,true);assert.equal(el('scanner-gallery-label').hidden,true);assert.equal(el('scanner-shutter').hidden,false);assert.match(el('scanner-status').textContent,/toque em Escanear/);
+ vm.runInNewContext(fs.readFileSync(require.resolve('../src/assets/scanner'),'utf8'),{document:{createElement:()=>el('temporary-canvas'),getElementById:el,addEventListener:(name,fn)=>handlers[name]=fn},window:{ScannerImage:geometry,ScannerLive:require('../src/assets/scanner-live'),addEventListener(){}},crypto:{randomUUID:()=> 'test'},navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++;}}]})}},setTimeout:()=>1,clearTimeout(){},confirm:()=>true});
+ await el('scanner-start').onclick();assert.equal(el('scanner-start').hidden,true);assert.equal(el('scanner-gallery-label').hidden,true);assert.equal(el('scanner-shutter').hidden,false);assert.match(el('scanner-status').textContent,/captura será automática/);
  el('scanner-close').onclick();assert.equal(stopped,1);assert.equal(el('scanner-shutter').hidden,true);assert.equal(el('scanner-start').hidden,false);
 });
 test('bordas físicas ficam próximas do papel mesmo com margens brancas largas e fundo claro',()=>{

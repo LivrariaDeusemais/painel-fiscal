@@ -75,14 +75,15 @@
   return points;
  }
  // Evaluate both light and dark paper, ignoring regions connected to the frame.
- function detect(data,w,h){
+ function detect(data,w,h,details=false){
+  const finish=(points,method)=>details?{points,method}:points;
   const gray=new Float32Array(w*h),blur=new Float32Array(w*h),hist=new Uint32Array(256);
   for(let i=0;i<gray.length;i++)gray[i]=.299*data[i*4]+.587*data[i*4+1]+.114*data[i*4+2];
   // Suppress text and texture before segmenting the sheet from the surface.
   const radius=Math.max(1,Math.round(Math.min(w,h)/100));
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sum=0,n=0;for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){const xx=x+dx,yy=y+dy;if(xx>=0&&xx<w&&yy>=0&&yy<h){sum+=gray[yy*w+xx];n++;}}const v=sum/n;blur[y*w+x]=v;hist[Math.round(v)]++;}
   const quantile=q=>{let n=0;for(let i=0;i<256;i++){n+=hist[i];if(n>=w*h*q)return i;}return 255;};
-  const low=quantile(.1),high=quantile(.9);if(high-low<6)return full(w,h);
+  const low=quantile(.1),high=quantile(.9);if(high-low<6)return finish(full(w,h),'none');
   const levels=[...new Set([.15,.25,.35,.45,.55,.65,.75,.85].map(quantile))];
   const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
   function quad(boundary){
@@ -132,17 +133,17 @@
    }
   }
   const physical=paperEdges(blur,w,h,ink);
-  if(physical)return physical;
-  if(best)return best;
+  if(physical)return finish(physical,'edges');
+  if(best)return finish(best,'region');
   // Low-contrast fallback: retain the complete text region with a generous margin,
   // rather than accepting a small internal contour that would cut off receipt text.
   if(ink.length>Math.max(150,w*h*.005)){
    const xs=ink.map(p=>p.x).sort((a,b)=>a-b),ys=ink.map(p=>p.y).sort((a,b)=>a-b),q=(a,f)=>a[Math.floor((a.length-1)*f)];
    const left=Math.max(0,q(xs,.01)-w*.055),right=Math.min(w-1,q(xs,.99)+w*.055),top=Math.max(0,q(ys,.01)-h*.04),bottom=Math.min(h-1,q(ys,.99)+h*.04);
    const box=[{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}];
-   if(valid(box,w,h)&&(right-left)*(bottom-top)<w*h*.85&&bottom-top>h*.3)return box;
+   if(valid(box,w,h)&&(right-left)*(bottom-top)<w*h*.85&&bottom-top>h*.3)return finish(box,'text');
   }
-  return full(w,h);
+  return finish(full(w,h),'none');
  }
  const api={distance,valid,project,full,detect};if(typeof module!=='undefined')module.exports=api;else root.ScannerImage=api;
 })(typeof window==='undefined'?globalThis:window);
