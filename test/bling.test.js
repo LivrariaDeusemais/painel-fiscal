@@ -129,12 +129,12 @@ test('vínculos consulta apenas os marketplaces selecionados',async()=>{
  await runSync({},db,1,{module:'links',marketplaces:['Shopee','TikTok'],lojas:{Shopee:'1',TikTok:'2',Amazon:'3'}},api);
  assert.deepEqual(requests.filter(([path])=>path==='/produtos/lojas').map(([,params])=>params.idLoja),['1','2']);
 });
-test('custo Bling compara valor anterior e marca existentes, preservando Novo para recém-incluídos',async()=>{
+test('custo Bling compara valor anterior e preserva Novo inclusive nas próximas sincronizações',async()=>{
  for(const existing of [true,false]){
   const calls=[];const db={query:async(sql,args)=>{calls.push({sql,args});return{rows:sql.startsWith('SELECT sku')&&existing?[{sku:'B1',bling_id:'1'}]:[]};}};
   const api={all:async(path,params)=>path==='/produtos'?params.criterio===2?[{id:1,codigo:'B1'}]:[]:[{id:9,produto:{id:1},padrao:true,precoCusto:30}],get:async(path)=>path.startsWith('/produtos/')?{id:1,codigo:'B1',nome:'Teste'}:[]};
   await runSync({},db,1,{module:'data'},api);
-  const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/THEN 'Novo custo' ELSE status_validacao/);
+  const update=calls.find(c=>c.sql.includes('SET custo='));assert.equal(update.args[3],!existing);assert.match(update.sql,/custo IS DISTINCT FROM \$2::numeric/);assert.match(update.sql,/CASE WHEN status_validacao='Novo' THEN 'Novo' WHEN NOT \$4::boolean/);assert.match(update.sql,/THEN 'Novo custo' ELSE status_validacao/);
  }
 });
 test('anúncios zero e repetidos têm referências no diagnóstico e não bloqueiam vínculos válidos',async()=>{
