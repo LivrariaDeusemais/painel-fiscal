@@ -24,7 +24,7 @@ test('correção de perspectiva mapeia quatro cantos e rejeita recorte cruzado',
 });
 test('detecção sugere bordas em fundo contrastante e mantém imagem inteira sem contraste',()=>{
  const w=100,h=140,data=new Uint8ClampedArray(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,v=x>=15&&x<=85&&y>=20&&y<=120?240:25;data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;}
- const corners=geometry.detect(data,w,h);assert.deepEqual(corners,[{x:15,y:20},{x:85,y:20},{x:85,y:120},{x:15,y:120}]);
+ const corners=geometry.detect(data,w,h);for(const [i,p] of [{x:15,y:20},{x:85,y:20},{x:85,y:120},{x:15,y:120}].entries()){assert.ok(Math.abs(corners[i].x-p.x)<=2);assert.ok(Math.abs(corners[i].y-p.y)<=2);}
  data.fill(255);assert.deepEqual(geometry.detect(data,w,h),geometry.full(w,h));
 });
 test('botão e escâner aparecem somente com autorização; mantém calculadora no mesmo documento',()=>{
@@ -47,4 +47,25 @@ test('HTTP exige sessão, permissão e CSRF; envio vai à fila e repetição nã
   assert.equal((await (await send()).json()).ok,true);assert.equal(inserted,1);assert.equal((await fs.readdir(dir)).length,1);
   const record=events.find(e=>e.sql.startsWith('INSERT INTO'));assert.equal(record.args[0],'Comprovante frete.pdf');assert.match(record.sql,/'DISPONIVEL','APP_SCANNER'/);
  }finally{await new Promise(resolve=>server.close(resolve));await fs.rm(dir,{recursive:true,force:true});}
+});
+test('fluxo simplificado mostra comandos por etapa e confirmação final solicitada',()=>{
+ const html=require('../src/scanner/view').dialog('csrf');
+ assert.match(html,/>Escanear<\/button>/);assert.match(html,/>Usar Foto<\/button>/);assert.match(html,/>\+ Substituir foto<\/button>/);
+ assert.match(html,/>Salvar e enviar<\/button>/);assert.match(html,/Documento enviado com Sucesso para Plennatec! 👍/);
+ assert.match(html,/>Escanear novo documento<\/button>/);assert.match(html,/>Voltar Calculadora<\/button>/);
+ assert.doesNotMatch(html,/scanner-corners|data-move|scanner-enhance|Câmera do celular|Fotografar|Escanear outro documento/);
+});
+test('papel cinza em fundo claro mantém o texto completo dentro do contorno automático',()=>{
+ const w=180,h=260,data=new Uint8ClampedArray(w*h*4);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=220+x/15;if(x>=40&&x<=140&&y>=20&&y<=240)v=185+y/30;if(x>=48&&x<=132&&y>=30&&y<=230&&y%12<2)v=40;const i=(y*w+x)*4;data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;}
+ const corners=geometry.detect(data,w,h);assert.ok(geometry.valid(corners,w,h));
+ assert.ok(corners[0].x<48&&corners[0].y<30);assert.ok(corners[2].x>132&&corners[2].y>230);
+ assert.ok(corners[0].x>5&&corners[2].x<w-5);
+});
+test('câmera ativa mostra somente Escanear e restaura opções ao interromper',async()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),elements=new Map(),handlers={};let stopped=0;
+ const el=id=>{if(!elements.has(id))elements.set(id,{hidden:false,open:true,dataset:{},textContent:'',value:'',getContext:()=>({}),addEventListener(){},querySelectorAll:()=>[],play:async()=>{},getTracks:()=>[],focus(){},replaceChildren(){},close(){this.open=false;}});return elements.get(id);};
+ vm.runInNewContext(fs.readFileSync(require.resolve('../src/assets/scanner'),'utf8'),{document:{getElementById:el,addEventListener:(name,fn)=>handlers[name]=fn},window:{ScannerImage:geometry,addEventListener(){}},crypto:{randomUUID:()=> 'test'},navigator:{mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop(){stopped++;}}]})}},confirm:()=>true});
+ await el('scanner-start').onclick();assert.equal(el('scanner-start').hidden,true);assert.equal(el('scanner-gallery-label').hidden,true);assert.equal(el('scanner-shutter').hidden,false);assert.match(el('scanner-status').textContent,/toque em Escanear/);
+ el('scanner-close').onclick();assert.equal(stopped,1);assert.equal(el('scanner-shutter').hidden,true);assert.equal(el('scanner-start').hidden,false);
 });

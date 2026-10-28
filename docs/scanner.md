@@ -16,16 +16,25 @@ permissão de download existente. A gravação valida sessão e CSRF antes do up
 ## Captura e revisão
 
 Câmera ao vivo via getUserMedia com preferência pela câmera traseira, sem áudio;
-se indisponível, a captura nativa `capture=environment` ou seleção de foto ficam
+se indisponível, Abrir câmera passa a usar a captura nativa `capture=environment`; seleção de foto também fica
 disponíveis. O navegador pode apresentar interfaces diferentes no iOS/Android.
 A câmera é encerrada ao fechar, ocultar a página, capturar ou iniciar envio.
 As imagens são processadas no aparelho; só as páginas revisadas são enviadas.
 
-Uma sugestão de bordas usa contraste de papel claro em fundo escuro e exige
-revisão. Pouco contraste usa a foto inteira. É possível arrastar quatro pontos,
-ajustar com setas, girar, restaurar foto inteira e ativar/desativar contraste.
+A sugestão de bordas examina papel claro ou escuro, compensa iluminação lateral
+e evita recortes pequenos que cortem o texto. Em baixo contraste pode usar um
+enquadramento conservador da região de texto, com margem, ou a foto inteira.
+Sempre há revisão. Os quatro pontos têm área de toque ampliada e margem em volta
+da foto, com lupa durante o arraste. Não há números, setas ou checkbox de leitura.
+A melhoria de contraste é automática. Girar, Usar Foto (sem recorte),
++ Substituir foto e Continuar ficam na revisão da captura. A câmera aberta mostra
+somente Escanear; a tela inicial mostra Abrir câmera e Escolher foto.
 A transformação projetiva corrige perspectiva; não há OCR ou garantia de
 recuperação de texto desfocado/reflexos. Prévia ampliável, excluir e reordenar.
+
+Na prévia, + Adicionar página fica junto de Excluir. O envio chama Salvar e enviar.
+Após confirmação do servidor, uma etapa exclusiva mostra “Documento enviado com
+Sucesso para Plennatec! 👍”, Escanear novo documento e Voltar Calculadora.
 
 PDF com até 20 páginas/20 MB; imagens reduzidas a até 2000 px no maior lado.
 O servidor aceita JPEG com limite por página e valida dimensões/conteúdo antes
