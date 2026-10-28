@@ -68,3 +68,21 @@ duplicação. Conferência visual em Chrome com documento artificial e viewport
 aparelhos após publicação. Nenhum documento foi enviado à produção nesta etapa.
 Referências: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
  e https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture
+
+## Refinamento das margens do papel
+
+Antes de usar o enquadramento de segurança baseado no texto, o detector procura
+quatro bordas contínuas ao redor da região impressa. Ajusta inclinação e posição
+das linhas por contraste, mede suporte ao longo de cada lado e refina o encaixe
+com amostras locais. Há uma margem de segurança pequena para não cortar a borda.
+A confiança exige quatro lados válidos e cobertura da região principal de texto;
+pequenas marcas no fundo podem ser descartadas como ruído. Se não houver suporte
+suficiente, mantém os métodos anteriores e a possibilidade de ajuste manual.
+
+A comparação local do comprovante de restaurante fornecido mostrou o novo
+contorno próximo do papel, em vez do retângulo largo anterior. O print contém o
+contorno antigo desenhado sobre a foto; essa comparação não substitui validação
+com fotografias originais e novas capturas no iOS/Android. Teste sintético cobre
+papel inclinado com margens brancas largas, fundo claro com variação de luz e
+marcas fora do documento, verificando distância de cada canto à borda conhecida.
+Não foi adicionado enquadramento ao vivo antes da captura nesta alteração.

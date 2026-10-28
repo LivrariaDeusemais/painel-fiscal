@@ -18,6 +18,62 @@
   return (u,v)=>{const z=b[6]*u+b[7]*v+1;return {x:(b[0]*u+b[1]*v+b[2])/z,y:(b[3]*u+b[4]*v+b[5])/z};};
  }
  function full(w,h){return [{x:0,y:0},{x:w-1,y:0},{x:w-1,y:h-1},{x:0,y:h-1}];}
+ // Fit four continuous paper edges, outside the central printed region.
+ // Requiring support along each side avoids snapping to a word or a QR row.
+ function paperEdges(gray,w,h,ink){
+  if(ink.length<100)return null;
+  const xs=ink.map(p=>p.x).sort((a,b)=>a-b),ys=ink.map(p=>p.y).sort((a,b)=>a-b),q=(a,f)=>a[Math.floor((a.length-1)*f)];
+  const value=(x,y)=>gray[Math.max(0,Math.min(h-1,Math.round(y)))*w+Math.max(0,Math.min(w-1,Math.round(x)))];
+  function fit(vertical,min,max,from,to,side){
+   if(to-from<20||max-min<3)return null;
+   const mid=(from+to)/2,candidates=[];
+   for(let angle=-.3;angle<=.3001;angle+=.02)for(let b=Math.ceil(min);b<=max;b++){
+    const sums=[0,0,0,0],counts=[0,0,0,0];let strong=0,n=0;
+    for(let t=from;t<=to;t+=2){const p=b+angle*(t-mid);if(p<3||p>(vertical?w:h)-4)continue;let difference=0;
+     for(let k=2;k<=4;k++)difference+=vertical?value(p+k,t)-value(p-k,t):value(t,p+k)-value(t,p-k);difference/=3;
+     const section=Math.min(3,Math.floor((t-from)/(to-from)*4));sums[section]+=Math.min(20,Math.abs(difference));counts[section]++;strong+=Math.abs(difference)>3?1:0;n++;
+    }
+    if(n<(to-from)/3)continue;
+    const means=sums.map((s,i)=>s/Math.max(1,counts[i])).sort((a,b)=>a-b),score=means[0]*.6+means[1]*.25+means[2]*.15;
+    if(strong/n>=.65)candidates.push({b,angle,mid,score});
+   }
+   const best=Math.max(0,...candidates.map(c=>c.score));if(best<4)return null;
+   // When a shadow or surrounding object has a stronger edge, prefer the first
+   // well-supported boundary surrounding the text rather than the outer shadow.
+   const supported=candidates.filter(c=>c.score>=best*.8);
+   supported.sort((a,b)=>side*(a.b-b.b)||b.score-a.score);
+   const chosen=supported[0];if(!chosen)return null;
+   const samples=[];
+   for(let t=from;t<=to;t+=2){const expected=chosen.b+chosen.angle*(t-mid);let peak=0,position=expected;
+    for(let offset=-4;offset<=4;offset++){const p=expected+offset;let gradient=0;for(let k=1;k<=3;k++)gradient+=vertical?value(p+k,t)-value(p-k,t):value(t,p+k)-value(t,p-k);gradient=Math.abs(gradient/3);if(gradient>peak){peak=gradient;position=p;}}
+    if(peak>3)samples.push({t,p:position,weight:Math.min(20,peak)});
+   }
+   let line=chosen;
+   for(let iteration=0;iteration<2;iteration++){
+    const kept=samples.filter(s=>Math.abs(s.p-(line.b+line.angle*(s.t-mid)))<5-iteration*2);if(kept.length<samples.length*.6)break;
+    let n=0,st=0,sp=0,stt=0,stp=0;for(const s of kept){const t=s.t-mid,weight=s.weight;n+=weight;st+=t*weight;sp+=s.p*weight;stt+=t*t*weight;stp+=t*s.p*weight;}
+    const denominator=n*stt-st*st;if(Math.abs(denominator)<1e-6)break;const angle=(n*stp-st*sp)/denominator;
+    if(Math.abs(angle)>.35)break;line={...chosen,angle,b:(sp-angle*st)/n};
+   }
+   return line;
+  }
+  const topInk=q(ys,.08),bottomInk=q(ys,.90),leftInk=q(xs,.15),rightInk=q(xs,.85);
+  const left=fit(true,3,leftInk-2,topInk,bottomInk,-1),right=fit(true,rightInk+2,w-4,topInk,bottomInk,1);
+  if(!left||!right||right.b-left.b<w*.12)return null;
+  const x1=left.b+(right.b-left.b)*.08,x2=right.b-(right.b-left.b)*.08;
+  const top=fit(false,3,q(ys,.05)+2,x1,x2,-1),bottom=fit(false,q(ys,.80)+2,h-4,x1,x2,1);
+  if(!top||!bottom)return null;
+  const intersection=(v,horizontal)=>{const x=(v.b-v.angle*v.mid+v.angle*(horizontal.b-horizontal.angle*horizontal.mid))/(1-v.angle*horizontal.angle);return {x,y:horizontal.b+horizontal.angle*(x-horizontal.mid)};};
+  left.b-=1;right.b+=1;top.b-=1;bottom.b+=1;
+  const points=[intersection(left,top),intersection(right,top),intersection(right,bottom),intersection(left,bottom)];
+  if(!valid(points,w,h))return null;
+  const core=ink.filter(p=>p.x>=q(xs,.05)&&p.x<=q(xs,.95)&&p.y>=q(ys,.05)&&p.y<=q(ys,.95));
+  const inside=p=>points.every((a,i)=>{const b=points[(i+1)%4];return (b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=-2;});
+  // Background specks and old overlay marks can resemble small text components.
+  // All four continuous edges are required; tolerate a small minority of outliers.
+  if(core.filter(inside).length<core.length*.90)return null;
+  return points;
+ }
  // Evaluate both light and dark paper, ignoring regions connected to the frame.
  function detect(data,w,h){
   const gray=new Float32Array(w*h),blur=new Float32Array(w*h),hist=new Uint32Array(256);
@@ -75,6 +131,8 @@
     if(score>bestScore){bestScore=score;best=points;}
    }
   }
+  const physical=paperEdges(blur,w,h,ink);
+  if(physical)return physical;
   if(best)return best;
   // Low-contrast fallback: retain the complete text region with a generous margin,
   // rather than accepting a small internal contour that would cut off receipt text.

@@ -69,3 +69,13 @@ test('câmera ativa mostra somente Escanear e restaura opções ao interromper',
  await el('scanner-start').onclick();assert.equal(el('scanner-start').hidden,true);assert.equal(el('scanner-gallery-label').hidden,true);assert.equal(el('scanner-shutter').hidden,false);assert.match(el('scanner-status').textContent,/toque em Escanear/);
  el('scanner-close').onclick();assert.equal(stopped,1);assert.equal(el('scanner-shutter').hidden,true);assert.equal(el('scanner-start').hidden,false);
 });
+test('bordas físicas ficam próximas do papel mesmo com margens brancas largas e fundo claro',()=>{
+ const w=220,h=320,data=new Uint8ClampedArray(w*h*4),expected=[{x:55,y:25},{x:161,y:30},{x:170,y:295},{x:48,y:288}];
+ const inside=(x,y)=>expected.every((a,i)=>{const b=expected[(i+1)%4];return (b.x-a.x)*(y-a.y)-(b.y-a.y)*(x-a.x)>=0;});
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=213+x*.03+y*.015+((x*11+y*7)%5);if(inside(x,y))v=185+y*.02;if(x>70&&x<145&&y>75&&y<260&&y%15<2)v=35;const i=(y*w+x)*4;data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;}
+ const found=geometry.detect(data,w,h);assert.ok(geometry.valid(found,w,h));
+ found.forEach((p,i)=>assert.ok(geometry.distance(p,expected[i])<9,`Canto ${i+1} afastou da borda: ${JSON.stringify(p)}`));
+ // Surface specks must not push the crop toward the outer photo margins.
+ for(let y=35;y<280;y+=29)for(let x=13;x<27;x+=5)for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const i=((y+dy)*w+x+dx)*4;data[i]=data[i+1]=data[i+2]=60;}
+ const noisy=geometry.detect(data,w,h);noisy.forEach((p,i)=>assert.ok(geometry.distance(p,expected[i])<10,`Marcas no fundo deslocaram canto ${i+1}`));
+});
