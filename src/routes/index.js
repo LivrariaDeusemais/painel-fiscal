@@ -33129,6 +33129,7 @@ router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,r
 }}));
 router.use(require('../fechamento/routes').createRouter({ pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir }));
 router.use('/ferramentas-ia/gestao-compras', require('./compras-estoque').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir}));
+router.use('/compras/reposicao', require('./reposicao').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell}));
 router.use('/conciliacao-bancaria', require('./conciliacao-bancaria').createRouter({
   pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir
 }));

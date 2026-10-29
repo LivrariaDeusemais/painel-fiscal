@@ -340,7 +340,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
       if (sku) seen.add(sku);
     }
     await progress(updateData ? 'Atualizando cadastro' : 'Preparando vínculos dos produtos ativos', products.length);
-    const valid = [];
+    const valid = [], categoryNames = new Map();
     for (const item of products) {
       try {
         if (!updateData) {
@@ -349,7 +349,16 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
           processed++;
           continue;
         }
-        const p = normalizedProduct(await api.get('/produtos/' + item.id));
+        const rawProduct = await api.get('/produtos/' + item.id);
+        const p = normalizedProduct(rawProduct);
+        let category;
+        if (rawProduct.categoria?.id) {
+          try {
+            const cid=String(rawProduct.categoria.id);
+            if(!categoryNames.has(cid))categoryNames.set(cid,(await api.get('/categorias/produtos/'+cid)).descricao);
+            category=categoryNames.get(cid);
+          } catch(error) { failures++; issue('Categoria','',p.sku,p.id,'',error.message); }
+        } else category='';
         const existing = (await client.query('SELECT sku,bling_id FROM tabela_preco_produtos WHERE UPPER(sku)=UPPER($1)', [p.sku])).rows;
         if (existing.length > 1 || (existing[0]?.bling_id && existing[0].bling_id !== p.id)) throw new Error('Identificação do produto divergente.');
         record('Cadastro','verificado',p);
@@ -361,6 +370,7 @@ async function runSync(pool, client, id, settings, api = new BlingClient(pool)) 
           peso=COALESCE(EXCLUDED.peso,tabela_preco_produtos.peso),peso_bruto=COALESCE(EXCLUDED.peso_bruto,tabela_preco_produtos.peso_bruto),
           preco_bling=COALESCE(EXCLUDED.preco_bling,tabela_preco_produtos.preco_bling),ean=EXCLUDED.ean,bling_atualizado_em=NOW()`,
         [p.sku,p.id,p.name,p.brand,p.status,p.weight,p.grossWeight,p.price,p.ean]);
+        if(category!==undefined)await client.query('UPDATE tabela_preco_produtos SET categoria_compra=$2 WHERE sku=$1',[p.sku,category]);
         valid.push(p);
         record('Cadastro','atualizado',p);
       } catch (error) {

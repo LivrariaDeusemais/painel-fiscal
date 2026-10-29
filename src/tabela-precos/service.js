@@ -70,6 +70,7 @@ async function initializeTables(pool) {
     )
   `);
   await pool.query(`ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS status_validacao TEXT NOT NULL DEFAULT 'Validado', ADD COLUMN IF NOT EXISTS custo_origem TEXT, ADD COLUMN IF NOT EXISTS codigo_fornecedor TEXT`);
+  await pool.query('ALTER TABLE tabela_preco_produtos ADD COLUMN IF NOT EXISTS categoria_compra TEXT');
   await pool.query("UPDATE tabela_preco_produtos SET status_validacao='Novo custo' WHERE status_validacao='Reajustar'");
   await pool.query(`ALTER TABLE tabela_preco_produtos
     ADD COLUMN IF NOT EXISTS estoque_matriz NUMERIC(15,4),
