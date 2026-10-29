@@ -32455,6 +32455,7 @@ router.get('/ferramentas-ia/codificador/download/:id/:tipo', protegerRota, permi
 
 router.use('/ferramentas-ia/tabela-precos/bling', require('../integracoes/bling-page').createRouter(pool, renderTabelaWideShell));
 router.use('/ferramentas-ia/tabela-precos/mercado-livre', require('../integracoes/mercado-livre-page').createRouter(pool, renderTabelaWideShell));
+router.use('/integracoes/shopee-nfe', require('../integracoes/shopee-nfe-page').createRouter(pool, renderTabelaWideShell));
 
 router.get('/ferramentas-ia/tabela-precos', protegerRota, permitirPerfis('ADMIN', 'USUARIO'), async (req, res) => {
   const feedback = req.session.tabelaPrecosFeedback || null;

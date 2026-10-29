@@ -38,6 +38,7 @@ app.use(executiveUi.middleware);
 app.post('/aparencia', executiveUi.preference);
 // Relatórios de fechamento só são baixados pelas rotas autenticadas e auditadas.
 app.use('/uploads/fechamentos', (req,res) => res.sendStatus(403));
+app.use('/uploads/.shopee-nfe', (req,res) => res.sendStatus(403));
 
 // Servir arquivos estáticos
 app.use('/uploads', express.static(uploadsDir));
