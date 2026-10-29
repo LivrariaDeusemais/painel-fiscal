@@ -1659,6 +1659,8 @@ function renderPlennaTecExportarExcelV2Assets() {
           try {
             document.body.classList.add('plennatec-export-cleaning');
 
+            // aria-busy também identifica conteúdo real em consulta, não um overlay.
+            // Ocultá-lo aqui fazia a tela de reposição desaparecer ao carregar.
             var seletores = [
               '.loading-overlay',
               '.modal-backdrop',
@@ -1671,8 +1673,7 @@ function renderPlennaTecExportarExcelV2Assets() {
               '.spinner',
               '.backdrop',
               '.overlay',
-              '[data-loading]',
-              '[aria-busy="true"]'
+              '[data-loading]'
             ];
 
             seletores.forEach(function(sel){
