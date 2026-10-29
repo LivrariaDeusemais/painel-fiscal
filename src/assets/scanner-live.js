@@ -14,8 +14,8 @@
   return {brightness:n?sum/n:0,sharpness:n?lapSquared/n-(lapSum/n)**2:0};
  }
  function createTracker(){
-  let reference=null,started=0,samples=0,lastTime=0;
-  const reset=()=>{reference=null;started=0;samples=0;lastTime=0;};
+  let reference=null,outline=null,started=0,samples=0,lastTime=0;
+  const reset=()=>{reference=null;outline=null;started=0;samples=0;lastTime=0;};
   function update(frame,now,previous){
    const {points,w,h,method,brightness,sharpness,fingerprint}=frame;
    if(!['edges','region'].includes(method)||!geometry.valid(points,w,h)){reset();return 'align';}
@@ -25,8 +25,13 @@
    if(sharpness<45){reset();return 'focus';}
    if(same(fingerprint,previous)){reset();return 'duplicate';}
    const normalized=points.map(p=>({x:p.x/w,y:p.y/h}));
-   const moved=!reference||now-lastTime>1800||normalized.some((p,i)=>geometry.distance(p,reference[i])>.018);
-   if(moved){reference=normalized;started=now;samples=1;}else samples++;
+   const moved=!reference||now-lastTime>2800||normalized.some((p,i)=>geometry.distance(p,reference[i])>.024);
+   if(moved){reference=normalized;outline=normalized;started=now;samples=1;}else {
+    samples++;outline=normalized.map((p,i)=>({x:outline[i].x*.6+p.x*.4,y:outline[i].y*.6+p.y*.4}));
+   }
+   // Smooth only small jitter; keep the original anchor so continued movement
+   // cannot gradually drift into an automatic capture.
+   frame.points=outline.map(p=>({x:p.x*w,y:p.y*h}));
    lastTime=now;
    if(samples>=3&&now-started>=1300){reset();return 'capture';}
    return 'steady';

@@ -79,3 +79,20 @@ test('bordas físicas ficam próximas do papel mesmo com margens brancas largas 
  for(let y=35;y<280;y+=29)for(let x=13;x<27;x+=5)for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const i=((y+dy)*w+x+dx)*4;data[i]=data[i+1]=data[i+2]=60;}
  const noisy=geometry.detect(data,w,h);noisy.forEach((p,i)=>assert.ok(geometry.distance(p,expected[i])<10,`Marcas no fundo deslocaram canto ${i+1}`));
 });
+test('recibo com borda fraca, margem sem texto e QR forte mantém os quatro limites do papel',()=>{
+ const w=220,h=320,expected=[{x:55,y:27},{x:163,y:29},{x:172,y:295},{x:50,y:291}];
+ const inside=(x,y)=>expected.every((a,i)=>{const b=expected[(i+1)%4];return (b.x-a.x)*(y-a.y)-(b.y-a.y)*(x-a.x)>=0;});
+ // Apenas quatro níveis de cinza entre papel e fundo; o texto é muito mais forte.
+ for(const contrast of [4,8,20]){
+  const data=new Uint8ClampedArray(w*h*4);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   let v=215+x*.025+y*.015+(((x*7+y*13)%5)-2)*.3;
+   if(inside(x,y))v=215-contrast+y*.015;
+   if(inside(x,y)&&x>66&&x<153&&y>55&&y<270&&y%13<2)v=60;
+   if(x>95&&x<139&&y>242&&y<280)v=((Math.floor(x/3)*7+Math.floor(y/3)*11)%5<2)?30:210;
+   const i=(y*w+x)*4;data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;
+  }
+  const result=geometry.detect(data,w,h,true);assert.equal(result.method,'edges');
+  result.points.forEach((p,i)=>assert.ok(geometry.distance(p,expected[i])<5,`Contraste ${contrast}, canto ${i+1}: ${JSON.stringify(p)}`));
+ }
+});

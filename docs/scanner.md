@@ -102,3 +102,30 @@ Uma assinatura visual da última página impede captura automática repetida ao
 reabrir a câmera com o mesmo documento. A captura manual permite repetir quando
 intencional. Esses critérios são conservadores e dependem de iluminação, fundo
 e câmera; precisam de validação em iPhone e Android reais.
+
+## Bordas fracas e oscilações na câmera
+
+O ajuste de sensibilidade procura a continuidade e o sentido do contraste em cada
+lado, em vez de aceitar somente sua intensidade. Os lados precisam concordar
+entre si e conter 99% do núcleo impresso. As extremidades das bordas laterais
+ajudam a recuperar as margens superior/inferior quando uma linha de texto ou QR
+é mais forte que o limite do papel. Linhas divergentes e transições de sombra
+incompatíveis não são promovidas a quatro bordas físicas confiáveis.
+
+Os gradientes são calculados uma única vez por imagem e o encaixe físico é
+tentado antes da segmentação por vários limiares. Isso reduz trabalho repetido
+na análise ao vivo. Não há dependência de biblioteca externa ou upload da câmera.
+
+Pequenas oscilações, até 2,4% da dimensão normalizada, são suavizadas visualmente.
+A âncora inicial permanece fixa: deslocamento contínuo não pode acumular-se e
+disparar captura. Continuam obrigatórios foco, luz, documento inteiro, no mínimo
+três observações e 1,3 segundo. Intervalos de processamento até 2,8 segundos
+não zeram a estabilidade; pausas maiores reiniciam a sequência.
+
+Regressões adicionais cobrem papel/fundo com diferença de quatro níveis de cinza,
+margens sem texto, QR forte, tremidas pequenas, deslocamento contínuo e análise
+mais lenta. Os três prints enviados em 29/10/2026 orientaram a análise visual;
+como já incluem o contorno verde sobre a imagem, não são fotografias originais
+adequadas para comprovar precisão do detector. A validação final depende de novas
+capturas no iPhone. Não há garantia de enquadramento correto na primeira tentativa
+em todo fundo/iluminação; a captura e o recorte manuais continuam disponíveis.

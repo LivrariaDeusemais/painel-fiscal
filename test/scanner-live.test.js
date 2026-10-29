@@ -20,3 +20,20 @@ test('avalia nitidez da região do documento e conserva identificação com vari
  const first=live.signature(data,w,h,points);for(let i=0;i<data.length;i+=4)for(let c=0;c<3;c++)data[i+c]+=10;
  assert.equal(live.same(first,live.signature(data,w,h,points)),true);
 });
+test('pequena tremida suaviza o contorno e permite captura sem exigir imobilidade perfeita',()=>{
+ const tracker=live.createTracker(),base=frame().points;
+ const jitter=dx=>frame({points:base.map(p=>({x:p.x+dx,y:p.y+dx*.2}))});
+ assert.equal(tracker.update(jitter(0),0),'steady');
+ const second=jitter(5);assert.equal(tracker.update(second,650),'steady');
+ assert.ok(second.points[0].x>base[0].x&&second.points[0].x<base[0].x+5);
+ assert.equal(tracker.update(jitter(-4),1300),'capture');
+});
+test('suavização não permite capturar quando o celular continua se deslocando',()=>{
+ const tracker=live.createTracker(),base=frame().points;
+ for(let i=0;i<8;i++)assert.notEqual(tracker.update(frame({points:base.map(p=>({x:p.x+i*3,y:p.y}))}),i*650),'capture');
+});
+test('processamento um pouco mais lento conserva a estabilidade, mas uma pausa longa reinicia',()=>{
+ const tracker=live.createTracker();tracker.update(frame(),0);
+ assert.equal(tracker.update(frame(),1900),'steady');assert.equal(tracker.update(frame(),3800),'capture');
+ tracker.update(frame(),4000);assert.equal(tracker.update(frame(),8000),'steady');
+});

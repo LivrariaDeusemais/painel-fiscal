@@ -23,19 +23,30 @@
  function paperEdges(gray,w,h,ink){
   if(ink.length<100)return null;
   const xs=ink.map(p=>p.x).sort((a,b)=>a-b),ys=ink.map(p=>p.y).sort((a,b)=>a-b),q=(a,f)=>a[Math.floor((a.length-1)*f)];
-  const value=(x,y)=>gray[Math.max(0,Math.min(h-1,Math.round(y)))*w+Math.max(0,Math.min(w-1,Math.round(x)))];
+  // Reuse gradients across candidate lines: important on mobile CPUs, where
+  // recomputing six samples per candidate could stall every camera observation.
+  const gradients=[new Float32Array(w*h),new Float32Array(w*h)],fine=[new Float32Array(w*h),new Float32Array(w*h)];
+  for(let y=4;y<h-4;y++)for(let x=4;x<w-4;x++){
+   const i=y*w+x;for(let k=1;k<=4;k++){
+    const gx=gray[i+k]-gray[i-k],gy=gray[i+k*w]-gray[i-k*w];
+    if(k>=2){gradients[0][i]+=gx/3;gradients[1][i]+=gy/3;}
+    if(k<=3){fine[0][i]+=gx/3;fine[1][i]+=gy/3;}
+   }
+  }
+  const gradient=(map,vertical,p,t)=>{const x=Math.round(vertical?p:t),y=Math.round(vertical?t:p);return x>=4&&x<w-4&&y>=4&&y<h-4?map[vertical?0:1][y*w+x]:0;};
   function fit(vertical,min,max,from,to,side){
    if(to-from<20||max-min<3)return null;
    const mid=(from+to)/2,candidates=[];
    for(let angle=-.3;angle<=.3001;angle+=.02)for(let b=Math.ceil(min);b<=max;b++){
-    const sums=[0,0,0,0],counts=[0,0,0,0];let strong=0,n=0;
-    for(let t=from;t<=to;t+=2){const p=b+angle*(t-mid);if(p<3||p>(vertical?w:h)-4)continue;let difference=0;
-     for(let k=2;k<=4;k++)difference+=vertical?value(p+k,t)-value(p-k,t):value(t,p+k)-value(t,p-k);difference/=3;
-     const section=Math.min(3,Math.floor((t-from)/(to-from)*4));sums[section]+=Math.min(20,Math.abs(difference));counts[section]++;strong+=Math.abs(difference)>3?1:0;n++;
+    const sums=[0,0,0,0],signed=[0,0,0,0],counts=[0,0,0,0];let strong=0,n=0,positive=0,negative=0;
+    for(let t=from;t<=to;t+=2){const p=b+angle*(t-mid);if(p<3||p>(vertical?w:h)-4)continue;const difference=gradient(gradients,vertical,p,t);
+     const section=Math.min(3,Math.floor((t-from)/(to-from)*4));sums[section]+=Math.min(20,Math.abs(difference));counts[section]++;signed[section]+=Math.max(-20,Math.min(20,difference));strong+=Math.abs(difference)>3?1:0;positive+=difference>2?1:0;negative+=difference< -2?1:0;n++;
     }
     if(n<(to-from)/3)continue;
     const means=sums.map((s,i)=>s/Math.max(1,counts[i])).sort((a,b)=>a-b),score=means[0]*.6+means[1]*.25+means[2]*.15;
-    if(strong/n>=.65)candidates.push({b,angle,mid,score});
+    const polarity=positive>negative?1:-1;
+    const coherent=signed.every((s,i)=>s*polarity/Math.max(1,counts[i])>1.8);
+    if(strong/n>=.65&&Math.max(positive,negative)/n>=.78&&coherent)candidates.push({b,angle,mid,score:score*(Math.max(positive,negative)/n),polarity});
    }
    const best=Math.max(0,...candidates.map(c=>c.score));if(best<4)return null;
    // When a shadow or surrounding object has a stronger edge, prefer the first
@@ -45,7 +56,7 @@
    const chosen=supported[0];if(!chosen)return null;
    const samples=[];
    for(let t=from;t<=to;t+=2){const expected=chosen.b+chosen.angle*(t-mid);let peak=0,position=expected;
-    for(let offset=-4;offset<=4;offset++){const p=expected+offset;let gradient=0;for(let k=1;k<=3;k++)gradient+=vertical?value(p+k,t)-value(p-k,t):value(t,p+k)-value(t,p-k);gradient=Math.abs(gradient/3);if(gradient>peak){peak=gradient;position=p;}}
+    for(let offset=-4;offset<=4;offset++){const p=expected+offset;const strength=gradient(fine,vertical,p,t)*chosen.polarity;if(strength>peak){peak=strength;position=p;}}
     if(peak>3)samples.push({t,p:position,weight:Math.min(20,peak)});
    }
    let line=chosen;
@@ -57,12 +68,40 @@
    }
    return line;
   }
-  const topInk=q(ys,.08),bottomInk=q(ys,.90),leftInk=q(xs,.15),rightInk=q(xs,.85);
+  const topInk=q(ys,.03),bottomInk=q(ys,.97),leftInk=q(xs,.05),rightInk=q(xs,.95);
   const left=fit(true,3,leftInk-2,topInk,bottomInk,-1),right=fit(true,rightInk+2,w-4,topInk,bottomInk,1);
   if(!left||!right||right.b-left.b<w*.12)return null;
   const x1=left.b+(right.b-left.b)*.08,x2=right.b-(right.b-left.b)*.08;
-  const top=fit(false,3,q(ys,.05)+2,x1,x2,-1),bottom=fit(false,q(ys,.80)+2,h-4,x1,x2,1);
+  let top=fit(false,3,q(ys,.01)-2,x1,x2,-1),bottom=fit(false,q(ys,.99)+2,h-4,x1,x2,1);
+  // Find where both long side edges actually begin/end. A printed row may be
+  // stronger than the faint paper edge, but cannot truncate those side edges.
+  function extent(line){
+   const strength=t=>{let sum=0;for(let k=-1;k<=1;k++)sum+=gradient(gradients,true,line.b+line.angle*(t-line.mid)+k,t)*line.polarity;return sum/3;};
+   const center=Math.round((topInk+bottomInk)/2),values=[];
+   for(let y=Math.round(topInk);y<=bottomInk;y+=3)values.push(Math.max(0,strength(y)));
+   values.sort((a,b)=>a-b);const threshold=Math.max(1.6,Math.min(4,values[Math.floor(values.length/2)]*.25));
+   function walk(direction){let last=center,gap=0;for(let y=center;y>=5&&y<h-5;y+=direction){
+    const smooth=(strength(y-1)+strength(y)+strength(y+1))/3;
+    if(smooth>threshold){last=y;gap=0;}else if(++gap>7)break;
+   }return last;}
+   return {top:walk(-1),bottom:walk(1)};
+  }
+  const extents=[extent(left),extent(right)];
+  function endpointLine(which){
+   const a={y:extents[0][which]},b={y:extents[1][which]};
+   a.x=left.b+left.angle*(a.y-left.mid);b.x=right.b+right.angle*(b.y-right.mid);
+   if(b.x-a.x<20)return null;const angle=(b.y-a.y)/(b.x-a.x),mid=(a.x+b.x)/2;
+   if(Math.abs(angle)>.35)return null;
+   const line={b:a.y+angle*(mid-a.x),angle,mid,polarity:which==='top'?left.polarity:right.polarity};
+   let supported=0,n=0;for(let x=a.x+4;x<b.x-4;x+=2){n++;supported+=gradient(gradients,false,line.b+angle*(x-mid),x)*line.polarity>1?1:0;}
+   return n&&supported/n>.55?line:null;
+  }
+  const edgeTop=endpointLine('top'),edgeBottom=endpointLine('bottom');
+  if(edgeTop&&(!top||edgeTop.b<top.b-3))top=edgeTop;
+  if(edgeBottom&&(!bottom||edgeBottom.b>bottom.b+3))bottom=edgeBottom;
   if(!top||!bottom)return null;
+  if(left.polarity!==top.polarity||right.polarity!==bottom.polarity||left.polarity===right.polarity)return null;
+  if(Math.abs(top.angle-bottom.angle)>.18||Math.abs(left.angle-right.angle)>.18)return null;
   const intersection=(v,horizontal)=>{const x=(v.b-v.angle*v.mid+v.angle*(horizontal.b-horizontal.angle*horizontal.mid))/(1-v.angle*horizontal.angle);return {x,y:horizontal.b+horizontal.angle*(x-horizontal.mid)};};
   left.b-=1;right.b+=1;top.b-=1;bottom.b+=1;
   const points=[intersection(left,top),intersection(right,top),intersection(right,bottom),intersection(left,bottom)];
@@ -71,7 +110,7 @@
   const inside=p=>points.every((a,i)=>{const b=points[(i+1)%4];return (b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=-2;});
   // Background specks and old overlay marks can resemble small text components.
   // All four continuous edges are required; tolerate a small minority of outliers.
-  if(core.filter(inside).length<core.length*.90)return null;
+  if(core.filter(inside).length<core.length*.99)return null;
   return points;
  }
  // Evaluate both light and dark paper, ignoring regions connected to the frame.
@@ -112,6 +151,8 @@
    if(part.length>2&&maxX-minX<w*.45&&maxY-minY<h*.18)for(const i of part)ink.push({x:i%w,y:Math.floor(i/w)});
   }
   const contains=(polygon,p)=>polygon.every((a,i)=>cross(a,polygon[(i+1)%4],p)>=-2);
+  const physical=paperEdges(blur,w,h,ink);
+  if(physical)return finish(physical,'edges');
   let best=null,bestScore=0;
   for(const layer of [{values:blur,levels},{values:contrast,levels:[3,5,8,12,18,25]}])
   for(const threshold of layer.levels)for(const bright of [false,true]){
@@ -132,8 +173,6 @@
     if(score>bestScore){bestScore=score;best=points;}
    }
   }
-  const physical=paperEdges(blur,w,h,ink);
-  if(physical)return finish(physical,'edges');
   if(best)return finish(best,'region');
   // Low-contrast fallback: retain the complete text region with a generous margin,
   // rather than accepting a small internal contour that would cut off receipt text.
