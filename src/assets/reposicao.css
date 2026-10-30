@@ -31,3 +31,6 @@
 #rpHistory .rp-card{background:white;border:1px solid #dce6e1;border-radius:14px;padding:22px;margin:20px 0}
 #rpHistory table{width:100%;border-collapse:collapse}#rpHistory th{background:#e8f2ee;text-align:left}#rpHistory th,#rpHistory td{padding:12px;border-bottom:1px solid #e2e9e6}
 #rpHistory button{background:#0b543e;color:white;padding:12px 18px;border:0;border-radius:9px;cursor:pointer}#rpHistory a{color:#0b543e}
+
+/* Global buttons use inline-flex; keep the import state below its label. */
+#rp button[data-import]{display:inline-flex!important;flex-direction:column!important;align-items:center;justify-content:center;gap:2px}

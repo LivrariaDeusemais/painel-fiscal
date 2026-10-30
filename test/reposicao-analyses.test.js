@@ -28,7 +28,7 @@ test('migração conserva planejamento e pedidos, ocorre uma vez e nova análise
  const old=await s.scope('1',()=>s.load(db));assert.equal(old.dados.overrides.B1.quantity,8);assert.equal(old.dados.giro.quantities.B1,15);assert.equal(old.dados.shipments[0].rows[0].quantity,3);assert.equal(old.orders[0].id,'11');assert.equal(old.orders[0].analysisId,'1');
  assert.equal((await s.analyses(db)).length,1);
  const id=await s.createAnalysis(db,1);assert.equal(id,'2');
- const fresh=await s.scope(id,()=>s.load(db));assert.deepEqual(fresh.dados.overrides,{});assert.equal(fresh.dados.giro,null);assert.deepEqual(fresh.dados.shipments,[]);assert.deepEqual(fresh.dados.imports,{});assert.equal(fresh.dados.suppliers.Editora.lead,7);assert.equal(fresh.products.length,0);
+ const fresh=await s.scope(id,()=>s.load(db));assert.deepEqual(fresh.dados.overrides,{});assert.equal(fresh.dados.giro,null);assert.deepEqual(fresh.dados.shipments,[]);assert.deepEqual(fresh.dados.imports,{});assert.equal(fresh.dados.suppliers.Editora.lead,7);assert.equal(fresh.products.length,1);assert.equal(fresh.products[0].estoque_matriz,4);assert.equal(s.derive(fresh)[0].fullMeli,null);assert.equal(s.derive(fresh)[0].giro,null);
 });
 test('snapshot e quantidades de uma análise ficam isolados das próximas cargas e análises',async()=>{
  const {db,products}=storage();const id=await s.createAnalysis(db,1);
