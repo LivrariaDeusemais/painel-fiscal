@@ -8,3 +8,12 @@
 #rp .rp-sku{display:flex;align-items:center;gap:8px;white-space:nowrap}
 #rp #rpTable td[data-cell=code],#rp #rpTable td[data-cell=giro]{text-align:center!important}
 #rp #rpTable td[data-cell=cost],#rp #rpTable td[data-cell=lineTotal]{text-align:right!important;font-variant-numeric:tabular-nums}
+
+/* Manter cabeçalhos e SKU dentro da área de rolagem da tabela. */
+#rp .rp-scroll{position:relative;isolation:isolate;max-height:65vh!important;overflow:auto!important}
+#rp #rpTable thead th{position:sticky!important;top:0!important;z-index:4!important;background:#e8f2ed!important}
+#rp #rpTable thead th:first-child{left:0!important;z-index:6!important}
+#rp #rpTable tbody td:first-child{position:sticky!important;left:0!important;z-index:3!important;background:#f8fbf9!important}
+#rp #rpTable th[data-column=matrix],#rp #rpTable th[data-column=meli],#rp #rpTable th[data-column=shopee],#rp #rpTable th[data-column=stockTotal],#rp #rpTable th[data-column=afterFull]{background:#dceaf6!important;color:#254b68!important}
+#rp #rpTable td[data-cell=giro],#rp #rpTable td[data-cell=fullMeli],#rp #rpTable td[data-cell=fullShopee],#rp #rpTable td[data-cell=matrix],#rp #rpTable td[data-cell=meli],#rp #rpTable td[data-cell=shopee],#rp #rpTable td[data-cell=stockTotal],#rp #rpTable td[data-cell=afterFull],#rp #rpTable td[data-cell=pending],#rp #rpTable td[data-cell=lead],#rp #rpTable td[data-cell=coverage],#rp #rpTable td[data-cell=suggested],#rp #rpTable td[data-cell=quantity],#rp #rpTable input[data-field=quantity]{text-align:center!important}
+#rpGiroSuccess{max-width:520px!important;text-align:center}
