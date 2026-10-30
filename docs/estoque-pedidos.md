@@ -27,11 +27,9 @@ análise identificada como Planejamento anterior, preservando os dados existente
 os pedidos antigos. A marca `analysesMigrated` impede repetir a conversão. Não se apagam
 planejamentos nem pedidos anteriores. Produção não foi migrada durante o desenvolvimento.
 
-Iniciar análise solicita atualização da integração Bling de cadastro/custos/estoques, sem
-consultar vínculos/preços brutos. Se já há sincronização, acompanha a execução existente.
-Os saldos são congelados ao concluir; a consulta recupera a conclusão caso o processo reinicie.
-Falhas ficam visíveis como Falha/Com pendências, com detalhes e datas dos últimos saldos.
-Não se declara atualização bem-sucedida quando a API falha. Nenhum pedido é enviado ao Bling.
+Iniciar análise congela imediatamente a última base local de cadastro, custos e estoques.
+Não dispara consulta à API nem acompanha sincronizações em andamento. Os botões ficam
+liberados imediatamente. Nenhum pedido é enviado ao Bling.
 
 Cada análise nova começa sem giro, sem demandas Full e sem quantidades manuais. Importações
 são locais à análise e não alteram as anteriores. Botões pendentes: amarelo suave e Atualizar
@@ -102,3 +100,7 @@ pedido usam centavos. Logo PNG/JPEG até 800 KB. Exportação Excel existente é
 Nenhum novo alerta automático ou envio de mensagem foi incluído nesta etapa.
 
 Pedido PDF: download real em /pedidos/:id/relatorio, protegido por download tanto da gestão quanto de Compras. Modelo A4 com logo Deus é Mais, dados cadastrais e sete colunas do modelo aprovado (código, fornecedor, descrição, marca, quantidade, custo unitário e total). Cabeçalhos repetidos por página, solicitação original preservada após orçamento e totais arredondados por linha em centavos.
+
+Atualização de saldos: iniciar análise usa exclusivamente a última base local do Bling e libera imediatamente as importações. Não dispara nem acompanha sincronização da API. Para saldos mais recentes, sincronizar no menu Integrações antes de iniciar. Análises antigas ainda aguardando sincronização recebem a última base local ao abrir.
+
+A tela exibe a data/hora mais recente de estoque_bling_em entre os produtos congelados, no fuso America/Sao_Paulo. Ausência de data aparece como não disponível; a abertura da análise não é tratada como atualização do estoque.
