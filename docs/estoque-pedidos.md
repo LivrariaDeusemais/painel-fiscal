@@ -104,3 +104,5 @@ Pedido PDF: download real em /pedidos/:id/relatorio, protegido por download tant
 Atualização de saldos: iniciar análise usa exclusivamente a última base local do Bling e libera imediatamente as importações. Não dispara nem acompanha sincronização da API. Para saldos mais recentes, sincronizar no menu Integrações antes de iniciar. Análises antigas ainda aguardando sincronização recebem a última base local ao abrir.
 
 A tela exibe a data/hora mais recente de estoque_bling_em entre os produtos congelados, no fuso America/Sao_Paulo. Ausência de data aparece como não disponível; a abertura da análise não é tratada como atualização do estoque.
+
+Giro é importado em uma única requisição transacional, sem prévia de sessão. SKUs desconhecidos ou versão concorrente rejeitam a operação sem alterar o giro. Full e orçamento mantêm a conferência com prévia salva antes da resposta.
