@@ -290,6 +290,7 @@ async function startSync(pool, filter='', module='all', marketplaces=null, optio
     const completion = runSync(pool, client, job.id, {...settings.configuracao, selectedSkus, module, marketplaces}).catch(() => {}).finally(async () => {
       try { await client.query("SELECT pg_advisory_unlock(hashtext('bling-sincronizacao'))"); } finally { client.release(); }
     }).catch(() => {});
+    if(typeof options.onComplete==='function') completion.then(()=>options.onComplete(job.id)).catch(error=>console.error('[Bling pós-sincronização]',error.message));
     if(options.wait) await completion;
     return job.id;
   } catch (error) {

@@ -21,3 +21,13 @@
    na própria tabela em vez da área que efetivamente rola. */
 #rp #rpTable{overflow:visible!important;border-collapse:separate!important;border-spacing:0!important}
 #rp #rpTable thead th:nth-child(2){position:sticky!important;left:auto!important;top:0!important}
+/* Numbered analyses and import freshness */
+#rp [data-import] small{display:block;font-size:11px;margin-top:3px;color:#527565}
+#rp [data-import].rp-import-pending{background:#fff8db!important;border-color:#ecdba0!important}
+#rp [data-import].rp-import-pending small{color:#bd3030}
+#rp #rpSaveState{font-size:12px;color:#527565;cursor:pointer}
+#rpHistory{max-width:1600px;margin:24px auto;color:#344456}
+#rpHistory .rp-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}
+#rpHistory .rp-card{background:white;border:1px solid #dce6e1;border-radius:14px;padding:22px;margin:20px 0}
+#rpHistory table{width:100%;border-collapse:collapse}#rpHistory th{background:#e8f2ee;text-align:left}#rpHistory th,#rpHistory td{padding:12px;border-bottom:1px solid #e2e9e6}
+#rpHistory button{background:#0b543e;color:white;padding:12px 18px;border:0;border-radius:9px;cursor:pointer}#rpHistory a{color:#0b543e}

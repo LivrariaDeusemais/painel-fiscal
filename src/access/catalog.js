@@ -8,6 +8,7 @@ const catalog=[
  ['financeiro','Financeiro','financeiro','Visão operacional financeira',['/financeiro','/dashboard'],false],
  ['compras','Gestão de Estoque','compras','Arquivo de NFs / estoque',['/compras','/ferramentas-ia/gestao-compras'],true],
  ['compras','Gestão de Estoque','estoque-pedidos','Gestão de estoque',['/compras/reposicao'],true],
+ ['compras','Gestão de Estoque','pedidos-compra','Compras e retorno das editoras',['/compras/reposicao/compras','/compras/reposicao/pedidos'],true],
  ['compras','Gestão de Estoque','codificador','Codificador',['/ferramentas-ia/codificador'],true],
  ['precos','Preços','calculadora','Calculadora',['/ferramentas-ia/tabela-precos/promocoes'],true],
  ['precos','Preços','produtos','Produtos',['/ferramentas-ia/tabela-precos/produtos'],true],
@@ -32,7 +33,7 @@ const catalog=[
  ['contabil','Contábil','atualizar-faturamento','Bloco: atualizar faturamento',['/painel/faturamento'],true,'sensitive'],
  ['contabil','Contábil','fechamento-despesas','Bloco: fechamento de despesas',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
-].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
+].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['pedidos-compra','estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
 function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write===true?'edit':write===false?'view':write]===true;}
 function downloadGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.downloadable&&actionFor(req)==='download'&&permitted(req.session?.usuario,c.id,'download')===true;}
