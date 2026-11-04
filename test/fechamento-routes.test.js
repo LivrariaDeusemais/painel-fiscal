@@ -11,6 +11,7 @@ test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baix
  if(q.startsWith('SELECT * FROM fechamento_arquivos WHERE mes'))return {rows:[...files.values()].filter(f=>f.mes===a[0])};
  if(q.startsWith('SELECT acao,usuario'))return {rows:events.filter(e=>e.mes===a[0]).toReversed()};
  if(q.startsWith('SELECT * FROM fechamentos_mensais WHERE mes LIKE'))return {rows:[...months.values()].filter(r=>r.mes.startsWith(a[0].slice(0,4))&&(!q.includes("status='fechado'")||r.status==='fechado'))};
+ if(q.includes('GROUP BY 1')&&q.includes('FROM lancamentos'))return {rows:a[0].map(mes=>({mes,total:'100.00'}))};
  if(q.includes('SUM(valor)'))return {rows:[{total:'100.00'}]};
  return {rows:[]};},async connect(){return {query:pool.query,release(){}};}};
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'fx-routes-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
@@ -29,8 +30,8 @@ test('HTTP: importar relatório, corrigir, fechar, consultar como contador, baix
  const data={...s.blank(),revenue:100000,deductions:10000,cmv:30000,expenses:20000,notes:'Conferido',publishers:[{name:'Editora',value:30000}]};data.stocks.matriz={quantity:2,value:2800};
  const body={month:'2026-01',data,sourceFiles:{matriz:f.id},status:'fechado',version:0,reason:'Ajuste conforme conferência'};
  const post=body=>get('/contabil/fechamento/salvar',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
- const saved=await post(body);assert.equal(saved.status,200);assert.equal(months.get('2026-01').dados.stocks.matriz.value,2800);assert.equal(months.get('2026-01').dados.sourceNotes.matriz.value,3000);assert.equal((await post(body)).status,409);
- const custom=await get('/financeiro?visao=personalizado&ano=2026&meses=2026-01&meses=2026-03');assert.equal(custom.status,200);assert.match(await custom.text(),/Acumulado de 1/);assert.ok(periodQueries.length>=3);assert.ok(periodQueries.every(([,months])=>JSON.stringify(months)===JSON.stringify(['2026-01','2026-03'])));
+ const saved=await post(body);assert.equal(saved.status,200);assert.equal(months.get('2026-01').dados.expenses,10000,'despesa enviada manualmente é ignorada em favor dos comprovantes');assert.equal(months.get('2026-01').dados.stocks.matriz.value,2800);assert.equal(months.get('2026-01').dados.sourceNotes.matriz.value,3000);assert.equal((await post(body)).status,409);
+ const beforeCustom=periodQueries.length;const custom=await get('/financeiro?visao=personalizado&ano=2026&meses=2026-01&meses=2026-03');assert.equal(custom.status,200);assert.match(await custom.text(),/Acumulado de 1/);assert.ok(periodQueries.length>=3);assert.ok(periodQueries.slice(beforeCustom).filter(([q])=>!q.includes('GROUP BY 1')).every(([,months])=>JSON.stringify(months)===JSON.stringify(['2026-01','2026-03'])));
  session.usuario.perfil='USUARIO';const beforeRestricted=queries.length;
  for(const url of ['/contabil/fechamento?mes=2026-01','/contabil/historico?ano=2026','/contabil/fechamento/exportar?ano=2026','/contabil/fechamento/arquivo/'+f.id])assert.equal((await get(url)).status,403);
  assert.equal((await post({...body,version:1})).status,403);assert.equal((await get('/contabil/fechamento/importar',{method:'POST',headers,body:fd()})).status,403);

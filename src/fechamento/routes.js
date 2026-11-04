@@ -31,7 +31,8 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  const mode=['anual','personalizado'].includes(req.query.visao)?req.query.visao:'mensal';
  const selectedMonths=s.period({mode,month:m,year,months:req.query.meses||[]});
  const columns=canSeeClosing?"*":"mes,status,jsonb_build_object('stocks',dados->'stocks','publishers',dados->'publishers') AS dados";
- const closedRows=(await pool.query(`SELECT ${columns} FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes`,[selectedMonths])).rows;
+ let closedRows=(await pool.query(`SELECT ${columns} FROM fechamentos_mensais WHERE status='fechado' AND mes=ANY($1::text[]) ORDER BY mes`,[selectedMonths])).rows;
+ if(canSeeClosing)closedRows=await s.currentExpenses(pool,closedRows);
  const data=s.aggregate(closedRows),closed={data,count:closedRows.length,through:data.through,rows:closedRows};
 
  let categories=[],suppliers=[],live={};
@@ -66,15 +67,15 @@ function createRouter({pool,protect,renderShell,uploadsDir}){
  }catch(e){for(const f of created)try{fs.unlinkSync(f);}catch{}throw e;}
  }));
  router.post('/contabil/fechamento/salvar',operator,csrf,run(async(req,res)=>{
- const input=req.body,m=input.month;const data=s.validate(input.data||{});const ids=input.sourceFiles||{};const refs={};const originals={};
+ const input=req.body,m=input.month;const fresh=(await s.currentExpenses(pool,[{mes:m,dados:input.data||{}}]))[0];const data=s.validate(fresh.dados);const ids=input.sourceFiles||{};const refs={};const originals={};
  if(Object.keys(ids).some(k=>!['dre',...Object.keys(s.DEPOSITS)].includes(k)))throw new Error('Fonte inválida.');
  for(const [type,id] of Object.entries(ids)){if(!id)continue;const f=(await pool.query('SELECT * FROM fechamento_arquivos WHERE id=$1 AND mes=$2 AND tipo=$3',[id,m,type])).rows[0];if(!f)throw new Error('Arquivo original não corresponde ao mês/depósito.');refs[type]=id;originals[type]=f.extraido;}
  data.sourceFiles=refs;data.sourceNotes=originals;
  const result=await s.save(pool,{month:m,data,status:input.status,version:input.version,user:actor(req),reason:input.reason});res.json({version:result.versao,status:result.status});
  }));
- router.get('/contabil/historico',run(async(req,res)=>{const year=String(req.query.ano||new Date().getFullYear());if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');const rows=(await pool.query(`SELECT * FROM fechamentos_mensais WHERE mes LIKE $1 ${req.session.usuario.perfil==='CONTADOR'?"AND status='fechado'":''} ORDER BY mes DESC`,[year+'-%'])).rows;html(req,res,'Histórico mensal',views.history(rows,year));}));
+ router.get('/contabil/historico',run(async(req,res)=>{const year=String(req.query.ano||new Date().getFullYear());if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');const rows=(await pool.query(`SELECT * FROM fechamentos_mensais WHERE mes LIKE $1 ${req.session.usuario.perfil==='CONTADOR'?"AND status='fechado'":''} ORDER BY mes DESC`,[year+'-%'])).rows;html(req,res,'Histórico mensal',views.history(await s.currentExpenses(pool,rows),year));}));
  router.get('/contabil/fechamento/arquivo/:id',run(async(req,res)=>{const f=(await pool.query('SELECT * FROM fechamento_arquivos WHERE id=$1',[req.params.id])).rows[0];if(!f)return res.sendStatus(404);if(req.session.usuario.perfil==='CONTADOR'){const r=await row(f.mes);if(r?.status!=='fechado'||!Object.values(r.dados.sourceFiles||{}).includes(f.id))return res.sendStatus(403);}const file=path.join(directory,path.basename(f.nome_arquivo));if(!fs.existsSync(file))return res.sendStatus(404);res.download(file,f.nome_original,error=>{if(!error)pool.query('INSERT INTO fechamento_eventos (mes,acao,usuario,dados) VALUES ($1,$2,$3,$4::jsonb)',[f.mes,'download original',actor(req),JSON.stringify({fileId:f.id})]).catch(e=>console.error('[Download fechamento]',e.message));});}));
- router.get('/contabil/fechamento/exportar',run(async(req,res)=>{const year=String(req.query.ano||new Date().getFullYear());if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');const rows=(await pool.query(`SELECT * FROM fechamentos_mensais WHERE mes LIKE $1 ${req.session.usuario.perfil==='CONTADOR'?"AND status='fechado'":''} ORDER BY mes`,[year+'-%'])).rows;const wb=s.workbook(rows),buffer=await wb.xlsx.writeBuffer();for(const r of rows)await pool.query('INSERT INTO fechamento_eventos (mes,acao,usuario,dados) VALUES ($1,$2,$3,$4::jsonb)',[r.mes,'download fechamento anual',actor(req),JSON.stringify({year,months:rows.map(r=>r.mes)})]);res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.set('Content-Disposition',`attachment; filename="Fechamentos-${year}.xlsx"`);res.send(Buffer.from(buffer));}));
+ router.get('/contabil/fechamento/exportar',run(async(req,res)=>{const year=String(req.query.ano||new Date().getFullYear());if(!/^20\d{2}$/.test(year))throw new Error('Ano inválido.');const rows=(await pool.query(`SELECT * FROM fechamentos_mensais WHERE mes LIKE $1 ${req.session.usuario.perfil==='CONTADOR'?"AND status='fechado'":''} ORDER BY mes`,[year+'-%'])).rows;const wb=s.workbook(await s.currentExpenses(pool,rows)),buffer=await wb.xlsx.writeBuffer();for(const r of rows)await pool.query('INSERT INTO fechamento_eventos (mes,acao,usuario,dados) VALUES ($1,$2,$3,$4::jsonb)',[r.mes,'download fechamento anual',actor(req),JSON.stringify({year,months:rows.map(r=>r.mes)})]);res.set('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.set('Content-Disposition',`attachment; filename="Fechamentos-${year}.xlsx"`);res.send(Buffer.from(buffer));}));
  return router;
 }
 module.exports={createRouter};
