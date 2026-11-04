@@ -19,6 +19,7 @@ const catalog=[
  ['precos','Preços','meli','Mercado Livre / campanhas / publicação',['/ferramentas-ia/tabela-precos/mercado-livre'],true],
  ['precos','Preços','tabela','Tabela por marketplace / exportações',['/precos','/ferramentas-ia/tabela-precos/tabela','/ferramentas-ia/tabela-precos/exportar','/ferramentas-ia/tabela-precos/exportar-liquido','/ferramentas-ia/tabela-precos/exportar-completa','/ferramentas-ia/tabela-precos/publicar-marketplace','/ferramentas-ia/tabela-precos/novo-bruto','/ferramentas-ia/tabela-precos'],true],
  ['contabil','Contábil','downloads','Central de downloads',['/espaco-contador'],true],
+ ['contabil','Contábil','conferencia-contabil','Conferência contábil — Balancete e DRE',['/contabil/conferencia'],true,'sensitive'],
  ['contabil','Contábil','fechamento','Fechamento / faturamento / resultados',['/contabil/fechamento','/contabil/historico'],true,'sensitive'],
  ['contabil','Contábil','conciliacao','Conciliação bancária',['/conciliacao-bancaria'],true],
  ['contabil','Contábil','contabil','Visão contábil',['/contabil'],false],
@@ -33,7 +34,7 @@ const catalog=[
  ['contabil','Contábil','atualizar-faturamento','Bloco: atualizar faturamento',['/painel/faturamento'],true,'sensitive'],
  ['contabil','Contábil','fechamento-despesas','Bloco: fechamento de despesas',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
-].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['pedidos-compra','estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
+].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['conferencia-contabil','pedidos-compra','estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
 function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write===true?'edit':write===false?'view':write]===true;}
 function downloadGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.downloadable&&actionFor(req)==='download'&&permitted(req.session?.usuario,c.id,'download')===true;}

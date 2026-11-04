@@ -33128,6 +33128,7 @@ router.use(require('../painel/routes').createRouter({pool,protect:protegerRota,r
   await (painelContadorSchema ||= ensureContadorTables().catch(error=>{painelContadorSchema=null;throw error;}));
   return require('../painel/downloads').load(pool,getContadorArquivoConfig());
 }}));
+router.use(require('../conferencia/routes').createRouter({ pool, protect: protegerRota, renderShell: renderPremiumAdminShell }));
 router.use(require('../fechamento/routes').createRouter({ pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir }));
 router.use('/ferramentas-ia/gestao-compras', require('./compras-estoque').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell, uploadsDir}));
 router.use('/compras/reposicao', require('./reposicao').createRouter({pool, protect: protegerRota, renderShell: renderPremiumAdminShell}));
