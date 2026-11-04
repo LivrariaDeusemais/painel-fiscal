@@ -2019,7 +2019,7 @@ function arquivoDataBr(valor) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false, podeVincularPares = false, paresToken = '', filtros = {}, pagina = 1, totalPaginas = 1, totalItens = 0 } = {}) {
+function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', selecionar = '', rotinaId = '', arquivoPdfId = '', arquivoXmlId = '', editarLancamentoId = '', retornoFiltros = '', origemArquivo = undefined, cnpjFiltro = '', mostrarTodos = false, filtroSemResultado = false, pendentesAnalise = 0, podeImportarNfse = false, podeVincularPares = false, paresToken = '', filtros = {}, pagina = 1, totalPaginas = 1, totalItens = 0 } = {}) {
   const modoSelecao = String(selecionar || '').toLowerCase();
   const titulo = modoSelecao
     ? `Selecionar ${modoSelecao === 'xml' ? 'XML' : 'PDF'} no Arquivo`
@@ -2042,6 +2042,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
     if (arquivoXmlId) usarParams.set('arquivo_xml_id', arquivoXmlId);
     if (editarLancamentoId) usarParams.set('editar_lancamento_id', editarLancamentoId);
     if (retornoFiltros) usarParams.set('retorno_filtros', retornoFiltros);
+    if (origemArquivo !== undefined) usarParams.set('origem_arquivo', String(origemArquivo));
 
     const idSelecao = modoSelecao === 'xml' ? (a.xml_id || a.id) : (a.pdf_id || a.id);
     const usarBtn = modoSelecao
@@ -2082,7 +2083,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
             ${arquivosLinks || `<a class="btn-soft-mini" href="/arquivo/ver/${idAcao}" target="_blank">Abrir</a>`}
             ${a.analise_status === 'COMPROVANTE' ? `<a class="btn-soft-mini" href="/arquivo/renomear/${idAcao}">Renomear</a>` : ''}
             ${usarBtn}
-            ${!modoSelecao && a.pdf_id ? `<a class="btn-green-mini" href="/arquivo/usar/${a.pdf_id}?destino=pdf&iniciar_arquivo=1">Preencher</a>` : ''}
+            ${!modoSelecao && a.pdf_id ? `<a class="btn-green-mini" href="/arquivo/usar/${a.pdf_id}?destino=pdf&iniciar_arquivo=1&origem_arquivo=${encodeURIComponent(new URLSearchParams({busca:filtros.busca||'',data_inicio:filtros.dataInicio||'',data_fim:filtros.dataFim||'',conciliacao:filtros.conciliacao||'',pagina:String(pagina)}).toString())}">Preencher</a>` : ''}
             <form method="POST" action="/arquivo/${idAcao}/excluir" onsubmit="return confirm('Excluir este arquivo da fila?')">
               <button type="submit" class="btn-danger-mini">Excluir</button>
             </form>
@@ -2341,8 +2342,8 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
           ${mensagem ? `<div class="alert-ok">${escapeHtmlGlobal(mensagem)}</div>` : ''}
           ${erro ? `<div class="alert-error">${escapeHtmlGlobal(erro)}</div>` : ''}
 
-          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><div class="filter-alert-actions"><a class="btn-soft-mini btn-return-mini" href="/rotina-despesas${retornoFiltros ? `?${escapeHtmlGlobal(retornoFiltros)}` : ''}">Voltar para Contas a Pagar</a><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Mostrar todos os arquivos</a></div></div>` : ''}
-          ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}">Remover filtro</a></div>` : ''}
+          ${filtroSemResultado ? `<div class="filter-alert"><span>Nenhum arquivo disponível foi identificado com o CNPJ/CPF ${escapeHtmlGlobal(cnpjFiltro)}.</span><div class="filter-alert-actions"><a class="btn-soft-mini btn-return-mini" href="/rotina-despesas${retornoFiltros ? `?${escapeHtmlGlobal(retornoFiltros)}` : ''}">Voltar para Contas a Pagar</a><a class="btn-green-mini" href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&arquivo_pdf_id=${encodeURIComponent(arquivoPdfId)}&arquivo_xml_id=${encodeURIComponent(arquivoXmlId)}&cnpj_filtro=${encodeURIComponent(cnpjFiltro)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}${origemArquivo !== undefined ? `&origem_arquivo=${encodeURIComponent(String(origemArquivo))}` : ''}">Mostrar todos os arquivos</a></div></div>` : ''}
+          ${cnpjFiltro && !filtroSemResultado ? `<div class="filter-note">Exibindo documentos identificados com ${escapeHtmlGlobal(cnpjFiltro)}. <a href="/arquivo?selecionar=${encodeURIComponent(modoSelecao)}&rotina_id=${encodeURIComponent(rotinaId)}&mostrar_todos=1&retorno_filtros=${encodeURIComponent(retornoFiltros)}${origemArquivo !== undefined ? `&origem_arquivo=${encodeURIComponent(String(origemArquivo))}` : ''}">Remover filtro</a></div>` : ''}
 
           ${!modoSelecao ? `
             <div class="upload-panel">
@@ -15937,6 +15938,7 @@ router.get('/arquivo', protegerRota, async (req, res) => {
 
     res.send(renderArquivoFilaPage({
       arquivos,
+      origemArquivo: req.query.origem_arquivo,
       mensagem: req.query.ok || '',
       erro: req.query.erro || '',
       selecionar,
@@ -16265,6 +16267,7 @@ router.get('/arquivo/usar/:id', protegerRota, async (req, res) => {
 
     const query = new URLSearchParams();
     if (rotinaId) query.set('rotina_id', rotinaId);
+    if (req.query.iniciar_arquivo === '1' || req.query.origem_arquivo !== undefined) query.set('origem_arquivo', String(req.query.origem_arquivo || ''));
     if (req.query.iniciar_arquivo === '1') query.set('iniciar_arquivo', '1');
     if (retornoFiltros) query.set('retorno_filtros', retornoFiltros);
 
@@ -17377,6 +17380,7 @@ router.get('/novo', async (req, res) => {
     const { rotina_id = '', arquivo_pdf_id = '', arquivo_xml_id = '', abrir_pdf_arquivo = '', abrir_preencher_pdf = '', retorno_filtros = '' } = req.query;
     const retornoRecebido = new URLSearchParams(String(retorno_filtros || ''));
     const retornoSeguro = new URLSearchParams();
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(retornoRecebido.get('mes_ano') || '')) retornoSeguro.set('mes_ano', retornoRecebido.get('mes_ano'));
     const retornoFornecedor = String(retornoRecebido.get('fornecedor') || '').trim();
     const retornoStatus = String(retornoRecebido.get('status') || '').trim();
     const retornoDia = normalizarDiaVencimento(retornoRecebido.get('dia_vencimento') || '');
@@ -18194,6 +18198,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
             <form id="novoLancamentoForm" method="POST" action="/novo" enctype="multipart/form-data">
               <input type="hidden" name="rotina_id" value="${rotinaPadrao?.id || ''}">
               <input type="hidden" name="retorno_filtros" value="${escapeHtmlGlobal(retornoFiltros)}">
+              ${req.query.origem_arquivo !== undefined ? `<input type="hidden" name="origem_arquivo" value="${escapeHtmlGlobal(String(req.query.origem_arquivo))}">` : ''}
               <input type="hidden" id="arquivo_pdf_id" name="arquivo_pdf_id" value="${arquivo_pdf_id || ''}">
               <input type="hidden" id="arquivo_xml_id" name="arquivo_xml_id" value="${arquivo_xml_id || ''}">
 
@@ -18275,7 +18280,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
                   <input id="anexo_xml" type="file" name="anexo_xml" accept=".xml,text/xml,application/xml" />
                   <a
                     class="btn-buscar-arquivo-xml"
-                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}"
+                    href="/arquivo?selecionar=xml&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_pdf_id=${encodeURIComponent(arquivo_pdf_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}${req.query.origem_arquivo !== undefined ? `&origem_arquivo=${encodeURIComponent(String(req.query.origem_arquivo))}` : ''}"
                   >Buscar XML no Arquivo</a>
                   <span id="xmlArquivoSelecionadoChip" class="arquivo-selecionado-chip" style="display:none;"></span>
                   <div class="field-hint">Anexe o XML para salvar junto com o lançamento e disponibilizar para download depois.</div>
@@ -18313,7 +18318,7 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
               <a
                 id="buscarPdfArquivoBtn"
                 class="btn-buscar-arquivo-fila"
-                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}"
+                href="/arquivo?selecionar=pdf&rotina_id=${encodeURIComponent(rotinaPadrao?.id || '')}&arquivo_xml_id=${encodeURIComponent(arquivo_xml_id || '')}&cnpj_filtro=${encodeURIComponent(cnpjCpfPadrao)}&retorno_filtros=${encodeURIComponent(retornoFiltros)}${req.query.origem_arquivo !== undefined ? `&origem_arquivo=${encodeURIComponent(String(req.query.origem_arquivo))}` : ''}"
               >Buscar PDF no Arquivo</a>
             </div>
 
@@ -18815,7 +18820,8 @@ router.post(
           ]
         );
         if (rotinaFeita) {
-          const mesCompetencia = await getPainelConfig('rotina_mes_ano_edicao', getMesAnoAtual()) || getMesAnoAtual();
+          const mesCompetencia = String(data_despesa).slice(0, 7);
+          if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mesCompetencia)) throw new Error('Data da despesa inválida.');
           await upsertStatusMensal(rotinaFeita.id, mesCompetencia, 'FEITO', null, null, clienteLancamento);
         }
         await clienteLancamento.query('COMMIT');
@@ -18832,10 +18838,19 @@ router.post(
         await marcarArquivoFilaComoUsado(arquivoXmlFilaNovo.id);
       }
 
-const rotinaOrigem = String(rotina_id || '').trim();
+if (req.body.origem_arquivo !== undefined) {
+        const recebidos = new URLSearchParams(String(req.body.origem_arquivo || ''));
+        const seguros = new URLSearchParams();
+        for (const chave of ['busca','data_inicio','data_fim','conciliacao','pagina']) {
+          if (recebidos.has(chave)) seguros.set(chave, recebidos.get(chave).slice(0, 300));
+        }
+        return res.redirect('/arquivo' + (seguros.size ? '?' + seguros.toString() : ''));
+      }
+      const rotinaOrigem = String(rotina_id || '').trim();
       if (rotinaOrigem) {
         const retornoRecebido = new URLSearchParams(String(retorno_filtros || ''));
         const retornoSeguro = new URLSearchParams();
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(retornoRecebido.get('mes_ano') || '')) retornoSeguro.set('mes_ano', retornoRecebido.get('mes_ano'));
         const retornoFornecedor = String(retornoRecebido.get('fornecedor') || '').trim();
         const retornoStatus = String(retornoRecebido.get('status') || '').trim();
         const retornoDia = normalizarDiaVencimento(retornoRecebido.get('dia_vencimento') || '');
@@ -23357,7 +23372,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
   try {
     await ensureRotinaDespesasColumns();
 
-    const mesAnoEdicao = (await getPainelConfig('rotina_mes_ano_edicao', '')) || getMesAnoAtual();
+    const mesAnoEdicao = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(req.query.mes_ano || '')) ? req.query.mes_ano : (await getPainelConfig('rotina_mes_ano_edicao', '')) || getMesAnoAtual();
     const mesAnoEdicaoLabel = formatMesAnoCurto(mesAnoEdicao);
     const anoMesEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[0] || String(new Date().getFullYear());
     const mesNumeroEdicao = String(mesAnoEdicao || getMesAnoAtual()).split('-')[1] || String(new Date().getMonth() + 1).padStart(2, '0');
@@ -23378,7 +23393,7 @@ router.get('/rotina-despesas', protegerRota, permitirPerfis('ADMIN', 'USUARIO'),
     if (semDataFiltro) extraFiltros.set('sem_data', '1');
     if (dataInicialFiltro) extraFiltros.set('vencimento_inicio', dataInicialFiltro);
     if (dataFinalFiltro) extraFiltros.set('vencimento_fim', dataFinalFiltro);
-    const retornoFiltrosParams = new URLSearchParams();
+    const retornoFiltrosParams = new URLSearchParams({mes_ano:mesAnoEdicao});
     if (fornecedorFiltro) retornoFiltrosParams.set('fornecedor', fornecedorFiltro);
     if (statusFiltro) retornoFiltrosParams.set('status', statusFiltro);
     if (diaVencimentoFiltro) retornoFiltrosParams.set('dia_vencimento', diaVencimentoFiltro);

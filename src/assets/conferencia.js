@@ -1,0 +1,23 @@
+(()=>{
+const root=document.querySelector('.cc');if(!root)return;
+const form=root.querySelector('form[method="get"]');if(form){const show=()=>{const mode=form.elements.mode.value;for(const name of ['month','quarter','start','end'])form.elements[name].closest('label').hidden=!((name==='month'&&mode==='mensal')||(name==='quarter'&&mode==='trimestral')||(['start','end'].includes(name)&&mode==='personalizada'));};form.elements.mode.addEventListener('change',show);show();}
+const table=root.querySelector('#cc-table');if(!table)return;const rows=[...table.querySelectorAll('tbody tr[data-actual]')],filters=new Map();let menu,opener;
+for(const details of table.querySelectorAll('tbody td:last-child > details')){
+ const summary=details.querySelector(':scope > summary');
+ summary.addEventListener('click',event=>{event.preventDefault();close();
+  const dialog=document.createElement('dialog');dialog.className='cc-review-dialog cc';
+  const title=document.createElement('h2');title.textContent=details.closest('tr').cells[0].textContent;
+  const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='Fechar';
+  const content=document.createElement('div');const nodes=[...details.children].filter(n=>n!==summary);nodes.forEach(n=>content.append(n));
+  dialog.append(title,dismiss,content);document.body.append(dialog);
+  const restore=()=>{nodes.forEach(n=>details.append(n));dialog.remove();summary.focus();};
+  dismiss.addEventListener('click',()=>dialog.close());dialog.addEventListener('close',restore,{once:true});dialog.showModal();
+ });
+}
+const match=(row,key,value)=>value==='all'||(key==='actual'&&value==='available'?row.dataset.actual!=='none':key==='diff'&&value==='different'?row.dataset.diff!=='none'&&Number(row.dataset.diff)!==0:key==='diff'&&value==='equal'?row.dataset.diff!=='none'&&Number(row.dataset.diff)===0:row.dataset[key]===value);
+const fits=(row,except)=>[...filters].every(([key,value])=>key===except||match(row,key,value));
+const close=()=>{menu?.remove();menu=null;opener?.setAttribute('aria-expanded','false');};
+function apply(){rows.forEach(row=>row.hidden=!fits(row));for(const b of table.querySelectorAll('[data-cc-filter]'))b.classList.toggle('active',filters.has(b.dataset.ccFilter));const count=root.querySelector('[data-cc-count]');if(count)count.textContent=rows.filter(r=>!r.hidden).length+' de '+rows.length+' contas exibidas';const empty=table.querySelector('[data-cc-empty]');if(empty)empty.hidden=rows.some(r=>!r.hidden);}
+for(const button of table.querySelectorAll('[data-cc-filter]'))button.addEventListener('click',()=>{if(opener===button&&menu){close();return;}close();opener=button;button.setAttribute('aria-expanded','true');const key=button.dataset.ccFilter;menu=document.createElement('div');menu.className='cc-filter';menu.setAttribute('role','dialog');menu.setAttribute('aria-label','Filtrar '+button.getAttribute('aria-label'));const input=document.createElement('input');input.placeholder='Buscar opção';input.setAttribute('aria-label','Buscar opção do filtro');menu.append(input);const list=document.createElement('div');list.className='cc-options';menu.append(list);const values=new Map();for(const row of rows.filter(r=>fits(r,key)))values.set(row.dataset[key],row.dataset[key+'Label']);const opts=[['all','Todos']];if(key==='actual')opts.push(['available','Com fonte comparável']);if(key==='diff')opts.push(['different','Com diferença'],['equal','Sem diferença']);for(const [v,label] of values)opts.push([v,label]);const draw=()=>{list.replaceChildren();for(const [value,label] of opts.filter(([,label])=>String(label).toLocaleLowerCase().includes(input.value.toLocaleLowerCase()))){const b=document.createElement('button');b.type='button';const selected=(filters.get(key)||'all')===value;b.classList.toggle('selected',selected);b.textContent=label+(selected?' ✓':'');b.addEventListener('click',()=>{if(value==='all')filters.delete(key);else filters.set(key,value);apply();close();button.focus();});list.append(b);}};input.addEventListener('input',draw);draw();document.body.append(menu);const rect=button.getBoundingClientRect();menu.style.left=Math.max(12,Math.min(rect.right-280,innerWidth-300))+'px';menu.style.top=Math.max(12,Math.min(rect.bottom+5,innerHeight-360))+'px';input.focus();});
+document.addEventListener('pointerdown',e=>{if(menu&&!menu.contains(e.target)&&!opener.contains(e.target))close();});document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();opener?.focus();}});window.addEventListener('resize',close);document.addEventListener('scroll',e=>{if(menu&&!menu.contains(e.target))close();},true);apply();
+})();

@@ -67,19 +67,19 @@ test('grava lançamento e Feito juntos, revertendo ambos se o status falhar', as
       buscarRotinasPorDocumento: async () => contas,
       escolherRotinaDoLancamento: escolher,
       getPainelConfig: async () => '2026-10', getMesAnoAtual: () => '2026-10',
-      upsertStatusMensal: async (id,mes,status,pago,ativo,executor) => {assert.equal(id,1); assert.equal(status,'FEITO'); assert.equal(pago,null); await executor.query('MARCAR_FEITO');},
+      upsertStatusMensal: async (id,mes,status,pago,ativo,executor) => {assert.equal(id,1); assert.equal(mes,'2026-03'); assert.equal(status,'FEITO'); assert.equal(pago,null); await executor.query('MARCAR_FEITO');},
       parseMoneyBR: () => 10, URLSearchParams,
     });
     const inicio = codigo.indexOf("router.post(\n  '/novo'");
     vm.runInContext(codigo.slice(inicio,codigo.indexOf("router.get('/editar/:id'",inicio)),mock);
     let resposta;
-    await mock.handler({body:{cnpj_cpf:'12345678000190',categoria_id:11,tipo_pagamento:'PIX'},files:{}},{send: text => {resposta=text;},redirect: text => {resposta=text;}});
+    await mock.handler({body:{data_despesa:'2026-03-15',cnpj_cpf:'12345678000190',categoria_id:11,tipo_pagamento:'PIX',origem_arquivo:'busca=teste&pagina=2'},files:{}},{send: text => {resposta=text;},redirect: text => {resposta=text;}});
     assert.equal(comandos[0],'BEGIN');
     assert.ok(comandos[1].includes('INSERT INTO lancamentos'));
     assert.equal(comandos[2],'MARCAR_FEITO');
     assert.equal(comandos[3],falhar ? 'ROLLBACK' : 'COMMIT');
     assert.equal(comandos[4],'RELEASE');
-    assert.ok(falhar ? resposta.includes('Falha simulada') : resposta === '/lancamentos');
+    assert.ok(falhar ? resposta.includes('Falha simulada') : resposta === '/arquivo?busca=teste&pagina=2');
   }
 });
 
