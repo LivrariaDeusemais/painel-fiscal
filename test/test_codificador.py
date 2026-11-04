@@ -159,3 +159,16 @@ class OrcamentoCppTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class CpadOrcamentoTest(unittest.TestCase):
+    def test_quantidade_inteira_e_custo_liquido_na_coluna_correta(self):
+        def w(text,x,y=246):return dict(text=text,x0=x,x1=x+20,top=y,bottom=y+8)
+        page=dict(page=1,height=595,words=[w('QTD',549,227),w('7898203067882',124),w('BIBLIA',195),w('469',514),w('3',554),w('UN',589),w('50',623),w('%',635),w('234,50',682),w('703,50',749),w('4,215',789)])
+        indices=construir_indices([Produto('CPAD','','7898203067882','B1612','Bíblia','CPAD')])
+        itens,faltantes=localizar_anotacoes([page],indices,'cpad','orcamento')
+        self.assertEqual(faltantes,[])
+        self.assertEqual(len(itens),1)
+        self.assertEqual((itens[0].sku,itens[0].quantidade,itens[0].valor_unitario,itens[0].valor_total),('B1612',Decimal(3),Decimal('234.50'),Decimal('703.50')))
+        itens,faltantes=localizar_anotacoes([page],construir_indices([]),'cpad','orcamento')
+        self.assertEqual(faltantes,['7898203067882'])
+        self.assertEqual(itens[0].sku,'')

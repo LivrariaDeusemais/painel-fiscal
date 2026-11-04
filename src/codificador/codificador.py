@@ -417,7 +417,38 @@ def extrair_quantidade_total(bloco: str, fornecedor: str, tipo: str) -> tuple[De
     return None, None
 
 
+def localizar_cpad_orcamento(paginas, indices):
+    itens, faltantes = [], []
+    for page in paginas:
+        words = page["words"]
+        headers = [w for w in words if w["text"] == "QTD"]
+        if not headers:
+            continue
+        top = headers[0]["bottom"]
+        for ean in words:
+            if not re.fullmatch(r"\d{13}", ean["text"]) or ean["x0"] > 190 or ean["top"] <= top:
+                continue
+            row = [w for w in words if abs(w["top"] - ean["top"]) < 4]
+            def col(a, b):
+                return " ".join(w["text"] for w in row if a <= w["x0"] < b)
+            qty = decimal_br(col(535, 580))
+            unit = extrair_decimal_de_texto(col(655, 720))
+            total = extrair_decimal_de_texto(col(720, 780))
+            if qty is None or unit is None or total is None:
+                raise ValueError("CPAD: quantidade ou valores não reconhecidos para " + ean["text"])
+            produto = buscar_produto(ean["text"], texto_bloco(row), indices)
+            if not produto:
+                faltantes.append(ean["text"])
+            itens.append(ItemPdf(ean["text"], produto.sku if produto else "", qty, total, unit,
+                                 page["page"], 45, page["height"] - ean["bottom"], texto_bloco(row), "cpad_barras"))
+    if not itens:
+        raise ValueError("Modelo de orçamento CPAD não reconhecido. Confira o PDF antes de codificar.")
+    return itens, faltantes
+
+
 def localizar_anotacoes(paginas, indices, fornecedor: str, tipo: str) -> tuple[list[ItemPdf], list[str]]:
+    if fornecedor == "cpad" and tipo == "orcamento":
+        return localizar_cpad_orcamento(paginas, indices)
     if fornecedor == "bv_books" and tipo == "orcamento":
         return localizar_bv_orcamento(paginas, indices)
     if fornecedor == "bv_books":
@@ -843,6 +874,14 @@ def overlay_pdf(input_pdf: Path, output_pdf: Path, paginas, anotacoes: list[Item
             c.setFillColor(red)
             c.setFont("Helvetica", font_size)
             for item in itens:
+                if item.posicao == "cpad_barras":
+                    # Remove somente a coluna das barras; mantém o EAN na segunda coluna.
+                    if not item.sku:
+                        continue
+                    c.setFillColorRGB(1, 1, 1)
+                    c.rect(17, item.y - 3, 102, 13, fill=1, stroke=0)
+                    c.setFillColor(red)
+                    c.setFont("Helvetica-Bold", 9)
                 c.drawString(item.x, item.y, item.sku)
             c.save()
             packet.seek(0)
@@ -907,7 +946,9 @@ def processar(pdf_path: Path, fornecedor: str = "auto", tipo: str = "auto") -> d
     anotacoes, faltantes = localizar_anotacoes(paginas, indices, fornecedor_final, tipo_final)
     itens_excel: list[ItemPdf] = []
     if tipo_final == "orcamento":
-        if fornecedor_final == "penkal":
+        if fornecedor_final == "cpad":
+            itens_excel = anotacoes
+        elif fornecedor_final == "penkal":
             itens_excel = extrair_penkal_orcamento_por_coordenadas(paginas, indices)
         elif fornecedor_final == "cpp":
             itens_excel = extrair_cpp_orcamento_por_coordenadas(paginas, indices)
