@@ -238,6 +238,38 @@ test('calculadora usa custo e peso do cadastro mesmo sem anúncio', async () => 
   assert.equal(context.rule.marketplace, 'Mercado Livre');
 });
 
+test('precifica o Bling na tabela e na calculadora pelo cadastro, sem anúncio', async () => {
+  const { calculatorContext, marketplaceRows } = require('../src/tabela-precos/service');
+  const rule = {
+    marketplace: 'Bling', comissao: 0, imposto: 0.05, adm: 0.03,
+    ads: 0, cartao: 0.0676, frete_percentual: 0, taxa_fixa: 0,
+    frete_fixo: 0, desconto: 0, margem_minima: 0.1, saldo_minimo: 4
+  };
+  const product = { sku: 'B1607', custo: 75, peso: 1, preco_bling: '129.90' };
+  const pool = { query: async (sql, params) => {
+    if (sql.includes('FROM tabela_preco_regras WHERE')) return { rows: [rule] };
+    if (sql.includes('WITH canais AS')) {
+      assert.deepEqual(params, ['Bling', '%B1607%']);
+      assert.doesNotMatch(sql, /r\.marketplace <> 'Bling'/);
+      return { rows: [{ ...product, marketplace: 'Bling', sem_vinculo: false }] };
+    }
+    if (sql.includes('FROM tabela_preco_produtos')) return { rows: [product] };
+    return { rows: [] };
+  } };
+  const [item] = await marketplaceRows(pool, { marketplace: 'Bling', search: 'B1607' });
+  const context = await calculatorContext(pool, 'Bling', 'B1607');
+
+  assert.equal(context.link, null);
+  assert.equal(item.result.status, 'OK');
+  assert.ok(item.result.details.cardValue > 0);
+  assert.equal(item.published.grossPrice, 129.9);
+  assert.equal(item.published.liquidPrice, 129.9);
+  assert.equal(item.published.source, 'Cadastro do Bling');
+  const { details, ...published } = item.published;
+  assert.ok(details);
+  assert.deepEqual(context.published, published);
+});
+
 test('salva preço líquido manual preservando anúncio, bruto e dados do vínculo', async () => {
   const { saveCalculatorPrice, publishedPrices } = require('../src/tabela-precos/service');
   const calls = [];

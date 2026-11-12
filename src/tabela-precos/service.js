@@ -436,15 +436,19 @@ function publishedPrices(row, rule) {
       discount: 1 - Number(remote.amount) / Number(remote.gross), source: 'Migrado do Meli',
       catalogListing:remote.catalogListing === true, benefit:remote.benefit || {status:'pending',amount:null}, estimated: false, observedAt: remote.observedAt || null };
   }
-  const grossPrice = Number(row.preco_atual) || 0;
+  const isBling = row.marketplace === 'Bling';
+  const grossPrice = Number(isBling ? row.preco_bling : row.preco_atual) || 0;
   const manual = Number(row.dados?.preco_liquido_manual) || 0;
-  const promotionalPrice = Number(row.preco_promocional) || 0;
+  const promotionalPrice = isBling ? 0 : Number(row.preco_promocional) || 0;
   const configuredDiscount = Math.max(0, Math.min(0.99, Number(rule?.discount) || 0));
   const liquidPrice = manual > 0 ? manual : promotionalPrice > 0 ? promotionalPrice : grossPrice * (1 - configuredDiscount);
-  const source = manual > 0 ? 'Informado manualmente' : promotionalPrice > 0 ? 'Promocional do Bling' : 'Estimado pela regra';
-  return { grossPrice, liquidPrice,
+  if (isBling && grossPrice <= 0 && manual <= 0) return { grossPrice: null, discount: null, liquidPrice: null };
+  const source = manual > 0 ? 'Informado manualmente'
+    : promotionalPrice > 0 ? 'Promocional do Bling'
+    : isBling && configuredDiscount === 0 ? 'Cadastro do Bling' : 'Estimado pela regra';
+  return { grossPrice: isBling && grossPrice <= 0 ? null : grossPrice, liquidPrice,
     discount: !manual && !promotionalPrice ? configuredDiscount : grossPrice > 0 ? 1 - liquidPrice / grossPrice : null,
-    source, estimated: !manual && !promotionalPrice,
+    source, estimated: !manual && !promotionalPrice && (!isBling || configuredDiscount > 0),
     observedAt: manual > 0 ? row.dados?.preco_manual_em || null : row.importado_em || null };
 }
 
@@ -519,13 +523,15 @@ async function marketplaceRows(pool, filters = {}) {
       SELECT p.sku, r.marketplace
       FROM tabela_preco_produtos p
       CROSS JOIN tabela_preco_regras r
-      WHERE r.ativo = TRUE AND r.marketplace <> 'Bling'
+      WHERE r.ativo = TRUE
     ), v AS (
       SELECT l.*, COALESCE(l.sku, c.sku) AS produto_sku,
              COALESCE(l.marketplace, c.marketplace) AS canal,
-             (l.id IS NULL OR COALESCE(l.dados->>'preco_manual_sem_vinculo', 'false') = 'true') AS sem_vinculo
+             (c.marketplace IS DISTINCT FROM 'Bling'
+               AND (l.id IS NULL OR COALESCE(l.dados->>'preco_manual_sem_vinculo', 'false') = 'true')) AS sem_vinculo
       FROM canais c
       FULL JOIN tabela_preco_vinculos l ON l.sku = c.sku AND l.marketplace = c.marketplace
+      WHERE l.marketplace IS DISTINCT FROM 'Bling' OR c.marketplace = 'Bling'
     )
     SELECT v.*, v.produto_sku AS sku, v.canal AS marketplace,
            p.nome AS produto_nome, p.custo, p.peso, p.estoque, p.preco_bling,
@@ -579,7 +585,10 @@ async function calculatorContext(pool, marketplace, sku) {
   const product = productResult.rows[0] || null;
   const link = linkResult.rows[0] || null;
   let priceWarning = '';
-  let published = link && rule ? publishedPrices(link, rule) : null;
+  const priceRow = cleanMarketplace === 'Bling' && product
+    ? { ...link, marketplace: cleanMarketplace, preco_bling: product.preco_bling }
+    : link;
+  let published = priceRow && rule ? publishedPrices(priceRow, rule) : null;
   if (link && rule && cleanMarketplace === 'Mercado Livre') {
     try {
       const ml = require('../integracoes/mercado-livre');
@@ -613,7 +622,7 @@ async function saveCalculatorPrice(pool, marketplace, sku, price) {
     )).rows[0];
     if (!product) throw new Error('Selecione um SKU cadastrado para salvar o preço.');
     const rule = (await client.query(
-      "SELECT desconto FROM tabela_preco_regras WHERE marketplace = $1 AND ativo = TRUE AND marketplace <> 'Bling'", [marketplace]
+      'SELECT desconto FROM tabela_preco_regras WHERE marketplace = $1 AND ativo = TRUE', [marketplace]
     )).rows[0];
     if (!rule) throw new Error('Selecione um marketplace com regra ativa.');
     const links = (await client.query(
