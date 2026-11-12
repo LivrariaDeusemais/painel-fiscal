@@ -54,13 +54,13 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       result.state.displayColumns = service.visibleColumns(result.state);
       await db.query(`INSERT INTO conciliacoes_bancarias (banco,mes,dados) VALUES ($1,$2,$3::jsonb)
         ON CONFLICT (banco,mes) DO UPDATE SET dados=EXCLUDED.dados, atualizado_em=NOW()`, [bank, month, JSON.stringify(result.state)]);
-      const stateWithNumbers = await withDocumentNumbers(db, result.state);
+      const stateWithNumbers = await withDocumentNumbers(db, result.state, bank, month);
       await db.query('COMMIT');
       return { ...result, state: stateWithNumbers };
     } catch (e) { await db.query('ROLLBACK'); throw e; }
     finally { db.release(); }
   }
-  async function withDocumentNumbers(db, state) {
+  async function withDocumentNumbers(db, state, bank, month) {
     const eligible = state.rows.filter(row => row.amount < 0 && !service.isCardPayment(row));
     const receipts = [...new Set(eligible.map(row => row.linkedId).filter(Boolean))];
     const invoices = [...new Set(eligible.map(row => row.purchaseId).filter(Boolean))];
@@ -82,27 +82,44 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       }
     }
     const invoiceNumbers = new Map(invoiceRows.map(item => [item.id, item.number]));
+    const pending = state.rows.filter(row => ['Não encontrado', 'Revisar'].includes(row.status));
+    const suggestions = await purchaseMatches(db, pending.map(row => ({ ...row, manual: false })), bank, month);
     const rows = state.rows.map(row => {
+      const suggestion = suggestions.get(row.id)?.unique;
       const number = row.purchaseId ? invoiceNumbers.get(row.purchaseId) : receiptNumbers.get(String(row.linkedId));
-      return { ...row, documentNumber: row.amount < 0 && !service.isCardPayment(row) ? String(number ?? '').trim() : '' };
+      return {
+        ...row,
+        documentNumber: row.amount < 0 && !service.isCardPayment(row)
+          ? String(number ?? suggestion?.invoice.number ?? '').trim() : '',
+        documentNumberSuggested: Boolean(suggestion?.invoice.number)
+      };
     });
     return { ...state, rows };
   }
 
-  async function reconcilePurchases(db, rows, account, month) {
-    if (!rows.some(row => row.amount < 0 && !row.manual && !row.linkedId && !row.purchaseId && !row.internal && !service.isCardPayment(row))) return;
+  async function purchaseMatches(db, rows, account, month) {
+    const eligible = rows.filter(row => row.amount < 0 && !row.manual && !row.linkedId && !row.purchaseId && !row.internal && !service.isCardPayment(row));
+    if (!eligible.length) return new Map();
     const invoices = await compras.list(db);
-    const matches = rows.map(row => compras.matches(row, invoices, account, month));
+    const matches = eligible.map(row => [row.id, compras.matches(row, invoices, account, month)]);
     const demand = new Map();
     const key = match => JSON.stringify([match.invoice.id, match.installment.id]);
-    for (const options of matches) {
+    for (const [, options] of matches) {
       for (const match of options) demand.set(key(match), (demand.get(key(match)) || 0) + 1);
     }
-    for (const [index, options] of matches.entries()) {
-      if (!options.length) continue;
-      const row = rows[index];
-      const [match] = options;
-      if (options.length > 1 || demand.get(key(match)) !== 1) {
+    return new Map(matches.map(([id, options]) => [id, {
+      found: options.length > 0,
+      unique: options.length === 1 && demand.get(key(options[0])) === 1 ? options[0] : null
+    }]));
+  }
+
+  async function reconcilePurchases(db, rows, account, month) {
+    const matches = await purchaseMatches(db, rows, account, month);
+    for (const row of rows) {
+      const candidate = matches.get(row.id);
+      if (!candidate?.found) continue;
+      const match = candidate.unique;
+      if (!match) {
         row.status = 'Revisar';
         row.clientStatus = service.clientStatus(row);
         row.reason = 'Há mais de um vínculo possível com NF de estoque. Confira a parcela na revisão.';
@@ -186,7 +203,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   });
   router.get('/dados', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
-    res.json(await withDocumentNumbers(pool, await readState(pool, bank, month)));
+    res.json(await withDocumentNumbers(pool, await readState(pool, bank, month), bank, month));
   }));
   router.get('/pessoas', run(async (req, res) => {
     await ensureSchema();
@@ -234,7 +251,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
         ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, trade_name=EXCLUDED.trade_name, purpose=EXCLUDED.purpose, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases), tradeName, purpose]);
       await db.query('COMMIT');
     } catch (e) { await db.query('ROLLBACK'); throw e; } finally { db.release(); }
-    res.json({ state: await withDocumentNumbers(pool, await readState(pool, bank, month)), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
+    res.json({ state: await withDocumentNumbers(pool, await readState(pool, bank, month), bank, month), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
   }));
   router.post('/importar', csrf, (req, res, next) => upload.single('extrato')(req, res, e => e ? res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'O limite por arquivo é 15 MB.' : 'Não foi possível receber o extrato.' }) : next()), run(async (req, res) => {
     const { bank, month } = selection(req);
@@ -377,7 +394,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   }));
   router.get('/exportar', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
-    const state = await withDocumentNumbers(pool, await readState(pool, bank, month));
+    const state = await withDocumentNumbers(pool, await readState(pool, bank, month), bank, month);
     if (!state.rows.length) throw new Error('Importe um extrato ou uma fatura antes de exportar.');
     const filters = JSON.parse(String(req.query.filtros || '{}'));
     const rows = state.rows.filter(row => Object.entries(filters).every(([key, value]) => !value || String(key.startsWith('raw:') ? row.raw[key.slice(4)] ?? '' : key === 'supplier' ? row.supplier || row.name || '' : key === 'direction' ? row.amount < 0 ? 'Saída' : 'Entrada' : row[key] ?? '') === (value === '__cb_empty__' ? '' : String(value))));

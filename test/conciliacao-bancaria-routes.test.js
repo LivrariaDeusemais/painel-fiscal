@@ -15,6 +15,15 @@ test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e expor
       { method: 'PIX', bank: 'caixa', installments: [{ id: 'pix:0', date: '2026-09-05', amount: 20000 }] },
       { method: 'Cartão', card: 'Caixa VISA', installments: [{ id: 'cartao:0', date: '2026-09-10', amount: 20000 }, { id: 'cartao:1', date: '2026-10-10', amount: 20000 }] }
     ] } };
+  const cppNotes = [
+    { number: '50252', date: '2026-10-16', amount: 407114 },
+    { number: '50796', date: '2026-10-28', amount: 203611 }
+  ].map(({ number, date, amount }) => ({
+    id: number, number, date, total: amount, supplier: 'Casa Publicadora Paulista Editora e Grafica LTDA',
+    document: '05827644000171',
+    plan: { parts: [{ method: 'PIX', installments: [{ id: 'pix:0', date, amount }] }] }
+  }));
+  const invoices = [invoice, ...cppNotes];
   const pool = {
     async query(query, args = []) {
       sql.push(query);
@@ -22,7 +31,9 @@ test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e expor
       if (query.startsWith('INSERT INTO conciliacoes')) stored.set(args.slice(0, 2).join(':'), JSON.parse(args[2]));
       if (query.startsWith('SELECT DISTINCT movimento')) return { rows: [...stored.entries()].filter(([key]) => key !== args.slice(0,2).join(':')).flatMap(([,state]) => state.rows.filter(r => r.linkedId).map(r => ({ id: r.linkedId }))) };
       if (query.startsWith('SELECT banco, mes, dados')) return { rows: [...stored.entries()].map(([key,dados]) => ({ banco:key.split(':')[0], mes:key.split(':')[1], dados })) };
-      if (query.includes('FROM compras_estoque_nf')) return { rows: query.includes('ANY') ? [{ id: invoice.id, number: invoice.number }] : [{ id: invoice.id, dados: invoice }] };
+      if (query.includes('FROM compras_estoque_nf')) return { rows: query.includes('ANY')
+        ? invoices.filter(note => args[0].includes(note.id)).map(note => ({ id: note.id, number: note.number }))
+        : invoices.map(note => ({ id: note.id, dados: note })) };
       if (query.startsWith('SELECT banco, mes')) return { rows: [...stored.entries()].flatMap(([key,state]) => state.rows.filter(r => r.linkedId).map(r => ({ banco:key.split(':')[0], mes:key.split(':')[1], movimento_id:r.id, lancamento_id:String(r.linkedId) }))) };
       if (query.includes('FROM lancamentos')) {
         args.forEach((_,i) => assert.match(query,new RegExp('\\$'+(i+1)+'\\b'),'não deve haver parâmetro sem uso na consulta'));
@@ -99,6 +110,22 @@ test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e expor
   const readCard = await (await get('/dados?banco=caixa-visa&mes=2026-10')).json();
   assert.equal(readCard.rows[0].documentNumber,'0050252');
   assert.equal((await get('/exportar?banco=caixa-visa&mes=2026-10&filtros='+encodeURIComponent(JSON.stringify({documentNumber:'0050252'})))).status,200);
+  const oldState = stored.get('caixa:2026-10');
+  const cppPayments = cppNotes.map(note => ({
+    id: 'pagamento-' + note.number, amount: -note.total, date: note.date,
+    document: note.document, raw: {}, name: 'CASA PUBLICADORA PAULISTA EDITORA E GRAF',
+    classification: 'Compra para Estoque CPP', status: 'Não encontrado'
+  }));
+  oldState.rows.push(...cppPayments);
+  const beforeRead = JSON.stringify(oldState);
+  const readExisting = async () => (await get('/dados?banco=caixa&mes=2026-10')).json();
+  const cppResults = (await readExisting()).rows.filter(row => row.id.startsWith('pagamento-'));
+  assert.deepEqual(cppResults.map(row => [row.documentNumber,row.documentNumberSuggested,row.status]), [
+    ['50252',true,'Não encontrado'], ['50796',true,'Não encontrado']
+  ]);
+  assert.equal(JSON.stringify(stored.get('caixa:2026-10')),beforeRead);
+  oldState.rows.push({ ...cppPayments[0], id: 'duplicata' });
+  assert.equal((await readExisting()).rows.find(row => row.id === cppPayments[0].id).documentNumber,'');
   assert.ok(sql.some(q => q.includes('pg_advisory_xact_lock')));
   session.usuario.perfil = 'CONTADOR'; assert.equal((await post({ status: 'Conciliado' })).status, 403);
 });

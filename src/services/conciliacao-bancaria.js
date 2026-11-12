@@ -397,6 +397,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
       return v;
     });
     const line = ws.addRow([...raw, ...(addLegalName ? [row.legalName || row.name || row.supplier || ''] : []), ...extraValues(row)]); line.height = 32;
+    if (row.documentNumberSuggested) line.getCell(columns.indexOf('Nº NF/recibo') + 1).note = 'NF sugerida pelo Arquivo de NFs. Vínculo pendente de confirmação.';
     line.eachCell({ includeEmpty: true }, (c, j) => {
       c.font = { name: 'Aptos', size: 11, color: { argb: 'FF172033' } };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: row.status === 'Conciliado' ? (i % 2 ? 'FFF0FDF4' : 'FFFFFFFF') : 'FFFFF8E7' } };
