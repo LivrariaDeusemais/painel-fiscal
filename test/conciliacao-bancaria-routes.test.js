@@ -126,6 +126,29 @@ test('fluxo HTTP autentica, importa, revisa, vincula, salva observação e expor
   assert.equal(JSON.stringify(stored.get('caixa:2026-10')),beforeRead);
   oldState.rows.push({ ...cppPayments[0], id: 'duplicata' });
   assert.equal((await readExisting()).rows.find(row => row.id === cppPayments[0].id).documentNumber,'');
+  const saveNumber = (row, bank, month, number) => get(
+    `/salvar/${row.id}?banco=${bank}&mes=${month}`,
+    { method:'POST', headers:{ ...headers, 'Content-Type':'application/json' },
+      body:JSON.stringify({ onlyDocumentNumber:true, manualDocumentNumber:number }) }
+  );
+  const blankMovement = (await readExisting()).rows.find(row => row.id === cppPayments[0].id);
+  assert.equal(blankMovement.documentNumber, '');
+  assert.equal(blankMovement.documentNumberEditable, true);
+  const filledCash = await (await saveNumber(blankMovement, 'caixa', '2026-10', '00050252')).json();
+  assert.equal(filledCash.state.rows.find(row => row.id === blankMovement.id).documentNumber, '00050252');
+  const editedCash = await (await saveNumber(cppPayments[1], 'caixa', '2026-10', '00050796')).json();
+  const editedMovement = editedCash.state.rows.find(row => row.id === cppPayments[1].id);
+  assert.equal(editedMovement.documentNumber,'00050796');
+  assert.equal(editedMovement.documentNumberSuggested,false);
+  assert.equal(editedMovement.status,'Não encontrado');
+  assert.equal((await readExisting()).rows.find(row => row.id === cppPayments[1].id).documentNumber,'00050796');
+  const editedCard = await (await saveNumber(card.state.rows[0], 'caixa-visa', '2026-10', 'NF-0050252')).json();
+  assert.equal(editedCard.state.rows[0].documentNumber,'NF-0050252');
+  assert.equal(editedCard.state.rows[0].purchasePartId,'cartao:1');
+  const clearedCard = await (await saveNumber(card.state.rows[0], 'caixa-visa', '2026-10', '')).json();
+  assert.equal(clearedCard.state.rows[0].documentNumber,'0050252');
+  const bill = current.state.rows.find(row => /fatura/.test(row.description));
+  assert.equal((await saveNumber(bill, 'caixa', '2026-10', '123')).status,400);
   assert.ok(sql.some(q => q.includes('pg_advisory_xact_lock')));
   session.usuario.perfil = 'CONTADOR'; assert.equal((await post({ status: 'Conciliado' })).status, 403);
 });

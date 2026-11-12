@@ -86,12 +86,13 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const suggestions = await purchaseMatches(db, pending.map(row => ({ ...row, manual: false })), bank, month);
     const rows = state.rows.map(row => {
       const suggestion = suggestions.get(row.id)?.unique;
+      const editable = row.amount < 0 && !service.isCardPayment(row);
       const number = row.purchaseId ? invoiceNumbers.get(row.purchaseId) : receiptNumbers.get(String(row.linkedId));
       return {
         ...row,
-        documentNumber: row.amount < 0 && !service.isCardPayment(row)
-          ? String(number ?? suggestion?.invoice.number ?? '').trim() : '',
-        documentNumberSuggested: Boolean(suggestion?.invoice.number)
+        documentNumber: editable ? String(row.manualDocumentNumber ?? number ?? suggestion?.invoice.number ?? '').trim() : '',
+        documentNumberEditable: editable,
+        documentNumberSuggested: editable && !row.manualDocumentNumber && Boolean(suggestion?.invoice.number)
       };
     });
     return { ...state, rows };
@@ -340,7 +341,12 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       if (index < 0) throw new Error('Movimentação não encontrada.');
       let row = state.rows[index];
       if (req.body.onlyObservation) row = { ...row, observation: String(req.body.observation || '').slice(0, 2000) };
-      else {
+      else if (req.body.onlyDocumentNumber === true) {
+        if (row.amount >= 0 || service.isCardPayment(row)) throw new Error('Informe Nº NF/recibo apenas em saídas referentes a documentos individuais.');
+        const number = typeof req.body.manualDocumentNumber === 'string' ? req.body.manualDocumentNumber.trim() : null;
+        if (number === null || number.length > 100 || /[\x00-\x1f\x7f]/.test(number)) throw new Error('Informe um número de documento com até 100 caracteres.');
+        row = { ...row, manualDocumentNumber: number || null };
+      } else {
         const linkedId = req.body.linkedId;
         if ((linkedId || req.body.purchaseId) && service.isCardPayment(row)
           && (String(linkedId || '') !== String(row.linkedId || '') || String(req.body.purchaseId || '') !== String(row.purchaseId || ''))) {
@@ -386,7 +392,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       }
       row = service.applyPartnerRule(row);
       const before = state.rows[index];
-      row.history = [...(before.history || []), { at: new Date().toISOString(), by: req.session.usuario.id || req.session.usuario.nome, before: Object.fromEntries(['linkedId','purchaseId','purchasePartId','document','classification','paymentType','status','observation','paidAmount'].map(k => [k, before[k] ?? null])) }];
+      row.history = [...(before.history || []), { at: new Date().toISOString(), by: req.session.usuario.id || req.session.usuario.nome, before: Object.fromEntries(['linkedId','purchaseId','purchasePartId','document','classification','paymentType','status','observation','paidAmount','manualDocumentNumber'].map(k => [k, before[k] ?? null])) }];
       state.rows[index] = row;
       return { state };
     });

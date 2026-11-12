@@ -76,6 +76,13 @@ function renderPage({ token, month, readonly }) {
       <div id="cbReviewError" role="alert" class="notice error" hidden></div>
       <div class="toolbar"><button type="submit" class="primary" ${readonly ? 'disabled' : ''}>Salvar revisão</button><button type="button" data-close="cbReview">Cancelar</button></div>
     </form></dialog>
+    ${readonly ? '' : `<dialog id="cbDocumentDialog"><form id="cbDocumentForm">
+      <div class="modal-head"><h2>Editar Nº NF/recibo</h2><button type="button" data-close="cbDocumentDialog" aria-label="Fechar">×</button></div>
+      <label>Nº NF/recibo<input name="manualDocumentNumber" maxlength="100" autofocus></label>
+      <p class="muted">Deixe em branco para voltar ao número encontrado pelo sistema.</p>
+      <div id="cbDocumentError" role="alert" class="notice error" hidden></div>
+      <button type="submit" class="primary">Salvar número</button>
+    </form></dialog>`}
     <dialog id="cbPurchaseDialog"><div class="modal-head"><h2>Selecionar NF de compra de estoque</h2><button type="button" data-close="cbPurchaseDialog">×</button></div><input id="cbPurchaseSearch" placeholder="Buscar fornecedor, CNPJ ou número da NF" style="width:100%;margin:12px 0"><p class="muted">PIX e boletos podem ser vinculados à parcela correspondente, inclusive de notas emitidas em outros meses. Compras em cartão exigem conferência da fatura.</p><div id="cbPurchaseList" style="max-height:50vh;overflow:auto"></div></dialog>
     <dialog id="cbCandidates"><div class="modal-head"><h2>Escolher comprovante de pagamento</h2><button data-close="cbCandidates">×</button></div><div class="toolbar"><input id="cbCandidateSearch" placeholder="Fornecedor, CPF/CNPJ, código, documento ou subcategoria" style="flex:1"><button id="cbSearch">Buscar</button><a href="/lancamentos" target="_blank" rel="noopener" class="action">Abrir Comprovantes</a></div><p class="muted">Sem busca: lançamentos do mês. Ao pesquisar, também serão consultados outros meses (até 100 resultados). A lista inclui vinculados, identificados na coluna Vínculo.</p><div id="cbCandidateList" class="candidates"></div></dialog>
     <dialog id="cbPdf"><div class="modal-head"><h2>Comprovante de pagamento</h2><button data-close="cbPdf">×</button></div><iframe id="cbPdfFrame" title="PDF do comprovante"></iframe></dialog>
@@ -123,7 +130,8 @@ function renderPage({ token, month, readonly }) {
         const v=value(r,k);
         if(k==='observation')return '<td><textarea class="observation" data-observation="'+esc(r.id)+'" maxlength="2000" aria-label="Observação" '+(readonly?'readonly':'')+'>'+esc(v)+'</textarea></td>';
         if(['document','supplier','classification','legalName'].includes(k)||k.startsWith('raw:')&&/^(NOME|RAZAO SOCIAL)/.test(normalize(k.slice(4))))return '<td class="'+(k==='document'?'person-document':'')+'">'+esc(k==='document'?doc(v):v)+'<button type="button" class="person-edit" data-person="'+esc(r.id)+'" aria-label="Abrir cadastro de '+esc(r.name||r.supplier||'beneficiário')+'" title="Editar cadastro do beneficiário ou pagador">✎</button></td>';
-        if(k==='documentNumber')return '<td>'+esc(v||'—')+(r.documentNumberSuggested?' <small class="muted">Sugestão</small>':'')+'</td>';
+        if(k==='documentNumber')return '<td>'+esc(v||'—')+(r.documentNumberSuggested?' <small class="muted">Sugestão</small>':'')+
+          (!readonly&&r.documentNumberEditable?'<button type="button" class="person-edit" data-edit-document="'+esc(r.id)+'" aria-label="Editar Nº NF/recibo" title="Editar Nº NF/recibo">✎</button>':'')+'</td>';
         if(k==='status')return '<td><button class="badge '+(v==='Revisar'?'review':v==='Não encontrado'?'missing':'')+'" data-review="'+esc(r.id)+'" title="'+esc(r.reason||'Revisar movimentação')+'">'+esc(v)+'</button></td>';
         if(numeric(k))return '<td class="num '+(numberValue(k,v)<0?'negative':'')+'">'+esc(display(k,v))+'</td>';
         return '<td>'+esc(/CPF|CNPJ/.test(k)?doc(r.document||v):k==='document'?doc(v):display(k,v))+'</td>';
@@ -180,6 +188,36 @@ function renderPage({ token, month, readonly }) {
     $('cbUnlink').onclick=()=>{linkedId=null;purchaseId=null;purchasePartId=null;$('cbLinked').textContent='Sem vínculo';const f=$('cbReviewForm');['supplier','paymentType','category','paidAmount'].forEach(k=>f.elements[k].value='');f.elements.status.value='Revisar'};
     $('cbReviewForm').onsubmit=async e=>{e.preventDefault();if(busy)return;lock(true);try{const body=Object.fromEntries(new FormData(e.target));body.linkedId=linkedId;body.purchaseId=purchaseId;body.purchasePartId=purchasePartId;const result=await api('/salvar/'+editing.id+'?'+params(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});state=result.state;$('cbReview').close();render();notice('Revisão salva.')}catch(error){$('cbReviewError').hidden=false;$('cbReviewError').textContent=error.message}finally{lock(false)}};
     document.querySelector('.cb').addEventListener('click',e=>{const close=e.target.closest('[data-close]');if(close){$(close.dataset.close).close();if(close.dataset.close==='cbPdf')$('cbPdfFrame').src='about:blank';return}const f=e.target.closest('[data-filter]');if(f){activeFilter=f.dataset.filter;$('cbFilterSearch').value='';filterOptions();const rect=f.getBoundingClientRect();const menu=$('cbFilter');menu.style.margin='0';menu.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-308))+'px';menu.style.top=Math.max(8,Math.min(rect.bottom+8,window.innerHeight-440))+'px';menu.showModal()}const person=e.target.closest('[data-person]');if(person)task(async()=>{const row=state.rows.find(r=>r.id===person.dataset.person);people=await api('/pessoas');const p=people.find(p=>p.id===row.personId)||people.find(p=>p.source_name===(row.personSourceName||normalize(row.name||row.supplier||row.description).replace(/[^A-Z0-9]+/g,' ').trim().slice(0,200))&&p.documents.includes(row.document||''));editPerson(p||{source_name:row.personSourceName||normalize(row.name||row.supplier||row.description).replace(/[^A-Z0-9]+/g,' ').trim().slice(0,200),name:row.legalName||row.name||row.supplier||'',trade_name:row.supplier||'',purpose:row.classification||'',document:row.document,count:1})});const r=e.target.closest('[data-review]');if(r)review(r.dataset.review);const nf=e.target.closest('[data-purchase-pdf]');if(nf){$('cbPdfFrame').src='/ferramentas-ia/gestao-compras/arquivo/'+encodeURIComponent(nf.dataset.purchasePdf)+'/pdf';$('cbPdf').showModal()}const p=e.target.closest('[data-proof]');if(p){$('cbPdfFrame').src='/conciliacao-bancaria/comprovante/'+encodeURIComponent(p.dataset.proof);$('cbPdf').showModal()}});
+    $('cbBody').addEventListener('click',e=>{
+      const button=e.target.closest('[data-edit-document]');
+      if(!button||busy||readonly)return;
+      const row=state.rows.find(r=>r.id===button.dataset.editDocument);
+      const form=$('cbDocumentForm'),input=form.elements.manualDocumentNumber;
+      form.dataset.movement=row.id;
+      input.value=row.manualDocumentNumber||'';
+      input.placeholder=row.documentNumber||'';
+      $('cbDocumentError').hidden=true;
+      $('cbDocumentDialog').showModal();
+    });
+    $('cbDocumentForm')?.addEventListener('submit',async e=>{
+      e.preventDefault();
+      if(busy||readonly)return;
+      const form=e.target,errorBox=$('cbDocumentError');
+      errorBox.hidden=true;
+      lock(true);
+      try{
+        const result=await api('/salvar/'+encodeURIComponent(form.dataset.movement)+'?'+params(),{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({onlyDocumentNumber:true,manualDocumentNumber:form.elements.manualDocumentNumber.value})
+        });
+        state=result.state;
+        $('cbDocumentDialog').close();
+        render();
+      }catch(error){
+        errorBox.textContent=error.message;
+        errorBox.hidden=false;
+      }finally{lock(false)}
+    });
     $('cbBody').addEventListener('change',async e=>{const id=e.target.dataset.observation;if(!id||readonly)return;try{const result=await api('/salvar/'+id+'?'+params(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({onlyObservation:true,observation:e.target.value})});const current=state.rows.find(r=>r.id===id);if(current)current.observation=result.state.rows.find(r=>r.id===id).observation;notice('Observação salva.')}catch(error){notice('Observação não salva: '+error.message,true)}});
     task(load);
   })();
