@@ -81,6 +81,20 @@ test('importação Excel retira somente linhas de saldo e mantém CPF, colunas e
   assert.equal(parsed.rows[0].date, '2026-09-01'); assert.equal(parsed.rows[0].amount, -10000);
   assert.equal(parsed.rows[0].document, '***.456.789-**'); assert.equal(parsed.warnings.length, 1);
 });
+test('importa Excel de conta corrente do Inter com acentos corrompidos', async () => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Extrato');
+  ws.addRow(['Extrato Conta Corrente']);
+  ws.addRow(['Per√≠odo', '01/10/2026 a 31/10/2026']);
+  ws.addRow(['Data Lan√ßamento', 'Descri√ß√£o', 'Valor', 'Saldo']);
+  ws.addRow([new Date('2026-10-16T00:00:00Z'), 'Transfer√™ncia recebida', 123.45, 123.45]);
+  const parsed = await s.parseStatement(await wb.xlsx.writeBuffer(), 'inter.xlsx', 'inter', 'corrente', '2026-10');
+  assert.deepEqual(parsed.columns, ['Data Lançamento', 'Descrição', 'Valor', 'Saldo']);
+  assert.deepEqual(parsed.rows.map(row => [row.date, row.description, row.amount]), [
+    ['2026-10-16', 'Transferência recebida', 12345]
+  ]);
+});
+
 test('CSV e OFX preservam identificadores, centavos e dados da conta; banco incorreto é rejeitado', async () => {
   const csv = Buffer.from('Extrato Conta Corrente\nConta ;12345\nData Lançamento;Descrição;Valor;Saldo\n03/09/2026;Pix recebido: AIBR;1.234,56;2.000,00\n');
   const parsed = await s.parseStatement(csv, 'inter.csv', 'inter', 'corrente', '2026-09');

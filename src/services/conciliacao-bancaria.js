@@ -53,6 +53,14 @@ function cellValue(cell) {
   if (v && typeof v === 'object' && !(v instanceof Date)) return v.result ?? v.text ?? (v.richText || []).map(x => x.text).join('');
   return v ?? '';
 }
+// Alguns arquivos do Inter têm texto UTF-8 gravado como se tivesse sido lido em MacRoman.
+function repairInterText(value) {
+  if (typeof value !== 'string' || !value.includes('√')) return value;
+  const bytes = iconv.encode(value, 'macintosh');
+  const decoded = bytes.toString('utf8');
+  return !decoded.includes('\ufffd') && iconv.decode(bytes, 'macintosh') === value ? decoded : value;
+}
+
 async function parseStatement(buffer, filename, bank, type, month) {
   const card = Object.hasOwn(CARD_ACCOUNTS, bank) ? CARD_ACCOUNTS[bank] : null;
   if (!(card ? type === 'cartao' : Object.hasOwn(BANKS, bank) && ['corrente', 'pix'].includes(type)) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Selecione banco, mês e tipo de extrato válidos.');
@@ -71,7 +79,9 @@ async function parseStatement(buffer, filename, bank, type, month) {
     for (const ws of wb.worksheets) {
       const values = [];
       ws.eachRow(row => { values.push(row.values.slice(1).map((_, i) => cellValue(row.getCell(i + 1)))); });
-      tables.push(values);
+      tables.push(bank === 'inter' && type === 'corrente'
+        ? values.map(row => row.map(repairInterText))
+        : values);
     }
   } else if (/\.csv$/i.test(filename)) {
     tables = [await new Promise((resolve, reject) => {
