@@ -116,7 +116,7 @@ test('OFX e Excel com data de lançamento diferente da data de movimento não du
   }
 });
 test('exportação tem originais, observação ao final, filtros, datas e valores numéricos', async () => {
-  const movement = { ...s.applyLink(row(), candidate(), true), raw: { Data: '03/09/2026', Valor: '-100,00', Saldo: '1.000,00' }, observation: 'Conferido' };
+  const movement = { ...s.applyLink(row(), candidate(), true), raw: { Data: '03/09/2026', Valor: '-100,00', Saldo: '1.000,00' }, observation: 'Conferido', documentNumber: '00050252' };
   const state = { columns: ['Data','Valor','Saldo'], rows: [movement], account: { number: '000123', branch: '0001' }, warnings: [] };
   const wb = s.exportWorkbook(state, 'caixa', '2026-09');
   const loaded = new ExcelJS.Workbook(); await loaded.xlsx.load(await wb.xlsx.writeBuffer());
@@ -125,8 +125,11 @@ test('exportação tem originais, observação ao final, filtros, datas e valore
   assert.match(ws.getCell('A3').value, /000123/);
   assert.equal(ws.getCell('B8').value, -100); assert.equal(ws.getCell('C8').value, 1000);
   assert.ok(ws.getCell('A8').value instanceof Date);
-  assert.equal(ws.getCell('N7').value, 'Observação'); assert.equal(ws.getCell('N8').value, 'Conferido');
-  assert.equal(ws.autoFilter, 'A7:N8');
+  assert.deepEqual(ws.getRow(7).values.slice(8, 11), ['Origem / Finalidade', 'Nº NF/recibo', 'Tipo de Pagamento']);
+  assert.equal(ws.getCell('I8').value, '00050252');
+  assert.equal(ws.getCell('O7').value, 'Observação');
+  assert.equal(ws.getCell('O8').value, 'Conferido');
+  assert.equal(ws.autoFilter, 'A7:O8');
 });
 test('script da página é válido e token não permite injetar HTML', () => {
   const html = renderPage({ token: 'abc', month: '2026-09', readonly: false });

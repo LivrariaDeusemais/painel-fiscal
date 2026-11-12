@@ -8,3 +8,13 @@ test('dois links de cartão possuem cartões e parcelamentos próprios com centa
 test('concilia parcela líquida de PIX por fornecedor, preserva parcial e não vincula fatura de cartão',()=>{const plan=service.validatePlan({credit:2000,parts:[part(8000)]},1000000);const nf={id:'nf',supplier:'Fornecedor Exemplo',document:'12345678000199',plan,links:[]};const row={amount:-800000,document:'12345678000199',name:'Fornecedor Exemplo'};assert.equal(service.match(row,[nf]).invoice.id,'nf');assert.equal(service.match(row,[nf,{...nf,id:'outra'}]),null);nf.links.push({partId:plan.parts[0].installments[0].id,amount:300000});assert.equal(service.match({...row,amount:-500000},[nf]).invoice.id,'nf');assert.equal(service.match(row,[nf]),null);assert.equal(service.match({...row,manual:true},[nf]),null);assert.equal(service.match(row,[{...nf,links:[],plan:{parts:[{...plan.parts[0],method:'Cartão'}]}}]),null)});
 test('Revisado finaliza pendência sem vínculo e exportação contém apenas um CPF/CNPJ',()=>{const s=require('../src/services/conciliacao-bancaria');assert.equal(s.clientStatus({amount:-10000,status:'Revisado',paymentType:'PIX'}),'Não somar Cliente');assert.equal(s.clientStatus({amount:-10000,status:'Revisado',paymentType:'DOP'}),'Somar Conta Cliente');const state={columns:['Data','CPF/CNPJ','Valor'],sources:[],rows:[],account:{},warnings:[]};const ws=s.exportWorkbook(state,'caixa','2026-09').worksheets[0];assert.equal(ws.getRow(7).values.filter(v=>/CPF|CNPJ/.test(v)).length,1)});
 module.exports={xml};
+
+test('compra antecipada aceita emissão posterior e CNPJ da filial, com revisão para valores repetidos', () => {
+  const plan = service.validatePlan({parts:[{...part(200), condition:'Antecipado', dates:['2026-10-19']}]}, 20000);
+  const invoice = { id:'nf', date:'2026-10-19', supplier:'Sociedade Bíblica do Brasil', document:'12345678000299', plan, links:[] };
+  const row = { amount:-20000, date:'2026-10-16', document:'12.345.678/0001-99', name:'SBB' };
+  assert.equal(service.match(row, [invoice], 'caixa')?.invoice.id, 'nf');
+  assert.equal(service.match({...row, document:'', name:'Sociedade Bíblica do Brasil'}, [invoice], 'caixa')?.invoice.id, 'nf');
+  assert.equal(service.match(row, [invoice,{...invoice,id:'outra'}], 'caixa'), null);
+  assert.equal(service.match({...row, description:'PAGTO FATURA CARTAO'}, [invoice], 'caixa'), null);
+});

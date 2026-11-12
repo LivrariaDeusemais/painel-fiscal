@@ -26,7 +26,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   function selection(req) {
     const bank = req.query.banco || req.body?.banco;
     const month = req.query.mes || req.body?.mes;
-    if (!service.BANKS[bank] || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) throw Object.assign(new Error('Selecione banco e mês válidos.'), { status: 400 });
+    if (!(Object.hasOwn(service.BANKS, bank) || Object.hasOwn(service.CARD_ACCOUNTS, bank)) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) throw Object.assign(new Error('Selecione banco e mês válidos.'), { status: 400 });
     return { bank, month };
   }
   function emptyState() { return { rows: [], pix: [], sources: [], columns: [], account: {}, warnings: [] }; }
@@ -46,18 +46,85 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       // Serializa alterações para impedir vínculos duplicados entre bancos e meses.
       await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['conciliacao:vinculos']);
       const state = await readState(db, bank, month, true);
-      const other = await readState(db, bank === 'caixa' ? 'inter' : 'caixa', month, true);
+      const other = service.CARD_ACCOUNTS[bank] ? emptyState()
+        : await readState(db, bank === 'caixa' ? 'inter' : 'caixa', month, true);
       const result = await operation(state, other, db);
       const people = await db.query('SELECT id, source_name, name, document, aliases, trade_name, purpose FROM conciliacao_pessoas');
       result.state.rows = service.applyPeople(result.state.rows, people.rows).map(service.applyPartnerRule);
       result.state.displayColumns = service.visibleColumns(result.state);
       await db.query(`INSERT INTO conciliacoes_bancarias (banco,mes,dados) VALUES ($1,$2,$3::jsonb)
         ON CONFLICT (banco,mes) DO UPDATE SET dados=EXCLUDED.dados, atualizado_em=NOW()`, [bank, month, JSON.stringify(result.state)]);
+      const stateWithNumbers = await withDocumentNumbers(db, result.state);
       await db.query('COMMIT');
-      return result;
+      return { ...result, state: stateWithNumbers };
     } catch (e) { await db.query('ROLLBACK'); throw e; }
     finally { db.release(); }
   }
+  async function withDocumentNumbers(db, state) {
+    const eligible = state.rows.filter(row => row.amount < 0 && !service.isCardPayment(row));
+    const receipts = [...new Set(eligible.map(row => row.linkedId).filter(Boolean))];
+    const invoices = [...new Set(eligible.map(row => row.purchaseId).filter(Boolean))];
+    const receiptRows = receipts.length
+      ? (await db.query('SELECT l.id, l.numero_documento AS number FROM lancamentos l WHERE l.id=ANY($1)', [receipts])).rows
+      : [];
+    const invoiceRows = invoices.length
+      ? (await db.query("SELECT id, dados->>'number' AS number FROM compras_estoque_nf WHERE id=ANY($1)", [invoices])).rows
+      : [];
+    const receiptNumbers = new Map(receiptRows.map(item => [String(item.id), item.number]));
+    const withoutNumber = receiptRows.filter(item => !String(item.number || '').trim()).map(item => item.id);
+    if (withoutNumber.length) {
+      const legacy = await db.query("SELECT to_regclass('documentos_fiscais') AS archive");
+      if (legacy.rows[0]?.archive) {
+        const archive = await db.query(`SELECT lancamento_id AS id, MIN(BTRIM(numero_documento)) AS number
+          FROM documentos_fiscais WHERE lancamento_id=ANY($1) AND NULLIF(BTRIM(numero_documento), '') IS NOT NULL
+          GROUP BY lancamento_id HAVING COUNT(DISTINCT BTRIM(numero_documento))=1`, [withoutNumber]);
+        for (const item of archive.rows) receiptNumbers.set(String(item.id), item.number);
+      }
+    }
+    const invoiceNumbers = new Map(invoiceRows.map(item => [item.id, item.number]));
+    const rows = state.rows.map(row => {
+      const number = row.purchaseId ? invoiceNumbers.get(row.purchaseId) : receiptNumbers.get(String(row.linkedId));
+      return { ...row, documentNumber: row.amount < 0 && !service.isCardPayment(row) ? String(number ?? '').trim() : '' };
+    });
+    return { ...state, rows };
+  }
+
+  async function reconcilePurchases(db, rows, account, month) {
+    if (!rows.some(row => row.amount < 0 && !row.manual && !row.linkedId && !row.purchaseId && !row.internal && !service.isCardPayment(row))) return;
+    const invoices = await compras.list(db);
+    const matches = rows.map(row => compras.matches(row, invoices, account, month));
+    const demand = new Map();
+    const key = match => JSON.stringify([match.invoice.id, match.installment.id]);
+    for (const options of matches) {
+      for (const match of options) demand.set(key(match), (demand.get(key(match)) || 0) + 1);
+    }
+    for (const [index, options] of matches.entries()) {
+      if (!options.length) continue;
+      const row = rows[index];
+      const [match] = options;
+      if (options.length > 1 || demand.get(key(match)) !== 1) {
+        row.status = 'Revisar';
+        row.clientStatus = service.clientStatus(row);
+        row.reason = 'Há mais de um vínculo possível com NF de estoque. Confira a parcela na revisão.';
+        continue;
+      }
+      Object.assign(row, {
+        purchaseId: match.invoice.id,
+        purchasePartId: match.installment.id,
+        supplier: match.invoice.supplier,
+        document: row.document || match.invoice.document,
+        classification: 'Compra de mercadorias para revenda',
+        paymentType: match.part.method,
+        paidAmount: Math.abs(row.amount),
+        difference: 0,
+        status: 'Conciliado',
+        manual: true,
+        reason: 'NF de estoque: fornecedor e valor da parcela compatíveis'
+      });
+      row.clientStatus = service.clientStatus(row);
+    }
+  }
+
   async function foreignLinks(db, bank, month) {
     const result = await db.query(`SELECT DISTINCT movimento->>'linkedId' AS id
       FROM conciliacoes_bancarias CROSS JOIN LATERAL jsonb_array_elements(dados->'rows') AS movimentos(movimento)
@@ -71,7 +138,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       args.splice(0, args.length, `%${search.trim()}%`);
       where = `(l.fornecedor ILIKE $1 OR l.cnpj_cpf ILIKE $1 OR l.codigo_pagamento ILIKE $1 OR l.numero_documento ILIKE $1 OR c.nome ILIKE $1 OR p.nome ILIKE $1)`;
     }
-    const result = await db.query(`SELECT l.id,l.fornecedor,l.cnpj_cpf,l.valor,l.tipo_pagamento,l.codigo_pagamento,l.data_despesa,l.anexo_pdf,
+    const result = await db.query(`SELECT l.id,l.fornecedor,l.cnpj_cpf,l.valor,l.tipo_pagamento,l.codigo_pagamento,l.numero_documento,l.data_despesa,l.anexo_pdf,
       c.nome AS categoria, p.nome AS categoria_principal,
       CASE WHEN c.categoria_pai_id IS NULL THEN '' ELSE c.nome END AS subcategoria
       FROM lancamentos l LEFT JOIN categorias c ON c.id=l.categoria_id LEFT JOIN categorias p ON p.id=c.categoria_pai_id
@@ -119,7 +186,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   });
   router.get('/dados', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
-    res.json(await readState(pool, bank, month));
+    res.json(await withDocumentNumbers(pool, await readState(pool, bank, month)));
   }));
   router.get('/pessoas', run(async (req, res) => {
     await ensureSchema();
@@ -167,7 +234,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
         ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, document=EXCLUDED.document, aliases=EXCLUDED.aliases, trade_name=EXCLUDED.trade_name, purpose=EXCLUDED.purpose, atualizado_em=NOW()`, [id, sourceName, name, document, JSON.stringify(aliases), tradeName, purpose]);
       await db.query('COMMIT');
     } catch (e) { await db.query('ROLLBACK'); throw e; } finally { db.release(); }
-    res.json({ state: await readState(pool, bank, month), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
+    res.json({ state: await withDocumentNumbers(pool, await readState(pool, bank, month)), message: 'Cadastro salvo. Documento aplicado aos movimentos compatíveis de todos os bancos e meses, inclusive nas próximas importações.' });
   }));
   router.post('/importar', csrf, (req, res, next) => upload.single('extrato')(req, res, e => e ? res.status(400).json({ error: e.code === 'LIMIT_FILE_SIZE' ? 'O limite por arquivo é 15 MB.' : 'Não foi possível receber o extrato.' }) : next()), run(async (req, res) => {
     const { bank, month } = selection(req);
@@ -177,10 +244,17 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     await fs.promises.mkdir(originalsDir, { recursive: true });
     await fs.promises.writeFile(path.join(originalsDir, `${parsed.fileHash}.bin`), req.file.buffer, { flag: 'w' });
     const result = await mutate(bank, month, async (state, other, db) => {
+      if (service.CARD_ACCOUNTS[bank]) {
+        const duplicate = await db.query(`SELECT mes FROM conciliacoes_bancarias
+          WHERE banco=$1 AND mes<>$2 AND dados->'sources' @> $3::jsonb LIMIT 1`,
+        [bank, month, JSON.stringify([{ fileHash: parsed.fileHash }])]);
+        if (duplicate.rows.length) throw new Error('Esta fatura já foi importada para outro mês deste cartão.');
+      }
       const merged = service.mergeImport(state, parsed);
       const list = await candidates(db, month);
       const blocked = await foreignLinks(db, bank, month);
       merged.state.rows = service.reconcile(merged.state.rows, list.filter(c => !blocked.has(String(c.id))), bank, other.rows);
+      await reconcilePurchases(db, merged.state.rows, bank, month);
       return merged;
     });
     res.json({ ...result, message: result.duplicate ? 'Este arquivo já foi importado.' : `${result.added} registro(s) acrescentado(s).` });
@@ -192,11 +266,7 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
     const result = await mutate(bank, month, async (state, other, db) => {
       const blocked = await foreignLinks(db, bank, month);
       state.rows = service.reconcile(service.enrichPix(state.rows, state.pix), list.filter(c => !blocked.has(String(c.id))), bank, other.rows);
-      const invoices = await compras.list(db);
-      for (const row of state.rows) {
-        const match = compras.match(row, invoices, bank);
-        if(match){row.purchaseId=match.invoice.id;row.purchasePartId=match.installment.id;row.supplier=match.invoice.supplier;row.document=match.invoice.document;row.classification='Compra de mercadorias para revenda';row.paymentType=match.part.method;row.paidAmount=Math.abs(row.amount);row.difference=0;row.status='Conciliado';row.manual=true;row.clientStatus=service.clientStatus(row);row.reason='NF de estoque: fornecedor e valor da parcela compatíveis';match.invoice.links.push({partId:match.installment.id,amount:Math.abs(row.amount)});}
-      }
+      await reconcilePurchases(db, state.rows, bank, month);
       if (failed) state.warnings = [...new Set([...state.warnings, `${failed} PDF(s) indisponível(is) ou sem leitura. Use revisão manual para conferir os comprovantes.`])];
       return { state };
     });
@@ -255,6 +325,10 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
       if (req.body.onlyObservation) row = { ...row, observation: String(req.body.observation || '').slice(0, 2000) };
       else {
         const linkedId = req.body.linkedId;
+        if ((linkedId || req.body.purchaseId) && service.isCardPayment(row)
+          && (String(linkedId || '') !== String(row.linkedId || '') || String(req.body.purchaseId || '') !== String(row.purchaseId || ''))) {
+          throw new Error('O pagamento da fatura inteira não pode ser vinculado a um documento individual.');
+        }
         if(req.body.purchaseId && linkedId) throw new Error('Escolha comprovante de despesa ou NF de estoque.');
         if (linkedId) {
           if (!/^\d+$/.test(String(linkedId))) throw new Error('Lançamento inválido.');
@@ -269,12 +343,12 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
         if (req.body.purchaseId) {
           if(row.amount>=0)throw new Error('Vincule NF de compra somente a saídas.');
           const invoices=await compras.list(db),invoice=invoices.find(n=>n.id===req.body.purchaseId);
-          const part=invoice?.plan?.parts.find(p=>p.method!=='Cartão'&&p.installments.some(i=>i.id===req.body.purchasePartId));
+          const part=invoice?.plan?.parts.find(p=>compras.eligiblePart(p,bank)&&p.installments.some(i=>i.id===req.body.purchasePartId));
           const installment=part?.installments.find(i=>i.id===req.body.purchasePartId);
-          if(!installment)throw new Error('Selecione uma parcela PIX/boleto válida. Compras no cartão são conferidas na fatura.');
+          if(!installment)throw new Error('Selecione uma parcela compatível com a conta ou cartão consultado.');
           const used=invoice.links.filter(l=>!(l.bank===bank&&l.month===month&&l.movementId===row.id)&&l.partId===installment.id).reduce((s,l)=>s+l.amount,0);
           if(Math.abs(row.amount)>installment.amount-used)throw new Error('Este pagamento excede o saldo restante da parcela.');
-          row.purchaseId=invoice.id;row.purchasePartId=installment.id;row.supplier=invoice.supplier;row.document=invoice.document;row.classification='Compra de mercadorias para revenda';row.paymentType=part.method;row.paidAmount=Math.abs(row.amount);row.difference=0;
+          row.purchaseId=invoice.id;row.purchasePartId=installment.id;row.supplier=invoice.supplier;row.document=row.document||invoice.document;row.classification='Compra de mercadorias para revenda';row.paymentType=part.method;row.paidAmount=Math.abs(row.amount);row.difference=0;
         }
         const fields = { supplier: 200, document: 30, classification: 200, paymentType: 80, category: 200, observation: 2000 };
         for (const [key, max] of Object.entries(fields)) if (req.body[key] !== undefined) row[key] = String(req.body[key]).trim().slice(0, max);
@@ -303,8 +377,8 @@ function createRouter({ pool, protect, renderShell, uploadsDir }) {
   }));
   router.get('/exportar', run(async (req, res) => {
     await ensureSchema(); const { bank, month } = selection(req);
-    const state = await readState(pool, bank, month);
-    if (!state.rows.length) throw new Error('Importe o extrato de Conta Corrente antes de exportar.');
+    const state = await withDocumentNumbers(pool, await readState(pool, bank, month));
+    if (!state.rows.length) throw new Error('Importe um extrato ou uma fatura antes de exportar.');
     const filters = JSON.parse(String(req.query.filtros || '{}'));
     const rows = state.rows.filter(row => Object.entries(filters).every(([key, value]) => !value || String(key.startsWith('raw:') ? row.raw[key.slice(4)] ?? '' : key === 'supplier' ? row.supplier || row.name || '' : key === 'direction' ? row.amount < 0 ? 'Saída' : 'Entrada' : row[key] ?? '') === (value === '__cb_empty__' ? '' : String(value))));
     const wb = service.exportWorkbook(state, bank, month, rows);

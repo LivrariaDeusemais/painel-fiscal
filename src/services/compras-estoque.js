@@ -1,6 +1,6 @@
 const { parseStringPromise } = require('xml2js');
 const crypto = require('crypto');
-const { money, norm, compatiblePersonDocument } = require('./conciliacao-bancaria');
+const { money, norm, date, similar, compatiblePersonDocument, CARD_ACCOUNTS, isCardPayment } = require('./conciliacao-bancaria');
 const noPayment=p=>p.method==='Bonificação'||p.condition==='Bonificação';
 const unscheduled=p=>noPayment(p)||p.method==='À Combinar'||p.condition==='Consignação';
 const CARDS = ['Caixa VISA', 'Caixa ELO', 'Inter'];
@@ -51,19 +51,56 @@ async function list(db) {
     return { id:n.id,...n.dados,links,paid,remaining:Math.max(0,n.dados.total-credit-bonus-paid),bonus,deferred,cardTotal,cashTotal,status:bonus>0&&bonus+credit>=n.dados.total?'Bonificação — sem pagamento':paid+credit+bonus>=n.dados.total?'Conciliada':deferred?(paid?'Parcialmente paga — saldo a definir':'Pagamento a definir / consignação'):paid?'Parcialmente conciliada':cardTotal?'Pagamento em cartão — conferir fatura':'Não conciliada' };
   });
 }
-function match(row, invoices, bank) {
-  if (row.amount >= 0 || row.linkedId || row.purchaseId || row.manual) return null;
-  const found=[];
-  for(const n of invoices) {
-    const sameDoc=String(row.document||'').replace(/\D/g,'')===n.document;
-    const sameName=norm(row.name||row.supplier)===norm(n.supplier);
-    if(!sameDoc&&!sameName)continue;
-    if(row.document && !compatiblePersonDocument(row.document,n.document))continue;
-    for(const p of n.plan?.parts||[]) if(!unscheduled(p)&&p.method!=='Cartão'&&(!p.bank||!bank||p.bank===bank)) for(const installment of p.installments) {
-      const linked=n.links.filter(l=>l.partId===installment.id).reduce((s,l)=>s+l.amount,0);
-      if(installment.amount-linked===Math.abs(row.amount)) found.push({invoice:n,part:p,installment});
+function eligiblePart(part, account) {
+  const card = CARD_ACCOUNTS[account];
+  return !unscheduled(part) && (card
+    ? part.method === 'Cartão' && part.card === card.label
+    : part.method !== 'Cartão' && (!part.bank || !account || part.bank === account));
+}
+
+function sameSupplier(row, invoice) {
+  const doc = String(row.document || '').replace(/\D/g, '');
+  const issuer = String(invoice.document || '').replace(/\D/g, '');
+  const compatible = row.document && issuer && compatiblePersonDocument(row.document, issuer);
+  const sameCompany = doc.length === 14 && issuer.length === 14 && doc.slice(0, 8) === issuer.slice(0, 8);
+  if (compatible || sameCompany) return true;
+  if (row.document && issuer && [11, 14].includes(doc.length) && [11, 14].includes(issuer.length)) return false;
+  const merchant = String(row.description || '').replace(/\s+(?:PARC(?:ELA)?\s*)?\d{1,2}\s*[/]\s*\d{1,2}\s*$/i, '');
+  return [row.name, row.supplier, row.legalName, merchant].some(name => similar(name, invoice.supplier) >= .85);
+}
+
+function nearby(first, second) {
+  const a = date(first), b = date(second);
+  return a && b && Math.abs(Date.parse(a) - Date.parse(b)) <= 7 * 86400000;
+}
+
+function matches(row, invoices, account, month) {
+  if (row.amount >= 0 || row.linkedId || row.purchaseId || row.manual || row.internal || isCardPayment(row)) return [];
+  const card = CARD_ACCOUNTS[account];
+  const parcel = String(row.reference || '').match(/^(\d{1,2})(?:\s*\/\s*(\d{1,2}))?$/)
+    || String(row.description || '').match(/(?:^|\s)(\d{1,2})\s*\/\s*(\d{1,2})\s*$/);
+  const found = [];
+  for (const invoice of invoices) {
+    if (!sameSupplier(row, invoice)) continue;
+    for (const part of invoice.plan?.parts || []) {
+      if (!eligiblePart(part, account)) continue;
+      for (const [index, installment] of part.installments.entries()) {
+        const linked = invoice.links.filter(link => link.partId === installment.id).reduce((sum, link) => sum + link.amount, 0);
+        if (installment.amount - linked !== Math.abs(row.amount)) continue;
+        if (card) {
+          if (installment.date.slice(0, 7) !== month) continue;
+          if (parcel && (Number(parcel[1]) !== index + 1 || (parcel[2] && Number(parcel[2]) !== part.installments.length))) continue;
+        } else if (row.date && !nearby(row.date, installment.date)
+          && !(part.installments.length === 1 && nearby(row.date, invoice.date))) continue;
+        found.push({ invoice, part, installment });
+      }
     }
   }
-  return found.length===1?found[0]:null;
+  return found;
 }
-module.exports={CARDS,parseInvoice,validatePlan,ensure,list,match};
+
+function match(row, invoices, account, month) {
+  const found = matches(row, invoices, account, month);
+  return found.length === 1 ? found[0] : null;
+}
+module.exports={CARDS,parseInvoice,validatePlan,ensure,list,match,matches,eligiblePart};

@@ -4,6 +4,12 @@ const iconv = require('iconv-lite');
 const { parseString } = require('fast-csv');
 
 const BANKS = { inter: 'Banco Inter', caixa: 'Caixa Econômica Federal' };
+const CARD_ACCOUNTS = {
+  'caixa-visa': { bank: 'caixa', label: 'Caixa VISA' },
+  'caixa-elo': { bank: 'caixa', label: 'Caixa ELO' },
+  'inter-cartao': { bank: 'inter', label: 'Inter' }
+};
+const accountName = key => Object.hasOwn(CARD_ACCOUNTS, key) ? `Fatura ${CARD_ACCOUNTS[key].label}` : BANKS[key];
 const norm = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
 const digits = v => String(v ?? '').replace(/\D/g, '');
 const hash = v => crypto.createHash('sha256').update(v).digest('hex');
@@ -25,7 +31,7 @@ function money(v) {
 function date(v) {
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   const s = String(v ?? '');
-  const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  const br = s.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/);
   const iso = s.match(/^(\d{4})-?(\d{2})-?(\d{2})/);
   const result = br ? `${br[3]}-${br[2]}-${br[1]}` : iso ? `${iso[1]}-${iso[2]}-${iso[3]}` : '';
   const parsed = result && new Date(`${result}T12:00:00Z`);
@@ -48,7 +54,8 @@ function cellValue(cell) {
   return v ?? '';
 }
 async function parseStatement(buffer, filename, bank, type, month) {
-  if (!BANKS[bank] || !['corrente', 'pix'].includes(type) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Selecione banco, mês e tipo de extrato válidos.');
+  const card = Object.hasOwn(CARD_ACCOUNTS, bank) ? CARD_ACCOUNTS[bank] : null;
+  if (!(card ? type === 'cartao' : Object.hasOwn(BANKS, bank) && ['corrente', 'pix'].includes(type)) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Selecione banco, mês e tipo de extrato válidos.');
   const result = { columns: [], rows: [], account: {}, warnings: [], fileHash: hash(buffer), filename, type };
   let tables = [];
   if (/\.xlsx$/i.test(filename)) {
@@ -62,10 +69,12 @@ async function parseStatement(buffer, filename, bank, type, month) {
   } else if (/\.csv$/i.test(filename)) {
     tables = [await new Promise((resolve, reject) => {
       const rows = [];
-      parseString(decode(buffer), { delimiter: ';', headers: false, ignoreEmpty: true }).on('data', r => rows.push(r)).on('error', reject).on('end', () => resolve(rows));
+      const csv = decode(buffer);
+      const delimiter = card && !csv.split(/\r?\n/).some(line => /;/.test(line)) ? ',' : ';';
+      parseString(csv, { delimiter, headers: false, ignoreEmpty: true }).on('data', r => rows.push(r)).on('error', reject).on('end', () => resolve(rows));
     })];
   } else if (/<OFX>/i.test(decode(buffer))) {
-    if (type === 'pix') throw new Error('Este OFX é de Conta Corrente. Selecione o tipo correto.');
+    if (type !== 'corrente') throw new Error('Para fatura de cartão, envie CSV ou XLSX. OFX é aceito para Conta Corrente.');
     result.format = 'ofx';
     const text = decode(buffer);
     const get = (s, key) => (s.match(new RegExp(`<${key}>([^<\\r\\n]+)`, 'i')) || [])[1]?.trim() || '';
@@ -87,15 +96,19 @@ async function parseStatement(buffer, filename, bank, type, month) {
   if (tables.length) {
     let found = false;
     for (const table of tables) {
-      const headerIndex = table.findIndex(r => r.some(v => /^DATA( LANCAMENTO| MOVIMENTO)?$/.test(norm(v))) && r.some(v => ['VALOR', 'VALOR LANCAMENTO'].includes(norm(v))));
+      const headerIndex = table.findIndex(r =>
+        r.some(v => /^DATA( LANCAMENTO| MOVIMENTO| DA COMPRA)?$/.test(norm(v))) &&
+        r.some(v => ['VALOR', 'VALOR LANCAMENTO', 'VALOR EM REAIS'].includes(norm(v))) &&
+        (!card || r.some(v => ['DESCRICAO', 'HISTORICO', 'ESTABELECIMENTO', 'DESCRICAO DA COMPRA'].includes(norm(v)))));
       if (headerIndex < 0) continue;
       const headers = table[headerIndex].map(v => String(v || '').trim());
       const isPix = headers.some(h => norm(h) === 'TIPO DE PIX');
       if (isPix !== (type === 'pix')) continue;
+      if (card && headers.some(h => ['SALDO', 'DATA MOVIMENTO', 'FITID'].includes(norm(h)))) continue;
       const preamble = norm(table.slice(0, headerIndex).map(r => r.join(' ')).join(' '));
       const caixaLayout = headers.some(h => norm(h) === 'DATA MOVIMENTO') && headers.some(h => norm(h) === 'NOME RAZAO SOCIAL');
       const detectedBank = preamble.includes('BANCO INTER') ? 'inter' : preamble.includes('CAIXA ECONOMICA') || (type === 'corrente' && caixaLayout) ? 'caixa' : '';
-      if (detectedBank && detectedBank !== bank) throw new Error('O banco do arquivo não corresponde ao banco selecionado.');
+      if (detectedBank && detectedBank !== (card?.bank || bank)) throw new Error('O banco do arquivo não corresponde ao banco selecionado.');
       found = true;
       const counts = {};
       const names = headers.map((h, i) => { const base = h || `Coluna ${i + 1}`; counts[base] = (counts[base] || 0) + 1; return counts[base] === 1 ? base : `${base} (${counts[base]})`; });
@@ -109,17 +122,21 @@ async function parseStatement(buffer, filename, bank, type, month) {
       for (const values of table.slice(headerIndex + 1)) {
         if (values.every(v => v === '' || v === null || v === undefined)) continue;
         const raw = Object.fromEntries(names.map((h, i) => [h, values[i] instanceof Date ? date(values[i]) : values[i] ?? '']));
-        if (norm(field(raw, 'Histórico', 'Descrição')).startsWith('SALDO')) continue;
+        const description = field(raw, 'Histórico', 'Descrição', 'Estabelecimento', 'Descrição da compra');
+        if (norm(description).startsWith('SALDO') || (card && isCardPayment({ description, sourceType: type }))) continue;
         const movement = toMovement(raw, type);
-        if (!movement.date || movement.amount === null) throw new Error('Há uma linha sem data ou valor válido. Confira o arquivo original.');
+        if (card && !movement.date && /^(TOTAL|SUBTOTAL)\b/.test(norm(description))) continue;
+        if (!movement.date || movement.amount === null || (card && !norm(description))) throw new Error('Há uma linha sem data ou valor válido. Confira o arquivo original.');
         result.rows.push(movement);
       }
     }
-    if (!found) throw new Error(`Não foi encontrada uma tabela do tipo ${type === 'pix' ? 'PIX' : 'Conta Corrente'} neste arquivo.`);
+    if (!found) throw new Error(`Não foi encontrada uma tabela do tipo ${card ? 'Fatura de cartão' : type === 'pix' ? 'PIX' : 'Conta Corrente'} neste arquivo.`);
   }
-  const outside = result.rows.filter(r => r.date.slice(0, 7) !== month).length;
-  result.rows = result.rows.filter(r => r.date.slice(0, 7) === month);
-  if (outside) result.warnings.push(`${outside} movimentação(ões) fora do mês selecionado não foram importadas.`);
+  if (!card) {
+    const outside = result.rows.filter(r => r.date.slice(0, 7) !== month).length;
+    result.rows = result.rows.filter(r => r.date.slice(0, 7) === month);
+    if (outside) result.warnings.push(`${outside} movimentação(ões) fora do mês selecionado não foram importadas.`);
+  }
   if (!result.rows.length) throw new Error('O arquivo não possui movimentações no mês selecionado.');
   if (type === 'pix') {
     const invalid = result.rows.filter(r => r.pixSituation && !['EFETIVADA', 'CONCLUIDA', 'CONCLUIDO', 'REALIZADO', 'REALIZADA'].includes(norm(r.pixSituation))).length;
@@ -131,22 +148,28 @@ async function parseStatement(buffer, filename, bank, type, month) {
   return result;
 }
 function toMovement(raw, type) {
-  let amount = money(field(raw, 'Valor Lançamento', 'Valor'));
+  let amount = money(field(raw, 'Valor Lançamento', 'Valor', 'Valor em reais'));
+  if (type === 'cartao' && amount !== null) amount = -amount;
   if (type === 'pix' && amount !== null && norm(field(raw, 'Tipo de Pix')) === 'ENVIADO') amount = -Math.abs(amount);
   return {
     id: crypto.randomUUID(), raw,
-    date: date(field(raw, 'Data Movimento', 'Data Lançamento', 'Data')),
+    date: date(field(raw, 'Data Movimento', 'Data Lançamento', 'Data', 'Data da compra')),
     postedDate: date(field(raw, 'Data Lançamento', 'Data')),
     amount, balance: money(field(raw, 'Saldo')),
-    description: String(field(raw, 'Histórico', 'Descrição')),
+    description: String(field(raw, 'Histórico', 'Descrição', 'Estabelecimento', 'Descrição da compra')),
     name: String(field(raw, 'Nome/Razão Social', 'Remetente/Destinatario', 'Nome', 'Instituição')),
     document: String(field(raw, 'CPF/CNPJ', 'CNPJ/CPF', 'CNPJ')),
-    reference: String(field(raw, 'Documento')),
+    reference: String(type === 'cartao' ? field(raw, 'Parcela') : field(raw, 'Documento')),
     fitid: String(field(raw, 'FITID')),
     pixId: type === 'pix' ? String(field(raw, 'Id')) : '',
     txid: String(field(raw, 'TXID')), pixSituation: String(field(raw, 'Situacao')),
     hour: String(field(raw, 'Hora')), observation: '', status: 'Não encontrado', sourceType: type
   };
+}
+function isCardPayment(row) {
+  const text = norm(`${row.description || ''} ${row.name || ''} ${row.classification || ''}`);
+  return /\b(?:FATURA (?:DE |DO )?CARTAO|FAT CARTAO|PAG(?:AMENTO|TO)? (?:DA |DE )?FATURA|PAG(?:AMENTO|TO)? CARTAO|DEB(?:ITO)? CARTAO DE CREDITO)\b/.test(text)
+    || (row.sourceType === 'cartao' && /^(?:PAGAMENTO(?:$| RECEBIDO| EFETUADO| EM | VIA )|TOTAL DA FATURA)/.test(text));
 }
 function similar(a, b) {
   a = norm(a); b = norm(b);
@@ -223,7 +246,7 @@ function scoreCandidate(row, candidate) {
   return { id: candidate.id, score, exactAmount, exactPix, conflict, safe: exactAmount && !conflict && (exactPix || ((exactDoc || name >= .85) && sameDay)), reason: [exactAmount ? 'Valor idêntico' : 'Valor diferente', exactPix ? 'ID PIX idêntico' : '', exactDoc ? 'CPF/CNPJ idêntico' : masked ? 'CPF parcial compatível' : '', name >= .65 ? 'Nome compatível' : '', sameDay ? 'Data compatível (data do lançamento)' : 'Data diferente'].filter(Boolean).join(' · ') };
 }
 function clientStatus(row) {
-  if (row.amount >= 0) return 'Não somar Cliente';
+  if (row.amount >= 0 || row.sourceType === 'cartao') return 'Não somar Cliente';
   if (row.internal && !row.paymentType) return 'Não somar Cliente';
   if (!['Conciliado', 'Revisado'].includes(row.status)) return 'Pendente';
   return norm(row.paymentType) === 'DOP' ? 'Somar Conta Cliente' : 'Não somar Cliente';
@@ -244,13 +267,13 @@ function applyLink(row, candidate, manual = false) {
 function reconcile(rows, candidates, bank, otherRows = []) {
   const used = new Set(rows.filter(r => r.manual && r.linkedId).map(r => String(r.linkedId)));
   const rankings = new Map();
-  for (const row of rows.filter(r => !r.manual && r.amount < 0)) rankings.set(row.id, candidates.map(c => scoreCandidate(row, c)).filter(c => c.score >= 55).sort((a, b) => b.score - a.score));
+  for (const row of rows.filter(r => !r.manual && !r.purchaseId && r.amount < 0 && !isCardPayment(r))) rankings.set(row.id, candidates.map(c => scoreCandidate(row, c)).filter(c => c.score >= 55).sort((a, b) => b.score - a.score));
   const demand = new Map();
   for (const ranking of rankings.values()) if (ranking[0]?.safe && (!ranking[1] || ranking[0].score - ranking[1].score >= 15)) demand.set(String(ranking[0].id), (demand.get(String(ranking[0].id)) || 0) + 1);
   return rows.map(original => {
-    if (original.manual) return { ...applyPartnerRule(original), clientStatus: clientStatus(original) };
+    if (original.manual || original.purchaseId) return { ...applyPartnerRule(original), clientStatus: clientStatus(original) };
     let row = { ...original, linkedId: null, supplier: '', category: '', paymentType: '', paidAmount: null, difference: null, classification: '', internal: false, status: 'Não encontrado', reason: '' };
-    const identified = origin(row, bank, otherRows);
+    const identified = CARD_ACCOUNTS[bank] ? { label: '' } : origin(row, bank, otherRows);
     row.classification = identified.label;
     row.internal = !!identified.internal;
     if (identified.document && !row.document) row.document = identified.document;
@@ -294,7 +317,7 @@ function mergeImport(state, parsed) {
       }
     } else { target.push(incoming); used.add(incoming.id); added++; }
   }
-  if (parsed.type === 'corrente') state.columns = [...new Set([...state.columns, ...parsed.columns])];
+  if (parsed.type !== 'pix') state.columns = [...new Set([...state.columns, ...parsed.columns])];
   state.account = { ...state.account, ...parsed.account };
   state.warnings = [...new Set([...state.warnings, ...parsed.warnings])];
   state.sources.push({ filename: parsed.filename, fileHash: parsed.fileHash, type: parsed.type, format: parsed.format || 'table', columns: parsed.columns, count: parsed.rows.length, importedAt: new Date().toISOString() });
@@ -303,13 +326,13 @@ function mergeImport(state, parsed) {
   if (state.account.closingBalance != null && state.rows.length && state.rows.at(-1).balance != null && state.account.closingBalance !== state.rows.at(-1).balance) state.warnings = [...new Set([...state.warnings, 'O saldo informado no cabeçalho diverge do saldo da última movimentação. Confira o arquivo original.'])];
   return { state, added, duplicate: false };
 }
-const extraColumns = ['Nome Fantasia', 'CPF/CNPJ conciliado', 'Status da Conciliação', 'Origem / Finalidade', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Observação'];
+const extraColumns = ['Nome Fantasia', 'CPF/CNPJ conciliado', 'Status da Conciliação', 'Origem / Finalidade', 'Nº NF/recibo', 'Tipo de Pagamento', 'Categoria-Subcategoria', 'Valor pago Real', 'Diferença Valor', 'Tipo de movimentação', 'Observação'];
 function rawValue(row, key) {
   const value = /^(NOME|RAZAO SOCIAL)/.test(norm(key)) ? row.legalName || row.raw[key] || '' : row.raw[key] ?? '';
   return /^(CPF|CNPJ)/.test(norm(key)) ? document(row.document || value) : value;
 }
 function extraValues(row) {
-  return [row.supplier || row.name || '', document(row.document), row.status, row.classification || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.observation || ''];
+  return [row.supplier || row.name || '', document(row.document), row.status, row.classification || '', row.documentNumber || '', row.paymentType || '', row.category || '', row.paidAmount == null ? '' : row.paidAmount / 100, row.difference == null ? '' : row.difference / 100, row.amount < 0 ? 'Saída' : 'Entrada', row.observation || ''];
 }
 function compatiblePersonDocument(partial, full) {
   const a = String(partial || '').replace(/[^0-9*]/g, '');
@@ -330,7 +353,7 @@ function applyPeople(rows, people) {
   });
 }
 function visibleColumns(state) {
-  const primary = (state.sources || []).filter(s => s.type === 'corrente' && s.format === 'table').flatMap(s => s.columns || []);
+  const primary = (state.sources || []).filter(s => s.type !== 'pix' && s.format === 'table').flatMap(s => s.columns || []);
   if (primary.length) return [...new Set(primary)];
   // Extratos anteriores à gravação do formato: reconhece as colunas próprias do Excel/CSV.
   const columns = state.columns || [];
@@ -341,8 +364,9 @@ function visibleColumns(state) {
 }
 function exportWorkbook(state, bank, month, rows = state.rows) {
   const wb = new ExcelJS.Workbook(); wb.creator = 'PlennaTec';
-  const originalColor = bank === 'inter' ? 'FFF79646' : 'FF005CA9';
-  const originalTextColor = bank === 'inter' ? 'FF000000' : 'FFFFFFFF';
+  const isInter = (CARD_ACCOUNTS[bank]?.bank || bank) === 'inter';
+  const originalColor = isInter ? 'FFF79646' : 'FF005CA9';
+  const originalTextColor = isInter ? 'FF000000' : 'FFFFFFFF';
   const ws = wb.addWorksheet('Conciliação');
   const originalColumns = visibleColumns(state).filter(k => !/^(CPF|CNPJ)/.test(norm(k)));
   const exportExtras = extraColumns.map(c => c === 'CPF/CNPJ conciliado' ? 'CPF/CNPJ' : c);
@@ -351,13 +375,13 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.columns = columns.map(c => ({ width: /NOME|FORNECEDOR|HISTORICO|DESCRICAO|OBSERVACAO|ORIGEM|CATEGORIA/.test(norm(c)) ? 42 : 24 }));
   const last = ws.getColumn(columns.length).letter;
   ws.mergeCells(`A1:${last}2`);
-  ws.getCell('A1').value = `Extrato conciliado — ${BANKS[bank]} — ${month.split('-').reverse().join('/')}`;
+  ws.getCell('A1').value = `Extrato conciliado — ${accountName(bank)} — ${month.split('-').reverse().join('/')}`;
   ws.getCell('A1').font = { name: 'Aptos', bold: true, size: 20, color: { argb: 'FFFFFFFF' } };
-  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bank === 'inter' ? 'FFE46C0A' : 'FF064E3B' } };
+  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isInter ? 'FFE46C0A' : 'FF064E3B' } };
   ws.getCell('A1').alignment = { vertical: 'middle', wrapText: true };
   ws.getRow(1).height = 30; ws.getRow(2).height = 25;
   ws.mergeCells(`A3:${last}3`);
-  ws.getCell('A3').value = `Agência: ${state.account.branch || 'Não informada'} | Conta: ${state.account.number || 'Não informada no arquivo'} | Período por data da movimentação: ${month}`;
+  ws.getCell('A3').value = `Agência: ${state.account.branch || 'Não informada'} | Conta: ${state.account.number || 'Não informada no arquivo'} | ${CARD_ACCOUNTS[bank] ? 'Mês da fatura' : 'Período por data da movimentação'}: ${month}`;
   ws.mergeCells(`A4:${last}4`);
   ws.getCell('A4').value = `${rows.length} movimentações | Revisar/Não encontrado: ${rows.filter(r => !['Conciliado','Revisado'].includes(r.status)).length}`;
   ws.mergeCells(`A5:${last}5`); ws.getCell('A5').value = state.warnings.join(' | ') || 'Colunas originais preservadas. Diferença = valor absoluto do extrato menos valor do lançamento vinculado.';
@@ -368,7 +392,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   rows.forEach((row, i) => {
     const raw = originalColumns.map(key => {
       const v = rawValue(row, key);
-      if (['VALOR', 'VALOR LANCAMENTO', 'SALDO'].includes(norm(key)) && v !== '') return money(v) / 100;
+      if (['VALOR', 'VALOR LANCAMENTO', 'VALOR EM REAIS', 'SALDO'].includes(norm(key)) && v !== '') return money(v) / 100;
       if (norm(key).startsWith('DATA') && date(v)) return new Date(`${date(v)}T12:00:00Z`);
       return v;
     });
@@ -378,7 +402,7 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: row.status === 'Conciliado' ? (i % 2 ? 'FFF0FDF4' : 'FFFFFFFF') : 'FFFFF8E7' } };
       c.alignment = { vertical: 'middle', wrapText: true };
       if (c.value instanceof Date) c.numFmt = 'dd-mm-yyyy';
-      else if (['VALOR', 'VALOR LANCAMENTO', 'SALDO', 'VALOR PAGO REAL', 'DIFERENCA VALOR'].includes(norm(columns[j - 1]))) c.numFmt = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
+      else if (['VALOR', 'VALOR LANCAMENTO', 'VALOR EM REAIS', 'SALDO', 'VALOR PAGO REAL', 'DIFERENCA VALOR'].includes(norm(columns[j - 1]))) c.numFmt = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
       if (typeof c.value === 'number') c.font.color = { argb: c.value < 0 ? 'FFB91C1C' : 'FF000000' };
     });
   });
@@ -387,4 +411,4 @@ function exportWorkbook(state, bank, month, rows = state.rows) {
   ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:7' };
   return wb;
 }
-module.exports = { BANKS, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, compatiblePersonDocument, personSourceName, applyPeople, visibleColumns, exportWorkbook };
+module.exports = { BANKS, CARD_ACCOUNTS, accountName, isCardPayment, similar, norm, money, date, document, parseStatement, mergeImport, reconcile, applyLink, clientStatus, scoreCandidate, origin, applyPartnerRule, enrichPix, extraColumns, extraValues, rawValue, compatiblePersonDocument, personSourceName, applyPeople, visibleColumns, exportWorkbook };

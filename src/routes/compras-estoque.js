@@ -30,7 +30,7 @@ function createRouter({pool,protect,renderShell,uploadsDir}) {
  }));
  router.post('/plano/:id',csrf,run(async(req,res)=>{
   await service.ensure(pool);const db=await pool.connect();try{await db.query('BEGIN');await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',['conciliacao:vinculos']);const result=await db.query('SELECT dados FROM compras_estoque_nf WHERE id=$1 FOR UPDATE',[req.params.id]);if(!result.rows.length)throw Error('NF não encontrada.');const data=result.rows[0].dados,plan=service.validatePlan(req.body,data.total),invoices=await service.list(db),current=invoices.find(n=>n.id===req.params.id);
-  for(const link of current.links){const part=plan.parts.flatMap(p=>p.method==='Cartão'?[]:p.installments).find(p=>p.id===link.partId);if(!part||current.links.filter(l=>l.partId===part.id).reduce((s,l)=>s+l.amount,0)>part.amount)throw Error('O plano não pode remover ou reduzir uma parcela com pagamentos vinculados. Desvincule na conciliação antes de alterar.');}
+  for(const link of current.links){const part=plan.parts.filter(p=>service.eligiblePart(p,link.bank)).flatMap(p=>p.installments).find(p=>p.id===link.partId);if(!part||current.links.filter(l=>l.partId===part.id).reduce((s,l)=>s+l.amount,0)>part.amount)throw Error('O plano não pode remover ou reduzir uma parcela com pagamentos vinculados. Desvincule na conciliação antes de alterar.');}
   await db.query('UPDATE compras_estoque_nf SET dados=$2::jsonb WHERE id=$1',[req.params.id,JSON.stringify({...data,plan})]);await db.query('COMMIT');res.json({message:'Plano atualizado.'})}catch(e){await db.query('ROLLBACK');throw e}finally{db.release()}
  }));
  return router;
