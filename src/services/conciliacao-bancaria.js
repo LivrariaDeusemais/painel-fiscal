@@ -58,7 +58,14 @@ async function parseStatement(buffer, filename, bank, type, month) {
   if (!(card ? type === 'cartao' : Object.hasOwn(BANKS, bank) && ['corrente', 'pix'].includes(type)) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Selecione banco, mês e tipo de extrato válidos.');
   const result = { columns: [], rows: [], account: {}, warnings: [], fileHash: hash(buffer), filename, type };
   let tables = [];
-  if (/\.xlsx$/i.test(filename)) {
+  if (/\.pdf$/i.test(filename)) {
+    if (!card) throw new Error('Selecione um cartão para importar a fatura em PDF.');
+    const rows = await require('./fatura-cartao-pdf').parseCardPdf(buffer, bank, month);
+    result.format = 'pdf';
+    result.columns = Object.keys(rows[0]).filter(column => column !== 'Nome');
+    result.rows = rows.map(raw => toMovement(raw, type));
+    if (result.rows.some(row => !row.date)) throw new Error('Há um lançamento com data inválida no PDF da fatura.');
+  } else if (/\.xlsx$/i.test(filename)) {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buffer);
     for (const ws of wb.worksheets) {
@@ -74,7 +81,7 @@ async function parseStatement(buffer, filename, bank, type, month) {
       parseString(csv, { delimiter, headers: false, ignoreEmpty: true }).on('data', r => rows.push(r)).on('error', reject).on('end', () => resolve(rows));
     })];
   } else if (/<OFX>/i.test(decode(buffer))) {
-    if (type !== 'corrente') throw new Error('Para fatura de cartão, envie CSV ou XLSX. OFX é aceito para Conta Corrente.');
+    if (type !== 'corrente') throw new Error('Para fatura de cartão, envie PDF, CSV ou XLSX. OFX é aceito para Conta Corrente.');
     result.format = 'ofx';
     const text = decode(buffer);
     const get = (s, key) => (s.match(new RegExp(`<${key}>([^<\\r\\n]+)`, 'i')) || [])[1]?.trim() || '';
@@ -92,7 +99,7 @@ async function parseStatement(buffer, filename, bank, type, month) {
       result.columns = [...new Set([...result.columns, ...Object.keys(raw)])];
       result.rows.push(toMovement(raw, type));
     }
-  } else throw new Error('Formato não suportado. Envie XLSX, CSV ou OFX.');
+  } else throw new Error(card ? 'Formato não suportado. Envie PDF, CSV ou XLSX.' : 'Formato não suportado. Envie XLSX, CSV ou OFX.');
   if (tables.length) {
     let found = false;
     for (const table of tables) {
@@ -353,7 +360,7 @@ function applyPeople(rows, people) {
   });
 }
 function visibleColumns(state) {
-  const primary = (state.sources || []).filter(s => s.type !== 'pix' && s.format === 'table').flatMap(s => s.columns || []);
+  const primary = (state.sources || []).filter(s => s.type !== 'pix' && ['table', 'pdf'].includes(s.format)).flatMap(s => s.columns || []);
   if (primary.length) return [...new Set(primary)];
   // Extratos anteriores à gravação do formato: reconhece as colunas próprias do Excel/CSV.
   const columns = state.columns || [];

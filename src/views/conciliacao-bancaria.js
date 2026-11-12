@@ -109,8 +109,8 @@ function renderPage({ token, month, readonly }) {
       $('cbPeriodHelp').textContent=card?'Selecione o mês de vencimento da fatura. A data original da compra aparece na tabela.':'O mês segue a data da movimentação. A revisão permite vincular comprovantes de outros meses. Diferença = valor absoluto do extrato menos valor do lançamento vinculado.';
       if($('cbImport')){
         $('cbImportType').hidden=!!card;
-        $('cbImport').elements.extrato.accept=card?'.csv,.xlsx':'.xlsx,.csv,.ofx';
-        $('cbImportHelp').textContent=card?'CSV ou XLSX · Até 15 MB · Use Data, Descrição e Valor. Compras em positivo, créditos em negativo.':'XLSX, CSV ou OFX · Até 15 MB · PIX complementa a Conta Corrente';
+        $('cbImport').elements.extrato.accept=card?'.pdf,.csv,.xlsx':'.xlsx,.csv,.ofx';
+        $('cbImportHelp').textContent=card?'PDF do banco, CSV ou XLSX · Até 15 MB':'XLSX, CSV ou OFX · Até 15 MB · PIX complementa a Conta Corrente';
       }
       $('cbTable').dataset.bank=card?.bank||account;const rows=visible(),originalColumns=(state.displayColumns||state.columns).filter(k=>!/^CPF|^CNPJ/.test(normalize(k))),columns=[...originalColumns.map(k=>['raw:'+k,k]),...(!originalColumns.some(k=>/^(NOME|RAZAO SOCIAL)/.test(normalize(k)))?[['legalName','Nome / Razão Social']]:[]),...extra];
       const measure=document.createElement('canvas').getContext('2d');measure.font='12px Arial';
