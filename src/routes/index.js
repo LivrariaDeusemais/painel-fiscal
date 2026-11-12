@@ -19987,6 +19987,16 @@ router.post('/excluir/:id', async (req, res) => {
   }
 });
 
+function comprovantesCategoriaFilter(parameterIndex) {
+  const selected = `$${parameterIndex}`;
+  return `(l.categoria_id = ${selected} OR l.categoria_id IN (
+    SELECT subcategoria.id
+    FROM categorias subcategoria
+    JOIN categorias principal ON principal.id = subcategoria.categoria_pai_id
+    WHERE principal.id = ${selected} AND principal.categoria_pai_id IS NULL
+  ))`;
+}
+
 router.get('/lancamentos', protegerRota, async (req, res) => {
   try {
     const {
@@ -20020,7 +20030,7 @@ router.get('/lancamentos', protegerRota, async (req, res) => {
     }
     if (categoria_id) {
       values.push(categoria_id);
-      where.push(`l.categoria_id = $${values.length}`);
+      where.push(comprovantesCategoriaFilter(values.length));
     }
     if (tipo_pagamento) {
       values.push(tipo_pagamento);
@@ -21398,7 +21408,7 @@ router.get('/exportar-excel', protegerRota, async (req, res) => {
     }
     if (categoria_id) {
       values.push(categoria_id);
-      where.push(`l.categoria_id = $${values.length}`);
+      where.push(comprovantesCategoriaFilter(values.length));
     }
     if (tipo_pagamento) {
       values.push(tipo_pagamento);
