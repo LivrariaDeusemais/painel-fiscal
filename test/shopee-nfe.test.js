@@ -107,6 +107,19 @@ test('retoma ID persistido sem gerar nova tarefa e falha explicitamente se Shope
   await service.run(pool,pool.job.id,{client:{call:async(endpoint)=>{assert.ok(!endpoint.includes('generate_fbs'));throw new Error('Shopee recusou a consulta (error_permission).');}},accessToken:async()=>({token:'t',shop:'9'})});
   assert.equal(pool.job.status,'falhou');assert.match(pool.job.etapa,/error_permission/);assert.equal(pool.job.tarefas[0].id,42);
 });
+test('preserva código e identificadores de lote FAILED, omitindo links assinados',async()=>{
+  const pool=memoryPool();pool.job.tarefas=[{id:42,done:false}];
+  const response={request_id:'req-123',response:{result_list:[
+    {request_id:42,status:'FAILED',fail_error:'fbs.denied',fail_message:'Consulte https://example.com/?token=segredo'}
+  ]}};
+  await service.run(pool,pool.job.id,{
+    client:{call:async(endpoint)=>{assert.ok(endpoint.endsWith('get_fbs_invoices_result'));return response;}},
+    accessToken:async()=>({token:'t',shop:'9'})
+  });
+  assert.equal(pool.job.status,'falhou');
+  assert.match(pool.job.etapa,/Tarefa Shopee 42 · requisição req-123 · código fbs.denied/);
+  assert.doesNotMatch(pool.job.etapa,/example\.com|segredo/);
+});
 test('download não segue host estranho ou redirect privado, nem envia credenciais',async()=>{
   assert.throws(()=>transport.downloadUrl('http://down-br.img.susercontent.com/a.zip'),/não autorizado/);
   assert.throws(()=>transport.downloadUrl('https://localhost/x'),/não autorizado/);

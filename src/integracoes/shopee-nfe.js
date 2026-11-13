@@ -75,6 +75,21 @@ async function saveDocument(pool,job,meta,buffer,root=directory()) {
   return old||!result.rows.length?'repetido':'novo';
 }
 function responseData(data){return data.response || data;}
+function batchFailure(status, item, response, taskId) {
+  const code = value => /^[a-zA-Z0-9_.:-]{1,100}$/.test(String(value ?? '')) ? String(value) : '';
+  const rawMessage = [item.fail_message, item.error_msg, item.error_message, item.message]
+    .find(value => typeof value === 'string' && value.trim());
+  // O retorno fiscal pode conter links assinados ou outros dados de autorização.
+  const message = rawMessage?.replace(/[\r\n\t]+/g, ' ').trim();
+  const safeMessage = message && !/(?:https?:|www\.|token|secret|password|signature|authorization|chave|[?=&]|[A-Za-z0-9_-]{24,})/i.test(message)
+    ? message.slice(0, 240) : '';
+  const errorCode = code(item.fail_error ?? item.fail_code ?? item.error_code ?? item.error);
+  const requestId = code(response.request_id);
+  const details = [`Tarefa Shopee ${transport.numericId(taskId)}`,
+    requestId && `requisição ${requestId}`, errorCode && `código ${errorCode}`, safeMessage].filter(Boolean);
+  return `Lote fiscal não disponível (${status.replace(/[^A-Z_]/g,'').slice(0,40)}). ${details.join(' · ')}${errorCode || safeMessage ? '' : ' · Shopee não informou um motivo disponível.'}`;
+}
+
 function taskIds(data) {
   const result=responseData(data).result_list;
   if(!Array.isArray(result)||!result.length)throw new Error('Shopee não retornou tarefas fiscais. Verifique a liberação da API FBS.');
@@ -111,12 +126,13 @@ async function run(pool,id,options={}) {
       if(task.done)continue;
       let ready=false;
       for(let attempt=0;attempt<120;attempt++) {
-        const data=responseData(await api('get_fbs_invoices_result',requestIds(task.id)));
+        const response=await api('get_fbs_invoices_result',requestIds(task.id));
+        const data=responseData(response);
         const item=data.result_list?.find(r=>String(r.request_id)===String(task.id));
         if(!item)throw new Error('Shopee não retornou o andamento do lote solicitado.');
         const status=String(item.status||'').toUpperCase();
         if(status==='READY'){ready=true;break;}
-        if(!['PROCESSING','PENDING','IN_PROGRESS','IN_QUEUE','GENERATING'].includes(status))throw new Error(`Lote fiscal não disponível (${status.replace(/[^A-Z_]/g,'').slice(0,40)}).`);
+        if(!['PROCESSING','PENDING','IN_PROGRESS','IN_QUEUE','GENERATING'].includes(status))throw new Error(batchFailure(status,item,response,task.id));
         await pool.query('UPDATE shopee_nfe_cargas SET etapa=$2,atualizado_em=NOW() WHERE id=$1',[id,'Aguardando a Shopee preparar o lote '+task.id]);
         await wait(5000);
       }

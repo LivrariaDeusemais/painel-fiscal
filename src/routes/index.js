@@ -20077,7 +20077,7 @@ router.get('/lancamentos', protegerRota, async (req, res) => {
       FROM lancamentos l
       LEFT JOIN categorias c ON c.id = l.categoria_id
       ${whereSql}
-      ORDER BY l.id DESC
+      ORDER BY l.data_despesa DESC NULLS LAST, l.id DESC
       `,
       values
     );
@@ -21462,7 +21462,7 @@ FROM lancamentos l
 LEFT JOIN categorias c ON c.id = l.categoria_id
 LEFT JOIN categorias p ON p.id = c.categoria_pai_id
       ${whereSql}
-      ORDER BY l.id DESC
+      ORDER BY l.data_despesa DESC NULLS LAST, l.id DESC
       `,
       values
     );
