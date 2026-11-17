@@ -23,6 +23,9 @@ app.use(session({
   saveUninitialized: false
 }));
 
+require('./empresas/routes').mount(app, require('./db'));
+app.use(require('./access/internal').requireInternalSession);
+
 // 🔧 GARANTIR QUE A PASTA UPLOADS EXISTA (ESSENCIAL NO RENDER)
 const uploadsDir = process.env.UPLOADS_DIR || '/uploads';
 

@@ -1,6 +1,6 @@
 (()=>{
  document.querySelectorAll('[data-access-module]').forEach(module=>{
-  const inputs=()=>[...module.querySelectorAll('input[name]:not(:disabled)')];
+  const inputs=()=>[...module.querySelectorAll('input:is([name=view], [name=download], [name=edit]):not(:disabled)')];
   const masters=[...module.querySelectorAll('[data-column], [data-module-all]')];
   const sync=()=>masters.forEach(master=>{
    const group=inputs().filter(input=>!master.dataset.column||input.name===master.dataset.column);

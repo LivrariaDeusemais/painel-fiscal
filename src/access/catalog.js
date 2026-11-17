@@ -25,6 +25,11 @@ const catalog=[
  ['contabil','Contábil','contabil','Visão contábil',['/contabil'],false],
  ['integracoes','Integrações','shopee-nfe','Shopee Full / NF-e série 5',['/integracoes/shopee-nfe'],true],
  ['integracoes','Integrações','fiscais','Integrações fiscais',['/integracoes','/nfpaulistana','/sefaz','/nfse-nacional','/ferramentas-ia'],true],
+ ['admin','Administração','empresas-clientes','Empresas clientes',['/empresas-clientes'],true,'admin'],
+ ['cliente','Portal de clientes','cliente-empresa','Perfil da empresa',['/clientes/empresa'],true,'client'],
+ ['cliente','Portal de clientes','cliente-despesas','Lançamentos e comprovantes',['/clientes/despesas'],true,'client'],
+ ['cliente','Portal de clientes','cliente-categorias','Categorias',['/clientes/categorias'],true,'client'],
+ ['cliente','Portal de clientes','cliente-fornecedores','Fornecedores',['/clientes/fornecedores'],true,'client'],
  ['admin','Administração','usuarios','Usuários e funções',['/usuarios','/administracao','/funcoes'],true,'admin'],
  ['admin','Administração','equipes','Equipes e acompanhamento',['/painel/equipes'],true,'admin'],
  ['admin','Administração','categorias','Categorias',['/categorias'],true],
@@ -34,7 +39,7 @@ const catalog=[
  ['contabil','Contábil','atualizar-faturamento','Bloco: atualizar faturamento',['/painel/faturamento'],true,'sensitive'],
  ['contabil','Contábil','fechamento-despesas','Bloco: fechamento de despesas',[],false],
  ['precos','Preços','alertas-precos','Bloco: pendências de preços',[],false],
-].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['conferencia-contabil','pedidos-compra','estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
+].map(([menu,menuLabel,id,label,paths,editable,restriction])=>({menu,menuLabel,id,label,paths,editable,restriction,downloadable:['cliente-despesas','conferencia-contabil','pedidos-compra','estoque-pedidos','shopee-nfe','arquivo','comprovantes','financeiro','compras','codificador','bling','meli','tabela','downloads','fechamento','conciliacao','backup'].includes(id)}));
 function capability(path){return catalog.flatMap(c=>c.paths.map(prefix=>({c,prefix}))).filter(x=>path===x.prefix||path.startsWith(x.prefix+'/')).sort((a,b)=>b.prefix.length-a.prefix.length)[0]?.c;}
 function permitted(user,id,write=false){if(user?.perfil==='ADMIN')return true;if(!user?.functionAccess)return null;return user.functionAccess[id]?.[write===true?'edit':write===false?'view':write]===true;}
 function downloadGrant(req){const c=capability((req.originalUrl||req.path||'').split('?')[0]);return !!c&&!c.restriction&&c.downloadable&&actionFor(req)==='download'&&permitted(req.session?.usuario,c.id,'download')===true;}

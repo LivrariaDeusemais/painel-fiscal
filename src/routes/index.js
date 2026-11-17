@@ -4417,7 +4417,7 @@ function renderPremiumAdminShell(req, config = {}, innerHtml = '') {
     { key:'ferramentas-ia', href:'/ferramentas-ia', label:'◇ Gestão Operacional' },
     { key:'espaco-contador', href:'/espaco-contador', label:'♧ Espaço do Contador' },
     ...(isAdmin ? [{ key:'alertas-vencimentos', href:'/alertas-vencimentos', label:'◌ Vencimentos hoje' }] : []),
-    ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }] : [])
+    ...(isAdmin ? [{ key:'usuarios', href:'/usuarios', label:'◉ Usuários' }, { key:'empresas-clientes', href:'/empresas-clientes', label:'Empresas clientes' }] : [])
   ];
   const nav = navItems.map(item => `<a class="${item.key === paginaAtual ? 'active' : ''}" href="${item.href}">${item.label}</a>`).join('');
   return `
@@ -11618,52 +11618,28 @@ body.dm-global-page form[action="/lancamentos"] .filter-buttons a {
 router.post('/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
-
-    const user = await pool.query(
-      'SELECT * FROM usuarios WHERE email = $1',
+    if (typeof email !== 'string' || typeof senha !== 'string') {
+      return res.status(401).send('E-mail ou senha inválidos.');
+    }
+    const { rows: [usuario] } = await pool.query(
+      'SELECT id,nome,perfil,senha_hash FROM usuarios WHERE email = $1',
       [email]
     );
-
-    let usuario;
-
-if (!user.rows.length) {
-  usuario = {
-    id: 1,
-    nome: 'Genivaldo',
-    email: email,
-    perfil: 'ADMIN'
-  };
-} else {
-  usuario = user.rows[0];
-}
-    const senhaDigitada = String(senha || '');
-    const hashBanco = String(usuario.senha_hash || '');
-    const senhaValida = await bcrypt.compare(senhaDigitada, hashBanco);
-
-    if (!senhaValida) {
-      return res.send(`
-        <pre>
-Senha inválida
-
-Email recebido: ${email}
-Senha digitada: ${senhaDigitada}
-Hash banco: ${hashBanco}
-Tamanho do hash: ${hashBanco.length}
-        </pre>
-      `);
+    if (!usuario || !await bcrypt.compare(senha, String(usuario.senha_hash || ''))) {
+      return res.status(401).send('E-mail ou senha inválidos.');
     }
 
+    const calculatorApp = req.session.calculatorAppLogin === true;
+    await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
     req.session.usuario = {
       id: usuario.id,
       nome: usuario.nome,
       perfil: String(usuario.perfil || '').toUpperCase()
     };
-
-    const calculatorApp = req.session.calculatorAppLogin === true;
-    delete req.session.calculatorAppLogin;
     return res.redirect(calculatorApp ? '/ferramentas-ia/tabela-precos/promocoes?app=1' : '/dashboard');
   } catch (error) {
-    return res.send(`<pre>Erro no login:\n${error.message}</pre>`);
+    console.error('[Login interno]', error.code || error.name);
+    return res.status(503).send('Não foi possível entrar agora. Tente novamente.');
   }
 });
 
