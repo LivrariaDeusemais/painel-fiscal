@@ -1,5 +1,5 @@
 // União manual de arquivos existentes; os arquivos físicos são preservados.
-async function vincularPar(pool, ids, actor, fileExists) {
+async function vincularPar(pool, ids, actor, fileExists, { automatico = false } = {}) {
   if (!Array.isArray(ids) || ids.length !== 2 || ids.some(id => !/^\d+$/.test(String(id)) || !Number.isSafeInteger(Number(id)) || Number(id) < 1) || Number(ids[0]) === Number(ids[1])) {
     throw new Error('Selecione exatamente um PDF e um XML.');
   }
@@ -14,7 +14,7 @@ async function vincularPar(pool, ids, actor, fileExists) {
     if (rows.some(row => row.par_id) || selected.some(row => row.status !== 'DISPONIVEL' || row.analise_status === 'COMPLETO')) throw new Error('Um dos arquivos já está vinculado ou não está mais disponível. Atualize a página.');
     if (selected.some(row => ['DUPLICADO','ARQUIVO_AUSENTE'].includes(row.analise_status) || !fileExists(row))) throw new Error('Não é possível vincular arquivos ausentes ou marcados como duplicados.');
     if (pdf.chave_fiscal && xml.chave_fiscal && pdf.chave_fiscal !== xml.chave_fiscal) throw new Error('Os arquivos possuem chaves fiscais diferentes. Confira o PDF e o XML.');
-    const audit = JSON.stringify({vinculoManual:{pdfId:pdf.id,xmlId:xml.id,usuarioId:actor.id,usuario:actor.nome,em:new Date().toISOString()}});
+    const audit = JSON.stringify({[automatico ? 'vinculoAutomatico' : 'vinculoManual']:{pdfId:pdf.id,xmlId:xml.id,...(automatico ? {criterio:'NOME_ORIGINAL'} : {usuarioId:actor.id,usuario:actor.nome}),em:new Date().toISOString()}});
     await client.query(`UPDATE arquivo_fila SET par_id = CASE WHEN id = $1 THEN $2 ELSE $1 END,
       documento_classe = 'FISCAL', analise_status = 'COMPLETO', analisado_em = COALESCE(analisado_em,NOW()),
       chave_fiscal = COALESCE($3,chave_fiscal), cnpj_cpf = $4, fornecedor = $5, numero_documento = $6,
@@ -26,4 +26,29 @@ async function vincularPar(pool, ids, actor, fileExists) {
   } catch(error) { await client.query('ROLLBACK'); throw error; }
   finally { client.release(); }
 }
-module.exports = {vincularPar};
+function paresPorNome(arquivos) {
+  const grupos = new Map();
+  for (const arquivo of arquivos) {
+    if (arquivo.status !== 'DISPONIVEL' || arquivo.par_id || ['COMPLETO', 'DUPLICADO', 'ARQUIVO_AUSENTE'].includes(arquivo.analise_status)) continue;
+    if (!['PDF', 'XML'].includes(arquivo.tipo)) continue;
+    // O nome original permanece intacto após a renomeação operacional.
+    const nome = String(arquivo.nome_original || '').normalize('NFC').trim().replace(/\.(pdf|xml)$/i, '').trim().toLocaleLowerCase('pt-BR');
+    if (!nome) continue;
+    if (!grupos.has(nome)) grupos.set(nome, {PDF:[], XML:[]});
+    grupos.get(nome)[arquivo.tipo].push(arquivo);
+  }
+  return [...grupos.values()].filter(g => g.PDF.length === 1 && g.XML.length === 1)
+    .map(g => [g.PDF[0], g.XML[0]])
+    .filter(([pdf, xml]) => !(pdf.chave_fiscal && xml.chave_fiscal && pdf.chave_fiscal !== xml.chave_fiscal));
+}
+
+async function conciliarPorNome(pool, fileExists) {
+  const {rows} = await pool.query("SELECT * FROM arquivo_fila WHERE status = 'DISPONIVEL' ORDER BY id");
+  let conciliados = 0;
+  for (const [pdf, xml] of paresPorNome(rows)) {
+    await vincularPar(pool, [pdf.id, xml.id], {}, fileExists, {automatico:true});
+    conciliados++;
+  }
+  return conciliados;
+}
+module.exports = {vincularPar, paresPorNome, conciliarPorNome};

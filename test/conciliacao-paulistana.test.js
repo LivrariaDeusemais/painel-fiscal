@@ -6,7 +6,7 @@ const chave = '35503081214338304000178000000012352326093531034075';
 
 function carregarConciliacao(pool) {
   const codigo = fs.readFileSync(require.resolve('../src/routes/index'), 'utf8');
-  const contexto = vm.createContext({ pool, ensureArquivoFilaTable: async () => {} });
+  const contexto = vm.createContext({ require: () => require('../src/services/arquivo-pares'), pool, ensureArquivoFilaTable: async () => {} });
   vm.runInContext(codigo.slice(codigo.indexOf('function arquivoConciliacaoSomenteDigitos('),
     codigo.indexOf('async function arquivoConciliacaoTextoPdf(')), contexto);
   vm.runInContext(codigo.slice(codigo.indexOf('function arquivoAutoNormText('),

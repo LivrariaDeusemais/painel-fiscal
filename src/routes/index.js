@@ -2354,7 +2354,7 @@ function renderArquivoFilaPage({ arquivos = [], mensagem = '', erro = '', seleci
                 ${podeImportarNfse ? '<a class="btn-green portal-import-btn fiscal-import-link" href="/nfse-nacional">Portal Contribuinte</a><a class="btn-green fiscal-import-link" href="/nfpaulistana">NF Paulistana</a><a class="btn-green fiscal-import-link" href="/sefaz">SEFAZ</a>' : ''}
               </form>
               <p style="margin:10px 0 0;color:#475569;font-size:13px;font-weight:600;">
-                Documentos fiscais são conciliados por chave. PDFs sem chave permanecem como comprovantes comuns.
+                PDFs e XMLs são conciliados pela chave fiscal ou pelo mesmo nome original, quando existe um único par. PDFs sem par permanecem como comprovantes comuns.
               </p>
               <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:12px"><form method="POST" action="/arquivo/reprocessar" style="margin:0" onsubmit="const botao=this.querySelector('button'); botao.textContent='Conciliando… aguarde'; botao.disabled=true;"><button class="btn-soft-mini" type="submit">Reconciliar PDF/XML${pendentesAnalise ? ` (${pendentesAnalise} para analisar)` : ''}</button></form>
               ${!modoSelecao && podeVincularPares ? `<form id="arquivoVincularPar" method="POST" action="/arquivo/vincular-par" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0;flex:1"><input type="hidden" name="token" value="${escapeHtmlGlobal(paresToken)}"><button class="btn-soft-mini" type="submit" disabled>Vincular Arquivos pares</button><span id="arquivoParAviso" role="status" style="font-size:12px;color:#475569">Marque um PDF e um XML da mesma nota, um par por vez.</span></form>` : ''}
@@ -2794,7 +2794,7 @@ async function analisarArquivoFilaParaConciliacao(id, { lerPdf = true } = {}) {
   const resultado = await pool.query(`SELECT * FROM arquivo_fila WHERE id = $1 LIMIT 1`, [id]);
   const arquivo = resultado.rows[0];
   if (!arquivo || arquivo.status !== 'DISPONIVEL') return null;
-  if (arquivo.par_id && arquivo.metadados?.vinculoManual) return {id:arquivo.id,fiscal:true,chave:arquivo.chave_fiscal||'',analiseStatus:arquivo.analise_status};
+  if (arquivo.par_id && (arquivo.metadados?.vinculoManual || arquivo.metadados?.vinculoAutomatico)) return {id:arquivo.id,fiscal:true,chave:arquivo.chave_fiscal||'',analiseStatus:arquivo.analise_status};
 
   const filePath = getUploadFilePath(arquivo.nome_arquivo);
   if (!filePath || !fs.existsSync(filePath)) {
@@ -2904,6 +2904,10 @@ async function conciliarArquivoFilaDisponiveis() {
     `, [pdf.id, xml.id, cnpjCpf, fornecedor, numero, tipoDocumento, data, valor]);
     conciliados += 1;
   }
+  conciliados += await require('../services/arquivo-pares').conciliarPorNome(pool, arquivo => {
+    const file = getUploadFilePath(arquivo.nome_arquivo);
+    return !!file && fs.existsSync(file);
+  });
   return conciliados;
 }
 
